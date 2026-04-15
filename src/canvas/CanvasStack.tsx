@@ -191,6 +191,17 @@ export function CanvasStack() {
   // Keyboard handler
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Undo/Redo
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          useGardenStore.getState().redo();
+        } else {
+          useGardenStore.getState().undo();
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
         const { plottingTool } = useUiStore.getState();
         if (plottingTool) {
@@ -249,6 +260,7 @@ export function CanvasStack() {
             ? garden.structures.find((s) => s.id === hit.id)
             : garden.zones.find((z) => z.id === hit.id);
         if (obj) {
+          useGardenStore.getState().checkpoint();
           isMoving.current = true;
           moveStart.current = { worldX, worldY, objX: obj.x, objY: obj.y };
           moveObjectId.current = hit.id;
