@@ -108,23 +108,23 @@ const noon: TimeTheme = {
   menuBarText: '#204050',
 };
 
-const afternoon: TimeTheme = {
+const sunset: TimeTheme = {
   paletteBackground: `
     linear-gradient(to top,
       #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%,
       #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%,
-      #8A8460 30%, #7D7060 35%, #6A6058 42%, #706858 50%,
-      #7A7858 58%, #8A8858 65%, #A09060 72%, #B8986A 80%,
-      #C8A878 90%, #D4B888 100%
+      #8A8460 30%, #7D7060 35%, #6A6058 42%, #7A5848 50%,
+      #9A5840 58%, #B85838 65%, #C85840 72%, #C04858 80%,
+      #A04870 90%, #804878 100%
     ),
-    linear-gradient(170deg, transparent 0%, rgba(130,95,45,0.25) 32%, rgba(110,120,55,0.2) 42%, transparent 55%),
-    linear-gradient(195deg, rgba(70,65,55,0.25) 0%, transparent 25%, transparent 65%, rgba(160,130,80,0.15) 85%, transparent 100%),
-    radial-gradient(ellipse 120% 20% at 30% 54%, rgba(75,140,60,0.25) 0%, transparent 70%),
-    radial-gradient(ellipse 80% 10% at 60% 58%, rgba(150,140,100,0.2) 0%, transparent 70%)`,
-  searchOverlay: 'rgba(180, 150, 100, 0.8)',
-  menuBarBg: '#D4B888',
-  menuBarTitle: '#3A2810',
-  menuBarText: '#4A3818',
+    linear-gradient(170deg, transparent 0%, rgba(140,80,40,0.25) 32%, rgba(120,90,50,0.2) 42%, transparent 55%),
+    linear-gradient(195deg, rgba(80,50,60,0.25) 0%, transparent 25%, transparent 65%, rgba(140,60,100,0.15) 85%, transparent 100%),
+    radial-gradient(ellipse 120% 20% at 30% 54%, rgba(75,130,60,0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 25% at 50% 80%, rgba(200,90,50,0.2) 0%, transparent 70%)`,
+  searchOverlay: 'rgba(128, 72, 120, 0.85)',
+  menuBarBg: '#804878',
+  menuBarTitle: '#F0D0E0',
+  menuBarText: '#E0B8D0',
 };
 
 const twilight: TimeTheme = {
@@ -146,7 +146,7 @@ const twilight: TimeTheme = {
   menuBarText: '#C0A8D0',
 };
 
-const themes = { sunrise, morning, noon, afternoon, twilight, night, midnight };
+const themes = { sunrise, morning, noon, sunset, twilight, night, midnight };
 
 export type TimePeriod = keyof typeof themes;
 
@@ -154,7 +154,7 @@ export function getTimePeriod(hour: number): TimePeriod {
   if (hour >= 5 && hour < 7) return 'sunrise';
   if (hour >= 7 && hour < 11) return 'morning';
   if (hour >= 11 && hour < 14) return 'noon';
-  if (hour >= 14 && hour < 17) return 'afternoon';
+  if (hour >= 14 && hour < 17) return 'sunset';
   if (hour >= 17 && hour < 20) return 'twilight';
   if (hour >= 20 && hour < 24) return 'night';
   return 'midnight'; // 0–4
@@ -168,4 +168,4 @@ export function getTheme(period: TimePeriod): TimeTheme {
   return themes[period];
 }
 
-export const ALL_PERIODS: TimePeriod[] = ['sunrise', 'morning', 'noon', 'afternoon', 'twilight', 'night', 'midnight'];
+export const ALL_PERIODS: TimePeriod[] = ['sunrise', 'morning', 'noon', 'sunset', 'twilight', 'night', 'midnight'];
