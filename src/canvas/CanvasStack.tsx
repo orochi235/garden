@@ -8,6 +8,7 @@ import { renderZones } from './renderZones';
 import { renderPlantings } from './renderPlantings';
 import { screenToWorld, snapToGrid } from '../utils/grid';
 import type { PaletteEntry } from '../components/palette/paletteData';
+import { hitTestObjects } from './hitTest';
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,6 +26,10 @@ export function CanvasStack() {
   const setPan = useUiStore((s) => s.setPan);
   const layerVisibility = useUiStore((s) => s.layerVisibility);
   const layerOpacity = useUiStore((s) => s.layerOpacity);
+  const activeLayer = useUiStore((s) => s.activeLayer);
+  const select = useUiStore((s) => s.select);
+  const addToSelection = useUiStore((s) => s.addToSelection);
+  const clearSelection = useUiStore((s) => s.clearSelection);
 
   // Panning state refs (not React state — no re-render needed mid-drag)
   const isPanning = useRef(false);
@@ -104,6 +109,24 @@ export function CanvasStack() {
   }, [garden.plantings, garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.plantings, layerOpacity.plantings]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { panX, panY, zoom } = useUiStore.getState();
+      const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+      const { garden } = useGardenStore.getState();
+      const { activeLayer: currentActiveLayer } = useUiStore.getState();
+      const hit = hitTestObjects(worldX, worldY, garden.structures, garden.zones, currentActiveLayer);
+      if (hit) {
+        if (e.shiftKey) {
+          addToSelection(hit.id);
+        } else {
+          select(hit.id);
+        }
+      } else {
+        clearSelection();
+      }
+    }
     if (e.button === 2) {
       isPanning.current = true;
       panStart.current = {
@@ -113,7 +136,7 @@ export function CanvasStack() {
         panY: useUiStore.getState().panY,
       };
     }
-  }, []);
+  }, [select, addToSelection, clearSelection]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning.current) return;
