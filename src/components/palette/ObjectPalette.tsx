@@ -27,7 +27,7 @@ export function ObjectPalette({ onDragStart }: Props) {
         if (items.length === 0) return null;
         return (
           <div key={cat.id} className={styles.category}>
-            <div className={styles.categoryLabel}>{cat.label}</div>
+            <div className={styles.categoryLabel} style={{ color: theme.menuBarText }}>{cat.label}</div>
             <div className={styles.itemGrid}>
               {items.map((item) => (
                 <PaletteItem key={item.id} entry={item} onDragStart={onDragStart} />
