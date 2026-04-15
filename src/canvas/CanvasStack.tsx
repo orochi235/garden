@@ -9,6 +9,7 @@ import { renderPlantings } from './renderPlantings';
 import { screenToWorld, snapToGrid } from '../utils/grid';
 import type { PaletteEntry } from '../components/palette/paletteData';
 import { hitTestObjects } from './hitTest';
+import { renderSelection } from './renderSelection';
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,6 +17,7 @@ export function CanvasStack() {
   const structureCanvasRef = useRef<HTMLCanvasElement>(null);
   const zoneCanvasRef = useRef<HTMLCanvasElement>(null);
   const plantingCanvasRef = useRef<HTMLCanvasElement>(null);
+  const selectionCanvasRef = useRef<HTMLCanvasElement>(null);
   const { width, height, dpr } = useCanvasSize(containerRef);
 
   const garden = useGardenStore((s) => s.garden);
@@ -27,6 +29,7 @@ export function CanvasStack() {
   const layerVisibility = useUiStore((s) => s.layerVisibility);
   const layerOpacity = useUiStore((s) => s.layerOpacity);
   const activeLayer = useUiStore((s) => s.activeLayer);
+  const selectedIds = useUiStore((s) => s.selectedIds);
   const select = useUiStore((s) => s.select);
   const addToSelection = useUiStore((s) => s.addToSelection);
   const clearSelection = useUiStore((s) => s.clearSelection);
@@ -107,6 +110,19 @@ export function CanvasStack() {
       ctx.clearRect(0, 0, width, height);
     }
   }, [garden.plantings, garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.plantings, layerOpacity.plantings]);
+
+  // Render selection layer
+  useEffect(() => {
+    const canvas = selectionCanvasRef.current;
+    if (!canvas || width === 0) return;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+
+    renderSelection(ctx, selectedIds, garden.structures, garden.zones, view, width, height);
+  }, [selectedIds, garden.structures, garden.zones, zoom, panX, panY, width, height, dpr]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 0) {
@@ -250,6 +266,7 @@ export function CanvasStack() {
       <canvas ref={structureCanvasRef} style={canvasStyle} />
       <canvas ref={zoneCanvasRef} style={canvasStyle} />
       <canvas ref={plantingCanvasRef} style={canvasStyle} />
+      <canvas ref={selectionCanvasRef} style={canvasStyle} />
     </div>
   );
 }
