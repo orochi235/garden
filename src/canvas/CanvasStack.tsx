@@ -6,6 +6,8 @@ import { renderGrid } from './renderGrid';
 import { renderStructures } from './renderStructures';
 import { renderZones } from './renderZones';
 import { renderPlantings } from './renderPlantings';
+import { screenToWorld, snapToGrid } from '../utils/grid';
+import type { PaletteEntry } from '../components/palette/paletteData';
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -130,6 +132,52 @@ export function CanvasStack() {
     e.preventDefault();
   }, []);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/garden-object')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData('application/garden-object');
+    if (!raw) return;
+
+    let entry: PaletteEntry;
+    try {
+      entry = JSON.parse(raw) as PaletteEntry;
+    } catch {
+      return;
+    }
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const { panX, panY, zoom } = useUiStore.getState();
+    const view = { panX, panY, zoom };
+    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, view);
+
+    const { garden, addStructure, addZone, addPlanting } = useGardenStore.getState();
+    const cellSize = garden.gridCellSizeFt;
+
+    const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
+    const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+
+    if (entry.category === 'structures') {
+      addStructure({ type: entry.type, x: snappedX, y: snappedY, width: entry.defaultWidth, height: entry.defaultHeight });
+    } else if (entry.category === 'zones') {
+      addZone({ x: snappedX, y: snappedY, width: entry.defaultWidth, height: entry.defaultHeight });
+    } else if (entry.category === 'plantings') {
+      const zone = garden.zones.find(
+        (z) => worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.height,
+      );
+      if (zone) {
+        addPlanting({ zoneId: zone.id, x: snapToGrid(worldX - zone.x, cellSize), y: snapToGrid(worldY - zone.y, cellSize), name: entry.name });
+      }
+    }
+  }, []);
+
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const currentState = useUiStore.getState();
@@ -172,6 +220,8 @@ export function CanvasStack() {
       onMouseUp={handleMouseUp}
       onContextMenu={handleContextMenu}
       onWheel={handleWheel}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       <canvas ref={gridCanvasRef} style={canvasStyle} />
       <canvas ref={structureCanvasRef} style={canvasStyle} />
