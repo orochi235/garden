@@ -2,54 +2,6 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background:
-    /* Primary vertical gradient — the core story */
-    /* Bottom sliver: bedrock. Thin brown/green band. Top 2/3: gray urban → blue sky. */
-    linear-gradient(to top,
-      #2A2A2E 0%,        /* bedrock */
-      #3A3335 3%,
-      #5C4033 8%,        /* soil */
-      #6B4E2A 12%,       /* topsoil */
-      #5A6B3A 16%,       /* surface */
-      #4A7C42 19%,       /* grass */
-      #4E8848 22%,       /* vegetation */
-      #6B8E50 25%,       /* fields */
-      #8A8460 30%,       /* paths, fences */
-      #7D7060 35%,       /* roads */
-      #6A6058 42%,       /* buildings, stone */
-      #5A5560 50%,       /* rooftops */
-      #4E4E5E 58%,       /* urban gray */
-      #4A4A5E 65%,       /* dusk cityscape */
-      #3E4260 72%,
-      #343A58 80%,       /* evening sky */
-      #2A3450 90%,       /* deep twilight */
-      #1A2744 100%       /* night sky */
-    ),
-    /* Warm drift — pushes ochre tones slightly left-of-center */
-    linear-gradient(170deg,
-      transparent 0%,
-      rgba(107, 78, 42, 0.25) 32%,
-      rgba(90, 107, 58, 0.2) 42%,
-      transparent 55%
-    ),
-    /* Cool vein — a subtle blue-gray streak through the rock layer */
-    linear-gradient(195deg,
-      rgba(60, 65, 80, 0.3) 0%,
-      transparent 25%,
-      transparent 65%,
-      rgba(42, 52, 80, 0.2) 85%,
-      transparent 100%
-    ),
-    /* Green bloom — organic bulge in the vegetation zone */
-    radial-gradient(ellipse 120% 20% at 30% 54%,
-      rgba(61, 122, 58, 0.25) 0%,
-      transparent 70%
-    ),
-    /* Warm surface glow — sunlit earth near the surface line */
-    radial-gradient(ellipse 80% 10% at 60% 58%,
-      rgba(138, 132, 96, 0.2) 0%,
-      transparent 70%
-    );
   border-right: 1px solid var(--color-panel-border);
   overflow-y: auto;
 }
@@ -57,7 +9,7 @@
   padding: 8px;
   position: sticky;
   top: 0;
-  background: rgba(26, 39, 68, 0.85);
+  /* searchOverlay color set inline via style */
   backdrop-filter: blur(4px);
   z-index: 1;
 }

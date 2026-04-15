@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { paletteItems, categories, type PaletteEntry } from './paletteData';
 import { PaletteItem } from './PaletteItem';
+import { getCurrentTheme } from '../../utils/timeTheme';
 import styles from '../../styles/ObjectPalette.module.css';
 
 interface Props {
@@ -9,13 +10,14 @@ interface Props {
 
 export function ObjectPalette({ onDragStart }: Props) {
   const [search, setSearch] = useState('');
+  const theme = useMemo(() => getCurrentTheme(), []);
   const filtered = search
     ? paletteItems.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     : paletteItems;
 
   return (
-    <div className={styles.palette}>
-      <div className={styles.search}>
+    <div className={styles.palette} style={{ background: theme.paletteBackground }}>
+      <div className={styles.search} style={{ background: theme.searchOverlay }}>
         <input className={styles.searchInput} type="text" placeholder="Search objects..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       {categories.map((cat) => {

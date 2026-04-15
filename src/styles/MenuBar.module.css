@@ -4,8 +4,7 @@
   justify-content: space-between;
   height: var(--menu-height);
   padding: 0 16px;
-  background: #1A2744;
-  color: #D4B870;
+  /* background and color set inline via timeTheme */
   font-size: 14px;
   font-weight: 600;
   user-select: none;
@@ -17,7 +16,7 @@
   gap: 8px;
   font-size: 20px;
   font-weight: 700;
-  color: #E8D08C;
+  /* color set inline via timeTheme */
   letter-spacing: -0.02em;
 }
 
