@@ -19,6 +19,15 @@ function pointInRect(px: number, py: number, x: number, y: number, w: number, h:
   return px >= x && px <= x + w && py >= y && py <= y + h;
 }
 
+function pointInEllipse(px: number, py: number, x: number, y: number, w: number, h: number): boolean {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const rx = w / 2;
+  const ry = h / 2;
+  if (rx === 0 || ry === 0) return false;
+  return ((px - cx) ** 2) / (rx ** 2) + ((py - cy) ** 2) / (ry ** 2) <= 1;
+}
+
 function getHandleScreenPositions(obj: { x: number; y: number; width: number; height: number }, view: ViewTransform) {
   const sx = view.panX + obj.x * view.zoom;
   const sy = view.panY + obj.y * view.zoom;
@@ -74,7 +83,10 @@ export function hitTestObjects(
   if (activeLayer === 'structures') {
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
-      if (pointInRect(worldX, worldY, s.x, s.y, s.width, s.height)) {
+      const hit = s.shape === 'circle'
+        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
+        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+      if (hit) {
         return { id: s.id, layer: 'structures' };
       }
     }

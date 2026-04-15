@@ -10,9 +10,12 @@ export interface Blueprint {
   opacity: number;
 }
 
+export type StructureShape = 'rectangle' | 'circle';
+
 export interface Structure {
   id: string;
   type: string;
+  shape: StructureShape;
   x: number;
   y: number;
   width: number;
@@ -96,16 +99,22 @@ const DEFAULT_STRUCTURE_COLORS: Record<string, string> = {
   'patio': '#A0926B',
 };
 
+const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
+  'pot': 'circle',
+};
+
 export function createStructure(opts: {
   type: string;
   x: number;
   y: number;
   width: number;
   height: number;
+  shape?: StructureShape;
 }): Structure {
   return {
     id: generateId(),
     type: opts.type,
+    shape: opts.shape ?? DEFAULT_STRUCTURE_SHAPES[opts.type] ?? 'rectangle',
     x: opts.x,
     y: opts.y,
     width: opts.width,

@@ -1,8 +1,8 @@
-import type { Structure, Zone } from '../model/types';
+import type { Structure, Zone, StructureShape } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 
-interface SelectableObject { id: string; x: number; y: number; width: number; height: number; }
+interface SelectableObject { id: string; x: number; y: number; width: number; height: number; shape?: StructureShape; }
 
 export function renderSelection(
   ctx: CanvasRenderingContext2D,
@@ -21,15 +21,22 @@ export function renderSelection(
     const [sx, sy] = worldToScreen(obj.x, obj.y, view);
     const w = obj.width * view.zoom;
     const h = obj.height * view.zoom;
+    const isCircle = obj.shape === 'circle';
 
     // Blue dashed outline
     ctx.strokeStyle = '#5BA4CF';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 3]);
-    ctx.strokeRect(sx - 1, sy - 1, w + 2, h + 2);
+    if (isCircle) {
+      ctx.beginPath();
+      ctx.ellipse(sx + w / 2, sy + h / 2, w / 2 + 1, h / 2 + 1, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(sx - 1, sy - 1, w + 2, h + 2);
+    }
     ctx.setLineDash([]);
 
-    // Resize handles (8 points)
+    // Resize handles (8 points on bounding box)
     const hs = 8;
     const handles = [
       [sx - hs/2, sy - hs/2], [sx + w/2 - hs/2, sy - hs/2], [sx + w - hs/2, sy - hs/2],

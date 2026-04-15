@@ -23,11 +23,20 @@ export function renderStructures(
     const sh = s.height * view.zoom;
 
     ctx.fillStyle = s.color;
-    ctx.fillRect(sx, sy, sw, sh);
-
     ctx.strokeStyle = '#333333';
     ctx.lineWidth = 1;
-    ctx.strokeRect(sx, sy, sw, sh);
+
+    if (s.shape === 'circle') {
+      const cx = sx + sw / 2;
+      const cy = sy + sh / 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, sw / 2, sh / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(sx, sy, sw, sh);
+      ctx.strokeRect(sx, sy, sw, sh);
+    }
 
     if (s.label) {
       ctx.fillStyle = '#FFFFFF';
