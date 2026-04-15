@@ -1,6 +1,6 @@
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { DisplayUnit } from '../../model/types';
+import type { DisplayUnit, Blueprint } from '../../model/types';
 import { feetToDisplay, displayToFeet } from '../../utils/units';
 import styles from '../../styles/PropertiesPanel.module.css';
 
@@ -13,7 +13,28 @@ export function PropertiesPanel() {
   const updateGarden = useGardenStore((s) => s.updateGarden);
   const updateStructure = useGardenStore((s) => s.updateStructure);
   const updateZone = useGardenStore((s) => s.updateZone);
+  const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const selectedIds = useUiStore((s) => s.selectedIds);
+
+  function handleLoadBlueprint() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setBlueprint({ imageData: reader.result as string, x: 0, y: 0, scale: 1, opacity: 0.3 });
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  function updateBlueprint(updates: Partial<Blueprint>) {
+    if (garden.blueprint) setBlueprint({ ...garden.blueprint, ...updates });
+  }
 
   const unit = garden.displayUnit;
 
@@ -53,6 +74,36 @@ export function PropertiesPanel() {
             {DISPLAY_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
+        <div className={styles.title} style={{ marginTop: 8 }}>Blueprint</div>
+        {garden.blueprint ? (
+          <>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Opacity</span>
+              <input className={styles.fieldInput} type="range" min="0" max="1" step="0.05"
+                value={garden.blueprint.opacity}
+                onChange={(e) => updateBlueprint({ opacity: parseFloat(e.target.value) })} />
+            </div>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Scale</span>
+              <input className={styles.fieldInput} type="number" min="0.01" step="0.1"
+                value={garden.blueprint.scale}
+                onChange={(e) => updateBlueprint({ scale: parseFloat(e.target.value) || 1 })} />
+            </div>
+            <div className={styles.field}>
+              <button className={styles.fieldInput} style={{ cursor: 'pointer', textAlign: 'center' }}
+                onClick={() => setBlueprint(null)}>
+                Remove
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className={styles.field}>
+            <button className={styles.fieldInput} style={{ cursor: 'pointer', textAlign: 'center' }}
+              onClick={handleLoadBlueprint}>
+              Load Image...
+            </button>
+          </div>
+        )}
       </div>
     );
   }

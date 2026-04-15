@@ -3,6 +3,7 @@ import { useCanvasSize } from './useCanvasSize';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { renderGrid } from './renderGrid';
+import { renderBlueprint } from './renderBlueprint';
 import { renderStructures } from './renderStructures';
 import { renderZones } from './renderZones';
 import { renderPlantings } from './renderPlantings';
@@ -14,6 +15,7 @@ import { renderSelection } from './renderSelection';
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
+  const blueprintCanvasRef = useRef<HTMLCanvasElement>(null);
   const structureCanvasRef = useRef<HTMLCanvasElement>(null);
   const zoneCanvasRef = useRef<HTMLCanvasElement>(null);
   const plantingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -65,6 +67,37 @@ export function CanvasStack() {
       canvasHeight: height,
     });
   }, [garden.widthFt, garden.heightFt, garden.gridCellSizeFt, zoom, panX, panY, width, height, dpr]);
+
+  // Render blueprint layer
+  useEffect(() => {
+    const canvas = blueprintCanvasRef.current;
+    if (!canvas || width === 0) return;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+
+    if (layerVisibility.blueprint) {
+      renderBlueprint(ctx, garden.blueprint, view, width, height, layerOpacity.blueprint);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+    }
+  }, [garden.blueprint, zoom, panX, panY, width, height, dpr, layerVisibility.blueprint, layerOpacity.blueprint]);
+
+  // Re-render blueprint when image finishes loading
+  useEffect(() => {
+    function handleBlueprintLoaded() {
+      const canvas = blueprintCanvasRef.current;
+      if (!canvas || width === 0) return;
+      const ctx = canvas.getContext('2d')!;
+      if (layerVisibility.blueprint) {
+        renderBlueprint(ctx, garden.blueprint, view, width, height, layerOpacity.blueprint);
+      }
+    }
+    window.addEventListener('blueprint-loaded', handleBlueprintLoaded);
+    return () => window.removeEventListener('blueprint-loaded', handleBlueprintLoaded);
+  }, [garden.blueprint, zoom, panX, panY, width, height, layerVisibility.blueprint, layerOpacity.blueprint]);
 
   // Render structures layer
   useEffect(() => {
@@ -305,6 +338,7 @@ export function CanvasStack() {
       onDrop={handleDrop}
     >
       <canvas ref={gridCanvasRef} style={canvasStyle} />
+      <canvas ref={blueprintCanvasRef} style={canvasStyle} />
       <canvas ref={structureCanvasRef} style={canvasStyle} />
       <canvas ref={zoneCanvasRef} style={canvasStyle} />
       <canvas ref={plantingCanvasRef} style={canvasStyle} />
