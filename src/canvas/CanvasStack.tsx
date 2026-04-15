@@ -163,6 +163,25 @@ export function CanvasStack() {
     renderSelection(ctx, selectedIds, garden.structures, garden.zones, view, width, height);
   }, [selectedIds, garden.structures, garden.zones, zoom, panX, panY, width, height, dpr]);
 
+  // Keyboard delete handler
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
+        const ids = useUiStore.getState().selectedIds;
+        const { garden, removeStructure, removeZone, removePlanting } = useGardenStore.getState();
+        for (const id of ids) {
+          if (garden.structures.find((s) => s.id === id)) removeStructure(id);
+          else if (garden.zones.find((z) => z.id === id)) removeZone(id);
+          else if (garden.plantings.find((p) => p.id === id)) removePlanting(id);
+        }
+        useUiStore.getState().clearSelection();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 0) {
       const rect = containerRef.current?.getBoundingClientRect();

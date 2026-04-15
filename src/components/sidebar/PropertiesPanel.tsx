@@ -177,6 +177,16 @@ export function PropertiesPanel() {
           </select>
         </div>
       )}
+      <div className={styles.field} style={{ marginTop: 8 }}>
+        <button className={styles.fieldInput} style={{ cursor: 'pointer', textAlign: 'center', color: 'var(--color-terracotta)' }}
+          onClick={() => {
+            if (structure) useGardenStore.getState().removeStructure(selectedId);
+            else useGardenStore.getState().removeZone(selectedId);
+            useUiStore.getState().clearSelection();
+          }}>
+          Delete
+        </button>
+      </div>
     </div>
   );
 }
