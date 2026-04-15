@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import type { Garden, Structure, Zone, Planting, Blueprint, LayerId, DisplayUnit } from './types';
 import { createGarden, createStructure, createZone, createPlanting } from './types';
 
 describe('factory functions', () => {

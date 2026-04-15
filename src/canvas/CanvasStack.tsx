@@ -30,7 +30,6 @@ export function CanvasStack() {
   const setPan = useUiStore((s) => s.setPan);
   const layerVisibility = useUiStore((s) => s.layerVisibility);
   const layerOpacity = useUiStore((s) => s.layerOpacity);
-  const activeLayer = useUiStore((s) => s.activeLayer);
   const selectedIds = useUiStore((s) => s.selectedIds);
   const select = useUiStore((s) => s.select);
   const addToSelection = useUiStore((s) => s.addToSelection);
