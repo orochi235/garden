@@ -1,0 +1,18 @@
+.panel { padding: 8px; }
+.title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--color-text-muted); padding: 4px 8px; margin-bottom: 4px;
+}
+.layer {
+  display: flex; align-items: center; gap: 6px; padding: 4px 8px;
+  border-radius: var(--border-radius); font-size: 13px; cursor: pointer; user-select: none;
+}
+.layer:hover { background: rgba(0, 0, 0, 0.04); }
+.active { background: rgba(74, 124, 89, 0.12); font-weight: 600; }
+.controls { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.iconButton {
+  background: none; border: none; padding: 2px; cursor: pointer;
+  font-size: 14px; opacity: 0.6; border-radius: 3px;
+}
+.iconButton:hover { opacity: 1; background: rgba(0, 0, 0, 0.06); }
+.opacitySlider { width: 60px; height: 4px; accent-color: var(--color-leaf); }
