@@ -4,7 +4,7 @@ import type { Structure, Zone } from '../model/types';
 
 describe('hitTestObjects', () => {
   const structures: Structure[] = [
-    { id: 's1', type: 'raised-bed', x: 2, y: 2, width: 4, height: 4, rotation: 0, color: '#8B6914', label: '', zIndex: 0, parentId: null, snapToGrid: true },
+    { id: 's1', type: 'raised-bed', shape: 'rectangle', x: 2, y: 2, width: 4, height: 4, rotation: 0, color: '#8B6914', label: '', zIndex: 0, parentId: null, snapToGrid: true },
   ];
   const zones: Zone[] = [
     { id: 'z1', x: 10, y: 10, width: 3, height: 3, color: '#7FB06944', label: '', zIndex: 0, parentId: null, soilType: null, sunExposure: null },
