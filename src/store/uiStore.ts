@@ -31,9 +31,9 @@ interface UiStore {
   panY: number;
   drag: DragState;
   plottingTool: PlottingTool | null;
-  themeOverride: TimePeriod | 'cycle' | null;
+  themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
   setPlottingTool: (tool: PlottingTool | null) => void;
-  setThemeOverride: (period: TimePeriod | 'cycle' | null) => void;
+  setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
   setActiveLayer: (layer: LayerId) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
@@ -71,7 +71,7 @@ export const useUiStore = create<UiStore>((set) => ({
   panY: 0,
   drag: { ...defaultDrag },
   plottingTool: null,
-  themeOverride: null,
+  themeOverride: 'slow-cycle',
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
   setActiveLayer: (layer) => set({ activeLayer: layer }),
@@ -88,6 +88,6 @@ export const useUiStore = create<UiStore>((set) => ({
   reset: () => set({
     activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
     layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null, themeOverride: null,
+    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null, themeOverride: 'slow-cycle',
   }),
 }));

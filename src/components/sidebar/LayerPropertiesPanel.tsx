@@ -72,15 +72,23 @@ function DebugThemePanel() {
           title="Auto (time-based)"
         >
           <span className={styles.themeSwatchColor} style={{ background: 'conic-gradient(#E8A868, #58A0B0, #60C8E8, #D4B888, #3E2E60, #1A2744, #101828, #E8A868)' }} />
-          <span className={styles.themeSwatchLabel}>Auto</span>
+          <span className={styles.themeSwatchLabel}>Live</span>
+        </button>
+        <button
+          className={`${styles.themeSwatch} ${themeOverride === 'slow-cycle' ? styles.themeSwatchActive : ''}`}
+          onClick={() => setThemeOverride('slow-cycle')}
+          title="Slow cycle (20s crossfade)"
+        >
+          <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
+          <span className={styles.themeSwatchLabel}>Slow</span>
         </button>
         <button
           className={`${styles.themeSwatch} ${themeOverride === 'cycle' ? styles.themeSwatchActive : ''}`}
           onClick={() => setThemeOverride('cycle')}
-          title="Cycle through all themes"
+          title="Fast cycle (5s crossfade)"
         >
           <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
-          <span className={styles.themeSwatchLabel}>Cycle</span>
+          <span className={styles.themeSwatchLabel}>Fast</span>
         </button>
         {ALL_PERIODS.map((period: TimePeriod) => (
           <button

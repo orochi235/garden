@@ -33,7 +33,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  transition: color 5s ease;
+  /* transition set by parent */
   padding: 8px 4px 4px;
 }
 .itemGrid {

@@ -8,7 +8,7 @@
     "status   status   status  status  sidebar";
   height: 100%;
   width: 100%;
-  transition: background 5s ease;
+  /* transition duration set inline based on cycle speed */
 }
 
 .menu { grid-area: menu; z-index: 1; }

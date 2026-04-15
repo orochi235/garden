@@ -5,7 +5,6 @@
   height: var(--menu-height);
   padding: 0 16px;
   background: transparent;
-  transition: color 5s ease;
   font-size: 14px;
   font-weight: 600;
   user-select: none;
@@ -18,7 +17,6 @@
   font-size: 20px;
   font-weight: 700;
   /* color set inline via timeTheme */
-  transition: color 5s ease;
   letter-spacing: -0.02em;
 }
 

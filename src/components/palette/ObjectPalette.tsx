@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { paletteItems, categories, type PaletteEntry } from './paletteData';
 import { PaletteItem } from './PaletteItem';
 import { useActiveTheme } from '../../hooks/useActiveTheme';
+import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/ObjectPalette.module.css';
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
 export function ObjectPalette({ onDragStart }: Props) {
   const [search, setSearch] = useState('');
   const theme = useActiveTheme();
+  const themeOverride = useUiStore((s) => s.themeOverride);
+  const dur = themeOverride === 'slow-cycle' ? '20s' : themeOverride === 'cycle' ? '5s' : '0.5s';
   const filtered = search
     ? paletteItems.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     : paletteItems;
@@ -25,7 +28,7 @@ export function ObjectPalette({ onDragStart }: Props) {
         if (items.length === 0) return null;
         return (
           <div key={cat.id} className={styles.category}>
-            <div className={styles.categoryLabel} style={{ color: theme.menuBarText }}>{cat.label}</div>
+            <div className={styles.categoryLabel} style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}>{cat.label}</div>
             <div className={styles.itemGrid}>
               {items.map((item) => (
                 <PaletteItem key={item.id} entry={item} onDragStart={onDragStart} />

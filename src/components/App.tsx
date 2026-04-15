@@ -6,6 +6,7 @@ import { ObjectPalette } from './palette/ObjectPalette';
 import { Sidebar } from './sidebar/Sidebar';
 import type { PaletteEntry } from './palette/paletteData';
 import { useGardenStore } from '../store/gardenStore';
+import { useUiStore } from '../store/uiStore';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { autosave, loadAutosave } from '../utils/file';
 import styles from '../styles/App.module.css';
@@ -18,6 +19,8 @@ export function App() {
   const garden = useGardenStore((s) => s.garden);
   const loadGarden = useGardenStore((s) => s.loadGarden);
   const theme = useActiveTheme();
+  const themeOverride = useUiStore((s) => s.themeOverride);
+  const transitionDuration = themeOverride === 'slow-cycle' ? '20s' : themeOverride === 'cycle' ? '5s' : '0.5s';
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
   const [rightWidth, setRightWidth] = useState(DEFAULT_PANEL);
   const dragging = useRef<'left' | 'right' | null>(null);
@@ -74,6 +77,7 @@ export function App() {
     <div className={styles.layout} style={{
       gridTemplateColumns: `${leftWidth}px 4px 1fr 4px ${rightWidth}px`,
       background: theme.paletteBackground,
+      transition: `background ${transitionDuration} ease`,
     }}>
       <div className={styles.menu}><MenuBar /></div>
       <div className={styles.palette}><ObjectPalette onDragStart={handlePaletteDragStart} /></div>
