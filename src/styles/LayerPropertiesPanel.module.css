@@ -40,3 +40,7 @@
 .themeSwatchLabel {
   font-size: 9px; text-transform: capitalize; color: var(--color-text-muted);
 }
+.themeDivider {
+  border: none; border-top: 1px solid var(--color-panel-border);
+  margin: 4px 8px;
+}

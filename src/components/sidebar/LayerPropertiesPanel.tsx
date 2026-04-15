@@ -90,6 +90,9 @@ function DebugThemePanel() {
           <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
           <span className={styles.themeSwatchLabel}>Fast</span>
         </button>
+      </div>
+      <hr className={styles.themeDivider} />
+      <div className={styles.themeGrid}>
         {ALL_PERIODS.map((period: TimePeriod) => (
           <button
             key={period}
