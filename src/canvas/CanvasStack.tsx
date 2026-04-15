@@ -38,6 +38,12 @@ export function CanvasStack() {
   const isPanning = useRef(false);
   const panStart = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 });
 
+  // Move state refs
+  const isMoving = useRef(false);
+  const moveStart = useRef({ worldX: 0, worldY: 0, objX: 0, objY: 0 });
+  const moveObjectId = useRef<string | null>(null);
+  const moveObjectLayer = useRef<string | null>(null);
+
   const view = { panX, panY, zoom };
 
   // Render grid layer
@@ -139,6 +145,17 @@ export function CanvasStack() {
         } else {
           select(hit.id);
         }
+        // Set up move
+        const obj =
+          hit.layer === 'structures'
+            ? garden.structures.find((s) => s.id === hit.id)
+            : garden.zones.find((z) => z.id === hit.id);
+        if (obj) {
+          isMoving.current = true;
+          moveStart.current = { worldX, worldY, objX: obj.x, objY: obj.y };
+          moveObjectId.current = hit.id;
+          moveObjectLayer.current = hit.layer;
+        }
       } else {
         clearSelection();
       }
@@ -155,6 +172,26 @@ export function CanvasStack() {
   }, [select, addToSelection, clearSelection]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isMoving.current && moveObjectId.current) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { panX, panY, zoom } = useUiStore.getState();
+      const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+      const deltaX = worldX - moveStart.current.worldX;
+      const deltaY = worldY - moveStart.current.worldY;
+      const newX = moveStart.current.objX + deltaX;
+      const newY = moveStart.current.objY + deltaY;
+      const { garden, updateStructure, updateZone } = useGardenStore.getState();
+      const cellSize = garden.gridCellSizeFt;
+      const snappedX = e.altKey ? newX : snapToGrid(newX, cellSize);
+      const snappedY = e.altKey ? newY : snapToGrid(newY, cellSize);
+      if (moveObjectLayer.current === 'structures') {
+        updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
+      } else if (moveObjectLayer.current === 'zones') {
+        updateZone(moveObjectId.current, { x: snappedX, y: snappedY });
+      }
+      return;
+    }
     if (!isPanning.current) return;
     const dx = e.clientX - panStart.current.mouseX;
     const dy = e.clientY - panStart.current.mouseY;
@@ -162,6 +199,11 @@ export function CanvasStack() {
   }, [setPan]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) {
+      isMoving.current = false;
+      moveObjectId.current = null;
+      moveObjectLayer.current = null;
+    }
     if (e.button === 2) {
       isPanning.current = false;
     }
