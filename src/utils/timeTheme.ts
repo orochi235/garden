@@ -75,25 +75,6 @@ const morning: TimeTheme = {
     linear-gradient(to top,
       #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%,
       #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%,
-      #8A8460 30%, #7D7060 35%, #6A6058 42%, #687078 50%,
-      #607888 58%, #588898 65%, #5090A8 72%, #4898B8 80%,
-      #50A0C0 90%, #58A8C8 100%
-    ),
-    linear-gradient(170deg, transparent 0%, rgba(107,88,42,0.2) 32%, rgba(90,100,80,0.15) 42%, transparent 55%),
-    linear-gradient(195deg, rgba(60,75,100,0.25) 0%, transparent 25%, transparent 65%, rgba(60,110,140,0.15) 85%, transparent 100%),
-    radial-gradient(ellipse 120% 20% at 30% 54%, rgba(70,120,80,0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 80% 10% at 60% 58%, rgba(138,140,120,0.15) 0%, transparent 70%)`,
-  searchOverlay: 'rgba(70, 130, 160, 0.8)',
-  menuBarBg: '#58A8C8',
-  menuBarTitle: '#1A3040',
-  menuBarText: '#1E3848',
-};
-
-const noon: TimeTheme = {
-  paletteBackground: `
-    linear-gradient(to top,
-      #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%,
-      #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%,
       #8A8460 30%, #7D7060 35%, #6A6058 42%, #748068 50%,
       #7A9070 58%, #80A078 65%, #78B0A0 72%, #70B8C0 80%,
       #68C0D8 90%, #60C8E8 100%
@@ -106,6 +87,25 @@ const noon: TimeTheme = {
   menuBarBg: '#60C8E8',
   menuBarTitle: '#1A3040',
   menuBarText: '#204050',
+};
+
+const noon: TimeTheme = {
+  paletteBackground: `
+    linear-gradient(to top,
+      #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%,
+      #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%,
+      #8A8460 30%, #7D7060 35%, #6A6058 42%, #687078 50%,
+      #607888 58%, #588898 65%, #5090A8 72%, #4898B8 80%,
+      #50A0C0 90%, #58A8C8 100%
+    ),
+    linear-gradient(170deg, transparent 0%, rgba(107,88,42,0.2) 32%, rgba(90,100,80,0.15) 42%, transparent 55%),
+    linear-gradient(195deg, rgba(60,75,100,0.25) 0%, transparent 25%, transparent 65%, rgba(60,110,140,0.15) 85%, transparent 100%),
+    radial-gradient(ellipse 120% 20% at 30% 54%, rgba(70,120,80,0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 10% at 60% 58%, rgba(138,140,120,0.15) 0%, transparent 70%)`,
+  searchOverlay: 'rgba(70, 130, 160, 0.8)',
+  menuBarBg: '#58A8C8',
+  menuBarTitle: '#1A3040',
+  menuBarText: '#1E3848',
 };
 
 const afternoon: TimeTheme = {
