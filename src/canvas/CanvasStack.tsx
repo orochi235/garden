@@ -3,10 +3,16 @@ import { useCanvasSize } from './useCanvasSize';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { renderGrid } from './renderGrid';
+import { renderStructures } from './renderStructures';
+import { renderZones } from './renderZones';
+import { renderPlantings } from './renderPlantings';
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
+  const structureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const zoneCanvasRef = useRef<HTMLCanvasElement>(null);
+  const plantingCanvasRef = useRef<HTMLCanvasElement>(null);
   const { width, height, dpr } = useCanvasSize(containerRef);
 
   const garden = useGardenStore((s) => s.garden);
@@ -15,10 +21,14 @@ export function CanvasStack() {
   const panY = useUiStore((s) => s.panY);
   const setZoom = useUiStore((s) => s.setZoom);
   const setPan = useUiStore((s) => s.setPan);
+  const layerVisibility = useUiStore((s) => s.layerVisibility);
+  const layerOpacity = useUiStore((s) => s.layerOpacity);
 
   // Panning state refs (not React state — no re-render needed mid-drag)
   const isPanning = useRef(false);
   const panStart = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 });
+
+  const view = { panX, panY, zoom };
 
   // Render grid layer
   useEffect(() => {
@@ -34,11 +44,62 @@ export function CanvasStack() {
       widthFt: garden.widthFt,
       heightFt: garden.heightFt,
       cellSizeFt: garden.gridCellSizeFt,
-      view: { panX, panY, zoom },
+      view,
       canvasWidth: width,
       canvasHeight: height,
     });
   }, [garden.widthFt, garden.heightFt, garden.gridCellSizeFt, zoom, panX, panY, width, height, dpr]);
+
+  // Render structures layer
+  useEffect(() => {
+    const canvas = structureCanvasRef.current;
+    if (!canvas || width === 0) return;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+
+    if (layerVisibility.structures) {
+      renderStructures(ctx, garden.structures, view, width, height, layerOpacity.structures);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+    }
+  }, [garden.structures, zoom, panX, panY, width, height, dpr, layerVisibility.structures, layerOpacity.structures]);
+
+  // Render zones layer
+  useEffect(() => {
+    const canvas = zoneCanvasRef.current;
+    if (!canvas || width === 0) return;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+
+    if (layerVisibility.zones) {
+      renderZones(ctx, garden.zones, view, width, height, layerOpacity.zones);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+    }
+  }, [garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.zones, layerOpacity.zones]);
+
+  // Render plantings layer
+  useEffect(() => {
+    const canvas = plantingCanvasRef.current;
+    if (!canvas || width === 0) return;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+
+    if (layerVisibility.plantings) {
+      renderPlantings(ctx, garden.plantings, garden.zones, view, width, height, layerOpacity.plantings);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+    }
+  }, [garden.plantings, garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.plantings, layerOpacity.plantings]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 2) {
@@ -113,6 +174,9 @@ export function CanvasStack() {
       onWheel={handleWheel}
     >
       <canvas ref={gridCanvasRef} style={canvasStyle} />
+      <canvas ref={structureCanvasRef} style={canvasStyle} />
+      <canvas ref={zoneCanvasRef} style={canvasStyle} />
+      <canvas ref={plantingCanvasRef} style={canvasStyle} />
     </div>
   );
 }
