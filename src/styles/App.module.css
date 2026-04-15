@@ -37,4 +37,4 @@
 }
 
 .leftHandle { grid-area: lhandle; }
-.rightHandle { grid-area: rhandle; }
+.rightHandle { grid-area: rhandle; grid-row: 1 / -1; }
