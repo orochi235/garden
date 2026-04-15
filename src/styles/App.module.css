@@ -10,8 +10,8 @@
   width: 100%;
 }
 
-.menu { grid-area: menu; }
-.palette { grid-area: palette; overflow: hidden; }
+.menu { grid-area: menu; z-index: 1; }
+.palette { grid-area: palette; grid-row: 1 / 3; overflow: hidden; }
 .canvas { grid-area: canvas; position: relative; overflow: hidden; }
 .sidebar { grid-area: sidebar; overflow: hidden; }
 .status { grid-area: status; }

@@ -4,8 +4,8 @@
   justify-content: space-between;
   height: var(--menu-height);
   padding: 0 16px;
-  /* background and color set inline via timeTheme */
-  transition: background 5s ease, color 5s ease;
+  background: transparent;
+  transition: color 5s ease;
   font-size: 14px;
   font-weight: 600;
   user-select: none;

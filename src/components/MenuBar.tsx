@@ -16,7 +16,7 @@ export function MenuBar() {
   function handleNew() { reset(); }
 
   return (
-    <div className={styles.menuBar} style={{ background: theme.menuBarBg, color: theme.menuBarText }}>
+    <div className={styles.menuBar} style={{ color: theme.menuBarText }}>
       <div className={styles.title} style={{ color: theme.menuBarTitle }}>Garden Planner</div>
       <div className={styles.menus}>
         <span onClick={handleNew}>New</span>
