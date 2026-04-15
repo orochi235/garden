@@ -108,6 +108,25 @@ const noon: TimeTheme = {
   menuBarText: '#204050',
 };
 
+const afternoon: TimeTheme = {
+  paletteBackground: `
+    linear-gradient(to top,
+      #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%,
+      #4A7830 16%, #38882A 19%, #3C9438 22%, #58A040 25%,
+      #78A048 30%, #7D7060 35%, #6A6058 42%, #688060 50%,
+      #6A9468 58%, #68A87A 65%, #60B8A0 72%, #58C0C0 80%,
+      #50C0D8 90%, #48C0E0 100%
+    ),
+    linear-gradient(170deg, transparent 0%, rgba(120,100,40,0.25) 32%, rgba(80,140,50,0.25) 42%, transparent 55%),
+    linear-gradient(195deg, rgba(60,80,100,0.2) 0%, transparent 25%, transparent 65%, rgba(60,140,170,0.12) 85%, transparent 100%),
+    radial-gradient(ellipse 140% 25% at 40% 52%, rgba(60,160,60,0.3) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 10% at 60% 58%, rgba(140,150,100,0.2) 0%, transparent 70%)`,
+  searchOverlay: 'rgba(60, 160, 190, 0.8)',
+  menuBarBg: '#48C0E0',
+  menuBarTitle: '#1A3038',
+  menuBarText: '#1E3848',
+};
+
 const sunset: TimeTheme = {
   paletteBackground: `
     linear-gradient(to top,
@@ -146,16 +165,17 @@ const twilight: TimeTheme = {
   menuBarText: '#C0A8D0',
 };
 
-const themes = { sunrise, morning, noon, sunset, twilight, night, midnight };
+const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight };
 
 export type TimePeriod = keyof typeof themes;
 
 export function getTimePeriod(hour: number): TimePeriod {
   if (hour >= 5 && hour < 7) return 'sunrise';
   if (hour >= 7 && hour < 11) return 'morning';
-  if (hour >= 11 && hour < 14) return 'noon';
-  if (hour >= 14 && hour < 17) return 'sunset';
-  if (hour >= 17 && hour < 20) return 'twilight';
+  if (hour >= 11 && hour < 13) return 'noon';
+  if (hour >= 13 && hour < 16) return 'afternoon';
+  if (hour >= 16 && hour < 18) return 'sunset';
+  if (hour >= 18 && hour < 20) return 'twilight';
   if (hour >= 20 && hour < 24) return 'night';
   return 'midnight'; // 0–4
 }
@@ -168,4 +188,4 @@ export function getTheme(period: TimePeriod): TimeTheme {
   return themes[period];
 }
 
-export const ALL_PERIODS: TimePeriod[] = ['sunrise', 'morning', 'noon', 'sunset', 'twilight', 'night', 'midnight'];
+export const ALL_PERIODS: TimePeriod[] = ['sunrise', 'morning', 'noon', 'afternoon', 'sunset', 'twilight', 'night', 'midnight'];
