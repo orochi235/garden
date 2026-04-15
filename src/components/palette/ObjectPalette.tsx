@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { paletteItems, categories, type PaletteEntry } from './paletteData';
 import { PaletteItem } from './PaletteItem';
-import { useUiStore } from '../../store/uiStore';
-import { getCurrentTheme, getTheme } from '../../utils/timeTheme';
+import { useActiveTheme } from '../../hooks/useActiveTheme';
 import styles from '../../styles/ObjectPalette.module.css';
 
 interface Props {
@@ -11,8 +10,7 @@ interface Props {
 
 export function ObjectPalette({ onDragStart }: Props) {
   const [search, setSearch] = useState('');
-  const themeOverride = useUiStore((s) => s.themeOverride);
-  const theme = themeOverride ? getTheme(themeOverride) : getCurrentTheme();
+  const theme = useActiveTheme();
   const filtered = search
     ? paletteItems.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     : paletteItems;

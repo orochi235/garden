@@ -31,9 +31,9 @@ interface UiStore {
   panY: number;
   drag: DragState;
   plottingTool: PlottingTool | null;
-  themeOverride: TimePeriod | null;
+  themeOverride: TimePeriod | 'cycle' | null;
   setPlottingTool: (tool: PlottingTool | null) => void;
-  setThemeOverride: (period: TimePeriod | null) => void;
+  setThemeOverride: (period: TimePeriod | 'cycle' | null) => void;
   setActiveLayer: (layer: LayerId) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
