@@ -1,3 +1,19 @@
+import { MenuBar } from './MenuBar';
+import { StatusBar } from './StatusBar';
+import styles from '../styles/App.module.css';
+
 export function App() {
-  return <div>Garden Planner</div>;
+  return (
+    <div className={styles.layout}>
+      <div className={styles.menu}>
+        <MenuBar />
+      </div>
+      <div className={styles.palette}>Palette</div>
+      <div className={styles.canvas}>Canvas</div>
+      <div className={styles.sidebar}>Sidebar</div>
+      <div className={styles.status}>
+        <StatusBar />
+      </div>
+    </div>
+  );
 }

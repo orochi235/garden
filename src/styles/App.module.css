@@ -1,0 +1,17 @@
+.layout {
+  display: grid;
+  grid-template-rows: var(--menu-height) 1fr var(--status-height);
+  grid-template-columns: var(--panel-width) 1fr var(--panel-width);
+  grid-template-areas:
+    "menu    menu    menu"
+    "palette canvas  sidebar"
+    "status  status  status";
+  height: 100%;
+  width: 100%;
+}
+
+.menu { grid-area: menu; }
+.palette { grid-area: palette; }
+.canvas { grid-area: canvas; position: relative; overflow: hidden; }
+.sidebar { grid-area: sidebar; }
+.status { grid-area: status; }

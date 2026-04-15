@@ -1,0 +1,34 @@
+.menuBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: var(--color-soil);
+  color: var(--color-cream);
+  font-size: 14px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menus {
+  display: flex;
+  gap: 16px;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.menus span {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--border-radius);
+}
+
+.menus span:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
