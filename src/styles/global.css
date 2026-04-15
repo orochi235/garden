@@ -1,0 +1,52 @@
+:root {
+  /* Earth tones */
+  --color-soil: #5C4033;
+  --color-soil-light: #8B6914;
+  --color-terracotta: #C75B39;
+  --color-sand: #E8D5B7;
+  --color-cream: #FFF8F0;
+
+  /* Greens */
+  --color-leaf: #4A7C59;
+  --color-leaf-light: #7FB069;
+  --color-moss: #2D5A27;
+
+  /* Accents */
+  --color-sky: #5BA4CF;
+  --color-sun: #F2C94C;
+  --color-bloom: #E07B9B;
+
+  /* UI chrome */
+  --color-bg: var(--color-cream);
+  --color-panel: #F5EDE0;
+  --color-panel-border: #D4C4A8;
+  --color-text: #3A2E22;
+  --color-text-muted: #8A7D6B;
+
+  /* Sizing */
+  --panel-width: 240px;
+  --menu-height: 40px;
+  --status-height: 28px;
+  --border-radius: 6px;
+
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
