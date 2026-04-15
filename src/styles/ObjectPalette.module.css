@@ -9,8 +9,7 @@
   padding: 8px;
   position: sticky;
   top: 0;
-  /* searchOverlay color set inline via style */
-  backdrop-filter: blur(4px);
+  background: transparent;
   z-index: 1;
 }
 .searchInput {

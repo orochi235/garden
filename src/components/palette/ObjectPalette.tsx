@@ -19,7 +19,7 @@ export function ObjectPalette({ onDragStart }: Props) {
 
   return (
     <div className={styles.palette} style={{ background: theme.paletteBackground }}>
-      <div className={styles.search} style={{ background: theme.searchOverlay }}>
+      <div className={styles.search}>
         <input className={styles.searchInput} type="text" placeholder="Search objects..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       {categories.map((cat) => {
