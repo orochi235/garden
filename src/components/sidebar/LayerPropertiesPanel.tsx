@@ -87,7 +87,7 @@ function DebugThemePanel() {
           onClick={() => setThemeOverride('cycle')}
           title="Fast cycle (5s crossfade)"
         >
-          <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
+          <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
           <span className={styles.themeSwatchLabel}>Fast</span>
         </button>
         {ALL_PERIODS.map((period: TimePeriod) => (
