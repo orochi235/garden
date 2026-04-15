@@ -8,8 +8,11 @@ import { renderStructures } from './renderStructures';
 import { renderZones } from './renderZones';
 import { renderPlantings } from './renderPlantings';
 import { screenToWorld, snapToGrid } from '../utils/grid';
+import { generateId } from '../model/types';
+import type { Structure, Zone, Planting } from '../model/types';
 import type { PaletteEntry } from '../components/palette/paletteData';
-import { hitTestObjects } from './hitTest';
+import { hitTestObjects, hitTestHandles, handleCursor } from './hitTest';
+import type { HandlePosition } from './hitTest';
 import { renderSelection } from './renderSelection';
 
 export function CanvasStack() {
@@ -47,6 +50,18 @@ export function CanvasStack() {
   const moveStart = useRef({ worldX: 0, worldY: 0, objX: 0, objY: 0 });
   const moveObjectId = useRef<string | null>(null);
   const moveObjectLayer = useRef<string | null>(null);
+
+  // Resize state refs
+  const isResizing = useRef(false);
+  const resizeHandle = useRef<HandlePosition | null>(null);
+  const resizeObjectId = useRef<string | null>(null);
+  const resizeObjectLayer = useRef<string | null>(null);
+  const resizeOriginal = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const resizeStartWorld = useRef({ worldX: 0, worldY: 0 });
+  const resizeTarget = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+  // Clipboard for copy/paste
+  const clipboard = useRef<{ structures: Structure[]; zones: Zone[]; plantings: Planting[] }>({ structures: [], zones: [], plantings: [] });
 
   // Plotting state refs
   const isPlotting = useRef(false);
@@ -202,6 +217,66 @@ export function CanvasStack() {
         return;
       }
 
+      // Copy
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        const ids = useUiStore.getState().selectedIds;
+        if (ids.length === 0) return;
+        const { garden } = useGardenStore.getState();
+        clipboard.current = {
+          structures: garden.structures.filter((s) => ids.includes(s.id)),
+          zones: garden.zones.filter((z) => ids.includes(z.id)),
+          plantings: garden.plantings.filter((p) => ids.includes(p.id)),
+        };
+        return;
+      }
+
+      // Paste
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        const cb = clipboard.current;
+        if (cb.structures.length === 0 && cb.zones.length === 0 && cb.plantings.length === 0) return;
+        e.preventDefault();
+        const { garden } = useGardenStore.getState();
+        const cellSize = garden.gridCellSizeFt;
+        const offset = cellSize; // offset pasted objects by one grid cell
+        const newIds: string[] = [];
+
+        for (const s of cb.structures) {
+          const id = generateId();
+          newIds.push(id);
+          useGardenStore.getState().addStructure({ type: s.type, x: s.x + offset, y: s.y + offset, width: s.width, height: s.height });
+          // addStructure generates its own id, so update the last-added structure's position
+        }
+        for (const z of cb.zones) {
+          const id = generateId();
+          newIds.push(id);
+          useGardenStore.getState().addZone({ x: z.x + offset, y: z.y + offset, width: z.width, height: z.height });
+        }
+
+        // Select the pasted objects (they're the last N added)
+        const { garden: updated } = useGardenStore.getState();
+        const pastedIds: string[] = [];
+        if (cb.structures.length > 0) {
+          pastedIds.push(...updated.structures.slice(-cb.structures.length).map((s) => s.id));
+        }
+        if (cb.zones.length > 0) {
+          pastedIds.push(...updated.zones.slice(-cb.zones.length).map((z) => z.id));
+        }
+        if (pastedIds.length > 0) {
+          useUiStore.getState().select(pastedIds[0]);
+          for (let i = 1; i < pastedIds.length; i++) {
+            useUiStore.getState().addToSelection(pastedIds[i]);
+          }
+        }
+
+        // Update clipboard to point to the pasted copies so repeated paste cascades
+        clipboard.current = {
+          structures: updated.structures.slice(-cb.structures.length),
+          zones: updated.zones.slice(-cb.zones.length),
+          plantings: [],
+        };
+        return;
+      }
+
       if (e.key === 'Escape') {
         const { plottingTool } = useUiStore.getState();
         if (plottingTool) {
@@ -246,7 +321,27 @@ export function CanvasStack() {
       }
 
       const { garden } = useGardenStore.getState();
-      const { activeLayer: currentActiveLayer } = useUiStore.getState();
+      const { activeLayer: currentActiveLayer, selectedIds: currentSelectedIds } = useUiStore.getState();
+
+      // Check resize handles first
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const handleHit = hitTestHandles(screenX, screenY, currentSelectedIds, garden.structures, garden.zones, { panX, panY, zoom });
+      if (handleHit) {
+        const obj = handleHit.layer === 'structures'
+          ? garden.structures.find((s) => s.id === handleHit.id)
+          : garden.zones.find((z) => z.id === handleHit.id);
+        if (obj) {
+          useGardenStore.getState().checkpoint();
+          isResizing.current = true;
+          resizeHandle.current = handleHit.handle;
+          resizeObjectId.current = handleHit.id;
+          resizeObjectLayer.current = handleHit.layer;
+          resizeOriginal.current = { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
+          resizeStartWorld.current = { worldX, worldY };
+        }
+        return;
+      }
       const hit = hitTestObjects(worldX, worldY, garden.structures, garden.zones, currentActiveLayer);
       if (hit) {
         if (e.shiftKey) {
@@ -282,6 +377,53 @@ export function CanvasStack() {
   }, [select, addToSelection, clearSelection]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Resize mode
+    if (isResizing.current && resizeObjectId.current && resizeHandle.current) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { panX, panY, zoom } = useUiStore.getState();
+      const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+      const { garden, updateStructure, updateZone } = useGardenStore.getState();
+      const cellSize = garden.gridCellSizeFt;
+      const snap = (v: number) => e.altKey ? v : snapToGrid(v, cellSize);
+
+      const orig = resizeOriginal.current;
+      const handle = resizeHandle.current;
+
+      // Compute snapped target bounds
+      let tx = orig.x, ty = orig.y, tw = orig.width, th = orig.height;
+      if (handle.includes('e')) tw = snap(worldX) - tx;
+      if (handle.includes('w')) { const nx = snap(worldX); tw = orig.x + orig.width - nx; tx = nx; }
+      if (handle.includes('s')) th = snap(worldY) - ty;
+      if (handle.includes('n')) { const ny = snap(worldY); th = orig.y + orig.height - ny; ty = ny; }
+
+      // Enforce minimum size
+      const minSize = cellSize > 0 ? cellSize : 0.5;
+      if (tw < minSize) { if (handle.includes('w')) tx = orig.x + orig.width - minSize; tw = minSize; }
+      if (th < minSize) { if (handle.includes('n')) ty = orig.y + orig.height - minSize; th = minSize; }
+
+      // Lerp current position toward snap target for smooth animation
+      const obj = resizeObjectLayer.current === 'structures'
+        ? garden.structures.find((s) => s.id === resizeObjectId.current)
+        : garden.zones.find((z) => z.id === resizeObjectId.current);
+      const LERP = 0.35;
+      const lerp = (a: number, b: number) => a + (b - a) * LERP;
+      const x = obj ? lerp(obj.x, tx) : tx;
+      const y = obj ? lerp(obj.y, ty) : ty;
+      const width = obj ? lerp(obj.width, tw) : tw;
+      const height = obj ? lerp(obj.height, th) : th;
+
+      // Store the snap target for final snap on mouseup
+      resizeTarget.current = { x: tx, y: ty, width: tw, height: th };
+
+      if (resizeObjectLayer.current === 'structures') {
+        updateStructure(resizeObjectId.current, { x, y, width, height });
+      } else if (resizeObjectLayer.current === 'zones') {
+        updateZone(resizeObjectId.current, { x, y, width, height });
+      }
+      return;
+    }
+
     // Plotting mode: update preview rectangle
     if (isPlotting.current) {
       const rect = containerRef.current?.getBoundingClientRect();
@@ -374,6 +516,20 @@ export function CanvasStack() {
         return;
       }
 
+      // Snap to exact grid on resize end
+      if (isResizing.current && resizeObjectId.current) {
+        const t = resizeTarget.current;
+        const { updateStructure, updateZone } = useGardenStore.getState();
+        if (resizeObjectLayer.current === 'structures') {
+          updateStructure(resizeObjectId.current, { x: t.x, y: t.y, width: t.width, height: t.height });
+        } else if (resizeObjectLayer.current === 'zones') {
+          updateZone(resizeObjectId.current, { x: t.x, y: t.y, width: t.width, height: t.height });
+        }
+      }
+      isResizing.current = false;
+      resizeHandle.current = null;
+      resizeObjectId.current = null;
+      resizeObjectLayer.current = null;
       isMoving.current = false;
       moveObjectId.current = null;
       moveObjectLayer.current = null;
@@ -437,7 +593,7 @@ export function CanvasStack() {
     e.preventDefault();
     const currentState = useUiStore.getState();
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.min(10, Math.max(0.1, currentState.zoom * factor));
+    const newZoom = Math.min(200, Math.max(10, currentState.zoom * factor));
 
     // Mouse position relative to container
     const rect = containerRef.current?.getBoundingClientRect();

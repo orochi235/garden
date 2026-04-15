@@ -1,12 +1,71 @@
 import type { Structure, Zone, LayerId } from '../model/types';
+import type { ViewTransform } from '../utils/grid';
 
 interface HitResult {
   id: string;
   layer: LayerId;
 }
 
+/** Which handle was hit. Corners: nw/ne/sw/se. Edges: n/e/s/w. */
+export type HandlePosition = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
+
+export interface HandleHitResult {
+  id: string;
+  layer: LayerId;
+  handle: HandlePosition;
+}
+
 function pointInRect(px: number, py: number, x: number, y: number, w: number, h: number): boolean {
   return px >= x && px <= x + w && py >= y && py <= y + h;
+}
+
+const HANDLE_POSITIONS: HandlePosition[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+
+function getHandleScreenPositions(obj: { x: number; y: number; width: number; height: number }, view: ViewTransform) {
+  const sx = view.panX + obj.x * view.zoom;
+  const sy = view.panY + obj.y * view.zoom;
+  const sw = obj.width * view.zoom;
+  const sh = obj.height * view.zoom;
+  return [
+    { pos: 'nw' as const, cx: sx, cy: sy },
+    { pos: 'n' as const, cx: sx + sw / 2, cy: sy },
+    { pos: 'ne' as const, cx: sx + sw, cy: sy },
+    { pos: 'e' as const, cx: sx + sw, cy: sy + sh / 2 },
+    { pos: 'se' as const, cx: sx + sw, cy: sy + sh },
+    { pos: 's' as const, cx: sx + sw / 2, cy: sy + sh },
+    { pos: 'sw' as const, cx: sx, cy: sy + sh },
+    { pos: 'w' as const, cx: sx, cy: sy + sh / 2 },
+  ];
+}
+
+/**
+ * Hit-test resize handles of selected objects. Uses screen coords because
+ * handles are a fixed pixel size regardless of zoom.
+ */
+export function hitTestHandles(
+  screenX: number, screenY: number,
+  selectedIds: string[],
+  structures: Structure[], zones: Zone[],
+  view: ViewTransform,
+): HandleHitResult | null {
+  if (selectedIds.length === 0) return null;
+  const hitRadius = 6; // px from handle center
+
+  const allObjects = [
+    ...structures.map((s) => ({ ...s, layer: 'structures' as LayerId })),
+    ...zones.map((z) => ({ ...z, layer: 'zones' as LayerId })),
+  ];
+
+  for (const obj of allObjects) {
+    if (!selectedIds.includes(obj.id)) continue;
+    const handles = getHandleScreenPositions(obj, view);
+    for (const h of handles) {
+      if (Math.abs(screenX - h.cx) <= hitRadius && Math.abs(screenY - h.cy) <= hitRadius) {
+        return { id: obj.id, layer: obj.layer, handle: h.pos };
+      }
+    }
+  }
+  return null;
 }
 
 export function hitTestObjects(
@@ -31,4 +90,15 @@ export function hitTestObjects(
     }
   }
   return null;
+}
+
+/** Returns the CSS cursor for a given handle position. */
+export function handleCursor(handle: HandlePosition): string {
+  const cursors: Record<HandlePosition, string> = {
+    nw: 'nwse-resize', se: 'nwse-resize',
+    ne: 'nesw-resize', sw: 'nesw-resize',
+    n: 'ns-resize', s: 'ns-resize',
+    e: 'ew-resize', w: 'ew-resize',
+  };
+  return cursors[handle];
 }
