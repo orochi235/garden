@@ -21,7 +21,7 @@
 .menu { grid-area: menu; z-index: 2; }
 .palette { grid-area: palette; grid-row: 1 / 3; overflow: hidden; z-index: 1; }
 .canvas { grid-area: canvas; position: relative; overflow: hidden; background: var(--color-bg); z-index: 1; }
-.sidebar { grid-area: sidebar; overflow: hidden; background: var(--color-panel); z-index: 3; border-left: 1px solid var(--color-panel-border); }
+.sidebar { grid-area: sidebar; grid-row: 1 / -1; overflow: hidden; background: var(--color-panel); z-index: 3; border-left: 1px solid var(--color-panel-border); }
 .status { grid-area: status; z-index: 1; }
 
 .resizeHandle {
