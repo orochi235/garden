@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useUiStore } from '../store/uiStore';
 import { getCurrentTheme, getTheme, ALL_PERIODS, type TimeTheme } from '../utils/timeTheme';
 
-const CYCLE_INTERVAL = 4000; // ms per theme
+const CYCLE_INTERVAL = 5000; // ms per theme
 
 export function useActiveTheme(): TimeTheme {
   const themeOverride = useUiStore((s) => s.themeOverride);
