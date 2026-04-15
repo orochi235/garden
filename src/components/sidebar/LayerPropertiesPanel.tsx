@@ -3,6 +3,8 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { ToggleSwitch } from './ToggleSwitch';
 import type { DisplayUnit, Blueprint, LayerId } from '../../model/types';
+import type { TimePeriod } from '../../utils/timeTheme';
+import { ALL_PERIODS, getTheme } from '../../utils/timeTheme';
 import { feetToDisplay, displayToFeet } from '../../utils/units';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
@@ -54,6 +56,37 @@ function LayerSection({ title, layerId, alwaysOn, defaultOpen = true, children }
       </button>
       {open && <div className={styles.body}>{children}</div>}
     </div>
+  );
+}
+
+function DebugThemePanel() {
+  const themeOverride = useUiStore((s) => s.themeOverride);
+  const setThemeOverride = useUiStore((s) => s.setThemeOverride);
+
+  return (
+    <LayerSection title="Theme (Debug)" defaultOpen>
+      <div className={styles.themeGrid}>
+        <button
+          className={`${styles.themeSwatch} ${themeOverride === null ? styles.themeSwatchActive : ''}`}
+          onClick={() => setThemeOverride(null)}
+          title="Auto (time-based)"
+        >
+          <span className={styles.themeSwatchColor} style={{ background: 'conic-gradient(#E8A868, #58A0B0, #60C8E8, #D4B888, #3E2E60, #1A2744, #101828, #E8A868)' }} />
+          <span className={styles.themeSwatchLabel}>Auto</span>
+        </button>
+        {ALL_PERIODS.map((period: TimePeriod) => (
+          <button
+            key={period}
+            className={`${styles.themeSwatch} ${themeOverride === period ? styles.themeSwatchActive : ''}`}
+            onClick={() => setThemeOverride(period)}
+            title={period}
+          >
+            <span className={styles.themeSwatchColor} style={{ background: getTheme(period).menuBarBg }} />
+            <span className={styles.themeSwatchLabel}>{period}</span>
+          </button>
+        ))}
+      </div>
+    </LayerSection>
   );
 }
 
@@ -169,6 +202,8 @@ export function LayerPropertiesPanel() {
           <span className={f.label}>No properties yet</span>
         </div>
       </LayerSection>
+
+      <DebugThemePanel />
     </div>
   );
 }

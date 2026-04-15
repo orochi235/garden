@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { LayerId } from '../model/types';
+import type { TimePeriod } from '../utils/timeTheme';
 
 type LayerRecord<T> = Record<LayerId, T>;
 
@@ -30,7 +31,9 @@ interface UiStore {
   panY: number;
   drag: DragState;
   plottingTool: PlottingTool | null;
+  themeOverride: TimePeriod | null;
   setPlottingTool: (tool: PlottingTool | null) => void;
+  setThemeOverride: (period: TimePeriod | null) => void;
   setActiveLayer: (layer: LayerId) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
@@ -68,7 +71,9 @@ export const useUiStore = create<UiStore>((set) => ({
   panY: 0,
   drag: { ...defaultDrag },
   plottingTool: null,
+  themeOverride: null,
   setPlottingTool: (tool) => set({ plottingTool: tool }),
+  setThemeOverride: (period) => set({ themeOverride: period }),
   setActiveLayer: (layer) => set({ activeLayer: layer }),
   setLayerVisible: (layer, visible) => set((state) => ({ layerVisibility: { ...state.layerVisibility, [layer]: visible } })),
   setLayerOpacity: (layer, opacity) => set((state) => ({ layerOpacity: { ...state.layerOpacity, [layer]: opacity } })),
@@ -83,6 +88,6 @@ export const useUiStore = create<UiStore>((set) => ({
   reset: () => set({
     activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
     layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null,
+    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null, themeOverride: null,
   }),
 }));

@@ -75,18 +75,18 @@ const morning: TimeTheme = {
     linear-gradient(to top,
       #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%,
       #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%,
-      #8A8460 30%, #7D7060 35%, #6A6058 42%, #6A6860 50%,
-      #607060 58%, #5A7868 65%, #508878 72%, #4A9088 80%,
-      #5098A0 90%, #58A0B0 100%
+      #8A8460 30%, #7D7060 35%, #6A6058 42%, #687078 50%,
+      #607888 58%, #588898 65%, #5090A8 72%, #4898B8 80%,
+      #50A0C0 90%, #58A8C8 100%
     ),
-    linear-gradient(170deg, transparent 0%, rgba(107,88,42,0.2) 32%, rgba(90,120,58,0.2) 42%, transparent 55%),
-    linear-gradient(195deg, rgba(60,75,90,0.25) 0%, transparent 25%, transparent 65%, rgba(60,110,130,0.15) 85%, transparent 100%),
-    radial-gradient(ellipse 120% 20% at 30% 54%, rgba(70,140,60,0.25) 0%, transparent 70%),
-    radial-gradient(ellipse 80% 10% at 60% 58%, rgba(138,142,110,0.2) 0%, transparent 70%)`,
-  searchOverlay: 'rgba(70, 130, 150, 0.8)',
-  menuBarBg: '#58A0B0',
-  menuBarTitle: '#1A3038',
-  menuBarText: '#1E3840',
+    linear-gradient(170deg, transparent 0%, rgba(107,88,42,0.2) 32%, rgba(90,100,80,0.15) 42%, transparent 55%),
+    linear-gradient(195deg, rgba(60,75,100,0.25) 0%, transparent 25%, transparent 65%, rgba(60,110,140,0.15) 85%, transparent 100%),
+    radial-gradient(ellipse 120% 20% at 30% 54%, rgba(70,120,80,0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 10% at 60% 58%, rgba(138,140,120,0.15) 0%, transparent 70%)`,
+  searchOverlay: 'rgba(70, 130, 160, 0.8)',
+  menuBarBg: '#58A8C8',
+  menuBarTitle: '#1A3040',
+  menuBarText: '#1E3848',
 };
 
 const noon: TimeTheme = {
@@ -167,3 +167,5 @@ export function getCurrentTheme(): TimeTheme {
 export function getTheme(period: TimePeriod): TimeTheme {
   return themes[period];
 }
+
+export const ALL_PERIODS: TimePeriod[] = ['sunrise', 'morning', 'noon', 'afternoon', 'twilight', 'night', 'midnight'];
