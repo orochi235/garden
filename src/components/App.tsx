@@ -73,8 +73,9 @@ export function App() {
   return (
     <div className={styles.layout} style={{
       gridTemplateColumns: `${leftWidth}px 4px 1fr 4px ${rightWidth}px`,
+      background: theme.paletteBackground,
     }}>
-      <div className={styles.menu} style={{ background: theme.menuBarBg }}><MenuBar /></div>
+      <div className={styles.menu}><MenuBar /></div>
       <div className={styles.palette}><ObjectPalette onDragStart={handlePaletteDragStart} /></div>
       <div
         className={`${styles.resizeHandle} ${styles.leftHandle}`}

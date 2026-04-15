@@ -8,16 +8,17 @@
     "status   status   status  status  sidebar";
   height: 100%;
   width: 100%;
+  transition: background 5s ease;
 }
 
-.menu { grid-area: menu; z-index: 1; transition: background 5s ease; }
+.menu { grid-area: menu; z-index: 1; }
 .palette { grid-area: palette; grid-row: 1 / 3; overflow: hidden; }
-.canvas { grid-area: canvas; position: relative; overflow: hidden; }
-.sidebar { grid-area: sidebar; overflow: hidden; }
+.canvas { grid-area: canvas; position: relative; overflow: hidden; background: var(--color-bg); }
+.sidebar { grid-area: sidebar; overflow: hidden; background: var(--color-panel); }
 .status { grid-area: status; }
 
 .resizeHandle {
-  background: var(--color-panel-border);
+  background: var(--color-bg);
   cursor: col-resize;
   transition: background 0.15s;
 }

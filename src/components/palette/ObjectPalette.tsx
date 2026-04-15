@@ -16,7 +16,7 @@ export function ObjectPalette({ onDragStart }: Props) {
     : paletteItems;
 
   return (
-    <div className={styles.palette} style={{ background: theme.paletteBackground }}>
+    <div className={styles.palette}>
       <div className={styles.search}>
         <input className={styles.searchInput} type="text" placeholder="Search objects..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
