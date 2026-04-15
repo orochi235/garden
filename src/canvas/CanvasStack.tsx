@@ -11,7 +11,7 @@ import { screenToWorld, snapToGrid } from '../utils/grid';
 import { generateId } from '../model/types';
 import type { Structure, Zone, Planting } from '../model/types';
 import type { PaletteEntry } from '../components/palette/paletteData';
-import { hitTestObjects, hitTestHandles, handleCursor } from './hitTest';
+import { hitTestObjects, hitTestHandles } from './hitTest';
 import type { HandlePosition } from './hitTest';
 import { renderSelection } from './renderSelection';
 
@@ -39,7 +39,6 @@ export function CanvasStack() {
   const addToSelection = useUiStore((s) => s.addToSelection);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const plottingTool = useUiStore((s) => s.plottingTool);
-  const setPlottingTool = useUiStore((s) => s.setPlottingTool);
 
   // Panning state refs (not React state — no re-render needed mid-drag)
   const isPanning = useRef(false);

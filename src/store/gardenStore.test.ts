@@ -89,6 +89,7 @@ describe('gardenStore', () => {
       gridCellSizeFt: 0.5,
       displayUnit: 'ft' as const,
       blueprint: null,
+      groundColor: '#4a7c59',
       structures: [],
       zones: [],
       plantings: [],

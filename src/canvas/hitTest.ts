@@ -19,8 +19,6 @@ function pointInRect(px: number, py: number, x: number, y: number, w: number, h:
   return px >= x && px <= x + w && py >= y && py <= y + h;
 }
 
-const HANDLE_POSITIONS: HandlePosition[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-
 function getHandleScreenPositions(obj: { x: number; y: number; width: number; height: number }, view: ViewTransform) {
   const sx = view.panX + obj.x * view.zoom;
   const sy = view.panY + obj.y * view.zoom;

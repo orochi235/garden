@@ -15,8 +15,6 @@ export function renderGrid(ctx: CanvasRenderingContext2D, opts: GridOptions): vo
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-  const cellPx = cellSizeFt * view.zoom;
-
   // Find the world-space range visible on screen
   // We extend the grid infinitely by finding the first grid line
   // before the visible area and the last one after it
