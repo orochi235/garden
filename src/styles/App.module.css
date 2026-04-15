@@ -8,7 +8,13 @@
     "status   status   status  status  sidebar";
   height: 100%;
   width: 100%;
-  /* transition duration set inline based on cycle speed */
+  position: relative;
+}
+
+.gradientLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .menu { grid-area: menu; z-index: 1; }
