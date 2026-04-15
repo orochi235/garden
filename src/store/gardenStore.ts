@@ -4,7 +4,7 @@ import { createGarden, createStructure, createZone, createPlanting } from '../mo
 
 interface GardenStore {
   garden: Garden;
-  updateGarden: (updates: Partial<Pick<Garden, 'name' | 'widthFt' | 'heightFt' | 'gridCellSizeFt' | 'displayUnit'>>) => void;
+  updateGarden: (updates: Partial<Pick<Garden, 'name' | 'widthFt' | 'heightFt' | 'gridCellSizeFt' | 'displayUnit' | 'groundColor'>>) => void;
   loadGarden: (garden: Garden) => void;
   reset: () => void;
   setBlueprint: (blueprint: Blueprint | null) => void;

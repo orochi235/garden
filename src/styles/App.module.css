@@ -1,17 +1,31 @@
 .layout {
   display: grid;
   grid-template-rows: var(--menu-height) 1fr var(--status-height);
-  grid-template-columns: var(--panel-width) 1fr var(--panel-width);
+  grid-template-columns: auto 4px 1fr 4px auto;
   grid-template-areas:
-    "menu    menu    menu"
-    "palette canvas  sidebar"
-    "status  status  status";
+    "menu     menu     menu    menu    sidebar"
+    "palette  lhandle  canvas  rhandle sidebar"
+    "status   status   status  status  sidebar";
   height: 100%;
   width: 100%;
 }
 
 .menu { grid-area: menu; }
-.palette { grid-area: palette; }
+.palette { grid-area: palette; overflow: hidden; }
 .canvas { grid-area: canvas; position: relative; overflow: hidden; }
-.sidebar { grid-area: sidebar; }
+.sidebar { grid-area: sidebar; overflow: hidden; }
 .status { grid-area: status; }
+
+.resizeHandle {
+  background: var(--color-panel-border);
+  cursor: col-resize;
+  transition: background 0.15s;
+}
+
+.resizeHandle:hover,
+.resizeHandleActive {
+  background: var(--color-leaf);
+}
+
+.leftHandle { grid-area: lhandle; }
+.rightHandle { grid-area: rhandle; }

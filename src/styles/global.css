@@ -1,13 +1,14 @@
 :root {
   /* Earth tones */
-  --color-soil: #5C4033;
+  --color-soil-dark: #1A1208;
+  --color-soil: #2E2218;
   --color-soil-light: #8B6914;
-  --color-terracotta: #C75B39;
-  --color-sand: #E8D5B7;
-  --color-cream: #FFF8F0;
+  --color-terracotta: #D4734A;
+  --color-sand: #A89070;
+  --color-cream: #E8D5B7;
 
   /* Greens */
-  --color-leaf: #4A7C59;
+  --color-leaf: #5A9A6A;
   --color-leaf-light: #7FB069;
   --color-moss: #2D5A27;
 
@@ -17,11 +18,12 @@
   --color-bloom: #E07B9B;
 
   /* UI chrome */
-  --color-bg: var(--color-cream);
-  --color-panel: #F5EDE0;
-  --color-panel-border: #D4C4A8;
-  --color-text: #3A2E22;
+  --color-bg: #1E1610;
+  --color-panel: #2A2018;
+  --color-panel-border: #4A3C2E;
+  --color-text: #D4C4A8;
   --color-text-muted: #8A7D6B;
+  --color-input-bg: #3A2E22;
 
   /* Sizing */
   --panel-width: 240px;

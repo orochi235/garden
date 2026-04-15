@@ -23,6 +23,7 @@ export function CanvasStack() {
   const { width, height, dpr } = useCanvasSize(containerRef);
 
   const garden = useGardenStore((s) => s.garden);
+  const groundColor = garden.groundColor;
   const zoom = useUiStore((s) => s.zoom);
   const panX = useUiStore((s) => s.panX);
   const panY = useUiStore((s) => s.panY);
@@ -34,6 +35,8 @@ export function CanvasStack() {
   const select = useUiStore((s) => s.select);
   const addToSelection = useUiStore((s) => s.addToSelection);
   const clearSelection = useUiStore((s) => s.clearSelection);
+  const plottingTool = useUiStore((s) => s.plottingTool);
+  const setPlottingTool = useUiStore((s) => s.setPlottingTool);
 
   // Panning state refs (not React state — no re-render needed mid-drag)
   const isPanning = useRef(false);
@@ -45,7 +48,30 @@ export function CanvasStack() {
   const moveObjectId = useRef<string | null>(null);
   const moveObjectLayer = useRef<string | null>(null);
 
+  // Plotting state refs
+  const isPlotting = useRef(false);
+  const plotStart = useRef({ worldX: 0, worldY: 0 });
+  const plotCurrent = useRef({ worldX: 0, worldY: 0 });
+
   const view = { panX, panY, zoom };
+
+  // Fit and center garden in viewport on first render
+  const hasCentered = useRef(false);
+  useEffect(() => {
+    if (width > 0 && height > 0 && !hasCentered.current) {
+      hasCentered.current = true;
+      const padding = 0.85;
+      const fitZoom = Math.min(
+        (width * padding) / garden.widthFt,
+        (height * padding) / garden.heightFt,
+      );
+      const { setZoom } = useUiStore.getState();
+      setZoom(fitZoom);
+      const gardenW = garden.widthFt * fitZoom;
+      const gardenH = garden.heightFt * fitZoom;
+      setPan((width - gardenW) / 2, (height - gardenH) / 2);
+    }
+  }, [width, height, garden.widthFt, garden.heightFt, setPan]);
 
   // Render grid layer
   useEffect(() => {
@@ -162,9 +188,17 @@ export function CanvasStack() {
     renderSelection(ctx, selectedIds, garden.structures, garden.zones, view, width, height);
   }, [selectedIds, garden.structures, garden.zones, zoom, panX, panY, width, height, dpr]);
 
-  // Keyboard delete handler
+  // Keyboard handler
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        const { plottingTool } = useUiStore.getState();
+        if (plottingTool) {
+          useUiStore.getState().setPlottingTool(null);
+          isPlotting.current = false;
+        }
+        return;
+      }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
         const ids = useUiStore.getState().selectedIds;
@@ -185,8 +219,21 @@ export function CanvasStack() {
     if (e.button === 0) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const { panX, panY, zoom } = useUiStore.getState();
+      const { panX, panY, zoom, plottingTool } = useUiStore.getState();
       const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+
+      // Plotting mode: start drawing a rectangle
+      if (plottingTool) {
+        const { garden } = useGardenStore.getState();
+        const cellSize = garden.gridCellSizeFt;
+        const snappedX = e.altKey ? worldX : snapToGrid(worldX, cellSize);
+        const snappedY = e.altKey ? worldY : snapToGrid(worldY, cellSize);
+        isPlotting.current = true;
+        plotStart.current = { worldX: snappedX, worldY: snappedY };
+        plotCurrent.current = { worldX: snappedX, worldY: snappedY };
+        return;
+      }
+
       const { garden } = useGardenStore.getState();
       const { activeLayer: currentActiveLayer } = useUiStore.getState();
       const hit = hitTestObjects(worldX, worldY, garden.structures, garden.zones, currentActiveLayer);
@@ -223,6 +270,45 @@ export function CanvasStack() {
   }, [select, addToSelection, clearSelection]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Plotting mode: update preview rectangle
+    if (isPlotting.current) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { panX, panY, zoom } = useUiStore.getState();
+      const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+      const { garden } = useGardenStore.getState();
+      const cellSize = garden.gridCellSizeFt;
+      plotCurrent.current = {
+        worldX: e.altKey ? worldX : snapToGrid(worldX, cellSize),
+        worldY: e.altKey ? worldY : snapToGrid(worldY, cellSize),
+      };
+      // Render preview on selection canvas
+      const canvas = selectionCanvasRef.current;
+      if (canvas && width > 0) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        const ctx = canvas.getContext('2d')!;
+        ctx.scale(dpr, dpr);
+        const x = Math.min(plotStart.current.worldX, plotCurrent.current.worldX);
+        const y = Math.min(plotStart.current.worldY, plotCurrent.current.worldY);
+        const w = Math.abs(plotCurrent.current.worldX - plotStart.current.worldX);
+        const h = Math.abs(plotCurrent.current.worldY - plotStart.current.worldY);
+        const { plottingTool } = useUiStore.getState();
+        const view = { panX, panY, zoom };
+        const sx = view.panX + x * view.zoom;
+        const sy = view.panY + y * view.zoom;
+        const sw = w * view.zoom;
+        const sh = h * view.zoom;
+        ctx.fillStyle = (plottingTool?.color ?? '#8B6914') + '66';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.strokeStyle = plottingTool?.color ?? '#8B6914';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(sx, sy, sw, sh);
+      }
+      return;
+    }
+
     if (isMoving.current && moveObjectId.current) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -251,6 +337,31 @@ export function CanvasStack() {
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (e.button === 0) {
+      // Finish plotting
+      if (isPlotting.current) {
+        isPlotting.current = false;
+        const x = Math.min(plotStart.current.worldX, plotCurrent.current.worldX);
+        const y = Math.min(plotStart.current.worldY, plotCurrent.current.worldY);
+        const w = Math.abs(plotCurrent.current.worldX - plotStart.current.worldX);
+        const h = Math.abs(plotCurrent.current.worldY - plotStart.current.worldY);
+        const { plottingTool } = useUiStore.getState();
+        if (plottingTool && w > 0 && h > 0) {
+          const { addStructure, addZone } = useGardenStore.getState();
+          if (plottingTool.category === 'structures') {
+            addStructure({ type: plottingTool.type, x, y, width: w, height: h });
+          } else if (plottingTool.category === 'zones') {
+            addZone({ x, y, width: w, height: h });
+          }
+        }
+        // Clear preview
+        const canvas = selectionCanvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        return;
+      }
+
       isMoving.current = false;
       moveObjectId.current = null;
       moveObjectLayer.current = null;
@@ -346,7 +457,7 @@ export function CanvasStack() {
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', position: 'relative', background: '#E8E0D0' }}
+      style={{ width: '100%', height: '100%', position: 'relative', background: groundColor, cursor: plottingTool ? 'crosshair' : 'default' }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

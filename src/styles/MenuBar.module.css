@@ -2,9 +2,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  background: var(--color-soil);
-  color: var(--color-cream);
+  height: var(--menu-height);
+  padding: 0 16px;
+  background: #1A2744;
+  color: #D4B870;
   font-size: 14px;
   font-weight: 600;
   user-select: none;
@@ -14,6 +15,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #E8D08C;
+  letter-spacing: -0.02em;
 }
 
 .menus {
@@ -30,5 +35,5 @@
 }
 
 .menus span:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
 }

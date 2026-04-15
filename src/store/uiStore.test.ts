@@ -31,15 +31,15 @@ describe('uiStore', () => {
   });
 
   it('manages zoom', () => {
-    useUiStore.getState().setZoom(2);
-    expect(useUiStore.getState().zoom).toBe(2);
+    useUiStore.getState().setZoom(32);
+    expect(useUiStore.getState().zoom).toBe(32);
   });
 
   it('clamps zoom to bounds', () => {
-    useUiStore.getState().setZoom(0.01);
-    expect(useUiStore.getState().zoom).toBe(0.1);
-    useUiStore.getState().setZoom(100);
+    useUiStore.getState().setZoom(1);
     expect(useUiStore.getState().zoom).toBe(10);
+    useUiStore.getState().setZoom(500);
+    expect(useUiStore.getState().zoom).toBe(200);
   });
 
   it('manages pan', () => {

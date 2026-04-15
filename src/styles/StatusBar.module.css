@@ -3,9 +3,37 @@
   align-items: center;
   gap: 16px;
   padding: 0 12px;
-  background: var(--color-panel);
-  border-top: 1px solid var(--color-panel-border);
+  background: var(--color-soil);
+  border-top: none;
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: var(--color-cream);
   user-select: none;
+}
+
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoomLabel {
+  min-width: 40px;
+  text-align: center;
+}
+
+.zoomButton {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 0 6px;
+  height: 20px;
+  font-size: 13px;
+  color: var(--color-cream);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.zoomButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }

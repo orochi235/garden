@@ -13,6 +13,12 @@ interface DragState {
   dragCurrentY: number;
 }
 
+export interface PlottingTool {
+  category: 'structures' | 'zones';
+  type: string;
+  color: string;
+}
+
 interface UiStore {
   activeLayer: LayerId;
   layerVisibility: LayerRecord<boolean>;
@@ -23,6 +29,8 @@ interface UiStore {
   panX: number;
   panY: number;
   drag: DragState;
+  plottingTool: PlottingTool | null;
+  setPlottingTool: (tool: PlottingTool | null) => void;
   setActiveLayer: (layer: LayerId) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
@@ -37,8 +45,8 @@ interface UiStore {
   reset: () => void;
 }
 
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 10;
+const MIN_ZOOM = 10;
+const MAX_ZOOM = 200;
 
 function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
@@ -59,6 +67,8 @@ export const useUiStore = create<UiStore>((set) => ({
   panX: 0,
   panY: 0,
   drag: { ...defaultDrag },
+  plottingTool: null,
+  setPlottingTool: (tool) => set({ plottingTool: tool }),
   setActiveLayer: (layer) => set({ activeLayer: layer }),
   setLayerVisible: (layer, visible) => set((state) => ({ layerVisibility: { ...state.layerVisibility, [layer]: visible } })),
   setLayerOpacity: (layer, opacity) => set((state) => ({ layerOpacity: { ...state.layerOpacity, [layer]: opacity } })),
@@ -73,6 +83,6 @@ export const useUiStore = create<UiStore>((set) => ({
   reset: () => set({
     activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
     layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag },
+    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null,
   }),
 }));
