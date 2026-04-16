@@ -24,6 +24,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: cp layer-lab.html dist/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

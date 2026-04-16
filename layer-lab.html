@@ -374,10 +374,9 @@ function renderToSvg(tileStates, activeIdx, opts) {
     </filter>`;
   }
 
-  // Per-tile clip paths: only clip where tiles actually overlap.
-  // Horizon sits at the midpoint of the overlap region.
+  // Per-tile clip paths: clip each tile against ALL tiles between it and active.
+  // Uses the most restrictive horizon across all closer tiles.
   const useClipping = opts.clipping ?? getParam('clipping');
-  const activeY = tileStates[activeIdx].y;
   for (let i = 0; i < LAYERS.length; i++) {
     if (i === activeIdx) continue;
 
@@ -387,24 +386,38 @@ function renderToSvg(tileStates, activeIdx, opts) {
     }
 
     const t = tileStates[i];
-    const neighborIdx = t.dir < 0 ? i + 1 : i - 1;
-    const neighbor = tileStates[neighborIdx];
 
     if (t.dir < 0) {
-      const tileBottom = t.y + t.tilt;
-      const neighborTop = neighbor.y - neighbor.tilt;
-      if (tileBottom > neighborTop) {
-        const clipY = (tileBottom + neighborTop) / 2;
-        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="${200 + clipY}"/></clipPath>`;
+      // Tile above active: find most restrictive bottom clip across all closer tiles
+      let bestClip = Infinity;
+      for (let j = i + 1; j <= activeIdx; j++) {
+        const closer = tileStates[j];
+        const tileBottom = t.y + t.tilt;
+        const closerTop = closer.y - closer.tilt;
+        if (tileBottom > closerTop) {
+          const clipY = (tileBottom + closerTop) / 2;
+          bestClip = Math.min(bestClip, clipY);
+        }
+      }
+      if (bestClip < Infinity) {
+        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="${200 + bestClip}"/></clipPath>`;
       } else {
         defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="1000"/></clipPath>`;
       }
     } else {
-      const tileTop = t.y - t.tilt;
-      const neighborBottom = neighbor.y + neighbor.tilt;
-      if (tileTop < neighborBottom) {
-        const clipY = (tileTop + neighborBottom) / 2;
-        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="${clipY}" width="800" height="1000"/></clipPath>`;
+      // Tile below active: find most restrictive top clip across all closer tiles
+      let bestClip = -Infinity;
+      for (let j = i - 1; j >= activeIdx; j--) {
+        const closer = tileStates[j];
+        const tileTop = t.y - t.tilt;
+        const closerBottom = closer.y + closer.tilt;
+        if (tileTop < closerBottom) {
+          const clipY = (tileTop + closerBottom) / 2;
+          bestClip = Math.max(bestClip, clipY);
+        }
+      }
+      if (bestClip > -Infinity) {
+        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="${bestClip}" width="800" height="1000"/></clipPath>`;
       } else {
         defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="1000"/></clipPath>`;
       }
