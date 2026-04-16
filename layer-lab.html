@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; color: #eee; font-family: system-ui; display: flex; height: 100vh; overflow: hidden; }
+
+  #controls {
+    width: 340px; min-width: 340px; background: #1a1a2e; padding: 16px; overflow-y: auto;
+    border-right: 1px solid #333; font-size: 12px;
+  }
+  #controls h2 { font-size: 14px; margin-bottom: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+  .ctrl-group { margin-bottom: 14px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+  .ctrl-group h3 { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .ctrl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .ctrl-row label { flex: 1; color: #bbb; font-size: 11px; }
+  .ctrl-row input[type="range"] { width: 110px; accent-color: #7FB069; }
+  .ctrl-row .val { width: 40px; text-align: right; color: #7FB069; font-variant-numeric: tabular-nums; font-size: 11px; }
+  .ctrl-row input[type="checkbox"] { accent-color: #7FB069; }
+  .ctrl-row select { background: #222; color: #ddd; border: 1px solid #444; border-radius: 3px; padding: 2px 4px; font-size: 11px; }
+  .preset-btn {
+    background: #2a2a4e; border: 1px solid #444; color: #ccc; padding: 4px 10px;
+    border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px; margin-bottom: 4px;
+  }
+  .preset-btn:hover { background: #3a3a5e; }
+  .preset-btn.active { background: #4a7c59; border-color: #7FB069; color: #fff; }
+
+  #preview {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  #preview-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: repeating-conic-gradient(#1a1a1a 0% 25%, #151515 0% 50%) 0 0 / 20px 20px;
+  }
+  .widget-container { position: relative; z-index: 1; cursor: pointer; }
+  #info { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); color: #444; font-size: 11px; z-index: 1; }
+
+  #statics {
+    position: absolute; top: 12px; right: 12px; z-index: 2;
+    display: flex; flex-direction: row; gap: 4px; align-items: flex-start;
+  }
+  .static-cell {
+    background: rgba(20,20,40,0.85); border-radius: 4px; padding: 2px 3px;
+    display: flex; align-items: center; cursor: pointer;
+    border: 1px solid transparent; transition: border-color 0.15s;
+    line-height: 0;
+  }
+  .static-cell:hover { border-color: #555; }
+  .static-cell.active { border-color: #7FB069; }
+  .static-label { font-size: 9px; color: #888; width: 56px; text-align: right; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <h2>Layer Widget Lab</h2>
+
+  <div class="ctrl-group">
+    <h3>Presets</h3>
+    <div style="display:flex;flex-wrap:wrap;">
+      <button class="preset-btn active" onclick="applyPreset('rolodex')">Rolodex</button>
+      <button class="preset-btn" onclick="applyPreset('flat')">Flat Stack</button>
+      <button class="preset-btn" onclick="applyPreset('spread')">Spread</button>
+      <button class="preset-btn" onclick="applyPreset('tight')">Tight</button>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Tile geometry</h3>
+    <div class="ctrl-row"><label>Tile half-width</label><input type="range" id="halfW" min="20" max="80" value="44"><span class="val" id="halfW_v"></span></div>
+    <div class="ctrl-row"><label>Tile thickness</label><input type="range" id="sideThick" min="0" max="8" step="0.5" value="2"><span class="val" id="sideThick_v"></span></div>
+    <div class="ctrl-row"><label>Active thickness ratio</label><input type="range" id="activeThickRatio" min="0" max="100" value="30"><span class="val" id="activeThickRatio_v">%</span></div>
+    <div class="ctrl-row"><label>Camera angle</label><input type="range" id="cameraAngle" min="1" max="25" step="0.5" value="5"><span class="val" id="cameraAngle_v"></span></div>
+    <div class="ctrl-row"><label>Camera follow</label><input type="range" id="camFollow" min="0" max="100" value="50"><span class="val" id="camFollow_v">%</span></div>
+    <div class="ctrl-row"><label>Endcap angle</label><input type="range" id="endcapBias" min="0" max="100" value="50"><span class="val" id="endcapBias_v">%</span></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Arrangement (3-space)</h3>
+    <div class="ctrl-row"><label>Plate gap</label><input type="range" id="plateGap" min="1" max="30" step="0.5" value="5"><span class="val" id="plateGap_v"></span></div>
+    <div class="ctrl-row"><label>Arc curvature</label><input type="range" id="arcCurve" min="0" max="200" value="200"><span class="val" id="arcCurve_v">%</span></div>
+    <div class="ctrl-row"><label>Perspective</label><input type="checkbox" id="perspective"></div>
+    <div class="ctrl-row"><label>Focal length</label><input type="range" id="focalLen" min="50" max="500" value="200"><span class="val" id="focalLen_v"></span></div>
+    <div class="ctrl-row"><label>Clipping</label><input type="checkbox" id="clipping"></div>
+  </div>
+
+
+  <div class="ctrl-group">
+    <h3>Style</h3>
+    <div style="display:flex;flex-wrap:wrap;margin-bottom:6px;">
+      <button class="preset-btn" onclick="applyPreset('subtle')">Subtle</button>
+      <button class="preset-btn" onclick="applyPreset('cartoon')">Cartoon</button>
+      <button class="preset-btn" onclick="applyPreset('cartoon-flat')">Cartoon Flat</button>
+    </div>
+    <div class="ctrl-row"><label>Tile opacity</label><input type="range" id="tileOpacity" min="30" max="100" value="85"><span class="val" id="tileOpacity_v">%</span></div>
+    <div class="ctrl-row"><label>Active desaturation</label><input type="range" id="activeDesat" min="0" max="100" value="0"><span class="val" id="activeDesat_v">%</span></div>
+    <div class="ctrl-row"><label>Stroke width</label><input type="range" id="strokeW" min="0" max="4" step="0.1" value="0"><span class="val" id="strokeW_v"></span></div>
+    <div class="ctrl-row"><label>Gradient fill</label><input type="checkbox" id="cartoonGrad"></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Shadows</h3>
+    <div class="ctrl-row"><label>Shadow blur</label><input type="range" id="shadowBlur" min="0" max="6" step="0.5" value="2"><span class="val" id="shadowBlur_v"></span></div>
+    <div class="ctrl-row"><label>Shadow offset</label><input type="range" id="shadowOff" min="0" max="6" step="0.5" value="2"><span class="val" id="shadowOff_v"></span></div>
+    <div class="ctrl-row"><label>Shadow opacity</label><input type="range" id="shadowAlpha" min="0" max="100" value="50"><span class="val" id="shadowAlpha_v">%</span></div>
+    <div class="ctrl-row"><label>Flip shadows</label><input type="checkbox" id="flipShadow" checked></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Animation</h3>
+    <div class="ctrl-row"><label>Duration (ms)</label><input type="range" id="animDur" min="0" max="800" step="25" value="300"><span class="val" id="animDur_v"></span></div>
+    <div class="ctrl-row"><label>Easing</label>
+      <select id="animEase">
+        <option value="ease-out">Ease out (cubic)</option>
+        <option value="ease-in-out">Ease in-out</option>
+        <option value="spring">Spring (overshoot)</option>
+        <option value="linear">Linear</option>
+        <option value="bounce">Bounce</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Display</h3>
+    <div class="ctrl-row"><label>Show label</label><input type="checkbox" id="showLabel" checked></div>
+    <div class="ctrl-row"><label>Show reference gallery</label><input type="checkbox" id="showGallery" checked></div>
+    <div class="ctrl-row"><label>Background</label>
+      <select id="bgSelect" onchange="setBg(this.value)">
+        <option value="checker">Checker</option>
+        <option value="#111">Dark</option>
+        <option value="#2a4a2a">Forest</option>
+        <option value="#4a6a8a">Sky</option>
+        <option value="#eee">Light</option>
+      </select>
+    </div>
+    <div class="ctrl-row"><label>Scale</label><input type="range" id="widgetScale" min="50" max="400" value="200"><span class="val" id="widgetScale_v">%</span></div>
+  </div>
+</div>
+
+<div id="preview">
+  <div id="preview-bg"></div>
+  <div class="widget-container" id="widget"></div>
+  <div id="statics"></div>
+  <div id="info">Click tile or scroll mousewheel to switch layers. Arrow keys work too.</div>
+</div>
+
+<script>
+const LAYERS = [
+  { id: 'plantings',  label: 'Plantings',  color: '#4A7C59', dark: '#3a6a48', side1: '#3f6d4e', side2: '#356042', stroke: '#3a6a48' },
+  { id: 'zones',      label: 'Zones',      color: '#7FB069', dark: '#5c8a4a', side1: '#6a9a56', side2: '#5c8a4a', stroke: '#6a9a56' },
+  { id: 'structures', label: 'Structures', color: '#D4A843', dark: '#a8832a', side1: '#c09530', side2: '#a8832a', stroke: '#b8942e' },
+  { id: 'blueprint',  label: 'Blueprint',  color: '#4A7CAF', dark: '#35608a', side1: '#3f6d9a', side2: '#35608a', stroke: '#3a6a9a' },
+  { id: 'ground',     label: 'Ground',     color: '#8B7355', dark: '#6b5540', side1: '#7a6349', side2: '#6b5540', stroke: '#6b5a42' },
+];
+
+let activeIndex = 0;
+let animating = false;
+let animId = null;
+
+function getParam(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (el.type === 'checkbox') return el.checked;
+  if (el.tagName === 'SELECT') return el.value;
+  return parseFloat(el.value);
+}
+
+function updateLabels() {
+  document.querySelectorAll('#controls input[type="range"]').forEach(inp => {
+    const v = document.getElementById(inp.id + '_v');
+    if (v) v.textContent = inp.value;
+  });
+}
+
+function computeLayout(activeIdx) {
+  const halfW = getParam('halfW');
+  const camDeg = getParam('cameraAngle');
+  const gapDeg = getParam('plateGap');
+  const curvePct = getParam('arcCurve') / 100;
+  const endcapBias = getParam('endcapBias') / 100;
+  const n = LAYERS.length;
+  const centerY = 60;
+
+  const camRad = camDeg * Math.PI / 180;
+  const gapRad = gapDeg * Math.PI / 180;
+
+  // Arc radius: controls how tightly the plates curve away
+  // At curvePct=0, we go flat (infinite radius → linear spacing)
+  // At curvePct=1, tight arc
+  const arcR = curvePct > 0.01 ? halfW * 3 / curvePct : 100000;
+
+  const tiles = [];
+
+  for (let i = 0; i < n; i++) {
+    const rel = i - activeIdx; // signed offset from active
+    const absDist = Math.abs(rel);
+
+    // Plate's angle on the arc (radians) — evenly spaced
+    const arcAngle = rel * gapRad;
+
+    // 3D position on arc (YZ plane, arc center behind the plates)
+    // Y = vertical, Z = depth (toward/away from camera)
+    const y3d = arcR * Math.sin(arcAngle);
+    const z3d = arcR * (1 - Math.cos(arcAngle));
+
+    // Plate tilt = arc tangent + endcap bias (extra tilt at stack edges)
+    // Endcap bias only affects tilt, not position — keeps spacing even
+    const distToEdge = Math.min(i, n - 1 - i);
+    const maxDistToEdge = Math.floor((n - 1) / 2);
+    const extremeness = maxDistToEdge > 0 ? 1 - distToEdge / maxDistToEdge : 1;
+    const endcapExtra = extremeness * endcapBias * gapRad;
+    const plateTilt = (arcAngle * curvePct) + (Math.sign(rel) * endcapExtra);
+
+    // Orthographic projection with camera at elevation camRad
+    const screenY = centerY + y3d * Math.cos(camRad) + z3d * Math.sin(camRad);
+
+    // Diamond half-height on screen = halfW * sin(viewAngle)
+    const viewAngle = Math.abs(plateTilt) + camRad;
+    const tiltY = Math.max(0.5, halfW * Math.sin(Math.min(viewAngle, Math.PI / 2)));
+
+    // Side face direction: determined by plate orientation relative to camera
+    // Camera at elevation camRad looks down; plateTilt determines which face we see
+    // dir > 0: bottom side faces visible (sides below top face)
+    // dir < 0: top side faces visible (sides above top face)
+    const dir = rel === 0 ? (camRad > 0 ? 1 : 0) : (rel > 0 ? 1 : -1);
+
+    tiles[i] = { index: i, y: screenY, tilt: tiltY, dir, dist: absDist,
+                 viewAngle, z: z3d, plateTilt };
+  }
+
+  // Normalize: scale and center tile positions to fit within SVG (0..120 with margin)
+  // Only scale positions, not tilts — tilts are derived from view angles and should stay fixed
+  const margin = 8;
+  const boundsTop = Math.min(...tiles.map(t => t.y - t.tilt));
+  const boundsBot = Math.max(...tiles.map(t => t.y + t.tilt));
+  const boundsSpan = boundsBot - boundsTop || 1;
+  const targetSpan = 120 - 2 * margin;
+  // We need: after scaling positions, (y_i - tilt_i) to (y_j + tilt_j) fits in targetSpan
+  // Since tilts don't scale, we solve: scale * posSpan + tiltSpan = targetSpan
+  // where tiltSpan = sum of extreme tilts
+  const topTile = tiles.reduce((a, b) => a.y - a.tilt < b.y - b.tilt ? a : b);
+  const botTile = tiles.reduce((a, b) => a.y + a.tilt > b.y + b.tilt ? a : b);
+  const posSpan = botTile.y - topTile.y || 1;
+  const tiltOverhead = topTile.tilt + botTile.tilt;
+  const scale = Math.min(1, (targetSpan - tiltOverhead) / posSpan);
+  const posMid = (topTile.y + botTile.y) / 2;
+  // Camera follow: blend centering anchor between stack midpoint (0%) and active tile (100%)
+  const camFollow = getParam('camFollow') / 100;
+  const activeY = tiles[activeIdx].y;
+  const anchor = posMid + (activeY - posMid) * camFollow;
+  for (const t of tiles) {
+    t.y = centerY + (t.y - anchor) * scale;
+  }
+
+  // Optional perspective projection
+  const usePerspective = getParam('perspective');
+  if (usePerspective) {
+    const focalLen = getParam('focalLen') || 200;
+    for (const t of tiles) {
+      const pScale = focalLen / (focalLen + t.z);
+      // Scale Y offset from center and tilt by perspective factor
+      t.y = centerY + (t.y - centerY) * pScale;
+      t.tilt = t.tilt * pScale;
+      t.perspScale = pScale; // store for rendering (affects halfW)
+    }
+  }
+
+  return tiles;
+}
+
+function applyEasing(rawT, type) {
+  switch (type) {
+    case 'ease-out': return 1 - Math.pow(1 - rawT, 3);
+    case 'ease-in-out': return rawT < 0.5 ? 4*rawT*rawT*rawT : 1 - Math.pow(-2*rawT+2,3)/2;
+    case 'spring': {
+      const c4 = (2 * Math.PI) / 4.5;
+      return rawT === 0 ? 0 : rawT === 1 ? 1 :
+        Math.pow(2, -10*rawT) * Math.sin((rawT*10-0.75)*c4) + 1;
+    }
+    case 'bounce': {
+      const n1=7.5625, d1=2.75; let t=rawT;
+      if(t<1/d1) return n1*t*t;
+      else if(t<2/d1) return n1*(t-=1.5/d1)*t+.75;
+      else if(t<2.5/d1) return n1*(t-=2.25/d1)*t+.9375;
+      else return n1*(t-=2.625/d1)*t+.984375;
+    }
+    default: return rawT;
+  }
+}
+
+function lighten(hex, amt) {
+  let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  r = Math.min(255, r+amt); g = Math.min(255, g+amt); b = Math.min(255, b+amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+// Build the stencil silhouette path for a tile with thickness.
+// The viewer sees the top diamond face plus the two visible side faces.
+// The silhouette wraps the entire combined shape as one outline.
+//   Top diamond: (0, -tiltY), (halfW, 0), (0, tiltY), (-halfW, 0)
+//   With thickness, bottom edges shift down by `thick`:
+//     right-bottom: (halfW, thick), bottom-point: (0, tiltY+thick), left-bottom: (-halfW, thick)
+//   Silhouette (clockwise from top):
+//     (0, -tiltY) → (halfW, 0) → (halfW, thick) → (0, tiltY+thick) → (-halfW, thick) → (-halfW, 0)
+// dir: 1 = below active (thickness hangs down), -1 = above active (thickness goes up)
+function stencilPath(halfW, tiltY, thick, dir) {
+  if (thick <= 0 || tiltY < 0.5) {
+    return `${0},${-tiltY} ${halfW},${0} ${0},${tiltY} ${-halfW},${0}`;
+  }
+  if (dir < 0) {
+    // Above active: thickness extends upward from top edge
+    const t = -thick;
+    return `${0},${-tiltY + t} ${halfW},${t} ${halfW},${0} ${0},${tiltY} ${-halfW},${0} ${-halfW},${t}`;
+  }
+  // Below active (or active itself): thickness hangs down
+  return `${0},${-tiltY} ${halfW},${0} ${halfW},${thick} ${0},${tiltY + thick} ${-halfW},${thick} ${-halfW},${0}`;
+}
+
+function renderToSvg(tileStates, activeIdx, opts) {
+  const halfW = opts.halfW ?? getParam('halfW');
+  const sideThick = opts.sideThick ?? getParam('sideThick');
+  const activeThickRatio = (opts.activeThickRatio ?? getParam('activeThickRatio')) / 100;
+  const tileOpacity = (opts.tileOpacity ?? getParam('tileOpacity')) / 100;
+  const activeDesat = (opts.activeDesat ?? getParam('activeDesat')) / 100;
+  const strokeW = opts.strokeW ?? getParam('strokeW');
+  const activeStrokeW = strokeW > 0 ? Math.max(strokeW, strokeW * 1.25) : 0;
+  const shadowBlur = opts.shadowBlur ?? getParam('shadowBlur');
+  const shadowOff = opts.shadowOff ?? getParam('shadowOff');
+  const shadowAlpha = (opts.shadowAlpha ?? getParam('shadowAlpha')) / 100;
+  const flipShadow = opts.flipShadow ?? getParam('flipShadow');
+  const showLabel = opts.showLabel ?? getParam('showLabel');
+  const cartoonGrad = opts.cartoonGrad ?? getParam('cartoonGrad');
+  const hasStroke = strokeW > 0 || activeStrokeW > 0;
+  const hasShadow = shadowBlur > 0 || shadowOff > 0;
+  const mini = opts.mini || false;
+  const uid = opts.idPrefix || '';
+
+  const labelSpace = mini ? 0 : (showLabel ? 70 : 6);
+  const svgW = halfW * 2 + labelSpace + 10;
+  const svgH = 120;
+  const cx = labelSpace + halfW;
+
+  // Z-order: paint furthest tiles first, active always last (on top)
+  // Use actual depth (z) when available, fall back to dist
+  const sorted = [...tileStates].sort((a, b) => {
+    if (a.index === activeIdx) return 1;
+    if (b.index === activeIdx) return -1;
+    return (b.z ?? b.dist) - (a.z ?? a.dist);
+  });
+
+  let defs = '';
+  let content = '';
+
+  // Gradient defs for cartoon
+  if (cartoonGrad) {
+    LAYERS.forEach((layer, i) => {
+      defs += `<linearGradient id="${uid}cg${i}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lighten(layer.color, 40)}"/>
+        <stop offset="100%" stop-color="${layer.dark}"/>
+      </linearGradient>`;
+    });
+  }
+
+  // Shadow filters — direction derived from plate orientation
+  // flipShadow: true = shadows point toward active (between tiles), false = always down
+  for (let i = 0; i < LAYERS.length; i++) {
+    const t = tileStates[i];
+    const sDir = flipShadow ? (t.dir <= 0 ? -1 : 1) : 1;
+    // Scale shadow offset by how edge-on the plate is (more edge-on = longer shadow)
+    const angleFactor = t.viewAngle != null ? Math.max(0.3, 1 - Math.sin(t.viewAngle) * 0.5) : 1;
+    defs += `<filter id="${uid}sh${i}" x="-30%" y="-40%" width="160%" height="200%">
+      <feDropShadow dx="0" dy="${sDir * shadowOff * angleFactor}" stdDeviation="${shadowBlur * angleFactor}" flood-color="#000" flood-opacity="${shadowAlpha}"/>
+    </filter>`;
+  }
+
+  // Per-tile clip paths: only clip where tiles actually overlap.
+  // Horizon sits at the midpoint of the overlap region.
+  const useClipping = opts.clipping ?? getParam('clipping');
+  const activeY = tileStates[activeIdx].y;
+  for (let i = 0; i < LAYERS.length; i++) {
+    if (i === activeIdx) continue;
+
+    if (!useClipping) {
+      defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="1000"/></clipPath>`;
+      continue;
+    }
+
+    const t = tileStates[i];
+    const neighborIdx = t.dir < 0 ? i + 1 : i - 1;
+    const neighbor = tileStates[neighborIdx];
+
+    if (t.dir < 0) {
+      const tileBottom = t.y + t.tilt;
+      const neighborTop = neighbor.y - neighbor.tilt;
+      if (tileBottom > neighborTop) {
+        const clipY = (tileBottom + neighborTop) / 2;
+        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="${200 + clipY}"/></clipPath>`;
+      } else {
+        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="1000"/></clipPath>`;
+      }
+    } else {
+      const tileTop = t.y - t.tilt;
+      const neighborBottom = neighbor.y + neighbor.tilt;
+      if (tileTop < neighborBottom) {
+        const clipY = (tileTop + neighborBottom) / 2;
+        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="${clipY}" width="800" height="1000"/></clipPath>`;
+      } else {
+        defs += `<clipPath id="${uid}clip${i}"><rect x="-200" y="-200" width="800" height="1000"/></clipPath>`;
+      }
+    }
+  }
+
+  // Render tiles
+  for (const t of sorted) {
+    const layer = LAYERS[t.index];
+    const isActive = t.index === activeIdx;
+    const tiltY = t.tilt;
+    const sw = isActive ? activeStrokeW : strokeW;
+    const opacity = isActive ? 0.95 : tileOpacity;
+    // Project thickness from view angle: more face visible = thinner side faces
+    const baseThick = isActive ? sideThick * activeThickRatio : sideThick;
+    const thickScale = t.viewAngle != null ? Math.cos(Math.min(t.viewAngle, Math.PI / 2)) : 1;
+    const thick = baseThick * Math.max(0.1, thickScale);
+
+    // Filter / style
+    let gStyle = '', filterAttr = '';
+    if (hasShadow) {
+      filterAttr = `filter="url(#${uid}sh${t.index})"`;
+      if (isActive) {
+        const sat = 1 - activeDesat;
+        gStyle = `filter:saturate(${sat}) url(#${uid}sh${t.index})`;
+        filterAttr = '';
+      }
+    } else if (isActive) {
+      const sat = 1 - activeDesat;
+      gStyle = `filter:saturate(${sat})`;
+    }
+
+    // Non-active: outer group for filter, clip group, then transform group
+    if (!isActive) {
+      content += `<g ${filterAttr}>`;
+      content += `<g clip-path="url(#${uid}clip${t.index})">`;
+      content += `<g transform="translate(${cx},${t.y})" style="${gStyle}" data-idx="${t.index}" class="tile">`;
+    } else {
+      content += `<g transform="translate(${cx},${t.y})" style="${gStyle}" ${filterAttr} data-idx="${t.index}" class="tile">`;
+    }
+
+    // Unified rendering — stroke and fill driven entirely by slider values
+    const fillAttr = cartoonGrad ? `url(#${uid}cg${t.index})` : layer.color;
+    const strokeColor = isActive ? '#fff' : lighten(layer.stroke, 80);
+    const strokeAttr = hasStroke ? `stroke="${strokeColor}" stroke-width="${sw}" stroke-linejoin="round"` : `stroke="none"`;
+
+    // Per-tile half-width, adjusted for perspective if active
+    const hw = t.perspScale != null ? halfW * t.perspScale : halfW;
+
+    if (tiltY < 0.3) {
+      // Edge-on: just a line
+      const lineColor = isActive ? '#aaa' : (hasStroke ? strokeColor : layer.stroke);
+      content += `<line x1="${-hw}" y1="0" x2="${hw}" y2="0" stroke="${lineColor}" stroke-width="${Math.max(isActive ? 1 : sw, 0.5)}"/>`;
+    } else {
+      const topPts = `0,${-tiltY} ${hw},0 0,${tiltY} ${-hw},0`;
+
+      // Side faces — direction depends on above/below active
+      if (thick > 0) {
+        if (t.dir < 0) {
+          content += `<polygon points="0,${-tiltY} ${hw},0 ${hw},${-thick} 0,${-tiltY-thick}" fill="${layer.side1}" opacity="${opacity}" ${strokeAttr}/>`;
+          content += `<polygon points="0,${-tiltY} ${-hw},0 ${-hw},${-thick} 0,${-tiltY-thick}" fill="${layer.side2}" opacity="${opacity}" ${strokeAttr}/>`;
+        } else {
+          content += `<polygon points="0,${tiltY} ${hw},0 ${hw},${thick} 0,${tiltY+thick}" fill="${layer.side1}" opacity="${opacity}" ${strokeAttr}/>`;
+          content += `<polygon points="0,${tiltY} ${-hw},0 ${-hw},${thick} 0,${tiltY+thick}" fill="${layer.side2}" opacity="${opacity}" ${strokeAttr}/>`;
+        }
+      }
+
+      // Top face
+      content += `<polygon points="${topPts}" fill="${fillAttr}" opacity="${opacity}" ${strokeAttr}/>`;
+    }
+
+    content += `</g>`;
+    if (!isActive) {
+      content += `</g></g>`;
+    }
+
+    if (isActive && showLabel && !mini) {
+      content += `<text x="${cx-halfW-6}" y="${t.y+3}" text-anchor="end" fill="#ccc" font-size="9" font-weight="600">${layer.label}</text>`;
+    }
+  }
+
+  return `<svg width="${opts.width || svgW}" height="${opts.height || svgH}" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible">
+    <defs>${defs}</defs>${content}</svg>`;
+}
+
+function render(tileStates) {
+  const scale = getParam('widgetScale') / 100;
+  const halfW = getParam('halfW');
+  const showLabel = getParam('showLabel');
+  const labelSpace = showLabel ? 70 : 6;
+  const svgW = halfW * 2 + labelSpace + 10;
+  const svgH = 120;
+
+  const widget = document.getElementById('widget');
+  widget.innerHTML = renderToSvg(tileStates, activeIndex, {
+    width: svgW * scale, height: svgH * scale, idPrefix: 'm_',
+  });
+
+  document.querySelectorAll('#widget .tile').forEach(g => {
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', () => {
+      const idx = parseInt(g.dataset.idx);
+      if (idx !== activeIndex && !animating) switchTo(idx);
+    });
+  });
+
+  renderStatics();
+}
+
+function renderStatics() {
+  const container = document.getElementById('statics');
+  if (!getParam('showGallery')) { container.innerHTML = ''; return; }
+
+  let html = '';
+  for (let ai = 0; ai < LAYERS.length; ai++) {
+    const layout = computeLayout(ai);
+    const svg = renderToSvg(layout, ai, {
+      width: 56, height: 40, mini: true, showLabel: false, idPrefix: `s${ai}_`,
+    });
+    html += `<div class="static-cell ${ai === activeIndex ? 'active' : ''}" data-static-idx="${ai}">${svg}</div>`;
+  }
+  container.innerHTML = html;
+
+  document.querySelectorAll('.static-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const idx = parseInt(cell.dataset.staticIdx);
+      if (idx !== activeIndex && !animating) switchTo(idx);
+    });
+  });
+}
+
+function switchTo(newIdx) {
+  if (newIdx < 0 || newIdx >= LAYERS.length || newIdx === activeIndex) return;
+  const dur = getParam('animDur');
+  if (dur === 0) { activeIndex = newIdx; renderCurrent(); return; }
+
+  if (animId) cancelAnimationFrame(animId);
+  animating = true;
+  const oldLayout = computeLayout(activeIndex);
+  activeIndex = newIdx;
+  const newLayout = computeLayout(activeIndex);
+  const startTime = performance.now();
+  const easeType = getParam('animEase');
+
+  function animFrame(now) {
+    const rawT = Math.min((now - startTime) / dur, 1);
+    const t = applyEasing(rawT, easeType);
+    const interp = oldLayout.map((old, i) => ({
+      index: i,
+      y: old.y + (newLayout[i].y - old.y) * t,
+      tilt: old.tilt + (newLayout[i].tilt - old.tilt) * t,
+      dir: newLayout[i].dir,
+      dist: newLayout[i].dist,
+    }));
+    render(interp);
+    if (rawT < 1) { animId = requestAnimationFrame(animFrame); }
+    else { animating = false; animId = null; renderCurrent(); }
+  }
+  animId = requestAnimationFrame(animFrame);
+}
+
+function renderCurrent() { render(computeLayout(activeIndex)); }
+
+function setBg(val) {
+  const bg = document.getElementById('preview-bg');
+  bg.style.background = val === 'checker'
+    ? "repeating-conic-gradient(#1a1a1a 0% 25%, #151515 0% 50%) 0 0 / 20px 20px" : val;
+}
+
+const presets = {
+  // Geometry presets
+  rolodex: { halfW:44, plateGap:5,  arcCurve:200, cameraAngle:5,  endcapBias:50, sideThick:2, activeThickRatio:30, animDur:300, animEase:'ease-out' },
+  flat:    { halfW:44, plateGap:8,  arcCurve:0,  cameraAngle:10, endcapBias:0,  sideThick:2, activeThickRatio:30, animDur:300, animEase:'ease-out' },
+  spread:  { halfW:50, plateGap:12, arcCurve:120, cameraAngle:6,  endcapBias:70, sideThick:3, activeThickRatio:30, animDur:400, animEase:'spring' },
+  tight:   { halfW:38, plateGap:5,  arcCurve:80, cameraAngle:4,  endcapBias:40, sideThick:1.5, activeThickRatio:30, animDur:250, animEase:'ease-out' },
+  // Style presets
+  subtle:       { tileOpacity:85, activeDesat:0, strokeW:0, cartoonGrad:false, shadowBlur:2, shadowOff:2, shadowAlpha:50, flipShadow:true },
+  cartoon:      { tileOpacity:100, activeDesat:0, strokeW:0.8, cartoonGrad:true, shadowBlur:2, shadowOff:2, shadowAlpha:50, flipShadow:true },
+  'cartoon-flat': { tileOpacity:100, activeDesat:0, strokeW:0.8, cartoonGrad:false, shadowBlur:0, shadowOff:0, shadowAlpha:0, flipShadow:true },
+};
+
+function applyPreset(name) {
+  const p = presets[name];
+  for (const [k, v] of Object.entries(p)) {
+    const el = document.getElementById(k);
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = v;
+    else el.value = v;
+  }
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === name));
+  updateLabels();
+  renderCurrent();
+}
+
+document.querySelectorAll('#controls input, #controls select').forEach(el => {
+  el.addEventListener('input', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    updateLabels();
+    renderCurrent();
+  });
+});
+
+// Mousewheel on preview area
+document.getElementById('preview').addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (animating) return;
+  if (e.deltaY > 0 && activeIndex < LAYERS.length - 1) switchTo(activeIndex + 1);
+  else if (e.deltaY < 0 && activeIndex > 0) switchTo(activeIndex - 1);
+}, { passive: false });
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' && activeIndex > 0) { e.preventDefault(); switchTo(activeIndex - 1); }
+  if (e.key === 'ArrowDown' && activeIndex < LAYERS.length - 1) { e.preventDefault(); switchTo(activeIndex + 1); }
+});
+
+updateLabels();
+renderCurrent();
+</script>
+</body>
+</html>
