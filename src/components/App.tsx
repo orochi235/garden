@@ -9,6 +9,7 @@ import { useGardenStore } from '../store/gardenStore';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { autosave, loadAutosave } from '../utils/file';
 import styles from '../styles/App.module.css';
+import { FpsMeter } from './FpsMeter';
 
 const MIN_PANEL = 160;
 const MAX_PANEL = 400;
@@ -102,6 +103,7 @@ export function App() {
       />
       <div className={styles.sidebar}><Sidebar /></div>
       <div className={styles.status}><StatusBar /></div>
+      <FpsMeter />
     </div>
   );
 }

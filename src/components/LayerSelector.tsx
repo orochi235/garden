@@ -255,8 +255,13 @@ export function LayerSelector() {
     }
   }, [setActiveLayer]);
 
+  const lastWheelTime = useRef(0);
+
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.stopPropagation();
+    const now = Date.now();
+    if (now - lastWheelTime.current < 300) return;
+    lastWheelTime.current = now;
     const idx = LAYERS.findIndex((l) => l.id === activeLayer);
     if (e.deltaY > 0) {
       setActiveLayer(LAYERS[(idx + 1) % LAYERS.length].id);

@@ -6,16 +6,6 @@ export type ViewMode = 'select' | 'pan' | 'zoom';
 
 type LayerRecord<T> = Record<LayerId, T>;
 
-interface DragState {
-  isDragging: boolean;
-  dragType: 'palette' | 'move' | 'resize' | null;
-  dragObjectType: string | null;
-  dragStartX: number;
-  dragStartY: number;
-  dragCurrentX: number;
-  dragCurrentY: number;
-}
-
 export interface PlottingTool {
   category: 'structures' | 'zones';
   type: string;
@@ -31,7 +21,6 @@ interface UiStore {
   zoom: number;
   panX: number;
   panY: number;
-  drag: DragState;
   plottingTool: PlottingTool | null;
   themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
   viewMode: ViewMode;
@@ -47,8 +36,6 @@ interface UiStore {
   clearSelection: () => void;
   setZoom: (zoom: number) => void;
   setPan: (x: number, y: number) => void;
-  setDrag: (drag: Partial<DragState>) => void;
-  clearDrag: () => void;
   reset: () => void;
 }
 
@@ -59,11 +46,6 @@ function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
 }
 
-const defaultDrag: DragState = {
-  isDragging: false, dragType: null, dragObjectType: null,
-  dragStartX: 0, dragStartY: 0, dragCurrentX: 0, dragCurrentY: 0,
-};
-
 export const useUiStore = create<UiStore>((set) => ({
   activeLayer: 'structures',
   layerVisibility: defaultLayerRecord(true),
@@ -73,7 +55,6 @@ export const useUiStore = create<UiStore>((set) => ({
   zoom: 1,
   panX: 0,
   panY: 0,
-  drag: { ...defaultDrag },
   plottingTool: null,
   themeOverride: 'slow-cycle',
   viewMode: 'select',
@@ -89,11 +70,9 @@ export const useUiStore = create<UiStore>((set) => ({
   clearSelection: () => set({ selectedIds: [] }),
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
-  setDrag: (drag) => set((state) => ({ drag: { ...state.drag, ...drag } })),
-  clearDrag: () => set({ drag: { ...defaultDrag } }),
   reset: () => set({
     activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
     layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null, themeOverride: 'slow-cycle', viewMode: 'select',
+    selectedIds: [], zoom: 1, panX: 0, panY: 0, plottingTool: null, themeOverride: 'slow-cycle', viewMode: 'select',
   }),
 }));
