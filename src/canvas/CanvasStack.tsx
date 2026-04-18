@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useCanvasSize } from './useCanvasSize';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
@@ -14,6 +14,9 @@ import type { PaletteEntry } from '../components/palette/paletteData';
 import { hitTestObjects, hitTestHandles } from './hitTest';
 import type { HandlePosition } from './hitTest';
 import { renderSelection } from './renderSelection';
+import { LayerSelector } from '../components/LayerSelector';
+import { ViewToolbar } from '../components/ViewToolbar';
+import { computeWheelAction } from './wheelHandler';
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +42,8 @@ export function CanvasStack() {
   const addToSelection = useUiStore((s) => s.addToSelection);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const plottingTool = useUiStore((s) => s.plottingTool);
+  const activeLayer = useUiStore((s) => s.activeLayer);
+  const viewMode = useUiStore((s) => s.viewMode);
 
   // Panning state refs (not React state — no re-render needed mid-drag)
   const isPanning = useRef(false);
@@ -65,6 +70,9 @@ export function CanvasStack() {
   // Plotting state refs
   const isPlotting = useRef(false);
   const plotStart = useRef({ worldX: 0, worldY: 0 });
+
+  // Active cursor override — reflects the action being performed right now
+  const [activeCursor, setActiveCursor] = useState<string | null>(null);
   const plotCurrent = useRef({ worldX: 0, worldY: 0 });
 
   const view = { panX, panY, zoom };
@@ -149,11 +157,11 @@ export function CanvasStack() {
     ctx.scale(dpr, dpr);
 
     if (layerVisibility.structures) {
-      renderStructures(ctx, garden.structures, view, width, height, layerOpacity.structures);
+      renderStructures(ctx, garden.structures, view, width, height, layerOpacity.structures, activeLayer === 'structures');
     } else {
       ctx.clearRect(0, 0, width, height);
     }
-  }, [garden.structures, zoom, panX, panY, width, height, dpr, layerVisibility.structures, layerOpacity.structures]);
+  }, [garden.structures, zoom, panX, panY, width, height, dpr, layerVisibility.structures, layerOpacity.structures, activeLayer]);
 
   // Render zones layer
   useEffect(() => {
@@ -166,11 +174,11 @@ export function CanvasStack() {
     ctx.scale(dpr, dpr);
 
     if (layerVisibility.zones) {
-      renderZones(ctx, garden.zones, view, width, height, layerOpacity.zones);
+      renderZones(ctx, garden.zones, view, width, height, layerOpacity.zones, activeLayer === 'zones');
     } else {
       ctx.clearRect(0, 0, width, height);
     }
-  }, [garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.zones, layerOpacity.zones]);
+  }, [garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.zones, layerOpacity.zones, activeLayer]);
 
   // Render plantings layer
   useEffect(() => {
@@ -183,11 +191,11 @@ export function CanvasStack() {
     ctx.scale(dpr, dpr);
 
     if (layerVisibility.plantings) {
-      renderPlantings(ctx, garden.plantings, garden.zones, view, width, height, layerOpacity.plantings);
+      renderPlantings(ctx, garden.plantings, garden.zones, view, width, height, layerOpacity.plantings, activeLayer === 'plantings');
     } else {
       ctx.clearRect(0, 0, width, height);
     }
-  }, [garden.plantings, garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.plantings, layerOpacity.plantings]);
+  }, [garden.plantings, garden.zones, zoom, panX, panY, width, height, dpr, layerVisibility.plantings, layerOpacity.plantings, activeLayer]);
 
   // Render selection layer
   useEffect(() => {
@@ -316,6 +324,7 @@ export function CanvasStack() {
         isPlotting.current = true;
         plotStart.current = { worldX: snappedX, worldY: snappedY };
         plotCurrent.current = { worldX: snappedX, worldY: snappedY };
+        setActiveCursor('crosshair');
         return;
       }
 
@@ -338,6 +347,7 @@ export function CanvasStack() {
           resizeObjectLayer.current = handleHit.layer;
           resizeOriginal.current = { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
           resizeStartWorld.current = { worldX, worldY };
+          setActiveCursor('nwse-resize');
         }
         return;
       }
@@ -359,6 +369,7 @@ export function CanvasStack() {
           moveStart.current = { worldX, worldY, objX: obj.x, objY: obj.y };
           moveObjectId.current = hit.id;
           moveObjectLayer.current = hit.layer;
+          setActiveCursor('move');
         }
       } else {
         clearSelection();
@@ -372,6 +383,7 @@ export function CanvasStack() {
         panX: useUiStore.getState().panX,
         panY: useUiStore.getState().panY,
       };
+      setActiveCursor('grabbing');
     }
   }, [select, addToSelection, clearSelection]);
 
@@ -493,6 +505,7 @@ export function CanvasStack() {
       // Finish plotting
       if (isPlotting.current) {
         isPlotting.current = false;
+        setActiveCursor(null);
         const x = Math.min(plotStart.current.worldX, plotCurrent.current.worldX);
         const y = Math.min(plotStart.current.worldY, plotCurrent.current.worldY);
         const w = Math.abs(plotCurrent.current.worldX - plotStart.current.worldX);
@@ -532,9 +545,11 @@ export function CanvasStack() {
       isMoving.current = false;
       moveObjectId.current = null;
       moveObjectLayer.current = null;
+      setActiveCursor(null);
     }
     if (e.button === 2) {
       isPanning.current = false;
+      setActiveCursor(null);
     }
   }, []);
 
@@ -590,26 +605,18 @@ export function CanvasStack() {
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const currentState = useUiStore.getState();
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.min(200, Math.max(10, currentState.zoom * factor));
-
-    // Mouse position relative to container
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
 
-    // World coords under mouse before zoom change
-    const worldX = (mouseX - currentState.panX) / currentState.zoom;
-    const worldY = (mouseY - currentState.panY) / currentState.zoom;
+    const currentState = useUiStore.getState();
+    const result = computeWheelAction(
+      currentState.viewMode,
+      { zoom: currentState.zoom, panX: currentState.panX, panY: currentState.panY },
+      { deltaX: e.deltaX, deltaY: e.deltaY, mouseX: e.clientX - rect.left, mouseY: e.clientY - rect.top },
+    );
 
-    // Adjust pan so world point stays under mouse after zoom change
-    const newPanX = mouseX - worldX * newZoom;
-    const newPanY = mouseY - worldY * newZoom;
-
-    setZoom(newZoom);
-    setPan(newPanX, newPanY);
+    setZoom(result.zoom);
+    setPan(result.panX, result.panY);
   }, [setZoom, setPan]);
 
   const canvasStyle = {
@@ -624,7 +631,7 @@ export function CanvasStack() {
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', position: 'relative', background: groundColor, cursor: plottingTool ? 'crosshair' : 'default' }}
+      style={{ width: '100%', height: '100%', position: 'relative', background: groundColor, cursor: activeCursor ?? (plottingTool ? 'crosshair' : viewMode === 'pan' ? 'grab' : viewMode === 'zoom' ? 'zoom-in' : 'default') }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -639,6 +646,8 @@ export function CanvasStack() {
       <canvas ref={zoneCanvasRef} style={canvasStyle} />
       <canvas ref={plantingCanvasRef} style={canvasStyle} />
       <canvas ref={selectionCanvasRef} style={canvasStyle} />
+      <ViewToolbar />
+      <LayerSelector />
     </div>
   );
 }

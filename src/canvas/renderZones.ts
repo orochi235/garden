@@ -9,6 +9,7 @@ export function renderZones(
   canvasWidth: number,
   canvasHeight: number,
   opacity: number,
+  highlight: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (zones.length === 0) return;
@@ -30,6 +31,13 @@ export function renderZones(
     ctx.setLineDash([6, 3]);
     ctx.strokeRect(sx, sy, sw, sh);
     ctx.setLineDash([]);
+
+    if (highlight) {
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.strokeRect(sx, sy, sw, sh);
+    }
 
     if (z.label) {
       ctx.fillStyle = '#2D4F3A';

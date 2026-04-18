@@ -10,6 +10,7 @@ export function renderPlantings(
   canvasWidth: number,
   canvasHeight: number,
   opacity: number,
+  highlight: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -41,6 +42,14 @@ export function renderPlantings(
     ctx.strokeStyle = '#2D4F3A';
     ctx.lineWidth = 1;
     ctx.stroke();
+
+    if (highlight) {
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     if (showLabel && p.name) {
       ctx.fillStyle = '#1A2E22';
