@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; color: #eee; font-family: system-ui; display: flex; height: 100vh; overflow: hidden; }
+
+  #controls {
+    width: 340px; min-width: 340px; background: #1a1a2e; padding: 16px; overflow-y: auto;
+    border-right: 1px solid #333; font-size: 12px;
+  }
+  #controls h2 { font-size: 14px; margin-bottom: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+  .ctrl-group { margin-bottom: 14px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+  .ctrl-group h3 { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .ctrl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .ctrl-row label { flex: 1; color: #bbb; font-size: 11px; }
+  .ctrl-row input[type="range"] { width: 110px; accent-color: #7FB069; }
+  .ctrl-row .val { width: 40px; text-align: right; color: #7FB069; font-variant-numeric: tabular-nums; font-size: 11px; }
+  .ctrl-row input[type="checkbox"] { accent-color: #7FB069; }
+  .ctrl-row select { background: #222; color: #ddd; border: 1px solid #444; border-radius: 3px; padding: 2px 4px; font-size: 11px; }
+  .preset-btn {
+    background: #2a2a4e; border: 1px solid #444; color: #ccc; padding: 4px 10px;
+    border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px; margin-bottom: 4px;
+  }
+  .preset-btn:hover { background: #3a3a5e; }
+  .preset-btn.active { background: #4a7c59; border-color: #7FB069; color: #fff; }
+
+  #preview {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  #preview-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: repeating-conic-gradient(#1a1a1a 0% 25%, #151515 0% 50%) 0 0 / 20px 20px;
+  }
+  .widget-container { position: relative; z-index: 1; cursor: pointer; }
+  #info { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); color: #444; font-size: 11px; z-index: 1; }
+
+  #statics {
+    position: absolute; top: 12px; right: 12px; z-index: 2;
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  }
+  .static-cell {
+    background: rgba(20,20,40,0.85); border-radius: 6px; padding: 4px 8px;
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px solid transparent; transition: border-color 0.15s;
+  }
+  .static-cell:hover { border-color: #555; }
+  .static-cell.active { border-color: #7FB069; }
+  .static-label { font-size: 9px; color: #888; width: 56px; text-align: right; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <h2>Layer Widget Lab</h2>
+
+  <div class="ctrl-group">
+    <h3>Presets</h3>
+    <div style="display:flex;flex-wrap:wrap;">
+      <button class="preset-btn active" onclick="applyPreset('rolodex')">Rolodex</button>
+      <button class="preset-btn" onclick="applyPreset('flat')">Flat Stack</button>
+      <button class="preset-btn" onclick="applyPreset('spread')">Spread</button>
+      <button class="preset-btn" onclick="applyPreset('tight')">Tight</button>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Tile geometry</h3>
+    <div class="ctrl-row"><label>Tile half-width</label><input type="range" id="halfW" min="20" max="80" value="44"><span class="val" id="halfW_v"></span></div>
+    <div class="ctrl-row"><label>Tile thickness</label><input type="range" id="sideThick" min="0" max="8" step="0.5" value="2"><span class="val" id="sideThick_v"></span></div>
+    <div class="ctrl-row"><label>Active thickness ratio</label><input type="range" id="activeThickRatio" min="0" max="100" value="30"><span class="val" id="activeThickRatio_v">%</span></div>
+    <div class="ctrl-row"><label>Max tilt (face Y)</label><input type="range" id="maxTilt" min="2" max="30" value="12"><span class="val" id="maxTilt_v"></span></div>
+    <div class="ctrl-row"><label>Min tilt (edge-on)</label><input type="range" id="minTilt" min="0" max="8" value="1"><span class="val" id="minTilt_v"></span></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Arrangement (3-space)</h3>
+    <div class="ctrl-row"><label>Slot height</label><input type="range" id="slotH" min="4" max="24" value="11"><span class="val" id="slotH_v"></span></div>
+    <div class="ctrl-row"><label>Adjacent pull-in</label><input type="range" id="pullIn" min="0" max="100" value="40"><span class="val" id="pullIn_v">%</span></div>
+    <div class="ctrl-row"><label>Torus curve</label><input type="range" id="torusCurve" min="0" max="100" value="60"><span class="val" id="torusCurve_v">%</span></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Layout slots</h3>
+    <div class="ctrl-row"><label>Show slots</label><input type="checkbox" id="showSlots"></div>
+    <div class="ctrl-row"><label>Strategy</label>
+      <select id="slotStrategy">
+        <option value="equal">Equal height</option>
+        <option value="weighted">Active gets 2x</option>
+        <option value="voronoi">Voronoi (nearest tile)</option>
+        <option value="none">No slots (pixel pick only)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Render style</h3>
+    <div class="ctrl-row"><label>Style</label>
+      <select id="renderStyle">
+        <option value="subtle">Subtle (semi-transparent)</option>
+        <option value="cartoon">Cartoon (opaque, stencil outline)</option>
+      </select>
+    </div>
+    <div class="ctrl-row"><label>Tile opacity</label><input type="range" id="tileOpacity" min="30" max="100" value="85"><span class="val" id="tileOpacity_v">%</span></div>
+    <div class="ctrl-row"><label>Active desaturation</label><input type="range" id="activeDesat" min="0" max="100" value="100"><span class="val" id="activeDesat_v">%</span></div>
+    <div class="ctrl-row"><label>Stroke width</label><input type="range" id="strokeW" min="0" max="4" step="0.1" value="0.8"><span class="val" id="strokeW_v"></span></div>
+    <div class="ctrl-row"><label>Active stroke</label><input type="range" id="activeStrokeW" min="0" max="4" step="0.1" value="1"><span class="val" id="activeStrokeW_v"></span></div>
+    <div class="ctrl-row"><label>Cartoon gradient</label><input type="checkbox" id="cartoonGrad" checked></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Shadows</h3>
+    <div class="ctrl-row"><label>Shadow blur</label><input type="range" id="shadowBlur" min="0" max="6" step="0.5" value="2"><span class="val" id="shadowBlur_v"></span></div>
+    <div class="ctrl-row"><label>Shadow offset</label><input type="range" id="shadowOff" min="0" max="6" step="0.5" value="2"><span class="val" id="shadowOff_v"></span></div>
+    <div class="ctrl-row"><label>Shadow opacity</label><input type="range" id="shadowAlpha" min="0" max="100" value="50"><span class="val" id="shadowAlpha_v">%</span></div>
+    <div class="ctrl-row"><label>Flip shadows</label><input type="checkbox" id="flipShadow" checked></div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Animation</h3>
+    <div class="ctrl-row"><label>Duration (ms)</label><input type="range" id="animDur" min="0" max="800" step="25" value="300"><span class="val" id="animDur_v"></span></div>
+    <div class="ctrl-row"><label>Easing</label>
+      <select id="animEase">
+        <option value="ease-out">Ease out (cubic)</option>
+        <option value="ease-in-out">Ease in-out</option>
+        <option value="spring">Spring (overshoot)</option>
+        <option value="linear">Linear</option>
+        <option value="bounce">Bounce</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <h3>Display</h3>
+    <div class="ctrl-row"><label>Show label</label><input type="checkbox" id="showLabel" checked></div>
+    <div class="ctrl-row"><label>Show reference gallery</label><input type="checkbox" id="showGallery" checked></div>
+    <div class="ctrl-row"><label>Background</label>
+      <select id="bgSelect" onchange="setBg(this.value)">
+        <option value="checker">Checker</option>
+        <option value="#111">Dark</option>
+        <option value="#2a4a2a">Forest</option>
+        <option value="#4a6a8a">Sky</option>
+        <option value="#eee">Light</option>
+      </select>
+    </div>
+    <div class="ctrl-row"><label>Scale</label><input type="range" id="widgetScale" min="50" max="400" value="200"><span class="val" id="widgetScale_v">%</span></div>
+  </div>
+</div>
+
+<div id="preview">
+  <div id="preview-bg"></div>
+  <div class="widget-container" id="widget"></div>
+  <div id="statics"></div>
+  <div id="info">Click tile or scroll mousewheel to switch layers. Arrow keys work too.</div>
+</div>
+
+<script>
+const LAYERS = [
+  { id: 'plantings',  label: 'Plantings',  color: '#4A7C59', dark: '#3a6a48', side1: '#3f6d4e', side2: '#356042', stroke: '#3a6a48' },
+  { id: 'zones',      label: 'Zones',      color: '#7FB069', dark: '#5c8a4a', side1: '#6a9a56', side2: '#5c8a4a', stroke: '#6a9a56' },
+  { id: 'structures', label: 'Structures', color: '#D4A843', dark: '#a8832a', side1: '#c09530', side2: '#a8832a', stroke: '#b8942e' },
+  { id: 'blueprint',  label: 'Blueprint',  color: '#4A7CAF', dark: '#35608a', side1: '#3f6d9a', side2: '#35608a', stroke: '#3a6a9a' },
+  { id: 'ground',     label: 'Ground',     color: '#8B7355', dark: '#6b5540', side1: '#7a6349', side2: '#6b5540', stroke: '#6b5a42' },
+];
+
+let activeIndex = 0;
+let animating = false;
+let animId = null;
+
+function getParam(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (el.type === 'checkbox') return el.checked;
+  if (el.tagName === 'SELECT') return el.value;
+  return parseFloat(el.value);
+}
+
+function updateLabels() {
+  document.querySelectorAll('#controls input[type="range"]').forEach(inp => {
+    const v = document.getElementById(inp.id + '_v');
+    if (v) v.textContent = inp.value;
+  });
+}
+
+function computeLayout(activeIdx) {
+  const slotH = getParam('slotH');
+  const pullIn = getParam('pullIn') / 100;
+  const maxTilt = getParam('maxTilt');
+  const minTilt = getParam('minTilt');
+  const torusCurve = getParam('torusCurve') / 100;
+  const n = LAYERS.length;
+  const centerY = 60;
+
+  const tiles = [];
+  for (let i = 0; i < n; i++) {
+    const dist = Math.abs(i - activeIdx);
+    const dir = i < activeIdx ? -1 : i > activeIdx ? 1 : 0;
+
+    let baseY = 0;
+    if (i !== activeIdx) {
+      let rawOffset = (i - activeIdx) * slotH;
+      if (dist === 1) rawOffset *= (1 - pullIn);
+      baseY = rawOffset;
+    }
+
+    let tilt;
+    if (i === activeIdx) {
+      const atExtreme = (activeIdx === 0 || activeIdx === n - 1) ? 1 :
+                        (activeIdx === 1 || activeIdx === n - 2) ? 0.3 : 0;
+      tilt = minTilt + atExtreme * torusCurve * 3;
+    } else {
+      const maxDist = Math.max(activeIdx, n - 1 - activeIdx);
+      const t = maxDist > 0 ? dist / maxDist : 0;
+      tilt = minTilt + t * (maxTilt - minTilt);
+    }
+
+    tiles.push({ index: i, y: centerY + baseY, tilt, dir, dist });
+  }
+  return tiles;
+}
+
+function applyEasing(rawT, type) {
+  switch (type) {
+    case 'ease-out': return 1 - Math.pow(1 - rawT, 3);
+    case 'ease-in-out': return rawT < 0.5 ? 4*rawT*rawT*rawT : 1 - Math.pow(-2*rawT+2,3)/2;
+    case 'spring': {
+      const c4 = (2 * Math.PI) / 4.5;
+      return rawT === 0 ? 0 : rawT === 1 ? 1 :
+        Math.pow(2, -10*rawT) * Math.sin((rawT*10-0.75)*c4) + 1;
+    }
+    case 'bounce': {
+      const n1=7.5625, d1=2.75; let t=rawT;
+      if(t<1/d1) return n1*t*t;
+      else if(t<2/d1) return n1*(t-=1.5/d1)*t+.75;
+      else if(t<2.5/d1) return n1*(t-=2.25/d1)*t+.9375;
+      else return n1*(t-=2.625/d1)*t+.984375;
+    }
+    default: return rawT;
+  }
+}
+
+function lighten(hex, amt) {
+  let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  r = Math.min(255, r+amt); g = Math.min(255, g+amt); b = Math.min(255, b+amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+// Build the stencil silhouette path for a tile with thickness.
+// The viewer sees the top diamond face plus the two visible side faces.
+// The silhouette wraps the entire combined shape as one outline.
+//   Top diamond: (0, -tiltY), (halfW, 0), (0, tiltY), (-halfW, 0)
+//   With thickness, bottom edges shift down by `thick`:
+//     right-bottom: (halfW, thick), bottom-point: (0, tiltY+thick), left-bottom: (-halfW, thick)
+//   Silhouette (clockwise from top):
+//     (0, -tiltY) → (halfW, 0) → (halfW, thick) → (0, tiltY+thick) → (-halfW, thick) → (-halfW, 0)
+function stencilPath(halfW, tiltY, thick) {
+  if (thick <= 0 || tiltY < 0.5) {
+    // No visible sides — just the diamond
+    return `${0},${-tiltY} ${halfW},${0} ${0},${tiltY} ${-halfW},${0}`;
+  }
+  // Full stencil hexagon
+  return `${0},${-tiltY} ${halfW},${0} ${halfW},${thick} ${0},${tiltY + thick} ${-halfW},${thick} ${-halfW},${0}`;
+}
+
+function renderToSvg(tileStates, activeIdx, opts) {
+  const halfW = opts.halfW ?? getParam('halfW');
+  const sideThick = opts.sideThick ?? getParam('sideThick');
+  const activeThickRatio = (opts.activeThickRatio ?? getParam('activeThickRatio')) / 100;
+  const tileOpacity = (opts.tileOpacity ?? getParam('tileOpacity')) / 100;
+  const activeDesat = (opts.activeDesat ?? getParam('activeDesat')) / 100;
+  const strokeW = opts.strokeW ?? getParam('strokeW');
+  const activeStrokeW = opts.activeStrokeW ?? getParam('activeStrokeW');
+  const shadowBlur = opts.shadowBlur ?? getParam('shadowBlur');
+  const shadowOff = opts.shadowOff ?? getParam('shadowOff');
+  const shadowAlpha = (opts.shadowAlpha ?? getParam('shadowAlpha')) / 100;
+  const flipShadow = opts.flipShadow ?? getParam('flipShadow');
+  const showSlots = opts.showSlots ?? false;
+  const showLabel = opts.showLabel ?? getParam('showLabel');
+  const slotH = opts.slotH ?? getParam('slotH');
+  const renderStyle = opts.renderStyle ?? getParam('renderStyle');
+  const cartoonGrad = opts.cartoonGrad ?? getParam('cartoonGrad');
+  const slotStrategy = opts.slotStrategy ?? getParam('slotStrategy');
+  const isCartoon = renderStyle === 'cartoon';
+  const mini = opts.mini || false;
+  const uid = opts.idPrefix || '';
+
+  const labelSpace = (!mini && showLabel) ? 70 : 6;
+  const svgW = halfW * 2 + labelSpace + 10;
+  const svgH = 120;
+  const cx = labelSpace + halfW;
+
+  const sorted = [...tileStates].sort((a, b) => b.dist - a.dist);
+
+  let defs = '';
+  let content = '';
+
+  // Gradient defs for cartoon
+  if (isCartoon && cartoonGrad) {
+    LAYERS.forEach((layer, i) => {
+      defs += `<linearGradient id="${uid}cg${i}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lighten(layer.color, 40)}"/>
+        <stop offset="100%" stop-color="${layer.dark}"/>
+      </linearGradient>`;
+    });
+  }
+
+  // Shadow filters
+  for (let i = 0; i < LAYERS.length; i++) {
+    const t = tileStates[i];
+    const sDir = flipShadow ? (t.dir <= 0 ? -1 : 1) : 1;
+    defs += `<filter id="${uid}sh${i}" x="-30%" y="-40%" width="160%" height="200%">
+      <feDropShadow dx="0" dy="${sDir * shadowOff}" stdDeviation="${shadowBlur}" flood-color="#000" flood-opacity="${shadowAlpha}"/>
+    </filter>`;
+  }
+
+  // Layout slots
+  if (showSlots) {
+    const n = LAYERS.length;
+    if (slotStrategy === 'equal') {
+      for (let i = 0; i < n; i++) {
+        const sy = tileStates[i].y - slotH / 2;
+        content += `<rect x="${cx-halfW-5}" y="${sy}" width="${halfW*2+10}" height="${slotH}" fill="none" stroke="red" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.5"/>`;
+      }
+    } else if (slotStrategy === 'voronoi') {
+      const sortedByY = [...tileStates].sort((a, b) => a.y - b.y);
+      for (let i = 0; i < sortedByY.length; i++) {
+        const top = i === 0 ? sortedByY[0].y - slotH : (sortedByY[i-1].y + sortedByY[i].y) / 2;
+        const bot = i === sortedByY.length-1 ? sortedByY[i].y + slotH : (sortedByY[i].y + sortedByY[i+1].y) / 2;
+        content += `<rect x="${cx-halfW-5}" y="${top}" width="${halfW*2+10}" height="${bot-top}" fill="${sortedByY[i].index===activeIdx?'rgba(255,200,0,0.1)':'none'}" stroke="red" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.5"/>`;
+      }
+    } else if (slotStrategy === 'weighted') {
+      const totalSlots = LAYERS.length + 1;
+      const unitH = (slotH * LAYERS.length) / totalSlots;
+      let cumY = tileStates[0].y - slotH / 2;
+      for (let i = 0; i < LAYERS.length; i++) {
+        const h = i === activeIdx ? unitH*2 : unitH;
+        content += `<rect x="${cx-halfW-5}" y="${cumY}" width="${halfW*2+10}" height="${h}" fill="${i===activeIdx?'rgba(255,200,0,0.1)':'none'}" stroke="red" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.5"/>`;
+        cumY += h;
+      }
+    }
+  }
+
+  // Render tiles
+  for (const t of sorted) {
+    const layer = LAYERS[t.index];
+    const isActive = t.index === activeIdx;
+    const tiltY = t.tilt;
+    const sw = isActive ? activeStrokeW : strokeW;
+    const opacity = isCartoon ? 1 : (isActive ? 0.95 : tileOpacity);
+    const thick = isActive ? sideThick * activeThickRatio : sideThick;
+
+    // Filter / style
+    // Every tile gets a shadow filter. Active also gets desaturation.
+    let gStyle = '', filterAttr = `filter="url(#${uid}sh${t.index})"`;
+    if (isActive) {
+      const sat = 1 - activeDesat;
+      // Combine shadow filter with desaturation via CSS filter chain
+      gStyle = `filter:saturate(${sat}) url(#${uid}sh${t.index})`;
+      filterAttr = ''; // use gStyle instead
+    }
+
+    content += `<g transform="translate(${cx},${t.y})" style="${gStyle}" ${filterAttr} data-idx="${t.index}" class="tile">`;
+
+    if (tiltY < 0.3) {
+      // Edge-on: just a line
+      const lineColor = isActive ? '#aaa' : (isCartoon ? lighten(layer.stroke, 80) : layer.stroke);
+      content += `<line x1="${-halfW}" y1="0" x2="${halfW}" y2="0" stroke="${lineColor}" stroke-width="${isActive ? 1 : sw}"/>`;
+    } else if (isCartoon) {
+      // CARTOON: fill faces separately, then draw stencil outline over everything
+      const topPts = `0,${-tiltY} ${halfW},0 0,${tiltY} ${-halfW},0`;
+      const fillAttr = cartoonGrad ? `url(#${uid}cg${t.index})` : layer.color;
+
+      // Fill top face
+      content += `<polygon points="${topPts}" fill="${fillAttr}" opacity="${opacity}" stroke="none"/>`;
+
+      // Fill side faces
+      if (thick > 0) {
+        content += `<polygon points="0,${tiltY} ${halfW},0 ${halfW},${thick} 0,${tiltY+thick}" fill="${layer.side1}" opacity="${opacity}" stroke="none"/>`;
+        content += `<polygon points="0,${tiltY} ${-halfW},0 ${-halfW},${thick} 0,${tiltY+thick}" fill="${layer.side2}" opacity="${opacity}" stroke="none"/>`;
+      }
+
+      // Stencil outline: single path wrapping the entire visible shape
+      const strokeColor = isActive ? '#fff' : lighten(layer.stroke, 80);
+      const outlinePts = stencilPath(halfW, tiltY, thick);
+      content += `<polygon points="${outlinePts}" fill="none" stroke="${strokeColor}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+
+    } else {
+      // SUBTLE: original approach — stroke on top face, separate side fills
+      const topPts = `0,${-tiltY} ${halfW},0 0,${tiltY} ${-halfW},0`;
+      const strokeColor = isActive ? '#fff' : layer.stroke;
+
+      // Side faces
+      if (thick > 0) {
+        content += `<polygon points="0,${tiltY} ${halfW},0 ${halfW},${thick} 0,${tiltY+thick}" fill="${layer.side1}" opacity="${opacity}" stroke="none"/>`;
+        content += `<polygon points="0,${tiltY} ${-halfW},0 ${-halfW},${thick} 0,${tiltY+thick}" fill="${layer.side2}" opacity="${opacity}" stroke="none"/>`;
+      }
+
+      content += `<polygon points="${topPts}" fill="${layer.color}" opacity="${opacity}" stroke="${strokeColor}" stroke-width="${sw}"/>`;
+    }
+
+    content += `</g>`;
+
+    if (isActive && showLabel && !mini) {
+      content += `<text x="${cx-halfW-6}" y="${t.y+3}" text-anchor="end" fill="#ccc" font-size="9" font-weight="600">${layer.label}</text>`;
+    }
+  }
+
+  return `<svg width="${opts.width || svgW}" height="${opts.height || svgH}" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible">
+    <defs>${defs}</defs>${content}</svg>`;
+}
+
+function render(tileStates) {
+  const scale = getParam('widgetScale') / 100;
+  const halfW = getParam('halfW');
+  const showLabel = getParam('showLabel');
+  const labelSpace = showLabel ? 70 : 6;
+  const svgW = halfW * 2 + labelSpace + 10;
+  const svgH = 120;
+
+  const widget = document.getElementById('widget');
+  widget.innerHTML = renderToSvg(tileStates, activeIndex, {
+    width: svgW * scale, height: svgH * scale, idPrefix: 'm_',
+  });
+
+  document.querySelectorAll('#widget .tile').forEach(g => {
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', () => {
+      const idx = parseInt(g.dataset.idx);
+      if (idx !== activeIndex && !animating) switchTo(idx);
+    });
+  });
+
+  renderStatics();
+}
+
+function renderStatics() {
+  const container = document.getElementById('statics');
+  if (!getParam('showGallery')) { container.innerHTML = ''; return; }
+
+  let html = '';
+  for (let ai = 0; ai < LAYERS.length; ai++) {
+    const layout = computeLayout(ai);
+    const svg = renderToSvg(layout, ai, {
+      width: 80, height: 48, mini: true, showLabel: false, showSlots: false, idPrefix: `s${ai}_`,
+    });
+    html += `<div class="static-cell ${ai === activeIndex ? 'active' : ''}" data-static-idx="${ai}">
+      <span class="static-label">${LAYERS[ai].label}</span>${svg}</div>`;
+  }
+  container.innerHTML = html;
+
+  document.querySelectorAll('.static-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const idx = parseInt(cell.dataset.staticIdx);
+      if (idx !== activeIndex && !animating) switchTo(idx);
+    });
+  });
+}
+
+function switchTo(newIdx) {
+  if (newIdx < 0 || newIdx >= LAYERS.length || newIdx === activeIndex) return;
+  const dur = getParam('animDur');
+  if (dur === 0) { activeIndex = newIdx; renderCurrent(); return; }
+
+  if (animId) cancelAnimationFrame(animId);
+  animating = true;
+  const oldLayout = computeLayout(activeIndex);
+  activeIndex = newIdx;
+  const newLayout = computeLayout(activeIndex);
+  const startTime = performance.now();
+  const easeType = getParam('animEase');
+
+  function animFrame(now) {
+    const rawT = Math.min((now - startTime) / dur, 1);
+    const t = applyEasing(rawT, easeType);
+    const interp = oldLayout.map((old, i) => ({
+      index: i,
+      y: old.y + (newLayout[i].y - old.y) * t,
+      tilt: old.tilt + (newLayout[i].tilt - old.tilt) * t,
+      dir: newLayout[i].dir,
+      dist: newLayout[i].dist,
+    }));
+    render(interp);
+    if (rawT < 1) { animId = requestAnimationFrame(animFrame); }
+    else { animating = false; animId = null; renderCurrent(); }
+  }
+  animId = requestAnimationFrame(animFrame);
+}
+
+function renderCurrent() { render(computeLayout(activeIndex)); }
+
+function setBg(val) {
+  const bg = document.getElementById('preview-bg');
+  bg.style.background = val === 'checker'
+    ? "repeating-conic-gradient(#1a1a1a 0% 25%, #151515 0% 50%) 0 0 / 20px 20px" : val;
+}
+
+const presets = {
+  rolodex: { halfW:44, slotH:11, pullIn:40, maxTilt:12, minTilt:1, torusCurve:60, sideThick:2, activeThickRatio:30, tileOpacity:85, activeDesat:100, strokeW:0.8, activeStrokeW:1, shadowBlur:2, shadowOff:2, shadowAlpha:50, flipShadow:true, showSlots:false, showLabel:true, showGallery:true, animDur:300, renderStyle:'subtle', cartoonGrad:true, slotStrategy:'equal', animEase:'ease-out', widgetScale:200 },
+  flat:    { halfW:44, slotH:11, pullIn:40, maxTilt:12, minTilt:0, torusCurve:0,  sideThick:2, activeThickRatio:30, tileOpacity:85, activeDesat:100, strokeW:0.8, activeStrokeW:1, shadowBlur:2, shadowOff:2, shadowAlpha:50, flipShadow:true, showSlots:false, showLabel:true, showGallery:true, animDur:300, renderStyle:'subtle', cartoonGrad:true, slotStrategy:'equal', animEase:'ease-out', widgetScale:200 },
+  spread:  { halfW:50, slotH:18, pullIn:0,  maxTilt:20, minTilt:2, torusCurve:80, sideThick:3, activeThickRatio:30, tileOpacity:90, activeDesat:100, strokeW:0.8, activeStrokeW:1.2, shadowBlur:3, shadowOff:3, shadowAlpha:60, flipShadow:true, showSlots:false, showLabel:true, showGallery:true, animDur:400, renderStyle:'subtle', cartoonGrad:true, slotStrategy:'equal', animEase:'spring', widgetScale:200 },
+  tight:   { halfW:38, slotH:7,  pullIn:60, maxTilt:8,  minTilt:1, torusCurve:50, sideThick:1.5, activeThickRatio:30, tileOpacity:80, activeDesat:100, strokeW:0.6, activeStrokeW:0.8, shadowBlur:1.5, shadowOff:1.5, shadowAlpha:40, flipShadow:true, showSlots:false, showLabel:true, showGallery:true, animDur:250, renderStyle:'subtle', cartoonGrad:true, slotStrategy:'equal', animEase:'ease-out', widgetScale:200 },
+};
+
+function applyPreset(name) {
+  const p = presets[name];
+  for (const [k, v] of Object.entries(p)) {
+    const el = document.getElementById(k);
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = v;
+    else el.value = v;
+  }
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === name));
+  updateLabels();
+  renderCurrent();
+}
+
+document.querySelectorAll('#controls input, #controls select').forEach(el => {
+  el.addEventListener('input', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    updateLabels();
+    renderCurrent();
+  });
+});
+
+// Mousewheel on preview area
+document.getElementById('preview').addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (animating) return;
+  if (e.deltaY > 0 && activeIndex < LAYERS.length - 1) switchTo(activeIndex + 1);
+  else if (e.deltaY < 0 && activeIndex > 0) switchTo(activeIndex - 1);
+}, { passive: false });
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' && activeIndex > 0) { e.preventDefault(); switchTo(activeIndex - 1); }
+  if (e.key === 'ArrowDown' && activeIndex < LAYERS.length - 1) { e.preventDefault(); switchTo(activeIndex + 1); }
+});
+
+updateLabels();
+renderCurrent();
+</script>
+</body>
+</html>

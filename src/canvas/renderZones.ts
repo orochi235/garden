@@ -39,12 +39,13 @@ export function renderZones(
       ctx.strokeRect(sx, sy, sw, sh);
     }
 
-    if (z.label) {
+    const labelText = z.label || (highlight ? 'zone' : '');
+    if (labelText) {
       ctx.fillStyle = '#2D4F3A';
-      ctx.font = `${Math.max(10, 12 * view.zoom)}px sans-serif`;
+      ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(z.label, sx + sw / 2, sy + sh / 2);
+      ctx.fillText(labelText, sx + sw / 2, sy + sh / 2);
     }
   }
 

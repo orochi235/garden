@@ -33,7 +33,7 @@ const SHADOW_BLUR = 2;
 const SHADOW_OFF = 2;
 const SHADOW_ALPHA = 0.5;
 const ANIM_DUR = 250;
-const CAM_FOLLOW = 1.0;
+const CAM_FOLLOW = 0.0;
 
 interface TileState {
   index: number;
@@ -93,13 +93,6 @@ function computeLayout(activeIdx: number): TileState[] {
   return tiles;
 }
 
-function lighten(hex: string, amt: number): string {
-  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amt);
-  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amt);
-  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amt);
-  return `rgb(${r},${g},${b})`;
-}
-
 function applyEasing(rawT: number): number {
   return 1 - Math.pow(1 - rawT, 3); // ease-out
 }
@@ -120,6 +113,18 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
   const labelSpace = 58;
   const svgW = HALF_W * 2 + labelSpace + 10;
   const cx = labelSpace + HALF_W;
+
+  // Compute tight vertical bounds
+  const margin = 6;
+  const sideThick = SIDE_THICK;
+  let minY = Infinity, maxY = -Infinity;
+  for (const t of tileStates) {
+    minY = Math.min(minY, t.y - t.tilt - sideThick);
+    maxY = Math.max(maxY, t.y + t.tilt + sideThick);
+  }
+  const svgH = maxY - minY + margin * 2;
+  const yOffset = -minY + margin;
+
 
   const sorted = [...tileStates].sort((a, b) => {
     if (a.index === activeIdx) return 1;
@@ -160,9 +165,9 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
     if (!isActive) {
       content += `<g ${filterAttr}>`;
       content += `<g clip-path="url(#clip${t.index})">`;
-      content += `<g transform="translate(${cx},${t.y})" style="filter:saturate(0.25)" data-idx="${t.index}" class="tile">`;
+      content += `<g transform="translate(${cx},${t.y + yOffset})" style="filter:saturate(0.25)" data-idx="${t.index}" class="tile">`;
     } else {
-      content += `<g transform="translate(${cx},${t.y})" ${filterAttr} data-idx="${t.index}" class="tile">`;
+      content += `<g transform="translate(${cx},${t.y + yOffset})" ${filterAttr} data-idx="${t.index}" class="tile">`;
     }
 
     const fillAttr = layer.color;
@@ -191,11 +196,11 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
     }
 
     if (isActive) {
-      content += `<text x="${cx - HALF_W - 6}" y="${55 + 3}" text-anchor="end" fill="#ccc" font-size="9" font-weight="600">${layer.label}</text>`;
+      content += `<text x="${cx - HALF_W - 6}" y="${t.y + yOffset + 3}" text-anchor="end" fill="#ccc" font-size="9" font-weight="600">${layer.label}</text>`;
     }
   }
 
-  return `<svg width="${svgW}" height="110" viewBox="0 0 ${svgW} 110" style="overflow:visible">
+  return `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible">
     <defs>${defs}</defs>${content}</svg>`;
 }
 
@@ -205,8 +210,6 @@ export function LayerSelector() {
   const [svgHtml, setSvgHtml] = useState('');
   const animRef = useRef<number | null>(null);
   const layoutRef = useRef<TileState[] | null>(null);
-
-  const activeIdx = LAYERS.findIndex((l) => l.id === activeLayer);
 
   const renderWidget = useCallback((tiles: TileState[], idx: number) => {
     setSvgHtml(renderSvgContent(tiles, idx));

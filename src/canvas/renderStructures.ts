@@ -54,12 +54,13 @@ export function renderStructures(
       }
     }
 
-    if (s.label) {
+    const labelText = s.label || (highlight ? s.type : '');
+    if (labelText) {
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = `${Math.max(10, 12 * view.zoom)}px sans-serif`;
+      ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(s.label, sx + sw / 2, sy + sh / 2);
+      ctx.fillText(labelText, sx + sw / 2, sy + sh / 2);
     }
   }
 

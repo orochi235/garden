@@ -29,14 +29,14 @@ describe('hitTestAllLayers', () => {
     expect(hit!.layer).toBe('zones');
   });
 
-  it('prefers structures over zones when overlapping', () => {
+  it('prefers zones over structures when overlapping (zones render on top)', () => {
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
 
     const { structures, zones } = useGardenStore.getState().garden;
     const hit = hitTestAllLayers(2, 2, structures, zones);
     expect(hit).not.toBeNull();
-    expect(hit!.layer).toBe('structures');
+    expect(hit!.layer).toBe('zones');
   });
 
   it('returns null when nothing is hit', () => {
@@ -53,14 +53,14 @@ describe('hitTestAllLayers', () => {
     expect(hit).toBeNull();
   });
 
-  it('falls through to zones when structures are locked', () => {
+  it('falls through to structures when zones are locked', () => {
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
-    useUiStore.getState().setLayerLocked('structures', true);
+    useUiStore.getState().setLayerLocked('zones', true);
 
     const { structures, zones } = useGardenStore.getState().garden;
     const hit = hitTestAllLayers(2, 2, structures, zones);
     expect(hit).not.toBeNull();
-    expect(hit!.layer).toBe('zones');
+    expect(hit!.layer).toBe('structures');
   });
 });

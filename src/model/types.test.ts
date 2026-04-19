@@ -27,7 +27,7 @@ describe('factory functions', () => {
     expect(s.height).toBe(8);
     expect(s.rotation).toBe(0);
     expect(s.color).toBeTruthy();
-    expect(s.label).toBe('');
+    expect(s.label).toBe('raised-bed');
     expect(s.zIndex).toBe(0);
     expect(s.parentId).toBeNull();
     expect(s.snapToGrid).toBe(true);

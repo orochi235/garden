@@ -115,6 +115,17 @@ export function hitTestAllLayers(
 ): HitResult | null {
   const locked = useUiStore.getState().layerLocked;
 
+  // Check in reverse render order (topmost layer first):
+  // plantings > zones > structures > blueprint > ground
+  if (!locked.zones) {
+    const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
+    for (const z of sorted) {
+      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
+        return { id: z.id, layer: 'zones' };
+      }
+    }
+  }
+
   if (!locked.structures) {
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
@@ -122,15 +133,6 @@ export function hitTestAllLayers(
         ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
         : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
       if (hit) return { id: s.id, layer: 'structures' };
-    }
-  }
-
-  if (!locked.zones) {
-    const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
-    for (const z of sorted) {
-      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
-        return { id: z.id, layer: 'zones' };
-      }
     }
   }
 

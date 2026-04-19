@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type JSX } from 'react';
 import { useUiStore } from '../store/uiStore';
 import type { ViewMode } from '../store/uiStore';
 import styles from '../styles/ViewToolbar.module.css';

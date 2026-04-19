@@ -51,12 +51,13 @@ export function renderPlantings(
       ctx.stroke();
     }
 
-    if (showLabel && p.name) {
+    const labelText = p.label || p.name;
+    if ((showLabel || highlight) && labelText) {
       ctx.fillStyle = '#1A2E22';
-      ctx.font = `${Math.max(9, 11 * view.zoom)}px sans-serif`;
+      ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(p.name, sx, sy + radius + 2);
+      ctx.fillText(labelText, sx, sy + radius + 2);
     }
   }
 

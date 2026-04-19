@@ -56,7 +56,7 @@ export const useUiStore = create<UiStore>((set) => ({
   panX: 0,
   panY: 0,
   plottingTool: null,
-  themeOverride: 'slow-cycle',
+  themeOverride: null,
   viewMode: 'select',
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
@@ -73,6 +73,6 @@ export const useUiStore = create<UiStore>((set) => ({
   reset: () => set({
     activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
     layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, plottingTool: null, themeOverride: 'slow-cycle', viewMode: 'select',
+    selectedIds: [], zoom: 1, panX: 0, panY: 0, plottingTool: null, themeOverride: null, viewMode: 'select',
   }),
 }));
