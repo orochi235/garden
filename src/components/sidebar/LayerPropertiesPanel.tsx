@@ -68,6 +68,15 @@ function LayerSection({
 function DebugThemePanel() {
   const themeOverride = useUiStore((s) => s.themeOverride);
   const setThemeOverride = useUiStore((s) => s.setThemeOverride);
+  const loadGarden = useGardenStore((s) => s.loadGarden);
+
+  function handleResetGarden() {
+    localStorage.removeItem('garden-planner-autosave');
+    fetch(`${import.meta.env.BASE_URL}default.garden`)
+      .then((r) => r.json())
+      .then((g) => loadGarden(g))
+      .catch(() => {});
+  }
 
   return (
     <LayerSection title="Theme (Debug)" defaultOpen>
@@ -132,6 +141,13 @@ function DebugThemePanel() {
           </button>
         ))}
       </div>
+      <hr className={styles.themeDivider} />
+      <button
+        className={styles.resetButton}
+        onClick={handleResetGarden}
+      >
+        Reset to Default Garden
+      </button>
     </LayerSection>
   );
 }
@@ -139,6 +155,8 @@ function DebugThemePanel() {
 export function LayerPropertiesPanel() {
   const garden = useGardenStore((s) => s.garden);
   const updateGarden = useGardenStore((s) => s.updateGarden);
+  const showSurfaces = useUiStore((s) => s.showSurfaces);
+  const setShowSurfaces = useUiStore((s) => s.setShowSurfaces);
   const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const unit = garden.displayUnit;
 
@@ -286,7 +304,15 @@ export function LayerPropertiesPanel() {
 
       <LayerSection title="Structures" layerId="structures">
         <div className={f.grid}>
-          <span className={f.label}>No properties yet</span>
+          <span className={f.label}>Surfaces</span>
+          <label className={styles.surfaceToggle}>
+            <input
+              type="checkbox"
+              checked={showSurfaces}
+              onChange={(e) => setShowSurfaces(e.target.checked)}
+            />
+            <span>Show</span>
+          </label>
         </div>
       </LayerSection>
 

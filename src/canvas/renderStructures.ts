@@ -2,6 +2,25 @@ import type { Structure } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 
+let hatchPattern: CanvasPattern | null = null;
+
+function getHatchPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
+  if (hatchPattern) return hatchPattern;
+  const size = 8;
+  const off = document.createElement('canvas');
+  off.width = size;
+  off.height = size;
+  const oc = off.getContext('2d')!;
+  oc.strokeStyle = 'goldenrod';
+  oc.lineWidth = 1;
+  oc.beginPath();
+  oc.moveTo(0, size);
+  oc.lineTo(size, 0);
+  oc.stroke();
+  hatchPattern = ctx.createPattern(off, 'repeat');
+  return hatchPattern;
+}
+
 export function renderStructures(
   ctx: CanvasRenderingContext2D,
   structures: Structure[],
@@ -10,6 +29,7 @@ export function renderStructures(
   canvasHeight: number,
   opacity: number,
   highlight: boolean = false,
+  showSurfaces: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
@@ -27,7 +47,22 @@ export function renderStructures(
     ctx.strokeStyle = '#333333';
     ctx.lineWidth = 1;
 
-    if (s.shape === 'circle') {
+    if (s.type === 'pot') {
+      const cx = sx + sw / 2;
+      const cy = sy + sh / 2;
+      const r = Math.min(sw, sh) / 2;
+      const rimWidth = Math.max(3, view.zoom * 0.12);
+      // Outer rim (pot color)
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // Inner dirt fill
+      ctx.fillStyle = '#5C4033';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r - rimWidth, r - rimWidth, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (s.shape === 'circle') {
       const cx = sx + sw / 2;
       const cy = sy + sh / 2;
       ctx.beginPath();
@@ -51,6 +86,27 @@ export function renderStructures(
         ctx.stroke();
       } else {
         ctx.strokeRect(sx, sy, sw, sh);
+      }
+    }
+
+    if (showSurfaces && s.surface) {
+      const pattern = getHatchPattern(ctx);
+      if (pattern) {
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = pattern;
+        // Clip to shape interior, excluding the border
+        const inset = 1;
+        if (s.shape === 'circle') {
+          const cx = sx + sw / 2;
+          const cy = sy + sh / 2;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, sw / 2 - inset, sh / 2 - inset, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(sx + inset, sy + inset, sw - inset * 2, sh - inset * 2);
+        }
+        ctx.restore();
       }
     }
 

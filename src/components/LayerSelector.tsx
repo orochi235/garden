@@ -340,11 +340,23 @@ export function LayerSelector() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const setLayerSelectorHovered = useUiStore((s) => s.setLayerSelectorHovered);
+
+  const handleMouseEnter = useCallback(() => {
+    setLayerSelectorHovered(true);
+  }, [setLayerSelectorHovered]);
+
+  const handleMouseLeave = useCallback(() => {
+    setLayerSelectorHovered(false);
+  }, [setLayerSelectorHovered]);
+
   return (
     <div
       className={styles.container}
       onClick={handleClick}
       onWheel={handleWheel}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       dangerouslySetInnerHTML={{ __html: svgHtml }}
     />
   );

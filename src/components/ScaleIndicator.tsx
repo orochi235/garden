@@ -24,7 +24,7 @@ function useViewMoving() {
 
     setMoving(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setMoving(false), 500);
+    timeoutRef.current = setTimeout(() => setMoving(false), 200);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -69,7 +69,7 @@ export function ScaleIndicator({ canvasHeight }: Props) {
         pointerEvents: 'none',
         zIndex: 10,
         opacity: moving ? 0 : 1,
-        transition: moving ? 'opacity 0.15s ease-out' : 'opacity 0.3s ease-in 0.5s',
+        transition: moving ? 'opacity 0.15s ease-out' : 'opacity 0.3s ease-in 0.2s',
       }}
     >
       <div

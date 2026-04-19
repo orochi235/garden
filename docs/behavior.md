@@ -30,10 +30,15 @@ Running list of intended application behaviors.
 - The scale widget snaps to the grid
 - While the canvas is being panned or zoomed, fade the scale widget out; fade it back in 0.5s after movement stops
 
+## Collision
+
+- Structures in the same layer cannot overlap; moves and placements that would cause a collision are rejected
+
 ## Layer Selector
 
 - Text label moves to follow the active plate; plates stay relatively stationary
 - Default theme is "Live" (time-based)
+- Active layer outlines only appear while hovering over the layer selector
 
 ## Sidebar
 

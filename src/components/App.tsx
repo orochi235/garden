@@ -3,7 +3,7 @@ import { CanvasStack } from '../canvas/CanvasStack';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { useGardenStore } from '../store/gardenStore';
 import styles from '../styles/App.module.css';
-import { autosave, loadAutosave } from '../utils/file';
+import { autosave } from '../utils/file';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
@@ -25,8 +25,11 @@ export function App() {
   const dragStartWidth = useRef(0);
 
   useEffect(() => {
-    const saved = loadAutosave();
-    if (saved) loadGarden(saved);
+    // TODO: re-enable autosave loading once blank-canvas bug is fixed
+    fetch(`${import.meta.env.BASE_URL}default.garden`)
+      .then((r) => r.json())
+      .then((g) => loadGarden(g))
+      .catch(() => {});
   }, [loadGarden]);
 
   useEffect(() => {

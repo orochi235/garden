@@ -99,3 +99,32 @@
   border-top: 1px solid var(--color-panel-border);
   margin: 4px 8px;
 }
+.resetButton {
+  display: block;
+  width: calc(100% - 16px);
+  margin: 4px 8px;
+  padding: 5px 8px;
+  background: var(--color-soil-dark);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+}
+.resetButton:hover {
+  border-color: var(--color-text-muted);
+}
+.surfaceToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+  grid-column: span 12;
+}
+.surfaceToggle input {
+  accent-color: goldenrod;
+}

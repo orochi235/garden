@@ -26,6 +26,7 @@ export interface Structure {
   zIndex: number;
   parentId: string | null;
   snapToGrid: boolean;
+  surface: boolean;
 }
 
 export interface Zone {
@@ -104,6 +105,8 @@ const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
   pot: 'circle',
 };
 
+const SURFACE_TYPES = new Set(['patio', 'path']);
+
 export function createStructure(opts: {
   type: string;
   x: number;
@@ -126,6 +129,7 @@ export function createStructure(opts: {
     zIndex: 0,
     parentId: null,
     snapToGrid: true,
+    surface: SURFACE_TYPES.has(opts.type),
   };
 }
 

@@ -53,6 +53,8 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   const addToSelection = useUiStore((s) => s.addToSelection);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const activeLayer = useUiStore((s) => s.activeLayer);
+  const layerSelectorHovered = useUiStore((s) => s.layerSelectorHovered);
+  const showSurfaces = useUiStore((s) => s.showSurfaces);
   const viewMode = useUiStore((s) => s.viewMode);
 
   const [activeCursor, setActiveCursor] = useState<string | null>(null);
@@ -143,9 +145,10 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         width,
         height,
         layerOpacity.structures,
-        activeLayer === 'structures',
+        layerSelectorHovered && activeLayer === 'structures',
+        showSurfaces,
       ),
-    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer],
+    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, layerSelectorHovered, showSurfaces],
   );
 
   useLayerEffect(
@@ -162,9 +165,9 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         width,
         height,
         layerOpacity.zones,
-        activeLayer === 'zones',
+        layerSelectorHovered && activeLayer === 'zones',
       ),
-    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer],
+    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, layerSelectorHovered],
   );
 
   useLayerEffect(
@@ -182,9 +185,9 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         width,
         height,
         layerOpacity.plantings,
-        activeLayer === 'plantings',
+        layerSelectorHovered && activeLayer === 'plantings',
       ),
-    [garden.plantings, garden.zones, zoom, panX, panY, layerOpacity.plantings, activeLayer],
+    [garden.plantings, garden.zones, zoom, panX, panY, layerOpacity.plantings, activeLayer, layerSelectorHovered],
   );
 
   useLayerEffect(

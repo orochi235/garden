@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { screenToWorld, snapToGrid } from '../../utils/grid';
+import { structuresCollide } from '../../utils/collision';
 
 export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement | null>) {
   const isMoving = useRef(false);
@@ -47,7 +48,14 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
     const snappedX = freeMove ? newX : snapToGrid(newX, cellSize);
     const snappedY = freeMove ? newY : snapToGrid(newY, cellSize);
     if (moveObjectLayer.current === 'structures') {
-      updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
+      const moving = garden.structures.find((s) => s.id === moveObjectId.current);
+      if (moving) {
+        const moved = { ...moving, x: snappedX, y: snappedY };
+        const others = garden.structures.filter((s) => s.id !== moveObjectId.current);
+        if (!structuresCollide(moved, others)) {
+          updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
+        }
+      }
     } else if (moveObjectLayer.current === 'zones') {
       updateZone(moveObjectId.current, { x: snappedX, y: snappedY });
     }

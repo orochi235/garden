@@ -18,6 +18,7 @@ describe('hitTestObjects', () => {
       zIndex: 0,
       parentId: null,
       snapToGrid: true,
+      surface: false,
     },
   ];
   const zones: Zone[] = [

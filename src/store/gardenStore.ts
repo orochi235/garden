@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone } from '../model/types';
+import { structuresCollide } from '../utils/collision';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
 
@@ -97,7 +98,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     addStructure: (opts) => {
       if (isLocked('structures')) return;
       const { structures } = get().garden;
-      commitPatch({ structures: [...structures, createStructure(opts)] });
+      const newStructure = createStructure(opts);
+      if (structuresCollide(newStructure, structures)) return;
+      commitPatch({ structures: [...structures, newStructure] });
     },
 
     updateStructure: (id, updates) => {
