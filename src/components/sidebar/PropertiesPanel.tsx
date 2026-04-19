@@ -7,8 +7,8 @@ const STRUCTURE_TYPES = ['raised-bed', 'pot', 'fence', 'path', 'patio'];
 
 export function PropertiesPanel() {
   const garden = useGardenStore((s) => s.garden);
-  const updateStructure = useGardenStore((s) => s.updateStructure);
-  const updateZone = useGardenStore((s) => s.updateZone);
+  const updateStructure = useGardenStore((s) => s.commitStructureUpdate);
+  const updateZone = useGardenStore((s) => s.commitZoneUpdate);
   const selectedIds = useUiStore((s) => s.selectedIds);
   const unit = garden.displayUnit;
 

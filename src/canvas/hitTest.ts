@@ -1,5 +1,6 @@
 import type { Structure, Zone, LayerId } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
+import { useUiStore } from '../store/uiStore';
 
 interface HitResult {
   id: string;
@@ -80,6 +81,7 @@ export function hitTestObjects(
   structures: Structure[], zones: Zone[],
   activeLayer: LayerId,
 ): HitResult | null {
+  if (useUiStore.getState().layerLocked[activeLayer]) return null;
   if (activeLayer === 'structures') {
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
@@ -99,6 +101,41 @@ export function hitTestObjects(
       }
     }
   }
+  return null;
+}
+
+/**
+ * Hit-test objects across ALL layers (ignores activeLayer filter).
+ * Returns the hit result with the layer the object belongs to, or null.
+ * Respects layer lock — locked layers are skipped.
+ */
+export function hitTestAllLayers(
+  worldX: number, worldY: number,
+  structures: Structure[], zones: Zone[],
+): HitResult | null {
+  const locked = useUiStore.getState().layerLocked;
+
+  // Check in reverse render order (topmost layer first):
+  // plantings > zones > structures > blueprint > ground
+  if (!locked.zones) {
+    const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
+    for (const z of sorted) {
+      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
+        return { id: z.id, layer: 'zones' };
+      }
+    }
+  }
+
+  if (!locked.structures) {
+    const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
+    for (const s of sorted) {
+      const hit = s.shape === 'circle'
+        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
+        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+      if (hit) return { id: s.id, layer: 'structures' };
+    }
+  }
+
   return null;
 }
 

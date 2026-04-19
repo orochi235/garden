@@ -9,6 +9,7 @@ export function renderStructures(
   canvasWidth: number,
   canvasHeight: number,
   opacity: number,
+  highlight: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
@@ -38,12 +39,28 @@ export function renderStructures(
       ctx.strokeRect(sx, sy, sw, sh);
     }
 
-    if (s.label) {
+    if (highlight) {
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      if (s.shape === 'circle') {
+        const cx = sx + sw / 2;
+        const cy = sy + sh / 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, sw / 2, sh / 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.strokeRect(sx, sy, sw, sh);
+      }
+    }
+
+    const labelText = s.label || (highlight ? s.type : '');
+    if (labelText) {
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = `${Math.max(10, 12 * view.zoom)}px sans-serif`;
+      ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(s.label, sx + sw / 2, sy + sh / 2);
+      ctx.fillText(labelText, sx + sw / 2, sy + sh / 2);
     }
   }
 

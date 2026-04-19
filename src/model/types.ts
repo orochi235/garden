@@ -48,6 +48,7 @@ export interface Planting {
   x: number;
   y: number;
   name: string;
+  label: string;
   color: string;
   icon: string | null;
   variety: string | null;
@@ -121,7 +122,7 @@ export function createStructure(opts: {
     height: opts.height,
     rotation: 0,
     color: DEFAULT_STRUCTURE_COLORS[opts.type] ?? '#8B6914',
-    label: '',
+    label: opts.type,
     zIndex: 0,
     parentId: null,
     snapToGrid: true,
@@ -136,7 +137,7 @@ export function createZone(opts: { x: number; y: number; width: number; height: 
     width: opts.width,
     height: opts.height,
     color: '#7FB06944',
-    label: '',
+    label: 'zone',
     zIndex: 0,
     parentId: null,
     soilType: null,
@@ -156,6 +157,7 @@ export function createPlanting(opts: {
     x: opts.x,
     y: opts.y,
     name: opts.name,
+    label: opts.name,
     color: '#4A7C59',
     icon: null,
     variety: null,

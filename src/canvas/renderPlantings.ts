@@ -10,6 +10,7 @@ export function renderPlantings(
   canvasWidth: number,
   canvasHeight: number,
   opacity: number,
+  highlight: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -42,12 +43,21 @@ export function renderPlantings(
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    if (showLabel && p.name) {
+    if (highlight) {
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    const labelText = p.label || p.name;
+    if ((showLabel || highlight) && labelText) {
       ctx.fillStyle = '#1A2E22';
-      ctx.font = `${Math.max(9, 11 * view.zoom)}px sans-serif`;
+      ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(p.name, sx, sy + radius + 2);
+      ctx.fillText(labelText, sx, sy + radius + 2);
     }
   }
 

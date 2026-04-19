@@ -16,6 +16,8 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  will-change: opacity;
+  contain: strict;
 }
 
 .menu { grid-area: menu; z-index: 2; }

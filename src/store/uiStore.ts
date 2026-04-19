@@ -2,17 +2,9 @@ import { create } from 'zustand';
 import type { LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 
-type LayerRecord<T> = Record<LayerId, T>;
+export type ViewMode = 'select' | 'pan' | 'zoom';
 
-interface DragState {
-  isDragging: boolean;
-  dragType: 'palette' | 'move' | 'resize' | null;
-  dragObjectType: string | null;
-  dragStartX: number;
-  dragStartY: number;
-  dragCurrentX: number;
-  dragCurrentY: number;
-}
+type LayerRecord<T> = Record<LayerId, T>;
 
 export interface PlottingTool {
   category: 'structures' | 'zones';
@@ -29,9 +21,10 @@ interface UiStore {
   zoom: number;
   panX: number;
   panY: number;
-  drag: DragState;
   plottingTool: PlottingTool | null;
   themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
   setActiveLayer: (layer: LayerId) => void;
@@ -43,8 +36,6 @@ interface UiStore {
   clearSelection: () => void;
   setZoom: (zoom: number) => void;
   setPan: (x: number, y: number) => void;
-  setDrag: (drag: Partial<DragState>) => void;
-  clearDrag: () => void;
   reset: () => void;
 }
 
@@ -55,11 +46,6 @@ function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
 }
 
-const defaultDrag: DragState = {
-  isDragging: false, dragType: null, dragObjectType: null,
-  dragStartX: 0, dragStartY: 0, dragCurrentX: 0, dragCurrentY: 0,
-};
-
 export const useUiStore = create<UiStore>((set) => ({
   activeLayer: 'structures',
   layerVisibility: defaultLayerRecord(true),
@@ -69,9 +55,10 @@ export const useUiStore = create<UiStore>((set) => ({
   zoom: 1,
   panX: 0,
   panY: 0,
-  drag: { ...defaultDrag },
   plottingTool: null,
-  themeOverride: 'slow-cycle',
+  themeOverride: null,
+  viewMode: 'select',
+  setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
   setActiveLayer: (layer) => set({ activeLayer: layer }),
@@ -83,11 +70,9 @@ export const useUiStore = create<UiStore>((set) => ({
   clearSelection: () => set({ selectedIds: [] }),
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
-  setDrag: (drag) => set((state) => ({ drag: { ...state.drag, ...drag } })),
-  clearDrag: () => set({ drag: { ...defaultDrag } }),
   reset: () => set({
     activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
     layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, drag: { ...defaultDrag }, plottingTool: null, themeOverride: 'slow-cycle',
+    selectedIds: [], zoom: 1, panX: 0, panY: 0, plottingTool: null, themeOverride: null, viewMode: 'select',
   }),
 }));
