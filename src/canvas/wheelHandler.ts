@@ -23,6 +23,7 @@ export function computeWheelAction(
 ): WheelState {
   switch (mode) {
     case 'pan':
+    case 'draw':
     case 'select': {
       return {
         zoom: state.zoom,

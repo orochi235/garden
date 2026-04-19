@@ -1,16 +1,34 @@
-import { useEffect, type JSX } from 'react';
-import { useUiStore } from '../store/uiStore';
+import { type JSX, useEffect } from 'react';
 import type { ViewMode } from '../store/uiStore';
+import { useUiStore } from '../store/uiStore';
 import styles from '../styles/ViewToolbar.module.css';
 
 const icons: Record<ViewMode, JSX.Element> = {
   select: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M3 1 L3 12 L6.5 8.5 L10.5 13 L12.5 11.5 L8.5 7 L13 6 Z" />
     </svg>
   ),
   pan: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M5.5 9V3.5a1 1 0 0 1 2 0V8" />
       <path d="M7.5 7V2.5a1 1 0 0 1 2 0V8" />
       <path d="M9.5 7.5V4a1 1 0 0 1 2 0v4.5" />
@@ -19,19 +37,44 @@ const icons: Record<ViewMode, JSX.Element> = {
     </svg>
   ),
   zoom: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="7" cy="7" r="4.5" />
       <path d="M10.2 10.2 L14.5 14.5" />
       <path d="M5 7h4" />
       <path d="M7 5v4" />
     </svg>
   ),
+  draw: (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 11.5 L10.5 3 L13 5.5 L4.5 14 H2 V11.5Z" />
+      <path d="M9 4.5 L11.5 7" />
+    </svg>
+  ),
 };
 
 const tools: { mode: ViewMode; label: string }[] = [
   { mode: 'select', label: 'Select' },
-  { mode: 'pan',    label: 'Pan' },
-  { mode: 'zoom',   label: 'Zoom' },
+  { mode: 'draw', label: 'Draw' },
+  { mode: 'pan', label: 'Pan' },
+  { mode: 'zoom', label: 'Zoom' },
 ];
 
 export function ViewToolbar() {
@@ -41,9 +84,13 @@ export function ViewToolbar() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== '`') return;
-      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
+      if (
+        (e.target as HTMLElement).tagName === 'INPUT' ||
+        (e.target as HTMLElement).tagName === 'SELECT'
+      )
+        return;
       e.preventDefault();
-      const modes: ViewMode[] = ['select', 'pan', 'zoom'];
+      const modes: ViewMode[] = ['select', 'draw', 'pan', 'zoom'];
       const current = useUiStore.getState().viewMode;
       const idx = modes.indexOf(current);
       useUiStore.getState().setViewMode(modes[(idx + 1) % modes.length]);

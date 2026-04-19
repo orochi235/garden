@@ -94,14 +94,14 @@ export function createGarden(opts: { name: string; widthFt: number; heightFt: nu
 
 const DEFAULT_STRUCTURE_COLORS: Record<string, string> = {
   'raised-bed': '#8B6914',
-  'pot': '#C75B39',
-  'fence': '#5C4033',
-  'path': '#D4C4A8',
-  'patio': '#A0926B',
+  pot: '#C75B39',
+  fence: '#5C4033',
+  path: '#D4C4A8',
+  patio: '#A0926B',
 };
 
 const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
-  'pot': 'circle',
+  pot: 'circle',
 };
 
 export function createStructure(opts: {

@@ -1,16 +1,29 @@
 import { create } from 'zustand';
-import type { Garden, Structure, Zone, Planting, Blueprint, LayerId } from '../model/types';
-import { createGarden, createStructure, createZone, createPlanting } from '../model/types';
-import { pushHistory, undo, redo, canUndo, canRedo, clearHistory } from './history';
+import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
+import { createGarden, createPlanting, createStructure, createZone } from '../model/types';
+import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
 
 interface GardenStore {
   garden: Garden;
-  updateGarden: (updates: Partial<Pick<Garden, 'name' | 'widthFt' | 'heightFt' | 'gridCellSizeFt' | 'displayUnit' | 'groundColor'>>) => void;
+  updateGarden: (
+    updates: Partial<
+      Pick<
+        Garden,
+        'name' | 'widthFt' | 'heightFt' | 'gridCellSizeFt' | 'displayUnit' | 'groundColor'
+      >
+    >,
+  ) => void;
   loadGarden: (garden: Garden) => void;
   reset: () => void;
   setBlueprint: (blueprint: Blueprint | null) => void;
-  addStructure: (opts: { type: string; x: number; y: number; width: number; height: number }) => void;
+  addStructure: (opts: {
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => void;
   updateStructure: (id: string, updates: Partial<Omit<Structure, 'id'>>) => void;
   commitStructureUpdate: (id: string, updates: Partial<Omit<Structure, 'id'>>) => void;
   removeStructure: (id: string) => void;
@@ -22,7 +35,6 @@ interface GardenStore {
   updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
-  /** Save current state to history stack. Call before a batch of changes that should be one undo step. */
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -34,36 +46,142 @@ function defaultGarden(): Garden {
   return createGarden({ name: 'My Garden', widthFt: 20, heightFt: 20 });
 }
 
-/** Helper: push history before mutating */
-function withHistory(state: { garden: Garden }) {
-  pushHistory(state.garden);
-}
-
 function isLocked(layer: LayerId): boolean {
   return useUiStore.getState().layerLocked[layer];
 }
 
-export const useGardenStore = create<GardenStore>((set, get) => ({
-  garden: defaultGarden(),
-  updateGarden: (updates) => { withHistory(get()); set((state) => ({ garden: { ...state.garden, ...updates } })); },
-  loadGarden: (garden) => { clearHistory(); set({ garden }); },
-  reset: () => { clearHistory(); set({ garden: defaultGarden() }); },
-  setBlueprint: (blueprint) => { withHistory(get()); set((state) => ({ garden: { ...state.garden, blueprint } })); },
-  addStructure: (opts) => { if (isLocked('structures')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, structures: [...state.garden.structures, createStructure(opts)] } })); },
-  updateStructure: (id, updates) => { if (isLocked('structures')) return; set((state) => ({ garden: { ...state.garden, structures: state.garden.structures.map((s) => s.id === id ? { ...s, ...updates } : s) } })); },
-  commitStructureUpdate: (id, updates) => { if (isLocked('structures')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, structures: state.garden.structures.map((s) => s.id === id ? { ...s, ...updates } : s) } })); },
-  removeStructure: (id) => { if (isLocked('structures')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, structures: state.garden.structures.filter((s) => s.id !== id) } })); },
-  addZone: (opts) => { if (isLocked('zones')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, zones: [...state.garden.zones, createZone(opts)] } })); },
-  updateZone: (id, updates) => { if (isLocked('zones')) return; set((state) => ({ garden: { ...state.garden, zones: state.garden.zones.map((z) => z.id === id ? { ...z, ...updates } : z) } })); },
-  commitZoneUpdate: (id, updates) => { if (isLocked('zones')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, zones: state.garden.zones.map((z) => z.id === id ? { ...z, ...updates } : z) } })); },
-  removeZone: (id) => { if (isLocked('zones')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, zones: state.garden.zones.filter((z) => z.id !== id), plantings: state.garden.plantings.filter((p) => p.zoneId !== id) } })); },
-  addPlanting: (opts) => { if (isLocked('plantings')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, plantings: [...state.garden.plantings, createPlanting(opts)] } })); },
-  updatePlanting: (id, updates) => { if (isLocked('plantings')) return; set((state) => ({ garden: { ...state.garden, plantings: state.garden.plantings.map((p) => p.id === id ? { ...p, ...updates } : p) } })); },
-  commitPlantingUpdate: (id, updates) => { if (isLocked('plantings')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, plantings: state.garden.plantings.map((p) => p.id === id ? { ...p, ...updates } : p) } })); },
-  removePlanting: (id) => { if (isLocked('plantings')) return; withHistory(get()); set((state) => ({ garden: { ...state.garden, plantings: state.garden.plantings.filter((p) => p.id !== id) } })); },
-  checkpoint: () => { pushHistory(get().garden); },
-  undo: () => { const prev = undo(get().garden); if (prev) set({ garden: prev }); },
-  redo: () => { const next = redo(get().garden); if (next) set({ garden: next }); },
-  canUndo: () => canUndo(),
-  canRedo: () => canRedo(),
-}));
+export const useGardenStore = create<GardenStore>((set, get) => {
+  /** Apply a partial update to the garden object. */
+  function patch(updates: Partial<Garden>) {
+    set((state) => ({ garden: { ...state.garden, ...updates } }));
+  }
+
+  /** Push current state to undo stack, then patch. */
+  function commitPatch(updates: Partial<Garden>) {
+    pushHistory(get().garden);
+    patch(updates);
+  }
+
+  /** Map over a collection, replacing the item with matching id. */
+  function mapCollection<T extends { id: string }>(
+    items: T[],
+    id: string,
+    updates: Partial<Omit<T, 'id'>>,
+  ): T[] {
+    return items.map((item) => (item.id === id ? { ...item, ...updates } : item));
+  }
+
+  return {
+    garden: defaultGarden(),
+
+    loadGarden: (garden) => {
+      clearHistory();
+      set({ garden });
+    },
+
+    reset: () => {
+      clearHistory();
+      set({ garden: defaultGarden() });
+    },
+
+    updateGarden: (updates) => {
+      commitPatch(updates);
+    },
+
+    setBlueprint: (blueprint) => {
+      commitPatch({ blueprint });
+    },
+
+    // --- Structures ---
+
+    addStructure: (opts) => {
+      if (isLocked('structures')) return;
+      const { structures } = get().garden;
+      commitPatch({ structures: [...structures, createStructure(opts)] });
+    },
+
+    updateStructure: (id, updates) => {
+      if (isLocked('structures')) return;
+      patch({ structures: mapCollection(get().garden.structures, id, updates) });
+    },
+
+    commitStructureUpdate: (id, updates) => {
+      if (isLocked('structures')) return;
+      commitPatch({ structures: mapCollection(get().garden.structures, id, updates) });
+    },
+
+    removeStructure: (id) => {
+      if (isLocked('structures')) return;
+      commitPatch({ structures: get().garden.structures.filter((s) => s.id !== id) });
+    },
+
+    // --- Zones ---
+
+    addZone: (opts) => {
+      if (isLocked('zones')) return;
+      const { zones } = get().garden;
+      commitPatch({ zones: [...zones, createZone(opts)] });
+    },
+
+    updateZone: (id, updates) => {
+      if (isLocked('zones')) return;
+      patch({ zones: mapCollection(get().garden.zones, id, updates) });
+    },
+
+    commitZoneUpdate: (id, updates) => {
+      if (isLocked('zones')) return;
+      commitPatch({ zones: mapCollection(get().garden.zones, id, updates) });
+    },
+
+    removeZone: (id) => {
+      if (isLocked('zones')) return;
+      const { zones, plantings } = get().garden;
+      commitPatch({
+        zones: zones.filter((z) => z.id !== id),
+        plantings: plantings.filter((p) => p.zoneId !== id),
+      });
+    },
+
+    // --- Plantings ---
+
+    addPlanting: (opts) => {
+      if (isLocked('plantings')) return;
+      const { plantings } = get().garden;
+      commitPatch({ plantings: [...plantings, createPlanting(opts)] });
+    },
+
+    updatePlanting: (id, updates) => {
+      if (isLocked('plantings')) return;
+      patch({ plantings: mapCollection(get().garden.plantings, id, updates) });
+    },
+
+    commitPlantingUpdate: (id, updates) => {
+      if (isLocked('plantings')) return;
+      commitPatch({ plantings: mapCollection(get().garden.plantings, id, updates) });
+    },
+
+    removePlanting: (id) => {
+      if (isLocked('plantings')) return;
+      commitPatch({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
+    },
+
+    // --- History ---
+
+    checkpoint: () => {
+      pushHistory(get().garden);
+    },
+
+    undo: () => {
+      const prev = undo(get().garden);
+      if (prev) set({ garden: prev });
+    },
+
+    redo: () => {
+      const next = redo(get().garden);
+      if (next) set({ garden: next });
+    },
+
+    canUndo,
+    canRedo,
+  };
+});

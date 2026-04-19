@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { createGarden, createStructure, createZone, createPlanting } from './types';
+import { describe, expect, it } from 'vitest';
+import { createGarden, createPlanting, createStructure, createZone } from './types';
 
 describe('factory functions', () => {
   it('createGarden returns valid defaults', () => {

@@ -172,4 +172,13 @@ export function getTheme(period: TimePeriod): TimeTheme {
   return themes[period];
 }
 
-export const ALL_PERIODS: TimePeriod[] = ['sunrise', 'morning', 'noon', 'afternoon', 'sunset', 'twilight', 'night', 'midnight'];
+export const ALL_PERIODS: TimePeriod[] = [
+  'sunrise',
+  'morning',
+  'noon',
+  'afternoon',
+  'sunset',
+  'twilight',
+  'night',
+  'midnight',
+];

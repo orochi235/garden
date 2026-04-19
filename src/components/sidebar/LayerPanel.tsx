@@ -1,7 +1,7 @@
-import { useUiStore } from '../../store/uiStore';
-import { ToggleSwitch } from './ToggleSwitch';
 import type { LayerId } from '../../model/types';
+import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPanel.module.css';
+import { ToggleSwitch } from './ToggleSwitch';
 
 const layers: { id: LayerId; label: string }[] = [
   { id: 'plantings', label: 'Plantings' },
@@ -21,8 +21,16 @@ export function LayerPanel() {
     <div className={styles.panel}>
       <div className={styles.title}>Layers</div>
       {layers.map((layer) => (
-        <div key={layer.id} className={`${styles.layer} ${activeLayer === layer.id ? styles.active : ''}`} onClick={() => setActiveLayer(layer.id)}>
-          <ToggleSwitch checked={visibility[layer.id]} onChange={(v) => setLayerVisible(layer.id, v)} title={visibility[layer.id] ? 'Hide' : 'Show'} />
+        <div
+          key={layer.id}
+          className={`${styles.layer} ${activeLayer === layer.id ? styles.active : ''}`}
+          onClick={() => setActiveLayer(layer.id)}
+        >
+          <ToggleSwitch
+            checked={visibility[layer.id]}
+            onChange={(v) => setLayerVisible(layer.id, v)}
+            title={visibility[layer.id] ? 'Hide' : 'Show'}
+          />
           <span>{layer.label}</span>
         </div>
       ))}

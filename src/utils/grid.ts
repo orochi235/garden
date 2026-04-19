@@ -5,7 +5,7 @@ export interface ViewTransform {
 }
 
 export function snapToGrid(value: number, cellSize: number): number {
-  return (Math.round(value / cellSize) * cellSize) || 0;
+  return Math.round(value / cellSize) * cellSize || 0;
 }
 
 export function worldToScreen(

@@ -1,13 +1,13 @@
 import { useState } from 'react';
+import type { Blueprint, DisplayUnit, LayerId } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { ToggleSwitch } from './ToggleSwitch';
-import type { DisplayUnit, Blueprint, LayerId } from '../../model/types';
-import type { TimePeriod } from '../../utils/timeTheme';
-import { ALL_PERIODS, getTheme } from '../../utils/timeTheme';
-import { feetToDisplay, displayToFeet } from '../../utils/units';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
+import type { TimePeriod } from '../../utils/timeTheme';
+import { ALL_PERIODS, getTheme } from '../../utils/timeTheme';
+import { displayToFeet, feetToDisplay } from '../../utils/units';
+import { ToggleSwitch } from './ToggleSwitch';
 
 const DISPLAY_UNITS: DisplayUnit[] = ['ft', 'in', 'm', 'cm'];
 
@@ -34,7 +34,13 @@ interface LayerSectionProps {
   children: React.ReactNode;
 }
 
-function LayerSection({ title, layerId, alwaysOn, defaultOpen = true, children }: LayerSectionProps) {
+function LayerSection({
+  title,
+  layerId,
+  alwaysOn,
+  defaultOpen = true,
+  children,
+}: LayerSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const visibility = useUiStore((s) => s.layerVisibility);
   const setLayerVisible = useUiStore((s) => s.setLayerVisible);
@@ -71,7 +77,13 @@ function DebugThemePanel() {
           onClick={() => setThemeOverride(null)}
           title="Auto (time-based)"
         >
-          <span className={styles.themeSwatchColor} style={{ background: 'conic-gradient(#E8A868, #58A0B0, #60C8E8, #D4B888, #3E2E60, #1A2744, #101828, #E8A868)' }} />
+          <span
+            className={styles.themeSwatchColor}
+            style={{
+              background:
+                'conic-gradient(#E8A868, #58A0B0, #60C8E8, #D4B888, #3E2E60, #1A2744, #101828, #E8A868)',
+            }}
+          />
           <span className={styles.themeSwatchLabel}>Live</span>
         </button>
         <button
@@ -79,7 +91,13 @@ function DebugThemePanel() {
           onClick={() => setThemeOverride('slow-cycle')}
           title="Slow cycle (20s crossfade)"
         >
-          <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
+          <span
+            className={styles.themeSwatchColor}
+            style={{
+              background:
+                'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)',
+            }}
+          />
           <span className={styles.themeSwatchLabel}>Slow</span>
         </button>
         <button
@@ -87,7 +105,13 @@ function DebugThemePanel() {
           onClick={() => setThemeOverride('cycle')}
           title="Fast cycle (5s crossfade)"
         >
-          <span className={styles.themeSwatchColor} style={{ background: 'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)' }} />
+          <span
+            className={styles.themeSwatchColor}
+            style={{
+              background:
+                'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)',
+            }}
+          />
           <span className={styles.themeSwatchLabel}>Fast</span>
         </button>
       </div>
@@ -100,7 +124,10 @@ function DebugThemePanel() {
             onClick={() => setThemeOverride(period)}
             title={period}
           >
-            <span className={styles.themeSwatchColor} style={{ background: getTheme(period).menuBarBg }} />
+            <span
+              className={styles.themeSwatchColor}
+              style={{ background: getTheme(period).menuBarBg }}
+            />
             <span className={styles.themeSwatchLabel}>{period}</span>
           </button>
         ))}
@@ -140,26 +167,58 @@ export function LayerPropertiesPanel() {
       <LayerSection title="Garden" alwaysOn defaultOpen>
         <div className={f.grid}>
           <span className={f.label}>Name</span>
-          <input className={`${f.input} ${f.span12}`} type="text" value={garden.name}
-            onChange={(e) => updateGarden({ name: e.target.value })} />
+          <input
+            className={`${f.input} ${f.span12}`}
+            type="text"
+            value={garden.name}
+            onChange={(e) => updateGarden({ name: e.target.value })}
+          />
 
           <span className={f.label}>Area</span>
           <span className={`${f.miniLabel} ${f.span2}`}>W</span>
-          <input className={`${f.input} ${f.span4}`} type="number" step="0.1" min="1"
+          <input
+            className={`${f.input} ${f.span4}`}
+            type="number"
+            step="0.1"
+            min="1"
             value={parseFloat(feetToDisplay(garden.widthFt, unit).toFixed(2))}
-            onChange={(e) => updateGarden({ widthFt: displayToFeet(parseFloat(e.target.value) || 0, unit) })} />
+            onChange={(e) =>
+              updateGarden({ widthFt: displayToFeet(parseFloat(e.target.value) || 0, unit) })
+            }
+          />
           <span className={`${f.miniLabel} ${f.span2}`}>H</span>
-          <input className={`${f.input} ${f.span4}`} type="number" step="0.1" min="1"
+          <input
+            className={`${f.input} ${f.span4}`}
+            type="number"
+            step="0.1"
+            min="1"
             value={parseFloat(feetToDisplay(garden.heightFt, unit).toFixed(2))}
-            onChange={(e) => updateGarden({ heightFt: displayToFeet(parseFloat(e.target.value) || 0, unit) })} />
+            onChange={(e) =>
+              updateGarden({ heightFt: displayToFeet(parseFloat(e.target.value) || 0, unit) })
+            }
+          />
 
           <span className={f.label}>Grid</span>
-          <input className={`${f.input} ${f.span8}`} type="number" step="0.25" min="0.25"
+          <input
+            className={`${f.input} ${f.span8}`}
+            type="number"
+            step="0.25"
+            min="0.25"
             value={parseFloat(feetToDisplay(garden.gridCellSizeFt, unit).toFixed(2))}
-            onChange={(e) => updateGarden({ gridCellSizeFt: displayToFeet(parseFloat(e.target.value) || 1, unit) })} />
-          <select className={`${f.select} ${f.span4}`} value={unit}
-            onChange={(e) => updateGarden({ displayUnit: e.target.value as DisplayUnit })}>
-            {DISPLAY_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            onChange={(e) =>
+              updateGarden({ gridCellSizeFt: displayToFeet(parseFloat(e.target.value) || 1, unit) })
+            }
+          />
+          <select
+            className={`${f.select} ${f.span4}`}
+            value={unit}
+            onChange={(e) => updateGarden({ displayUnit: e.target.value as DisplayUnit })}
+          >
+            {DISPLAY_UNITS.map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
           </select>
         </div>
       </LayerSection>
@@ -183,22 +242,43 @@ export function LayerPropertiesPanel() {
           {garden.blueprint ? (
             <>
               <span className={f.label}>Opacity</span>
-              <input className={`${f.input} ${f.span12}`} type="range" min="0" max="1" step="0.05"
+              <input
+                className={`${f.input} ${f.span12}`}
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
                 value={garden.blueprint.opacity}
-                onChange={(e) => updateBlueprint({ opacity: parseFloat(e.target.value) })} />
+                onChange={(e) => updateBlueprint({ opacity: parseFloat(e.target.value) })}
+              />
               <span className={f.label}>Scale</span>
-              <input className={`${f.input} ${f.span12}`} type="number" min="0.01" step="0.1"
+              <input
+                className={`${f.input} ${f.span12}`}
+                type="number"
+                min="0.01"
+                step="0.1"
                 value={garden.blueprint.scale}
-                onChange={(e) => updateBlueprint({ scale: parseFloat(e.target.value) || 1 })} />
+                onChange={(e) => updateBlueprint({ scale: parseFloat(e.target.value) || 1 })}
+              />
               <span className={f.label}></span>
-              <button className={`${f.input} ${f.span12}`} style={{ cursor: 'pointer', textAlign: 'center' }}
-                onClick={() => setBlueprint(null)}>Remove</button>
+              <button
+                className={`${f.input} ${f.span12}`}
+                style={{ cursor: 'pointer', textAlign: 'center' }}
+                onClick={() => setBlueprint(null)}
+              >
+                Remove
+              </button>
             </>
           ) : (
             <>
               <span className={f.label}></span>
-              <button className={`${f.input} ${f.span12}`} style={{ cursor: 'pointer', textAlign: 'center' }}
-                onClick={handleLoadBlueprint}>Load Image...</button>
+              <button
+                className={`${f.input} ${f.span12}`}
+                style={{ cursor: 'pointer', textAlign: 'center' }}
+                onClick={handleLoadBlueprint}
+              >
+                Load Image...
+              </button>
             </>
           )}
         </div>

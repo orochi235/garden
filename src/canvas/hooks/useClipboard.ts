@@ -1,7 +1,7 @@
 import { useRef } from 'react';
+import type { Planting, Structure, Zone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { Structure, Zone, Planting } from '../../model/types';
 
 interface ClipboardContents {
   structures: Structure[];
@@ -34,10 +34,18 @@ export function useClipboard() {
     const offset = cellSize;
 
     for (const s of cb.structures) {
-      useGardenStore.getState().addStructure({ type: s.type, x: s.x + offset, y: s.y + offset, width: s.width, height: s.height });
+      useGardenStore.getState().addStructure({
+        type: s.type,
+        x: s.x + offset,
+        y: s.y + offset,
+        width: s.width,
+        height: s.height,
+      });
     }
     for (const z of cb.zones) {
-      useGardenStore.getState().addZone({ x: z.x + offset, y: z.y + offset, width: z.width, height: z.height });
+      useGardenStore
+        .getState()
+        .addZone({ x: z.x + offset, y: z.y + offset, width: z.width, height: z.height });
     }
 
     // Select the pasted objects (they're the last N added)

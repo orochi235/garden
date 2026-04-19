@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { serializeGarden, deserializeGarden } from './file';
+import { describe, expect, it } from 'vitest';
 import { createGarden } from '../model/types';
+import { deserializeGarden, serializeGarden } from './file';
 
 describe('serializeGarden', () => {
   it('serializes to JSON string', () => {

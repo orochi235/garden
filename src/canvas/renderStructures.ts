@@ -54,14 +54,6 @@ export function renderStructures(
       }
     }
 
-    const labelText = s.label || (highlight ? s.type : '');
-    if (labelText) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '13px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(labelText, sx + sw / 2, sy + sh / 2);
-    }
   }
 
   ctx.globalAlpha = 1;

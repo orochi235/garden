@@ -39,14 +39,6 @@ export function renderZones(
       ctx.strokeRect(sx, sy, sw, sh);
     }
 
-    const labelText = z.label || (highlight ? 'zone' : '');
-    if (labelText) {
-      ctx.fillStyle = '#2D4F3A';
-      ctx.font = '13px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(labelText, sx + sw / 2, sy + sh / 2);
-    }
   }
 
   ctx.globalAlpha = 1;

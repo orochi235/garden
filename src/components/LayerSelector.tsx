@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { useUiStore } from '../store/uiStore';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LayerId } from '../model/types';
+import { useUiStore } from '../store/uiStore';
 import styles from '../styles/LayerSelector.module.css';
 
 interface LayerDef {
@@ -14,11 +14,51 @@ interface LayerDef {
 }
 
 const LAYERS: LayerDef[] = [
-  { id: 'plantings',  label: 'Plantings',  color: '#4A7C59', dark: '#3a6a48', side1: '#3f6d4e', side2: '#356042', stroke: '#3a6a48' },
-  { id: 'zones',      label: 'Zones',      color: '#7FB069', dark: '#5c8a4a', side1: '#6a9a56', side2: '#5c8a4a', stroke: '#6a9a56' },
-  { id: 'structures', label: 'Structures', color: '#D4A843', dark: '#a8832a', side1: '#c09530', side2: '#a8832a', stroke: '#b8942e' },
-  { id: 'blueprint',  label: 'Blueprint',  color: '#4A7CAF', dark: '#35608a', side1: '#3f6d9a', side2: '#35608a', stroke: '#3a6a9a' },
-  { id: 'ground',     label: 'Ground',     color: '#8B7355', dark: '#6b5540', side1: '#7a6349', side2: '#6b5540', stroke: '#6b5a42' },
+  {
+    id: 'plantings',
+    label: 'Plantings',
+    color: '#4A7C59',
+    dark: '#3a6a48',
+    side1: '#3f6d4e',
+    side2: '#356042',
+    stroke: '#3a6a48',
+  },
+  {
+    id: 'zones',
+    label: 'Zones',
+    color: '#7FB069',
+    dark: '#5c8a4a',
+    side1: '#6a9a56',
+    side2: '#5c8a4a',
+    stroke: '#6a9a56',
+  },
+  {
+    id: 'structures',
+    label: 'Structures',
+    color: '#D4A843',
+    dark: '#a8832a',
+    side1: '#c09530',
+    side2: '#a8832a',
+    stroke: '#b8942e',
+  },
+  {
+    id: 'blueprint',
+    label: 'Blueprint',
+    color: '#4A7CAF',
+    dark: '#35608a',
+    side1: '#3f6d9a',
+    side2: '#35608a',
+    stroke: '#3a6a9a',
+  },
+  {
+    id: 'ground',
+    label: 'Ground',
+    color: '#8B7355',
+    dark: '#6b5540',
+    side1: '#7a6349',
+    side2: '#6b5540',
+    stroke: '#6b5a42',
+  },
 ];
 
 // Tight preset parameters
@@ -48,9 +88,9 @@ interface TileState {
 function computeLayout(activeIdx: number): TileState[] {
   const n = LAYERS.length;
   const centerY = 55;
-  const camRad = CAMERA_ANGLE_DEG * Math.PI / 180;
-  const gapRad = PLATE_GAP_DEG * Math.PI / 180;
-  const arcR = ARC_CURVE_PCT > 0.01 ? HALF_W * 3 / ARC_CURVE_PCT : 100000;
+  const camRad = (CAMERA_ANGLE_DEG * Math.PI) / 180;
+  const gapRad = (PLATE_GAP_DEG * Math.PI) / 180;
+  const arcR = ARC_CURVE_PCT > 0.01 ? (HALF_W * 3) / ARC_CURVE_PCT : 100000;
 
   const tiles: TileState[] = [];
 
@@ -65,20 +105,20 @@ function computeLayout(activeIdx: number): TileState[] {
     const maxDistToEdge = Math.floor((n - 1) / 2);
     const extremeness = maxDistToEdge > 0 ? 1 - distToEdge / maxDistToEdge : 1;
     const endcapExtra = extremeness * ENDCAP_BIAS * gapRad;
-    const plateTilt = (arcAngle * ARC_CURVE_PCT) + (Math.sign(rel) * endcapExtra);
+    const plateTilt = arcAngle * ARC_CURVE_PCT + Math.sign(rel) * endcapExtra;
 
     const screenY = centerY + y3d * Math.cos(camRad) + z3d * Math.sin(camRad);
     const viewAngle = Math.abs(plateTilt) + camRad;
     const tiltY = Math.max(0.5, HALF_W * Math.sin(Math.min(viewAngle, Math.PI / 2)));
-    const dir = rel === 0 ? (camRad > 0 ? 1 : 0) : (rel > 0 ? 1 : -1);
+    const dir = rel === 0 ? (camRad > 0 ? 1 : 0) : rel > 0 ? 1 : -1;
 
     tiles[i] = { index: i, y: screenY, tilt: tiltY, dir, dist: absDist, viewAngle, z: z3d };
   }
 
   // Normalize positions
   const margin = 8;
-  const topTile = tiles.reduce((a, b) => a.y - a.tilt < b.y - b.tilt ? a : b);
-  const botTile = tiles.reduce((a, b) => a.y + a.tilt > b.y + b.tilt ? a : b);
+  const topTile = tiles.reduce((a, b) => (a.y - a.tilt < b.y - b.tilt ? a : b));
+  const botTile = tiles.reduce((a, b) => (a.y + a.tilt > b.y + b.tilt ? a : b));
   const posSpan = botTile.y - topTile.y || 1;
   const tiltOverhead = topTile.tilt + botTile.tilt;
   const targetSpan = 110 - 2 * margin;
@@ -94,7 +134,7 @@ function computeLayout(activeIdx: number): TileState[] {
 }
 
 function applyEasing(rawT: number): number {
-  return 1 - Math.pow(1 - rawT, 3); // ease-out
+  return 1 - (1 - rawT) ** 3; // ease-out
 }
 
 function interpolateLayouts(from: TileState[], to: TileState[], t: number): TileState[] {
@@ -117,7 +157,8 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
   // Compute tight vertical bounds
   const margin = 6;
   const sideThick = SIDE_THICK;
-  let minY = Infinity, maxY = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
   for (const t of tileStates) {
     minY = Math.min(minY, t.y - t.tilt - sideThick);
     maxY = Math.max(maxY, t.y + t.tilt + sideThick);
@@ -248,40 +289,51 @@ export function LayerSelector() {
     };
   }, [activeLayer, renderWidget]);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    const tile = (e.target as Element).closest('.tile');
-    if (!tile) return;
-    const idx = parseInt(tile.getAttribute('data-idx') ?? '', 10);
-    if (!isNaN(idx) && idx >= 0 && idx < LAYERS.length) {
-      setActiveLayer(LAYERS[idx].id);
-    }
-  }, [setActiveLayer]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const tile = (e.target as Element).closest('.tile');
+      if (!tile) return;
+      const idx = parseInt(tile.getAttribute('data-idx') ?? '', 10);
+      if (!Number.isNaN(idx) && idx >= 0 && idx < LAYERS.length) {
+        setActiveLayer(LAYERS[idx].id);
+      }
+    },
+    [setActiveLayer],
+  );
 
   const lastWheelTime = useRef(0);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.stopPropagation();
-    const now = Date.now();
-    if (now - lastWheelTime.current < 300) return;
-    lastWheelTime.current = now;
-    const idx = LAYERS.findIndex((l) => l.id === activeLayer);
-    if (e.deltaY > 0) {
-      setActiveLayer(LAYERS[(idx + 1) % LAYERS.length].id);
-    } else if (e.deltaY < 0) {
-      setActiveLayer(LAYERS[(idx - 1 + LAYERS.length) % LAYERS.length].id);
-    }
-  }, [activeLayer, setActiveLayer]);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.stopPropagation();
+      const now = Date.now();
+      if (now - lastWheelTime.current < 300) return;
+      lastWheelTime.current = now;
+      const idx = LAYERS.findIndex((l) => l.id === activeLayer);
+      if (e.deltaY > 0) {
+        setActiveLayer(LAYERS[(idx + 1) % LAYERS.length].id);
+      } else if (e.deltaY < 0) {
+        setActiveLayer(LAYERS[(idx - 1 + LAYERS.length) % LAYERS.length].id);
+      }
+    },
+    [activeLayer, setActiveLayer],
+  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
+      if (
+        (e.target as HTMLElement).tagName === 'INPUT' ||
+        (e.target as HTMLElement).tagName === 'SELECT'
+      )
+        return;
       e.preventDefault();
       const current = useUiStore.getState().activeLayer;
       const idx = LAYERS.findIndex((l) => l.id === current);
-      const next = e.key === 'ArrowDown'
-        ? (idx + 1) % LAYERS.length
-        : (idx - 1 + LAYERS.length) % LAYERS.length;
+      const next =
+        e.key === 'ArrowDown'
+          ? (idx + 1) % LAYERS.length
+          : (idx - 1 + LAYERS.length) % LAYERS.length;
       useUiStore.getState().setActiveLayer(LAYERS[next].id);
     }
     window.addEventListener('keydown', handleKeyDown);

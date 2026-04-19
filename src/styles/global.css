@@ -1,29 +1,29 @@
 :root {
   /* Earth tones */
-  --color-soil-dark: #1A1208;
-  --color-soil: #2E2218;
-  --color-soil-light: #8B6914;
-  --color-terracotta: #D4734A;
-  --color-sand: #A89070;
-  --color-cream: #E8D5B7;
+  --color-soil-dark: #1a1208;
+  --color-soil: #2e2218;
+  --color-soil-light: #8b6914;
+  --color-terracotta: #d4734a;
+  --color-sand: #a89070;
+  --color-cream: #e8d5b7;
 
   /* Greens */
-  --color-leaf: #5A9A6A;
-  --color-leaf-light: #7FB069;
-  --color-moss: #2D5A27;
+  --color-leaf: #5a9a6a;
+  --color-leaf-light: #7fb069;
+  --color-moss: #2d5a27;
 
   /* Accents */
-  --color-sky: #5BA4CF;
-  --color-sun: #F2C94C;
-  --color-bloom: #E07B9B;
+  --color-sky: #5ba4cf;
+  --color-sun: #f2c94c;
+  --color-bloom: #e07b9b;
 
   /* UI chrome */
-  --color-bg: #1E1610;
-  --color-panel: #2A2018;
-  --color-panel-border: #4A3C2E;
-  --color-text: #D4C4A8;
-  --color-text-muted: #8A7D6B;
-  --color-input-bg: #3A2E22;
+  --color-bg: #1e1610;
+  --color-panel: #2a2018;
+  --color-panel-border: #4a3c2e;
+  --color-text: #d4c4a8;
+  --color-text-muted: #8a7d6b;
+  --color-input-bg: #3a2e22;
 
   /* Sizing */
   --panel-width: 240px;
@@ -36,7 +36,9 @@
   background: var(--color-bg);
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;

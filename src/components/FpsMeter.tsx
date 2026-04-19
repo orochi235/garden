@@ -36,21 +36,23 @@ export function FpsMeter() {
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 8,
-      right: 8,
-      zIndex: 9999,
-      background: 'rgba(0,0,0,0.7)',
-      color: fps >= 55 ? '#4f4' : fps >= 30 ? '#ff4' : '#f44',
-      padding: '4px 8px',
-      borderRadius: 4,
-      fontFamily: 'monospace',
-      fontSize: 12,
-      fontWeight: 600,
-      pointerEvents: 'none',
-      userSelect: 'none',
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 8,
+        right: 8,
+        zIndex: 9999,
+        background: 'rgba(0,0,0,0.7)',
+        color: fps >= 55 ? '#4f4' : fps >= 30 ? '#ff4' : '#f44',
+        padding: '4px 8px',
+        borderRadius: 4,
+        fontFamily: 'monospace',
+        fontSize: 12,
+        fontWeight: 600,
+        pointerEvents: 'none',
+        userSelect: 'none',
+      }}
+    >
       {fps} fps
     </div>
   );

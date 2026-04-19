@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useUiStore } from '../../store/uiStore';
 
 export function useAutoCenter(

@@ -35,30 +35,52 @@ export function useResizeInteraction(containerRef: React.RefObject<HTMLDivElemen
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return false;
     const { panX, panY, zoom } = useUiStore.getState();
-    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, {
+      panX,
+      panY,
+      zoom,
+    });
     const { garden, updateStructure, updateZone } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
-    const snap = (v: number) => e.altKey ? v : snapToGrid(v, cellSize);
+    const snap = (v: number) => (e.altKey ? v : snapToGrid(v, cellSize));
 
     const orig = resizeOriginal.current;
     const handle = resizeHandle.current;
 
     // Compute snapped target bounds
-    let tx = orig.x, ty = orig.y, tw = orig.width, th = orig.height;
+    let tx = orig.x,
+      ty = orig.y,
+      tw = orig.width,
+      th = orig.height;
     if (handle.includes('e')) tw = snap(worldX) - tx;
-    if (handle.includes('w')) { const nx = snap(worldX); tw = orig.x + orig.width - nx; tx = nx; }
+    if (handle.includes('w')) {
+      const nx = snap(worldX);
+      tw = orig.x + orig.width - nx;
+      tx = nx;
+    }
     if (handle.includes('s')) th = snap(worldY) - ty;
-    if (handle.includes('n')) { const ny = snap(worldY); th = orig.y + orig.height - ny; ty = ny; }
+    if (handle.includes('n')) {
+      const ny = snap(worldY);
+      th = orig.y + orig.height - ny;
+      ty = ny;
+    }
 
     // Enforce minimum size
     const minSize = cellSize > 0 ? cellSize : 0.5;
-    if (tw < minSize) { if (handle.includes('w')) tx = orig.x + orig.width - minSize; tw = minSize; }
-    if (th < minSize) { if (handle.includes('n')) ty = orig.y + orig.height - minSize; th = minSize; }
+    if (tw < minSize) {
+      if (handle.includes('w')) tx = orig.x + orig.width - minSize;
+      tw = minSize;
+    }
+    if (th < minSize) {
+      if (handle.includes('n')) ty = orig.y + orig.height - minSize;
+      th = minSize;
+    }
 
     // Lerp current position toward snap target for smooth animation
-    const obj = resizeObjectLayer.current === 'structures'
-      ? garden.structures.find((s) => s.id === resizeObjectId.current)
-      : garden.zones.find((z) => z.id === resizeObjectId.current);
+    const obj =
+      resizeObjectLayer.current === 'structures'
+        ? garden.structures.find((s) => s.id === resizeObjectId.current)
+        : garden.zones.find((z) => z.id === resizeObjectId.current);
     const LERP = 0.35;
     const lerp = (a: number, b: number) => a + (b - a) * LERP;
     const x = obj ? lerp(obj.x, tx) : tx;
@@ -82,7 +104,12 @@ export function useResizeInteraction(containerRef: React.RefObject<HTMLDivElemen
       const t = resizeTarget.current;
       const { updateStructure, updateZone } = useGardenStore.getState();
       if (resizeObjectLayer.current === 'structures') {
-        updateStructure(resizeObjectId.current, { x: t.x, y: t.y, width: t.width, height: t.height });
+        updateStructure(resizeObjectId.current, {
+          x: t.x,
+          y: t.y,
+          width: t.width,
+          height: t.height,
+        });
       } else if (resizeObjectLayer.current === 'zones') {
         updateZone(resizeObjectId.current, { x: t.x, y: t.y, width: t.width, height: t.height });
       }

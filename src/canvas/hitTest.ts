@@ -1,6 +1,6 @@
-import type { Structure, Zone, LayerId } from '../model/types';
-import type { ViewTransform } from '../utils/grid';
+import type { LayerId, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';
+import type { ViewTransform } from '../utils/grid';
 
 interface HitResult {
   id: string;
@@ -20,16 +20,26 @@ function pointInRect(px: number, py: number, x: number, y: number, w: number, h:
   return px >= x && px <= x + w && py >= y && py <= y + h;
 }
 
-function pointInEllipse(px: number, py: number, x: number, y: number, w: number, h: number): boolean {
+function pointInEllipse(
+  px: number,
+  py: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): boolean {
   const cx = x + w / 2;
   const cy = y + h / 2;
   const rx = w / 2;
   const ry = h / 2;
   if (rx === 0 || ry === 0) return false;
-  return ((px - cx) ** 2) / (rx ** 2) + ((py - cy) ** 2) / (ry ** 2) <= 1;
+  return (px - cx) ** 2 / rx ** 2 + (py - cy) ** 2 / ry ** 2 <= 1;
 }
 
-function getHandleScreenPositions(obj: { x: number; y: number; width: number; height: number }, view: ViewTransform) {
+function getHandleScreenPositions(
+  obj: { x: number; y: number; width: number; height: number },
+  view: ViewTransform,
+) {
   const sx = view.panX + obj.x * view.zoom;
   const sy = view.panY + obj.y * view.zoom;
   const sw = obj.width * view.zoom;
@@ -51,9 +61,11 @@ function getHandleScreenPositions(obj: { x: number; y: number; width: number; he
  * handles are a fixed pixel size regardless of zoom.
  */
 export function hitTestHandles(
-  screenX: number, screenY: number,
+  screenX: number,
+  screenY: number,
   selectedIds: string[],
-  structures: Structure[], zones: Zone[],
+  structures: Structure[],
+  zones: Zone[],
   view: ViewTransform,
 ): HandleHitResult | null {
   if (selectedIds.length === 0) return null;
@@ -77,17 +89,20 @@ export function hitTestHandles(
 }
 
 export function hitTestObjects(
-  worldX: number, worldY: number,
-  structures: Structure[], zones: Zone[],
+  worldX: number,
+  worldY: number,
+  structures: Structure[],
+  zones: Zone[],
   activeLayer: LayerId,
 ): HitResult | null {
   if (useUiStore.getState().layerLocked[activeLayer]) return null;
   if (activeLayer === 'structures') {
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
-      const hit = s.shape === 'circle'
-        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
-        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+      const hit =
+        s.shape === 'circle'
+          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
+          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
       if (hit) {
         return { id: s.id, layer: 'structures' };
       }
@@ -110,8 +125,10 @@ export function hitTestObjects(
  * Respects layer lock — locked layers are skipped.
  */
 export function hitTestAllLayers(
-  worldX: number, worldY: number,
-  structures: Structure[], zones: Zone[],
+  worldX: number,
+  worldY: number,
+  structures: Structure[],
+  zones: Zone[],
 ): HitResult | null {
   const locked = useUiStore.getState().layerLocked;
 
@@ -129,9 +146,10 @@ export function hitTestAllLayers(
   if (!locked.structures) {
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
-      const hit = s.shape === 'circle'
-        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
-        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+      const hit =
+        s.shape === 'circle'
+          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
+          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
       if (hit) return { id: s.id, layer: 'structures' };
     }
   }
@@ -142,10 +160,14 @@ export function hitTestAllLayers(
 /** Returns the CSS cursor for a given handle position. */
 export function handleCursor(handle: HandlePosition): string {
   const cursors: Record<HandlePosition, string> = {
-    nw: 'nwse-resize', se: 'nwse-resize',
-    ne: 'nesw-resize', sw: 'nesw-resize',
-    n: 'ns-resize', s: 'ns-resize',
-    e: 'ew-resize', w: 'ew-resize',
+    nw: 'nwse-resize',
+    se: 'nwse-resize',
+    ne: 'nesw-resize',
+    sw: 'nesw-resize',
+    n: 'ns-resize',
+    s: 'ns-resize',
+    e: 'ew-resize',
+    w: 'ew-resize',
   };
   return cursors[handle];
 }

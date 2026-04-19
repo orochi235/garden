@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUiStore } from '../store/uiStore';
-import { getCurrentTheme, getTheme, ALL_PERIODS, type TimeTheme } from '../utils/timeTheme';
+import { ALL_PERIODS, getCurrentTheme, getTheme, type TimeTheme } from '../utils/timeTheme';
 
 const CYCLE_INTERVAL = 5000;
 const SLOW_CYCLE_INTERVAL = 20000;
@@ -52,6 +52,7 @@ export function useActiveTheme(): CycleState {
     theme,
     prevTheme: isCycling ? prevThemeRef.current : null,
     layerFlip,
-    transitionDuration: themeOverride === 'slow-cycle' ? '20s' : themeOverride === 'cycle' ? '5s' : '0s',
+    transitionDuration:
+      themeOverride === 'slow-cycle' ? '20s' : themeOverride === 'cycle' ? '5s' : '0s',
   };
 }
