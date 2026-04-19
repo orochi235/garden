@@ -1,37 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
+import { useViewMoving } from '../hooks/useViewMoving';
 import { formatMeasurement } from '../utils/units';
 
 interface Props {
   canvasHeight: number;
-}
-
-function useViewMoving() {
-  const zoom = useUiStore((s) => s.zoom);
-  const panX = useUiStore((s) => s.panX);
-  const panY = useUiStore((s) => s.panY);
-  const [moving, setMoving] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const initialRef = useRef(true);
-
-  useEffect(() => {
-    // Skip the initial render
-    if (initialRef.current) {
-      initialRef.current = false;
-      return;
-    }
-
-    setMoving(true);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setMoving(false), 200);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [zoom, panX, panY]);
-
-  return moving;
 }
 
 export function ScaleIndicator({ canvasHeight }: Props) {

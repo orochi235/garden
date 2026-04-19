@@ -27,6 +27,7 @@
   display: inline-block;
   transition: transform 0.2s ease;
   font-size: 10px;
+  transform: rotate(180deg);
 }
 .arrowOpen {
   transform: rotate(90deg);

@@ -85,23 +85,6 @@ const noon: TimeTheme = {
   paletteBackground: `
     linear-gradient(to top,
       #322E28 0%, #443A2E 3%, #785020 8%, #8A681A 12%,
-      #709428 16%, #4CA020 19%, #50AC38 22%, #80B840 25%,
-      #A8A048 30%, #908860 35%, #706858 42%, #687078 50%,
-      #607888 58%, #588898 65%, #5090A8 72%, #4898B8 80%,
-      #50A0C0 90%, #58A8C8 100%
-    ),
-    linear-gradient(170deg, transparent 0%, rgba(107,88,42,0.2) 32%, rgba(90,100,80,0.15) 42%, transparent 55%),
-    linear-gradient(195deg, rgba(60,75,100,0.25) 0%, transparent 25%, transparent 65%, rgba(60,110,140,0.15) 85%, transparent 100%)`,
-  searchOverlay: 'rgba(70, 130, 160, 0.8)',
-  menuBarBg: '#58A8C8',
-  menuBarTitle: '#1A3040',
-  menuBarText: '#1E3848',
-};
-
-const afternoon: TimeTheme = {
-  paletteBackground: `
-    linear-gradient(to top,
-      #322E28 0%, #443A2E 3%, #785020 8%, #8A681A 12%,
       #5C9428 16%, #40A822 19%, #44B438 22%, #68B840 25%,
       #90A840 30%, #888060 35%, #6A6058 42%, #688060 50%,
       #6A9468 58%, #68A87A 65%, #60B8A0 72%, #58C0C0 80%,
@@ -112,6 +95,23 @@ const afternoon: TimeTheme = {
   searchOverlay: 'rgba(60, 160, 190, 0.8)',
   menuBarBg: '#48C0E0',
   menuBarTitle: '#1A3038',
+  menuBarText: '#1E3848',
+};
+
+const afternoon: TimeTheme = {
+  paletteBackground: `
+    linear-gradient(to top,
+      #322E28 0%, #443A2E 3%, #785020 8%, #8A681A 12%,
+      #709428 16%, #4CA020 19%, #50AC38 22%, #80B840 25%,
+      #A8A048 30%, #908860 35%, #706858 42%, #687078 50%,
+      #607888 58%, #588898 65%, #5090A8 72%, #4898B8 80%,
+      #50A0C0 90%, #58A8C8 100%
+    ),
+    linear-gradient(170deg, transparent 0%, rgba(107,88,42,0.2) 32%, rgba(90,100,80,0.15) 42%, transparent 55%),
+    linear-gradient(195deg, rgba(60,75,100,0.25) 0%, transparent 25%, transparent 65%, rgba(60,110,140,0.15) 85%, transparent 100%)`,
+  searchOverlay: 'rgba(70, 130, 160, 0.8)',
+  menuBarBg: '#58A8C8',
+  menuBarTitle: '#1A3040',
   menuBarText: '#1E3848',
 };
 

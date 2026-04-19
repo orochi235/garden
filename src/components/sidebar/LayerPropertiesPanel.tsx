@@ -79,7 +79,7 @@ function DebugThemePanel() {
   }
 
   return (
-    <LayerSection title="Theme (Debug)" defaultOpen>
+    <LayerSection title="Debug" defaultOpen>
       <div className={styles.themeGrid}>
         <button
           className={`${styles.themeSwatch} ${themeOverride === null ? styles.themeSwatchActive : ''}`}

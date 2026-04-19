@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayerSelector } from '../components/LayerSelector';
+import { ReturnToGarden } from '../components/ReturnToGarden';
 import { ScaleIndicator } from '../components/ScaleIndicator';
 import type { PaletteEntry } from '../components/palette/paletteData';
 import { ViewToolbar } from '../components/ViewToolbar';
@@ -474,6 +475,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
           deltaY: e.deltaY,
           mouseX: e.clientX - rect.left,
           mouseY: e.clientY - rect.top,
+          ctrlKey: e.ctrlKey || e.metaKey,
         },
       );
 
@@ -551,6 +553,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
       <canvas ref={plantingCanvasRef} style={canvasStyle} />
       <canvas ref={selectionCanvasRef} style={canvasStyle} />
       {ghostStyle && <div style={ghostStyle} />}
+      <ReturnToGarden canvasWidth={width} canvasHeight={height} />
       <ScaleIndicator canvasHeight={height} />
       <ViewToolbar />
       <LayerSelector />

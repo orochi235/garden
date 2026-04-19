@@ -128,4 +128,40 @@ describe('computeWheelAction', () => {
       expect(result.panY).not.toBe(baseState.panY);
     });
   });
+
+  describe('ctrl/cmd modifier zooms regardless of mode', () => {
+    it('zooms in select mode when ctrlKey is true', () => {
+      const result = computeWheelAction('select', baseState, {
+        ...baseInput,
+        deltaY: -100,
+        ctrlKey: true,
+      });
+      expect(result.zoom).toBeGreaterThan(baseState.zoom);
+    });
+
+    it('zooms in pan mode when ctrlKey is true', () => {
+      const result = computeWheelAction('pan', baseState, {
+        ...baseInput,
+        deltaY: 100,
+        ctrlKey: true,
+      });
+      expect(result.zoom).toBeLessThan(baseState.zoom);
+    });
+
+    it('preserves world point under mouse with ctrlKey zoom', () => {
+      const state: WheelState = { zoom: 50, panX: 100, panY: 200 };
+      const input = { deltaX: 0, deltaY: -100, mouseX: 400, mouseY: 300, ctrlKey: true };
+
+      const worldXBefore = (input.mouseX - state.panX) / state.zoom;
+      const worldYBefore = (input.mouseY - state.panY) / state.zoom;
+
+      const result = computeWheelAction('select', state, input);
+
+      const worldXAfter = (input.mouseX - result.panX) / result.zoom;
+      const worldYAfter = (input.mouseY - result.panY) / result.zoom;
+
+      expect(worldXAfter).toBeCloseTo(worldXBefore, 5);
+      expect(worldYAfter).toBeCloseTo(worldYBefore, 5);
+    });
+  });
 });
