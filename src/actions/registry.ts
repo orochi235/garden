@@ -1,0 +1,38 @@
+import type { ActionDescriptor } from './types';
+import { undoAction } from './editing/undo';
+import { redoAction } from './editing/redo';
+import { deleteAction } from './editing/delete';
+import { copyAction } from './editing/copy';
+import { pasteAction } from './editing/paste';
+import { selectAllAction } from './editing/selectAll';
+import { cycleViewModeAction } from './view/cycleViewMode';
+import { cycleLayerDownAction, cycleLayerUpAction } from './layers/cycleLayer';
+import { rotateCwAction, rotateCcwAction } from './objects/rotate';
+import { duplicateAction } from './objects/duplicate';
+
+export const allActions: ActionDescriptor[] = [
+  undoAction,
+  redoAction,
+  deleteAction,
+  copyAction,
+  pasteAction,
+  selectAllAction,
+  cycleViewModeAction,
+  cycleLayerDownAction,
+  cycleLayerUpAction,
+  rotateCwAction,
+  rotateCcwAction,
+  duplicateAction,
+];
+
+export function getActionById(id: string): ActionDescriptor | undefined {
+  return allActions.find((a) => a.id === id);
+}
+
+export function getActionsForScope(scopeId: string): ActionDescriptor[] {
+  return allActions.filter((a) => a.scope === scopeId);
+}
+
+export function getActionsForTargetKind(kind: string): ActionDescriptor[] {
+  return allActions.filter((a) => a.targets.includes(kind as any));
+}
