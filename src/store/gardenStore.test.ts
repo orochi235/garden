@@ -53,7 +53,7 @@ describe('gardenStore', () => {
     const { addZone, addPlanting, removeZone } = useGardenStore.getState();
     addZone({ x: 0, y: 0, width: 3, height: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    addPlanting({ zoneId, x: 0.5, y: 0.5, name: 'Tomato' });
+    addPlanting({ parentId: zoneId, x: 0.5, y: 0.5, name: 'Tomato' });
     expect(useGardenStore.getState().garden.plantings).toHaveLength(1);
     removeZone(zoneId);
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);
@@ -64,10 +64,10 @@ describe('gardenStore', () => {
     const { addZone, addPlanting } = useGardenStore.getState();
     addZone({ x: 0, y: 0, width: 3, height: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    addPlanting({ zoneId, x: 1, y: 1, name: 'Basil' });
+    addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Basil' });
     const p = useGardenStore.getState().garden.plantings[0];
     expect(p.name).toBe('Basil');
-    expect(p.zoneId).toBe(zoneId);
+    expect(p.parentId).toBe(zoneId);
   });
 
   it('rejects addStructure when it would collide', () => {

@@ -23,7 +23,10 @@
       "zIndex": 0,
       "parentId": null,
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "rows", "spacingFt": 0.5, "itemSpacingFt": 0.5, "direction": 0, "marginFt": 0.25 }
     },
     {
       "id": "default-bed-2",
@@ -39,7 +42,10 @@
       "zIndex": 0,
       "parentId": null,
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "rows", "spacingFt": 0.5, "itemSpacingFt": 0.5, "direction": 0, "marginFt": 0.25 }
     },
     {
       "id": "default-path-1",
@@ -55,7 +61,10 @@
       "zIndex": 0,
       "parentId": null,
       "snapToGrid": true,
-      "surface": true
+      "surface": true,
+      "container": false,
+      "fill": null,
+      "arrangement": null
     },
     {
       "id": "default-patio-1",
@@ -71,7 +80,10 @@
       "zIndex": 0,
       "parentId": null,
       "snapToGrid": true,
-      "surface": true
+      "surface": true,
+      "container": false,
+      "fill": null,
+      "arrangement": null
     },
     {
       "id": "default-pot-1",
@@ -87,7 +99,10 @@
       "zIndex": 1,
       "parentId": "default-patio-1",
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "single" }
     },
     {
       "id": "default-pot-2",
@@ -103,7 +118,10 @@
       "zIndex": 1,
       "parentId": "default-patio-1",
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "single" }
     },
     {
       "id": "default-pot-3",
@@ -119,7 +137,10 @@
       "zIndex": 1,
       "parentId": "default-patio-1",
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "single" }
     },
     {
       "id": "default-pot-4",
@@ -135,7 +156,10 @@
       "zIndex": 1,
       "parentId": "default-patio-1",
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "single" }
     },
     {
       "id": "default-pot-5",
@@ -151,7 +175,29 @@
       "zIndex": 1,
       "parentId": "default-patio-1",
       "snapToGrid": true,
-      "surface": false
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "arrangement": { "type": "single" }
+    },
+    {
+      "id": "default-felt-1",
+      "type": "felt-planter",
+      "shape": "circle",
+      "x": 2,
+      "y": 12,
+      "width": 1.5,
+      "height": 1.5,
+      "rotation": 0,
+      "color": "#3A3A3A",
+      "label": "Felt Planter",
+      "zIndex": 0,
+      "parentId": null,
+      "snapToGrid": true,
+      "surface": false,
+      "container": true,
+      "fill": "potting-mix",
+      "arrangement": { "type": "single" }
     }
   ],
   "zones": [
@@ -166,8 +212,62 @@
       "zIndex": 0,
       "parentId": null,
       "soilType": null,
-      "sunExposure": null
+      "sunExposure": null,
+      "arrangement": { "type": "grid", "spacingXFt": 0.5, "spacingYFt": 0.5, "marginFt": 0.25 }
     }
   ],
-  "plantings": []
+  "plantings": [
+    {
+      "id": "default-planting-tomato",
+      "parentId": "default-pot-1",
+      "x": 1,
+      "y": 1,
+      "name": "Tomato",
+      "label": "Tomato",
+      "color": "#E05555",
+      "icon": null,
+      "variety": null,
+      "spacingFt": null,
+      "footprintFt": 1
+    },
+    {
+      "id": "default-planting-1",
+      "parentId": "default-pot-3",
+      "x": 0.5,
+      "y": 0.5,
+      "name": "Basil",
+      "label": "Basil",
+      "color": "#4A7C59",
+      "icon": null,
+      "variety": null,
+      "spacingFt": null,
+      "footprintFt": 0.75
+    },
+    {
+      "id": "default-planting-2",
+      "parentId": "default-pot-4",
+      "x": 0.5,
+      "y": 0.5,
+      "name": "Basil",
+      "label": "Basil",
+      "color": "#4A7C59",
+      "icon": null,
+      "variety": null,
+      "spacingFt": null,
+      "footprintFt": 0.75
+    },
+    {
+      "id": "default-planting-3",
+      "parentId": "default-pot-5",
+      "x": 0.5,
+      "y": 0.5,
+      "name": "Basil",
+      "label": "Basil",
+      "color": "#4A7C59",
+      "icon": null,
+      "variety": null,
+      "spacingFt": null,
+      "footprintFt": 0.75
+    }
+  ]
 }

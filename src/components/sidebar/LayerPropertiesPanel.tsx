@@ -14,11 +14,11 @@ const DISPLAY_UNITS: DisplayUnit[] = ['ft', 'in', 'm', 'cm'];
 const GROUND_COLORS = [
   { value: '#4A7C59', label: 'Grass' },
   { value: '#2D5A27', label: 'Dark grass' },
+  { value: '#7FB069', label: 'Lime' },
   { value: '#8B6914', label: 'Dirt' },
   { value: '#5C4033', label: 'Dark soil' },
   { value: '#E8D5B7', label: 'Sand' },
   { value: '#A0522D', label: 'Mulch' },
-  { value: '#FFFFFF', label: 'White' },
   { value: '#C2B8A3', label: 'Gravel' },
   { value: '#B0ADA6', label: 'Concrete' },
   { value: '#505050', label: 'Asphalt' },

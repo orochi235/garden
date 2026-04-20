@@ -46,27 +46,31 @@ export function useResizeInteraction(containerRef: React.RefObject<HTMLDivElemen
 
     const orig = resizeOriginal.current;
     const handle = resizeHandle.current;
+    const subGridW = orig.width < cellSize;
+    const subGridH = orig.height < cellSize;
+    const snapX = (v: number) => (subGridW ? v : snap(v));
+    const snapY = (v: number) => (subGridH ? v : snap(v));
 
     // Compute snapped target bounds
     let tx = orig.x,
       ty = orig.y,
       tw = orig.width,
       th = orig.height;
-    if (handle.includes('e')) tw = snap(worldX) - tx;
+    if (handle.includes('e')) tw = snapX(worldX) - tx;
     if (handle.includes('w')) {
-      const nx = snap(worldX);
+      const nx = snapX(worldX);
       tw = orig.x + orig.width - nx;
       tx = nx;
     }
-    if (handle.includes('s')) th = snap(worldY) - ty;
+    if (handle.includes('s')) th = snapY(worldY) - ty;
     if (handle.includes('n')) {
-      const ny = snap(worldY);
+      const ny = snapY(worldY);
       th = orig.y + orig.height - ny;
       ty = ny;
     }
 
     // Enforce minimum size
-    const minSize = cellSize > 0 ? cellSize : 0.5;
+    const minSize = 0.25;
     if (tw < minSize) {
       if (handle.includes('w')) tx = orig.x + orig.width - minSize;
       tw = minSize;

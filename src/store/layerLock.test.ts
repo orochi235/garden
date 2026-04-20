@@ -74,14 +74,14 @@ describe('layerLocked enforcement', () => {
       useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
       useUiStore.getState().setLayerLocked('plantings', true);
-      useGardenStore.getState().addPlanting({ zoneId, x: 1, y: 1, name: 'Tomato' });
+      useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Tomato' });
       expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
     });
 
     it('blocks removePlanting when locked', () => {
       useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
-      useGardenStore.getState().addPlanting({ zoneId, x: 1, y: 1, name: 'Tomato' });
+      useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Tomato' });
       const plantId = useGardenStore.getState().garden.plantings[0].id;
       useUiStore.getState().setLayerLocked('plantings', true);
       useGardenStore.getState().removePlanting(plantId);

@@ -1,3 +1,6 @@
+import type { Arrangement } from './arrangement';
+import { defaultArrangement } from './arrangement';
+
 export type DisplayUnit = 'ft' | 'in' | 'm' | 'cm';
 
 export type LayerId = 'ground' | 'blueprint' | 'structures' | 'zones' | 'plantings';
@@ -27,7 +30,20 @@ export interface Structure {
   parentId: string | null;
   snapToGrid: boolean;
   surface: boolean;
+  container: boolean;
+  fill: FillType | null;
+  arrangement: Arrangement | null;
 }
+
+export type FillType = 'soil' | 'sand' | 'rocks' | 'peat' | 'potting-mix';
+
+export const FILL_COLORS: Record<FillType, string> = {
+  soil: '#5C4033',
+  sand: '#D2B48C',
+  rocks: '#8A8A8A',
+  peat: '#6B5745',
+  'potting-mix': '#1E1510',
+};
 
 export interface Zone {
   id: string;
@@ -41,11 +57,12 @@ export interface Zone {
   parentId: string | null;
   soilType: string | null;
   sunExposure: string | null;
+  arrangement: Arrangement | null;
 }
 
 export interface Planting {
   id: string;
-  zoneId: string;
+  parentId: string;
   x: number;
   y: number;
   name: string;
@@ -54,6 +71,7 @@ export interface Planting {
   icon: string | null;
   variety: string | null;
   spacingFt: number | null;
+  footprintFt: number;
 }
 
 export interface Garden {
@@ -96,16 +114,26 @@ export function createGarden(opts: { name: string; widthFt: number; heightFt: nu
 const DEFAULT_STRUCTURE_COLORS: Record<string, string> = {
   'raised-bed': '#8B6914',
   pot: '#C75B39',
+  'felt-planter': '#3A3A3A',
   fence: '#5C4033',
+  trellis: '#8B7355',
   path: '#D4C4A8',
   patio: '#A0926B',
 };
 
 const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
   pot: 'circle',
+  'felt-planter': 'circle',
 };
 
 const SURFACE_TYPES = new Set(['patio', 'path']);
+const CONTAINER_TYPES = new Set(['raised-bed', 'pot', 'felt-planter']);
+
+const DEFAULT_ARRANGEMENTS: Record<string, () => Arrangement> = {
+  'raised-bed': () => defaultArrangement('rows'),
+  pot: () => defaultArrangement('single'),
+  'felt-planter': () => defaultArrangement('single'),
+};
 
 export function createStructure(opts: {
   type: string;
@@ -130,6 +158,9 @@ export function createStructure(opts: {
     parentId: null,
     snapToGrid: true,
     surface: SURFACE_TYPES.has(opts.type),
+    container: CONTAINER_TYPES.has(opts.type),
+    fill: CONTAINER_TYPES.has(opts.type) ? 'soil' : null,
+    arrangement: DEFAULT_ARRANGEMENTS[opts.type]?.() ?? null,
   };
 }
 
@@ -146,18 +177,19 @@ export function createZone(opts: { x: number; y: number; width: number; height: 
     parentId: null,
     soilType: null,
     sunExposure: null,
+    arrangement: defaultArrangement('grid'),
   };
 }
 
 export function createPlanting(opts: {
-  zoneId: string;
+  parentId: string;
   x: number;
   y: number;
   name: string;
 }): Planting {
   return {
     id: generateId(),
-    zoneId: opts.zoneId,
+    parentId: opts.parentId,
     x: opts.x,
     y: opts.y,
     name: opts.name,
@@ -166,5 +198,6 @@ export function createPlanting(opts: {
     icon: null,
     variety: null,
     spacingFt: null,
+    footprintFt: 0.5,
   };
 }

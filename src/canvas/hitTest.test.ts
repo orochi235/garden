@@ -19,6 +19,9 @@ describe('hitTestObjects', () => {
       parentId: null,
       snapToGrid: true,
       surface: false,
+      container: true,
+      fill: 'soil',
+      arrangement: { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, direction: 0, marginFt: 0.25 },
     },
   ];
   const zones: Zone[] = [
@@ -34,6 +37,7 @@ describe('hitTestObjects', () => {
       parentId: null,
       soilType: null,
       sunExposure: null,
+      arrangement: { type: 'grid', spacingXFt: 0.5, spacingYFt: 0.5, marginFt: 0.25 },
     },
   ];
 

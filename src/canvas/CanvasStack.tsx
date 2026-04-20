@@ -4,6 +4,8 @@ import { ReturnToGarden } from '../components/ReturnToGarden';
 import { ScaleIndicator } from '../components/ScaleIndicator';
 import type { PaletteEntry } from '../components/palette/paletteData';
 import { ViewToolbar } from '../components/ViewToolbar';
+import { computeSlots } from '../model/arrangement';
+import type { Planting, Structure, Zone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { screenToWorld, snapToGrid, worldToScreen } from '../utils/grid';
@@ -24,6 +26,53 @@ import { renderStructures } from './renderStructures';
 import { renderZones } from './renderZones';
 import { useCanvasSize } from './useCanvasSize';
 import { computeWheelAction } from './wheelHandler';
+
+/**
+ * Determine where to place a new planting inside a parent.
+ * If the parent has an arrangement (not 'free'), find the next open slot.
+ * Otherwise, use the raw drop position relative to the parent.
+ */
+function getPlantingPosition(
+  parent: { x: number; y: number; width: number; height: number; arrangement: import('../model/arrangement').Arrangement | null; shape?: string },
+  existing: Planting[],
+  worldX: number,
+  worldY: number,
+  cellSize: number,
+): { x: number; y: number } {
+  const arrangement = parent.arrangement;
+  if (!arrangement || arrangement.type === 'free') {
+    return {
+      x: snapToGrid(worldX - parent.x, cellSize),
+      y: snapToGrid(worldY - parent.y, cellSize),
+    };
+  }
+
+  const bounds = {
+    x: parent.x,
+    y: parent.y,
+    width: parent.width,
+    height: parent.height,
+    shape: (parent.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
+  };
+
+  const slots = computeSlots(arrangement, bounds);
+  const occupiedSet = new Set(existing.map(p => `${p.x},${p.y}`));
+
+  // Find first open slot
+  for (const slot of slots) {
+    const relX = slot.x - parent.x;
+    const relY = slot.y - parent.y;
+    if (!occupiedSet.has(`${relX},${relY}`)) {
+      return { x: relX, y: relY };
+    }
+  }
+
+  // All slots full — place at drop position
+  return {
+    x: snapToGrid(worldX - parent.x, cellSize),
+    y: snapToGrid(worldY - parent.y, cellSize),
+  };
+}
 
 interface CanvasStackProps {
   draggingEntry: PaletteEntry | null;
@@ -182,13 +231,15 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         ctx,
         garden.plantings,
         garden.zones,
+        garden.structures,
         view,
         width,
         height,
         layerOpacity.plantings,
         layerSelectorHovered && activeLayer === 'plantings',
+        selectedIds,
       ),
-    [garden.plantings, garden.zones, zoom, panX, panY, layerOpacity.plantings, activeLayer, layerSelectorHovered],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, layerSelectorHovered, selectedIds],
   );
 
   useLayerEffect(
@@ -443,15 +494,24 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
           height: entry.defaultHeight,
         });
       } else if (entry.category === 'plantings') {
+        // Find a container structure or zone under the drop point
+        const container = garden.structures.find(
+          (s) =>
+            s.container &&
+            worldX >= s.x && worldX <= s.x + s.width &&
+            worldY >= s.y && worldY <= s.y + s.height,
+        );
         const zone = garden.zones.find(
           (z) =>
             worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.height,
         );
-        if (zone) {
+        const parent: (Structure | Zone) | undefined = container ?? zone;
+        if (parent) {
+          const pos = getPlantingPosition(parent, garden.plantings.filter(p => p.parentId === parent.id), worldX, worldY, cellSize);
           addPlanting({
-            zoneId: zone.id,
-            x: snapToGrid(worldX - zone.x, cellSize),
-            y: snapToGrid(worldY - zone.y, cellSize),
+            parentId: parent.id,
+            x: pos.x,
+            y: pos.y,
             name: entry.name,
           });
         }

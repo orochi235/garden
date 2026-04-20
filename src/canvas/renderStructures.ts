@@ -1,3 +1,4 @@
+import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
@@ -47,18 +48,18 @@ export function renderStructures(
     ctx.strokeStyle = '#333333';
     ctx.lineWidth = 1;
 
-    if (s.type === 'pot') {
+    if (s.type === 'pot' || s.type === 'felt-planter') {
       const cx = sx + sw / 2;
       const cy = sy + sh / 2;
       const r = Math.min(sw, sh) / 2;
-      const rimWidth = Math.max(3, view.zoom * 0.12);
-      // Outer rim (pot color)
+      const rimWidth = s.type === 'felt-planter' ? Math.max(2, view.zoom * 0.06) : Math.max(3, view.zoom * 0.12);
+      // Outer rim
       ctx.beginPath();
       ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      // Inner dirt fill
-      ctx.fillStyle = '#5C4033';
+      // Inner fill
+      ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
       ctx.beginPath();
       ctx.ellipse(cx, cy, r - rimWidth, r - rimWidth, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -67,8 +68,8 @@ export function renderStructures(
       // Outer wall
       ctx.fillRect(sx, sy, sw, sh);
       ctx.strokeRect(sx, sy, sw, sh);
-      // Inner dirt fill
-      ctx.fillStyle = '#5C4033';
+      // Inner fill
+      ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
       ctx.fillRect(sx + wallWidth, sy + wallWidth, sw - wallWidth * 2, sh - wallWidth * 2);
     } else if (s.shape === 'circle') {
       const cx = sx + sw / 2;

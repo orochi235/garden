@@ -25,14 +25,14 @@ interface GardenStore {
     width: number;
     height: number;
   }) => void;
-  updateStructure: (id: string, updates: Partial<Omit<Structure, 'id'>>) => void;
-  commitStructureUpdate: (id: string, updates: Partial<Omit<Structure, 'id'>>) => void;
+  updateStructure: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
+  commitStructureUpdate: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   removeStructure: (id: string) => void;
   addZone: (opts: { x: number; y: number; width: number; height: number }) => void;
   updateZone: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   commitZoneUpdate: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   removeZone: (id: string) => void;
-  addPlanting: (opts: { zoneId: string; x: number; y: number; name: string }) => void;
+  addPlanting: (opts: { parentId: string; x: number; y: number; name: string }) => void;
   updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
@@ -115,7 +115,11 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     removeStructure: (id) => {
       if (isLocked('structures')) return;
-      commitPatch({ structures: get().garden.structures.filter((s) => s.id !== id) });
+      const { structures, plantings } = get().garden;
+      commitPatch({
+        structures: structures.filter((s) => s.id !== id),
+        plantings: plantings.filter((p) => p.parentId !== id),
+      });
     },
 
     // --- Zones ---
@@ -141,7 +145,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const { zones, plantings } = get().garden;
       commitPatch({
         zones: zones.filter((z) => z.id !== id),
-        plantings: plantings.filter((p) => p.zoneId !== id),
+        plantings: plantings.filter((p) => p.parentId !== id),
       });
     },
 

@@ -49,7 +49,7 @@ describe('commit vs live updates', () => {
   it('commitPlantingUpdate IS undoable', () => {
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    useGardenStore.getState().addPlanting({ zoneId, x: 1, y: 1, name: 'Tomato' });
+    useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Tomato' });
     const id = useGardenStore.getState().garden.plantings[0].id;
 
     useGardenStore.getState().commitPlantingUpdate(id, { name: 'Basil' });

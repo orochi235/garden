@@ -38,6 +38,15 @@ export const paletteItems: PaletteEntry[] = [
     color: '#C75B39',
   },
   {
+    id: 'felt-planter',
+    name: 'Felt Planter',
+    category: 'structures',
+    type: 'felt-planter',
+    defaultWidth: 1.5,
+    defaultHeight: 1.5,
+    color: '#3A3A3A',
+  },
+  {
     id: 'fence',
     name: 'Fence',
     category: 'structures',
@@ -45,6 +54,15 @@ export const paletteItems: PaletteEntry[] = [
     defaultWidth: 8,
     defaultHeight: 0.5,
     color: '#5C4033',
+  },
+  {
+    id: 'trellis',
+    name: 'Trellis',
+    category: 'structures',
+    type: 'trellis',
+    defaultWidth: 4,
+    defaultHeight: 0.5,
+    color: '#8B7355',
   },
   {
     id: 'path',
