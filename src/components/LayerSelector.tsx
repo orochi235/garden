@@ -344,30 +344,6 @@ export function LayerSelector() {
     [activeLayer, setActiveLayer],
   );
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-      if (
-        (e.target as HTMLElement).tagName === 'INPUT' ||
-        (e.target as HTMLElement).tagName === 'SELECT'
-      )
-        return;
-      e.preventDefault();
-      const { activeLayer: current, layerVisibility: vis } = useUiStore.getState();
-      const idx = LAYERS.findIndex((l) => l.id === current);
-      const dir = e.key === 'ArrowDown' ? 1 : -1;
-      for (let step = 1; step < LAYERS.length; step++) {
-        const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
-        if (vis[LAYERS[next].id]) {
-          useUiStore.getState().setActiveLayer(LAYERS[next].id);
-          return;
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const setLayerSelectorHovered = useUiStore((s) => s.setLayerSelectorHovered);
 
   const handleMouseEnter = useCallback(() => {

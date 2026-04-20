@@ -1,4 +1,4 @@
-import { type JSX, useEffect } from 'react';
+import type { JSX } from 'react';
 import type { ViewMode } from '../store/uiStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/ViewToolbar.module.css';
@@ -80,24 +80,6 @@ const tools: { mode: ViewMode; label: string }[] = [
 export function ViewToolbar() {
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== '`') return;
-      if (
-        (e.target as HTMLElement).tagName === 'INPUT' ||
-        (e.target as HTMLElement).tagName === 'SELECT'
-      )
-        return;
-      e.preventDefault();
-      const modes: ViewMode[] = ['select', 'draw', 'pan', 'zoom'];
-      const current = useUiStore.getState().viewMode;
-      const idx = modes.indexOf(current);
-      useUiStore.getState().setViewMode(modes[(idx + 1) % modes.length]);
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   return (
     <div className={styles.container}>

@@ -11,7 +11,7 @@ import { useUiStore } from '../store/uiStore';
 import { screenToWorld, snapToGrid, worldToScreen } from '../utils/grid';
 import { handleCursor, hitTestAllLayers, hitTestHandles, hitTestObjects } from './hitTest';
 import { useAutoCenter } from './hooks/useAutoCenter';
-import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
+import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from './hooks/useLayerEffect';
 import { useMoveInteraction } from './hooks/useMoveInteraction';
@@ -166,11 +166,17 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   const resize = useResizeInteraction(containerRef);
   const plot = usePlotInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
 
-  const cancelPlotting = useCallback(() => {
-    plot.cancel();
-  }, [plot]);
+  useKeyboardActionDispatch({ clipboard });
 
-  useCanvasKeyboard({ clipboard, cancelPlotting });
+  useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        plot.cancel();
+      }
+    }
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [plot]);
 
   // --- Layer rendering ---
   useLayerEffect(

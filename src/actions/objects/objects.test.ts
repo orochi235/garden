@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { rotateCwAction, rotateCcwAction } from './rotate';
+import { rotateCwAction } from './rotate';
 import { duplicateAction } from './duplicate';
 import type { ActionContext } from '../types';
 
