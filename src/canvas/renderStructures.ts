@@ -62,6 +62,14 @@ export function renderStructures(
       ctx.beginPath();
       ctx.ellipse(cx, cy, r - rimWidth, r - rimWidth, 0, 0, Math.PI * 2);
       ctx.fill();
+    } else if (s.type === 'raised-bed') {
+      const wallWidth = Math.max(3, view.zoom * 0.15);
+      // Outer wall
+      ctx.fillRect(sx, sy, sw, sh);
+      ctx.strokeRect(sx, sy, sw, sh);
+      // Inner dirt fill
+      ctx.fillStyle = '#5C4033';
+      ctx.fillRect(sx + wallWidth, sy + wallWidth, sw - wallWidth * 2, sh - wallWidth * 2);
     } else if (s.shape === 'circle') {
       const cx = sx + sw / 2;
       const cy = sy + sh / 2;
