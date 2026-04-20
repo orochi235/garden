@@ -546,7 +546,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <canvas ref={gridCanvasRef} style={canvasStyle} />
+      <canvas ref={gridCanvasRef} style={{ ...canvasStyle, mixBlendMode: 'multiply' }} />
       <canvas ref={blueprintCanvasRef} style={canvasStyle} />
       <canvas ref={structureCanvasRef} style={canvasStyle} />
       <canvas ref={zoneCanvasRef} style={canvasStyle} />

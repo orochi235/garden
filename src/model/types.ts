@@ -85,7 +85,7 @@ export function createGarden(opts: { name: string; widthFt: number; heightFt: nu
     heightFt: opts.heightFt,
     gridCellSizeFt: 1,
     displayUnit: 'ft',
-    groundColor: '#E8E0D0',
+    groundColor: '#4A7C59',
     blueprint: null,
     structures: [],
     zones: [],

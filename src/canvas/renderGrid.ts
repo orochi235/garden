@@ -28,8 +28,8 @@ export function renderGrid(ctx: CanvasRenderingContext2D, opts: GridOptions): vo
   const startY = Math.floor(worldTop / cellSizeFt) * cellSizeFt;
   const endY = Math.ceil(worldBottom / cellSizeFt) * cellSizeFt;
 
-  // Draw infinite grid lines
-  ctx.strokeStyle = '#D4C4A8';
+  // Draw infinite grid lines (canvas uses CSS mix-blend-mode: darken)
+  ctx.strokeStyle = '#cccccc';
   ctx.lineWidth = 1;
 
   for (let x = startX; x <= endX; x += cellSizeFt) {
