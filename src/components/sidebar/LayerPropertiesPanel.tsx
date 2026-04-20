@@ -304,14 +304,25 @@ export function LayerPropertiesPanel() {
 
       <LayerSection title="Structures" layerId="structures">
         <div className={f.grid}>
-          <span className={f.label}>Surfaces</span>
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
               checked={showSurfaces}
               onChange={(e) => setShowSurfaces(e.target.checked)}
             />
-            <span>Show</span>
+            <svg className={styles.surfaceSwatch} width="14" height="14" viewBox="0 0 14 14">
+              <rect width="14" height="14" rx="2" fill={showSurfaces ? '#A0926B' : '#3a3a3a'} />
+              {showSurfaces && (
+                <g stroke="goldenrod" strokeWidth="1.2">
+                  <line x1="0" y1="5" x2="5" y2="0" />
+                  <line x1="0" y1="10" x2="10" y2="0" />
+                  <line x1="0" y1="15" x2="15" y2="0" />
+                  <line x1="5" y1="15" x2="15" y2="5" />
+                  <line x1="10" y1="15" x2="15" y2="10" />
+                </g>
+              )}
+            </svg>
+            <span>Show surface hatching</span>
           </label>
         </div>
       </LayerSection>

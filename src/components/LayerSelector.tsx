@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayerId } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/LayerSelector.module.css';
@@ -149,7 +149,7 @@ function interpolateLayouts(from: TileState[], to: TileState[], t: number): Tile
   }));
 }
 
-function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
+function renderSvgContent(tileStates: TileState[], activeIdx: number, hiddenIndices: Set<number> = new Set()): string {
   const labelSpace = 58;
   const svgW = HALF_W * 2 + labelSpace + 10;
   const cx = labelSpace + HALF_W;
@@ -194,8 +194,9 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
   for (const t of sorted) {
     const layer = LAYERS[t.index];
     const isActive = t.index === activeIdx;
+    const isHidden = hiddenIndices.has(t.index);
     const tiltY = t.tilt;
-    const opacity = isActive ? 0.95 : TILE_OPACITY;
+    const opacity = isHidden ? 0.15 : isActive ? 0.95 : TILE_OPACITY;
     const baseThick = SIDE_THICK;
     const thickScale = Math.cos(Math.min(t.viewAngle, Math.PI / 2));
     const thick = baseThick * Math.max(0.1, thickScale);
@@ -211,6 +212,10 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
     }
 
     const fillAttr = layer.color;
+
+    // Invisible hit area to ensure clicks register on low-opacity tiles
+    const hitTilt = Math.max(tiltY, 4);
+    content += `<polygon points="0,${-hitTilt} ${HALF_W},0 0,${hitTilt} ${-HALF_W},0" fill="transparent" stroke="none"/>`;
 
     if (tiltY < 0.3) {
       content += `<line x1="${-HALF_W}" y1="0" x2="${HALF_W}" y2="0" stroke="${layer.stroke}" stroke-width="0.5"/>`;
@@ -247,14 +252,23 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number): string {
 export function LayerSelector() {
   const activeLayer = useUiStore((s) => s.activeLayer);
   const setActiveLayer = useUiStore((s) => s.setActiveLayer);
+  const layerVisibility = useUiStore((s) => s.layerVisibility);
   const [svgHtml, setSvgHtml] = useState('');
   const animRef = useRef<number | null>(null);
   const layoutRef = useRef<TileState[] | null>(null);
 
+  const hiddenIndices = useMemo(() => {
+    const set = new Set<number>();
+    for (let i = 0; i < LAYERS.length; i++) {
+      if (!layerVisibility[LAYERS[i].id]) set.add(i);
+    }
+    return set;
+  }, [layerVisibility]);
+
   const renderWidget = useCallback((tiles: TileState[], idx: number) => {
-    setSvgHtml(renderSvgContent(tiles, idx));
+    setSvgHtml(renderSvgContent(tiles, idx, hiddenIndices));
     layoutRef.current = tiles;
-  }, []);
+  }, [hiddenIndices]);
 
   // Initial render and animate on activeLayer change
   useEffect(() => {
@@ -287,7 +301,7 @@ export function LayerSelector() {
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [activeLayer, renderWidget]);
+  }, [activeLayer, renderWidget, hiddenIndices]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -295,7 +309,12 @@ export function LayerSelector() {
       if (!tile) return;
       const idx = parseInt(tile.getAttribute('data-idx') ?? '', 10);
       if (!Number.isNaN(idx) && idx >= 0 && idx < LAYERS.length) {
-        setActiveLayer(LAYERS[idx].id);
+        const layerId = LAYERS[idx].id;
+        const { layerVisibility: vis, setLayerVisible } = useUiStore.getState();
+        if (!vis[layerId]) {
+          setLayerVisible(layerId, true);
+        }
+        setActiveLayer(layerId);
       }
     },
     [setActiveLayer],
@@ -309,11 +328,16 @@ export function LayerSelector() {
       const now = Date.now();
       if (now - lastWheelTime.current < 300) return;
       lastWheelTime.current = now;
+      const { layerVisibility: vis } = useUiStore.getState();
       const idx = LAYERS.findIndex((l) => l.id === activeLayer);
-      if (e.deltaY > 0) {
-        setActiveLayer(LAYERS[(idx + 1) % LAYERS.length].id);
-      } else if (e.deltaY < 0) {
-        setActiveLayer(LAYERS[(idx - 1 + LAYERS.length) % LAYERS.length].id);
+      const dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
+      if (dir === 0) return;
+      for (let step = 1; step < LAYERS.length; step++) {
+        const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
+        if (vis[LAYERS[next].id]) {
+          setActiveLayer(LAYERS[next].id);
+          return;
+        }
       }
     },
     [activeLayer, setActiveLayer],
@@ -328,13 +352,16 @@ export function LayerSelector() {
       )
         return;
       e.preventDefault();
-      const current = useUiStore.getState().activeLayer;
+      const { activeLayer: current, layerVisibility: vis } = useUiStore.getState();
       const idx = LAYERS.findIndex((l) => l.id === current);
-      const next =
-        e.key === 'ArrowDown'
-          ? (idx + 1) % LAYERS.length
-          : (idx - 1 + LAYERS.length) % LAYERS.length;
-      useUiStore.getState().setActiveLayer(LAYERS[next].id);
+      const dir = e.key === 'ArrowDown' ? 1 : -1;
+      for (let step = 1; step < LAYERS.length; step++) {
+        const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
+        if (vis[LAYERS[next].id]) {
+          useUiStore.getState().setActiveLayer(LAYERS[next].id);
+          return;
+        }
+      }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -350,10 +377,15 @@ export function LayerSelector() {
     setLayerSelectorHovered(false);
   }, [setLayerSelectorHovered]);
 
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <div
       className={styles.container}
       onClick={handleClick}
+      onMouseDown={handleMouseDown}
       onWheel={handleWheel}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

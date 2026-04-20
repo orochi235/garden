@@ -72,7 +72,10 @@ export const useUiStore = create<UiStore>((set) => ({
   setThemeOverride: (period) => set({ themeOverride: period }),
   setActiveLayer: (layer) => set({ activeLayer: layer }),
   setLayerVisible: (layer, visible) =>
-    set((state) => ({ layerVisibility: { ...state.layerVisibility, [layer]: visible } })),
+    set((state) => {
+      if (!visible && state.activeLayer === layer) return state;
+      return { layerVisibility: { ...state.layerVisibility, [layer]: visible } };
+    }),
   setLayerOpacity: (layer, opacity) =>
     set((state) => ({ layerOpacity: { ...state.layerOpacity, [layer]: opacity } })),
   setLayerLocked: (layer, locked) =>

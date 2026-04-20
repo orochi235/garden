@@ -6,7 +6,7 @@ let hatchPattern: CanvasPattern | null = null;
 
 function getHatchPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
   if (hatchPattern) return hatchPattern;
-  const size = 8;
+  const size = 5;
   const off = document.createElement('canvas');
   off.width = size;
   off.height = size;
@@ -93,7 +93,7 @@ export function renderStructures(
       const pattern = getHatchPattern(ctx);
       if (pattern) {
         ctx.save();
-        ctx.globalAlpha = 0.4;
+        ctx.globalAlpha = 0.9;
         ctx.fillStyle = pattern;
         // Clip to shape interior, excluding the border
         const inset = 1;

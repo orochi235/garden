@@ -31,6 +31,27 @@ describe('factory functions', () => {
     expect(s.zIndex).toBe(0);
     expect(s.parentId).toBeNull();
     expect(s.snapToGrid).toBe(true);
+    expect(s.surface).toBe(false);
+  });
+
+  it('creates patios with surface=true', () => {
+    const s = createStructure({ type: 'patio', x: 0, y: 0, width: 5, height: 5 });
+    expect(s.surface).toBe(true);
+  });
+
+  it('creates paths with surface=true', () => {
+    const s = createStructure({ type: 'path', x: 0, y: 0, width: 2, height: 6 });
+    expect(s.surface).toBe(true);
+  });
+
+  it('creates pots with surface=false', () => {
+    const s = createStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
+    expect(s.surface).toBe(false);
+  });
+
+  it('creates pots with circle shape', () => {
+    const s = createStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
+    expect(s.shape).toBe('circle');
   });
 
   it('createZone returns valid defaults', () => {

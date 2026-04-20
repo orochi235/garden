@@ -70,6 +70,27 @@ describe('gardenStore', () => {
     expect(p.zoneId).toBe(zoneId);
   });
 
+  it('rejects addStructure when it would collide', () => {
+    const { addStructure } = useGardenStore.getState();
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    addStructure({ type: 'raised-bed', x: 2, y: 2, width: 4, height: 4 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(1);
+  });
+
+  it('allows addStructure when no collision', () => {
+    const { addStructure } = useGardenStore.getState();
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    addStructure({ type: 'raised-bed', x: 5, y: 0, width: 4, height: 4 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(2);
+  });
+
+  it('allows placing a structure on a surface', () => {
+    const { addStructure } = useGardenStore.getState();
+    addStructure({ type: 'patio', x: 0, y: 0, width: 8, height: 8 });
+    addStructure({ type: 'pot', x: 2, y: 2, width: 1, height: 1 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(2);
+  });
+
   it('updates garden settings', () => {
     useGardenStore.getState().updateGarden({ name: 'Backyard', widthFt: 40 });
     const { garden } = useGardenStore.getState();
