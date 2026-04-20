@@ -8,13 +8,10 @@ export function renderZones(
   view: ViewTransform,
   canvasWidth: number,
   canvasHeight: number,
-  opacity: number,
-  highlight: boolean = false,
+  highlightOpacity: number = 0,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (zones.length === 0) return;
-
-  ctx.globalAlpha = opacity;
 
   const sorted = [...zones].sort((a, b) => a.zIndex - b.zIndex);
 
@@ -32,14 +29,16 @@ export function renderZones(
     ctx.strokeRect(sx, sy, sw, sh);
     ctx.setLineDash([]);
 
-    if (highlight) {
+    if (highlightOpacity > 0) {
+      ctx.save();
+      ctx.globalAlpha = highlightOpacity;
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
       ctx.strokeRect(sx, sy, sw, sh);
+      ctx.restore();
     }
 
   }
 
-  ctx.globalAlpha = 1;
 }

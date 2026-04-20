@@ -27,14 +27,11 @@ export function renderPlantings(
   view: ViewTransform,
   canvasWidth: number,
   canvasHeight: number,
-  opacity: number,
-  highlight: boolean = false,
+  highlightOpacity: number = 0,
   selectedIds: string[] = [],
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
-
-  ctx.globalAlpha = opacity;
 
   // Build parent lookup map from zones and container structures
   const parentMap = new Map<string, PlantingParent>();
@@ -76,19 +73,22 @@ export function renderPlantings(
     renderPlant(ctx, p.name, radius, p.color);
     ctx.restore();
 
-    if (highlight) {
+    if (highlightOpacity > 0) {
+      ctx.save();
+      ctx.globalAlpha = highlightOpacity;
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
     }
 
     // Track the plant's bounding box
     occupied.push({ x: sx - radius, y: sy - radius, w: radius * 2, h: radius * 2 });
 
     const labelText = p.label || p.name;
-    if ((showLabel || highlight) && labelText) {
+    if ((showLabel || highlightOpacity > 0) && labelText) {
       const labelW = ctx.measureText(labelText).width;
       const labelH = 13;
       const labelX = sx - labelW / 2;
@@ -117,5 +117,4 @@ export function renderPlantings(
     occupied.push(label.rect);
   }
 
-  ctx.globalAlpha = 1;
 }

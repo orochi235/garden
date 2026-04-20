@@ -18,14 +18,14 @@ import { useMoveInteraction } from './hooks/useMoveInteraction';
 import { usePanInteraction } from './hooks/usePanInteraction';
 import { usePlotInteraction } from './hooks/usePlotInteraction';
 import { useResizeInteraction } from './hooks/useResizeInteraction';
+import { PlantingLayerRenderer } from './PlantingLayerRenderer';
 import { renderBlueprint } from './renderBlueprint';
 import { renderGrid } from './renderGrid';
-import { renderPlantings } from './renderPlantings';
 import { renderSelection } from './renderSelection';
-import { renderStructures } from './renderStructures';
-import { renderZones } from './renderZones';
+import { StructureLayerRenderer } from './StructureLayerRenderer';
 import { useCanvasSize } from './useCanvasSize';
 import { computeWheelAction } from './wheelHandler';
+import { ZoneLayerRenderer } from './ZoneLayerRenderer';
 
 /**
  * Determine where to place a new planting inside a parent.
@@ -107,6 +107,48 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   const showSurfaces = useUiStore((s) => s.showSurfaces);
   const viewMode = useUiStore((s) => s.viewMode);
 
+  // --- Layer renderers (persistent instances with internal animation state) ---
+  const structureRenderer = useRef<StructureLayerRenderer>(null!);
+  const zoneRenderer = useRef<ZoneLayerRenderer>(null!);
+  const plantingRenderer = useRef<PlantingLayerRenderer>(null!);
+  if (!structureRenderer.current) structureRenderer.current = new StructureLayerRenderer();
+  if (!zoneRenderer.current) zoneRenderer.current = new ZoneLayerRenderer();
+  if (!plantingRenderer.current) plantingRenderer.current = new PlantingLayerRenderer();
+
+  const [, forceRender] = useState(0);
+  const invalidate = useCallback(() => forceRender((n) => n + 1), []);
+
+  useEffect(() => {
+    structureRenderer.current.onInvalidate(invalidate);
+    zoneRenderer.current.onInvalidate(invalidate);
+    plantingRenderer.current.onInvalidate(invalidate);
+    return () => {
+      structureRenderer.current.dispose();
+      zoneRenderer.current.dispose();
+      plantingRenderer.current.dispose();
+    };
+  }, [invalidate]);
+
+  // Flash the active layer's renderer when it changes
+  const prevLayerRef = useRef(activeLayer);
+  useEffect(() => {
+    if (activeLayer !== prevLayerRef.current) {
+      prevLayerRef.current = activeLayer;
+      const renderer =
+        activeLayer === 'structures' ? structureRenderer.current :
+        activeLayer === 'zones' ? zoneRenderer.current :
+        activeLayer === 'plantings' ? plantingRenderer.current : null;
+      renderer?.flash();
+    }
+  }, [activeLayer]);
+
+  // Sync hover highlight to all renderers
+  useEffect(() => {
+    structureRenderer.current.setHoverHighlight(layerSelectorHovered && activeLayer === 'structures');
+    zoneRenderer.current.setHoverHighlight(layerSelectorHovered && activeLayer === 'zones');
+    plantingRenderer.current.setHoverHighlight(layerSelectorHovered && activeLayer === 'plantings');
+  }, [layerSelectorHovered, activeLayer]);
+
   const [activeCursor, setActiveCursor] = useState<string | null>(null);
   const [dragGhost, setDragGhost] = useState<{
     entry: PaletteEntry;
@@ -181,65 +223,42 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     layerOpacity.blueprint,
   ]);
 
+  // Sync renderer state
+  structureRenderer.current.structures = garden.structures;
+  structureRenderer.current.opacity = layerOpacity.structures;
+  structureRenderer.current.showSurfaces = showSurfaces;
+  structureRenderer.current.setView(view, width, height);
+
+  zoneRenderer.current.zones = garden.zones;
+  zoneRenderer.current.opacity = layerOpacity.zones;
+  zoneRenderer.current.setView(view, width, height);
+
+  plantingRenderer.current.plantings = garden.plantings;
+  plantingRenderer.current.zones = garden.zones;
+  plantingRenderer.current.structures = garden.structures;
+  plantingRenderer.current.opacity = layerOpacity.plantings;
+  plantingRenderer.current.selectedIds = selectedIds;
+  plantingRenderer.current.setView(view, width, height);
+
   useLayerEffect(
-    structureCanvasRef,
-    width,
-    height,
-    dpr,
+    structureCanvasRef, width, height, dpr,
     layerVisibility.structures,
-    (ctx) =>
-      renderStructures(
-        ctx,
-        garden.structures,
-        view,
-        width,
-        height,
-        layerOpacity.structures,
-        layerSelectorHovered && activeLayer === 'structures',
-        showSurfaces,
-      ),
-    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, layerSelectorHovered, showSurfaces],
+    (ctx) => structureRenderer.current.render(ctx),
+    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, structureRenderer.current.highlight],
   );
 
   useLayerEffect(
-    zoneCanvasRef,
-    width,
-    height,
-    dpr,
+    zoneCanvasRef, width, height, dpr,
     layerVisibility.zones,
-    (ctx) =>
-      renderZones(
-        ctx,
-        garden.zones,
-        view,
-        width,
-        height,
-        layerOpacity.zones,
-        layerSelectorHovered && activeLayer === 'zones',
-      ),
-    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, layerSelectorHovered],
+    (ctx) => zoneRenderer.current.render(ctx),
+    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, zoneRenderer.current.highlight],
   );
 
   useLayerEffect(
-    plantingCanvasRef,
-    width,
-    height,
-    dpr,
+    plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
-    (ctx) =>
-      renderPlantings(
-        ctx,
-        garden.plantings,
-        garden.zones,
-        garden.structures,
-        view,
-        width,
-        height,
-        layerOpacity.plantings,
-        layerSelectorHovered && activeLayer === 'plantings',
-        selectedIds,
-      ),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, layerSelectorHovered, selectedIds],
+    (ctx) => plantingRenderer.current.render(ctx),
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, plantingRenderer.current.highlight],
   );
 
   useLayerEffect(

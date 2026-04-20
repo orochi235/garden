@@ -28,14 +28,11 @@ export function renderStructures(
   view: ViewTransform,
   canvasWidth: number,
   canvasHeight: number,
-  opacity: number,
-  highlight: boolean = false,
+  highlightOpacity: number = 0,
   showSurfaces: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
-
-  ctx.globalAlpha = opacity;
 
   const sorted = [...structures].sort((a, b) => a.zIndex - b.zIndex);
 
@@ -83,7 +80,9 @@ export function renderStructures(
       ctx.strokeRect(sx, sy, sw, sh);
     }
 
-    if (highlight) {
+    if (highlightOpacity > 0) {
+      ctx.save();
+      ctx.globalAlpha = highlightOpacity;
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
@@ -96,6 +95,7 @@ export function renderStructures(
       } else {
         ctx.strokeRect(sx, sy, sw, sh);
       }
+      ctx.restore();
     }
 
     if (showSurfaces && s.surface) {
@@ -121,5 +121,4 @@ export function renderStructures(
 
   }
 
-  ctx.globalAlpha = 1;
 }
