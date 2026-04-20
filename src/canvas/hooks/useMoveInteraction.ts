@@ -2,19 +2,30 @@ import { useRef } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { screenToWorld, snapToGrid } from '../../utils/grid';
+import { structuresCollide } from '../../utils/collision';
 
 export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement | null>) {
   const isMoving = useRef(false);
   const moveStart = useRef({ worldX: 0, worldY: 0, objX: 0, objY: 0 });
   const moveObjectId = useRef<string | null>(null);
   const moveObjectLayer = useRef<string | null>(null);
+  const forceSnap = useRef(false);
 
-  function start(worldX: number, worldY: number, objId: string, layer: string, objX: number, objY: number) {
+  function start(
+    worldX: number,
+    worldY: number,
+    objId: string,
+    layer: string,
+    objX: number,
+    objY: number,
+    alwaysSnap = false,
+  ) {
     useGardenStore.getState().checkpoint();
     isMoving.current = true;
     moveStart.current = { worldX, worldY, objX, objY };
     moveObjectId.current = objId;
     moveObjectLayer.current = layer;
+    forceSnap.current = alwaysSnap;
   }
 
   function move(e: React.MouseEvent) {
@@ -22,17 +33,29 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return false;
     const { panX, panY, zoom } = useUiStore.getState();
-    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, {
+      panX,
+      panY,
+      zoom,
+    });
     const deltaX = worldX - moveStart.current.worldX;
     const deltaY = worldY - moveStart.current.worldY;
     const newX = moveStart.current.objX + deltaX;
     const newY = moveStart.current.objY + deltaY;
     const { garden, updateStructure, updateZone } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
-    const snappedX = e.altKey ? newX : snapToGrid(newX, cellSize);
-    const snappedY = e.altKey ? newY : snapToGrid(newY, cellSize);
+    const freeMove = e.altKey && !forceSnap.current;
+    const snappedX = freeMove ? newX : snapToGrid(newX, cellSize);
+    const snappedY = freeMove ? newY : snapToGrid(newY, cellSize);
     if (moveObjectLayer.current === 'structures') {
-      updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
+      const moving = garden.structures.find((s) => s.id === moveObjectId.current);
+      if (moving) {
+        const moved = { ...moving, x: snappedX, y: snappedY };
+        const others = garden.structures.filter((s) => s.id !== moveObjectId.current);
+        if (!structuresCollide(moved, others)) {
+          updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
+        }
+      }
     } else if (moveObjectLayer.current === 'zones') {
       updateZone(moveObjectId.current, { x: snappedX, y: snappedY });
     }

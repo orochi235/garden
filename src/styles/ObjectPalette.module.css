@@ -24,9 +24,15 @@
   color: rgba(255, 255, 255, 0.8);
   outline: none;
 }
-.searchInput::placeholder { color: rgba(255, 255, 255, 0.35); }
-.searchInput:focus { border-color: rgba(255, 255, 255, 0.25); }
-.category { padding: 0 8px 8px; }
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+.searchInput:focus {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.category {
+  padding: 0 8px 8px;
+}
 .categoryLabel {
   font-size: 11px;
   font-weight: 600;

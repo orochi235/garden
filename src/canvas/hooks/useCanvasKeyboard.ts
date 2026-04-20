@@ -10,7 +10,7 @@ interface CanvasKeyboardDeps {
 }
 
 function easeOut(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
+  return 1 - (1 - t) ** 3;
 }
 
 export function useCanvasKeyboard({ clipboard, cancelPlotting }: CanvasKeyboardDeps) {
@@ -20,8 +20,10 @@ export function useCanvasKeyboard({ clipboard, cancelPlotting }: CanvasKeyboardD
     function animateRotation(
       id: string,
       layer: 'structures' | 'zones',
-      fromW: number, fromH: number,
-      toW: number, toH: number,
+      fromW: number,
+      fromH: number,
+      toW: number,
+      toH: number,
       finalRotation: number,
     ) {
       // Cancel any existing animation on this object
@@ -44,9 +46,10 @@ export function useCanvasKeyboard({ clipboard, cancelPlotting }: CanvasKeyboardD
         } else {
           rotateAnims.current.delete(id);
           // Final snap with rotation value
-          const finalUpdate = layer === 'structures'
-            ? { width: toW, height: toH, rotation: finalRotation }
-            : { width: toW, height: toH };
+          const finalUpdate =
+            layer === 'structures'
+              ? { width: toW, height: toH, rotation: finalRotation }
+              : { width: toW, height: toH };
           update(id, finalUpdate);
         }
       }
@@ -87,7 +90,11 @@ export function useCanvasKeyboard({ clipboard, cancelPlotting }: CanvasKeyboardD
 
       // Rotate selected objects
       if (e.key === 'r' || e.key === 'R') {
-        if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
+        if (
+          (e.target as HTMLElement).tagName === 'INPUT' ||
+          (e.target as HTMLElement).tagName === 'SELECT'
+        )
+          return;
         const ids = useUiStore.getState().selectedIds;
         if (ids.length === 0) return;
         const { garden } = useGardenStore.getState();
@@ -100,7 +107,15 @@ export function useCanvasKeyboard({ clipboard, cancelPlotting }: CanvasKeyboardD
             const newRotation = ccw
               ? (structure.rotation - 90 + 360) % 360
               : (structure.rotation + 90) % 360;
-            animateRotation(id, 'structures', structure.width, structure.height, structure.height, structure.width, newRotation);
+            animateRotation(
+              id,
+              'structures',
+              structure.width,
+              structure.height,
+              structure.height,
+              structure.width,
+              newRotation,
+            );
             continue;
           }
           const zone = garden.zones.find((z) => z.id === id);
@@ -112,7 +127,11 @@ export function useCanvasKeyboard({ clipboard, cancelPlotting }: CanvasKeyboardD
       }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
+        if (
+          (e.target as HTMLElement).tagName === 'INPUT' ||
+          (e.target as HTMLElement).tagName === 'SELECT'
+        )
+          return;
         const ids = useUiStore.getState().selectedIds;
         const { garden, removeStructure, removeZone, removePlanting } = useGardenStore.getState();
         for (const id of ids) {

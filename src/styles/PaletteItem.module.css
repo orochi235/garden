@@ -1,22 +1,45 @@
 .item {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px; height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 80px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--border-radius);
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(8px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.25);
-  cursor: grab; user-select: none;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+  user-select: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .item:hover {
   background: rgba(0, 0, 0, 0.18);
   border-color: rgba(255, 255, 255, 0.2);
 }
-.item:active { cursor: grabbing; }
-.item.active { border-color: var(--color-leaf); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px var(--color-leaf); }
+.item:active {
+  cursor: grabbing;
+}
+.item.active {
+  border-color: var(--color-leaf);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px var(--color-leaf);
+}
 .icon {
-  width: 32px; height: 32px; border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
-.label { font-size: 13px; color: rgba(255, 255, 255, 0.7); text-align: center; line-height: 1.2; }
+.label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  line-height: 1.2;
+}

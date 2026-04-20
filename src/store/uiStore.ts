@@ -2,11 +2,12 @@ import { create } from 'zustand';
 import type { LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 
-export type ViewMode = 'select' | 'pan' | 'zoom';
+export type ViewMode = 'select' | 'pan' | 'zoom' | 'draw';
 
 type LayerRecord<T> = Record<LayerId, T>;
 
 export interface PlottingTool {
+  id: string;
   category: 'structures' | 'zones';
   type: string;
   color: string;
@@ -23,7 +24,11 @@ interface UiStore {
   panY: number;
   plottingTool: PlottingTool | null;
   themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
+  layerSelectorHovered: boolean;
+  showSurfaces: boolean;
   viewMode: ViewMode;
+  setLayerSelectorHovered: (hovered: boolean) => void;
+  setShowSurfaces: (show: boolean) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
@@ -57,22 +62,46 @@ export const useUiStore = create<UiStore>((set) => ({
   panY: 0,
   plottingTool: null,
   themeOverride: null,
+  layerSelectorHovered: false,
+  showSurfaces: false,
   viewMode: 'select',
+  setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
+  setShowSurfaces: (show) => set({ showSurfaces: show }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
   setActiveLayer: (layer) => set({ activeLayer: layer }),
-  setLayerVisible: (layer, visible) => set((state) => ({ layerVisibility: { ...state.layerVisibility, [layer]: visible } })),
-  setLayerOpacity: (layer, opacity) => set((state) => ({ layerOpacity: { ...state.layerOpacity, [layer]: opacity } })),
-  setLayerLocked: (layer, locked) => set((state) => ({ layerLocked: { ...state.layerLocked, [layer]: locked } })),
+  setLayerVisible: (layer, visible) =>
+    set((state) => {
+      if (!visible && state.activeLayer === layer) return state;
+      return { layerVisibility: { ...state.layerVisibility, [layer]: visible } };
+    }),
+  setLayerOpacity: (layer, opacity) =>
+    set((state) => ({ layerOpacity: { ...state.layerOpacity, [layer]: opacity } })),
+  setLayerLocked: (layer, locked) =>
+    set((state) => ({ layerLocked: { ...state.layerLocked, [layer]: locked } })),
   select: (id) => set({ selectedIds: [id] }),
-  addToSelection: (id) => set((state) => ({ selectedIds: state.selectedIds.includes(id) ? state.selectedIds : [...state.selectedIds, id] })),
+  addToSelection: (id) =>
+    set((state) => ({
+      selectedIds: state.selectedIds.includes(id) ? state.selectedIds : [...state.selectedIds, id],
+    })),
   clearSelection: () => set({ selectedIds: [] }),
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
-  reset: () => set({
-    activeLayer: 'structures', layerVisibility: defaultLayerRecord(true),
-    layerOpacity: defaultLayerRecord(1), layerLocked: defaultLayerRecord(false),
-    selectedIds: [], zoom: 1, panX: 0, panY: 0, plottingTool: null, themeOverride: null, viewMode: 'select',
-  }),
+  reset: () =>
+    set({
+      activeLayer: 'structures',
+      layerVisibility: defaultLayerRecord(true),
+      layerOpacity: defaultLayerRecord(1),
+      layerLocked: defaultLayerRecord(false),
+      selectedIds: [],
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      plottingTool: null,
+      themeOverride: null,
+      layerSelectorHovered: false,
+      showSurfaces: false,
+      viewMode: 'select',
+    }),
 }));

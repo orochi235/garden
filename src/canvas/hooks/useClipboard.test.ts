@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useClipboard } from './useClipboard';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { useClipboard } from './useClipboard';
 
 describe('useClipboard', () => {
   beforeEach(() => {
@@ -27,13 +27,17 @@ describe('useClipboard', () => {
   });
 
   it('does nothing when copying with no selection', () => {
+    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
     const { result } = renderHook(() => useClipboard());
     act(() => result.current.copy());
     expect(result.current.isEmpty()).toBe(true);
+    act(() => result.current.paste());
+    expect(useGardenStore.getState().garden.structures).toHaveLength(1);
   });
 
   it('pastes copied structures with offset', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 2, y: 3, width: 4, height: 4 });
+    // Use a 1x1 structure so the 1-cell paste offset clears the original
+    useGardenStore.getState().addStructure({ type: 'pot', x: 2, y: 3, width: 1, height: 1 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 
@@ -49,7 +53,7 @@ describe('useClipboard', () => {
   });
 
   it('selects pasted objects', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 
@@ -63,7 +67,7 @@ describe('useClipboard', () => {
   });
 
   it('cascades repeated pastes', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 

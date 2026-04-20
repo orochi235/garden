@@ -11,6 +11,7 @@ export interface WheelInput {
   deltaY: number;
   mouseX: number;
   mouseY: number;
+  ctrlKey?: boolean;
 }
 
 const MIN_ZOOM = 10;
@@ -21,8 +22,21 @@ export function computeWheelAction(
   state: WheelState,
   input: WheelInput,
 ): WheelState {
+  if (input.ctrlKey) {
+    const factor = input.deltaY < 0 ? 1.1 : 0.9;
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
+    const worldX = (input.mouseX - state.panX) / state.zoom;
+    const worldY = (input.mouseY - state.panY) / state.zoom;
+    return {
+      zoom: newZoom,
+      panX: input.mouseX - worldX * newZoom,
+      panY: input.mouseY - worldY * newZoom,
+    };
+  }
+
   switch (mode) {
     case 'pan':
+    case 'draw':
     case 'select': {
       return {
         zoom: state.zoom,

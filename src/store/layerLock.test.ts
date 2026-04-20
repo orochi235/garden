@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useGardenStore } from './gardenStore';
 import { useUiStore } from './uiStore';
 
@@ -11,17 +11,23 @@ describe('layerLocked enforcement', () => {
   describe('structures', () => {
     it('blocks addStructure when locked', () => {
       useUiStore.getState().setLayerLocked('structures', true);
-      useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+      useGardenStore
+        .getState()
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
       expect(useGardenStore.getState().garden.structures).toHaveLength(0);
     });
 
     it('allows addStructure when unlocked', () => {
-      useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+      useGardenStore
+        .getState()
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
       expect(useGardenStore.getState().garden.structures).toHaveLength(1);
     });
 
     it('blocks updateStructure when locked', () => {
-      useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+      useGardenStore
+        .getState()
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
       const id = useGardenStore.getState().garden.structures[0].id;
       useUiStore.getState().setLayerLocked('structures', true);
       useGardenStore.getState().updateStructure(id, { x: 10 });
@@ -29,7 +35,9 @@ describe('layerLocked enforcement', () => {
     });
 
     it('blocks removeStructure when locked', () => {
-      useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+      useGardenStore
+        .getState()
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
       const id = useGardenStore.getState().garden.structures[0].id;
       useUiStore.getState().setLayerLocked('structures', true);
       useGardenStore.getState().removeStructure(id);
@@ -66,14 +74,14 @@ describe('layerLocked enforcement', () => {
       useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
       useUiStore.getState().setLayerLocked('plantings', true);
-      useGardenStore.getState().addPlanting({ zoneId, x: 1, y: 1, name: 'Tomato' });
+      useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Tomato' });
       expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
     });
 
     it('blocks removePlanting when locked', () => {
       useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
-      useGardenStore.getState().addPlanting({ zoneId, x: 1, y: 1, name: 'Tomato' });
+      useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Tomato' });
       const plantId = useGardenStore.getState().garden.plantings[0].id;
       useUiStore.getState().setLayerLocked('plantings', true);
       useGardenStore.getState().removePlanting(plantId);
@@ -84,16 +92,32 @@ describe('layerLocked enforcement', () => {
   describe('hit testing', () => {
     it('blocks hit test on locked layer', async () => {
       const { hitTestObjects } = await import('../canvas/hitTest');
-      useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+      useGardenStore
+        .getState()
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
       useUiStore.getState().setLayerLocked('structures', true);
-      const hit = hitTestObjects(2, 2, useGardenStore.getState().garden.structures, [], 'structures');
+      const hit = hitTestObjects(
+        2,
+        2,
+        useGardenStore.getState().garden.structures,
+        [],
+        'structures',
+      );
       expect(hit).toBeNull();
     });
 
     it('allows hit test on unlocked layer', async () => {
       const { hitTestObjects } = await import('../canvas/hitTest');
-      useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-      const hit = hitTestObjects(2, 2, useGardenStore.getState().garden.structures, [], 'structures');
+      useGardenStore
+        .getState()
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+      const hit = hitTestObjects(
+        2,
+        2,
+        useGardenStore.getState().garden.structures,
+        [],
+        'structures',
+      );
       expect(hit).not.toBeNull();
     });
   });

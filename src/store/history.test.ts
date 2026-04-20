@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { pushHistory, undo, redo, canUndo, canRedo, clearHistory } from './history';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createGarden } from '../model/types';
+import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 
 function makeGarden(name: string) {
   const g = createGarden({ name, widthFt: 10, heightFt: 10 });

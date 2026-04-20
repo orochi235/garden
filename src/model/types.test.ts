@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { createGarden, createStructure, createZone, createPlanting } from './types';
+import { describe, expect, it } from 'vitest';
+import { createGarden, createPlanting, createStructure, createZone } from './types';
 
 describe('factory functions', () => {
   it('createGarden returns valid defaults', () => {
@@ -31,6 +31,27 @@ describe('factory functions', () => {
     expect(s.zIndex).toBe(0);
     expect(s.parentId).toBeNull();
     expect(s.snapToGrid).toBe(true);
+    expect(s.surface).toBe(false);
+  });
+
+  it('creates patios with surface=true', () => {
+    const s = createStructure({ type: 'patio', x: 0, y: 0, width: 5, height: 5 });
+    expect(s.surface).toBe(true);
+  });
+
+  it('creates paths with surface=true', () => {
+    const s = createStructure({ type: 'path', x: 0, y: 0, width: 2, height: 6 });
+    expect(s.surface).toBe(true);
+  });
+
+  it('creates pots with surface=false', () => {
+    const s = createStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
+    expect(s.surface).toBe(false);
+  });
+
+  it('creates pots with circle shape', () => {
+    const s = createStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
+    expect(s.shape).toBe('circle');
   });
 
   it('createZone returns valid defaults', () => {
@@ -45,9 +66,9 @@ describe('factory functions', () => {
   });
 
   it('createPlanting returns valid defaults', () => {
-    const p = createPlanting({ zoneId: 'zone-1', x: 0.5, y: 0.5, name: 'Tomato' });
+    const p = createPlanting({ parentId: 'zone-1', x: 0.5, y: 0.5, name: 'Tomato' });
     expect(p.id).toBeTruthy();
-    expect(p.zoneId).toBe('zone-1');
+    expect(p.parentId).toBe('zone-1');
     expect(p.name).toBe('Tomato');
     expect(p.variety).toBeNull();
     expect(p.icon).toBeNull();

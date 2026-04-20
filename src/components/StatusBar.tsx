@@ -1,7 +1,7 @@
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { formatMeasurement } from '../utils/units';
 import styles from '../styles/StatusBar.module.css';
+import { formatMeasurement } from '../utils/units';
 
 export function StatusBar() {
   const garden = useGardenStore((s) => s.garden);
@@ -23,10 +23,20 @@ export function StatusBar() {
     <div className={styles.statusBar}>
       <span>Grid: {gridLabel}</span>
       <span className={styles.zoomControls}>
-        <button className={styles.zoomButton} onClick={() => setZoom(zoom * 0.8)}>−</button>
+        <button className={styles.zoomButton} onClick={() => setZoom(zoom * 0.8)}>
+          −
+        </button>
         <span className={styles.zoomLabel}>{zoomPct}%</span>
-        <button className={styles.zoomButton} onClick={() => setZoom(zoom * 1.25)}>+</button>
-        <button className={styles.zoomButton} onClick={() => setZoom(BASE_ZOOM)} title="Reset to 100%">⊙</button>
+        <button className={styles.zoomButton} onClick={() => setZoom(zoom * 1.25)}>
+          +
+        </button>
+        <button
+          className={styles.zoomButton}
+          onClick={() => setZoom(BASE_ZOOM)}
+          title="Reset to 100%"
+        >
+          ⊙
+        </button>
       </span>
       <span>{selectionLabel}</span>
     </div>

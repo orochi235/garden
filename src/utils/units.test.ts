@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { feetToDisplay, displayToFeet, unitLabel } from './units';
+import { describe, expect, it } from 'vitest';
+import { displayToFeet, feetToDisplay, unitLabel } from './units';
 
 describe('feetToDisplay', () => {
   it('converts feet to feet (identity)', () => {

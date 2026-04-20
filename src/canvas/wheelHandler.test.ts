@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import type { WheelInput, WheelState } from './wheelHandler';
 import { computeWheelAction } from './wheelHandler';
-import type { WheelState, WheelInput } from './wheelHandler';
 
 const baseState: WheelState = { zoom: 50, panX: 100, panY: 200 };
 const baseInput: WheelInput = { deltaX: 0, deltaY: 0, mouseX: 400, mouseY: 300 };
@@ -22,7 +22,11 @@ describe('computeWheelAction', () => {
     });
 
     it('pans in both axes simultaneously', () => {
-      const result = computeWheelAction('select', baseState, { ...baseInput, deltaX: 10, deltaY: 15 });
+      const result = computeWheelAction('select', baseState, {
+        ...baseInput,
+        deltaX: 10,
+        deltaY: 15,
+      });
       expect(result.panX).toBe(90);
       expect(result.panY).toBe(185);
       expect(result.zoom).toBe(50);
@@ -122,6 +126,42 @@ describe('computeWheelAction', () => {
       // Pan should change to compensate for zoom change
       expect(result.panX).not.toBe(baseState.panX);
       expect(result.panY).not.toBe(baseState.panY);
+    });
+  });
+
+  describe('ctrl/cmd modifier zooms regardless of mode', () => {
+    it('zooms in select mode when ctrlKey is true', () => {
+      const result = computeWheelAction('select', baseState, {
+        ...baseInput,
+        deltaY: -100,
+        ctrlKey: true,
+      });
+      expect(result.zoom).toBeGreaterThan(baseState.zoom);
+    });
+
+    it('zooms in pan mode when ctrlKey is true', () => {
+      const result = computeWheelAction('pan', baseState, {
+        ...baseInput,
+        deltaY: 100,
+        ctrlKey: true,
+      });
+      expect(result.zoom).toBeLessThan(baseState.zoom);
+    });
+
+    it('preserves world point under mouse with ctrlKey zoom', () => {
+      const state: WheelState = { zoom: 50, panX: 100, panY: 200 };
+      const input = { deltaX: 0, deltaY: -100, mouseX: 400, mouseY: 300, ctrlKey: true };
+
+      const worldXBefore = (input.mouseX - state.panX) / state.zoom;
+      const worldYBefore = (input.mouseY - state.panY) / state.zoom;
+
+      const result = computeWheelAction('select', state, input);
+
+      const worldXAfter = (input.mouseX - result.panX) / result.zoom;
+      const worldYAfter = (input.mouseY - result.panY) / result.zoom;
+
+      expect(worldXAfter).toBeCloseTo(worldXBefore, 5);
+      expect(worldYAfter).toBeCloseTo(worldYBefore, 5);
     });
   });
 });

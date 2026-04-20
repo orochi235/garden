@@ -1,15 +1,25 @@
-import type { Structure, Zone, StructureShape } from '../model/types';
+import type { Structure, StructureShape, Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 
-interface SelectableObject { id: string; x: number; y: number; width: number; height: number; shape?: StructureShape; }
+interface SelectableObject {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label?: string;
+  shape?: StructureShape;
+}
 
 export function renderSelection(
   ctx: CanvasRenderingContext2D,
   selectedIds: string[],
-  structures: Structure[], zones: Zone[],
+  structures: Structure[],
+  zones: Zone[],
   view: ViewTransform,
-  canvasWidth: number, canvasHeight: number,
+  canvasWidth: number,
+  canvasHeight: number,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (selectedIds.length === 0) return;
@@ -39,10 +49,14 @@ export function renderSelection(
     // Resize handles (8 points on bounding box)
     const hs = 8;
     const handles = [
-      [sx - hs/2, sy - hs/2], [sx + w/2 - hs/2, sy - hs/2], [sx + w - hs/2, sy - hs/2],
-      [sx + w - hs/2, sy + h/2 - hs/2],
-      [sx + w - hs/2, sy + h - hs/2], [sx + w/2 - hs/2, sy + h - hs/2],
-      [sx - hs/2, sy + h - hs/2], [sx - hs/2, sy + h/2 - hs/2],
+      [sx - hs / 2, sy - hs / 2],
+      [sx + w / 2 - hs / 2, sy - hs / 2],
+      [sx + w - hs / 2, sy - hs / 2],
+      [sx + w - hs / 2, sy + h / 2 - hs / 2],
+      [sx + w - hs / 2, sy + h - hs / 2],
+      [sx + w / 2 - hs / 2, sy + h - hs / 2],
+      [sx - hs / 2, sy + h - hs / 2],
+      [sx - hs / 2, sy + h / 2 - hs / 2],
     ];
     ctx.fillStyle = '#FFFFFF';
     ctx.strokeStyle = '#5BA4CF';
@@ -50,6 +64,20 @@ export function renderSelection(
     for (const [hx, hy] of handles) {
       ctx.fillRect(hx, hy, hs, hs);
       ctx.strokeRect(hx, hy, hs, hs);
+    }
+
+    // Label below object
+    if (obj.label) {
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      const textX = sx + w / 2;
+      const textY = sy + h + 8;
+      const metrics = ctx.measureText(obj.label);
+      ctx.fillRect(textX - metrics.width / 2 - 3, textY - 1, metrics.width + 6, 14);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(obj.label, textX, textY);
     }
   }
 }

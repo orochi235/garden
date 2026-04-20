@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useUiStore } from './uiStore';
 
 describe('uiStore', () => {
@@ -49,9 +49,9 @@ describe('uiStore', () => {
   });
 
   it('manages layer visibility', () => {
-    useUiStore.getState().setLayerVisible('structures', false);
-    expect(useUiStore.getState().layerVisibility.structures).toBe(false);
-    expect(useUiStore.getState().layerVisibility.zones).toBe(true);
+    useUiStore.getState().setLayerVisible('zones', false);
+    expect(useUiStore.getState().layerVisibility.zones).toBe(false);
+    expect(useUiStore.getState().layerVisibility.structures).toBe(true);
   });
 
   it('manages layer opacity', () => {
@@ -62,5 +62,39 @@ describe('uiStore', () => {
   it('manages layer lock', () => {
     useUiStore.getState().setLayerLocked('plantings', true);
     expect(useUiStore.getState().layerLocked.plantings).toBe(true);
+  });
+
+  it('manages layerSelectorHovered', () => {
+    expect(useUiStore.getState().layerSelectorHovered).toBe(false);
+    useUiStore.getState().setLayerSelectorHovered(true);
+    expect(useUiStore.getState().layerSelectorHovered).toBe(true);
+    useUiStore.getState().setLayerSelectorHovered(false);
+    expect(useUiStore.getState().layerSelectorHovered).toBe(false);
+  });
+
+  it('manages showSurfaces', () => {
+    expect(useUiStore.getState().showSurfaces).toBe(false);
+    useUiStore.getState().setShowSurfaces(true);
+    expect(useUiStore.getState().showSurfaces).toBe(true);
+  });
+
+  it('prevents hiding the active layer', () => {
+    useUiStore.getState().setActiveLayer('structures');
+    useUiStore.getState().setLayerVisible('structures', false);
+    expect(useUiStore.getState().layerVisibility.structures).toBe(true);
+  });
+
+  it('allows hiding a non-active layer', () => {
+    useUiStore.getState().setActiveLayer('structures');
+    useUiStore.getState().setLayerVisible('zones', false);
+    expect(useUiStore.getState().layerVisibility.zones).toBe(false);
+  });
+
+  it('resets layerSelectorHovered and showSurfaces', () => {
+    useUiStore.getState().setLayerSelectorHovered(true);
+    useUiStore.getState().setShowSurfaces(true);
+    useUiStore.getState().reset();
+    expect(useUiStore.getState().layerSelectorHovered).toBe(false);
+    expect(useUiStore.getState().showSurfaces).toBe(false);
   });
 });

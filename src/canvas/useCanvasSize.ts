@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type RefObject } from 'react';
+import { type RefObject, useCallback, useEffect, useState } from 'react';
 
 interface CanvasSize {
   width: number;

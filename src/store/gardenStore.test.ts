@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useGardenStore } from './gardenStore';
 
 describe('gardenStore', () => {
@@ -53,7 +53,7 @@ describe('gardenStore', () => {
     const { addZone, addPlanting, removeZone } = useGardenStore.getState();
     addZone({ x: 0, y: 0, width: 3, height: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    addPlanting({ zoneId, x: 0.5, y: 0.5, name: 'Tomato' });
+    addPlanting({ parentId: zoneId, x: 0.5, y: 0.5, name: 'Tomato' });
     expect(useGardenStore.getState().garden.plantings).toHaveLength(1);
     removeZone(zoneId);
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);
@@ -64,10 +64,31 @@ describe('gardenStore', () => {
     const { addZone, addPlanting } = useGardenStore.getState();
     addZone({ x: 0, y: 0, width: 3, height: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    addPlanting({ zoneId, x: 1, y: 1, name: 'Basil' });
+    addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Basil' });
     const p = useGardenStore.getState().garden.plantings[0];
     expect(p.name).toBe('Basil');
-    expect(p.zoneId).toBe(zoneId);
+    expect(p.parentId).toBe(zoneId);
+  });
+
+  it('rejects addStructure when it would collide', () => {
+    const { addStructure } = useGardenStore.getState();
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    addStructure({ type: 'raised-bed', x: 2, y: 2, width: 4, height: 4 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(1);
+  });
+
+  it('allows addStructure when no collision', () => {
+    const { addStructure } = useGardenStore.getState();
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    addStructure({ type: 'raised-bed', x: 5, y: 0, width: 4, height: 4 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(2);
+  });
+
+  it('allows placing a structure on a surface', () => {
+    const { addStructure } = useGardenStore.getState();
+    addStructure({ type: 'patio', x: 0, y: 0, width: 8, height: 8 });
+    addStructure({ type: 'pot', x: 2, y: 2, width: 1, height: 1 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(2);
   });
 
   it('updates garden settings', () => {

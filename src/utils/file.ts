@@ -33,8 +33,11 @@ export function openGardenFile(): Promise<Garden> {
       if (!file) return reject(new Error('No file selected'));
       const reader = new FileReader();
       reader.onload = () => {
-        try { resolve(deserializeGarden(reader.result as string)); }
-        catch (e) { reject(e); }
+        try {
+          resolve(deserializeGarden(reader.result as string));
+        } catch (e) {
+          reject(e);
+        }
       };
       reader.onerror = () => reject(reader.error);
       reader.readAsText(file);
@@ -52,6 +55,9 @@ export function autosave(garden: Garden): void {
 export function loadAutosave(): Garden | null {
   const json = localStorage.getItem(AUTOSAVE_KEY);
   if (!json) return null;
-  try { return deserializeGarden(json); }
-  catch { return null; }
+  try {
+    return deserializeGarden(json);
+  } catch {
+    return null;
+  }
 }

@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useCanvasKeyboard } from './useCanvasKeyboard';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { useCanvasKeyboard } from './useCanvasKeyboard';
 
 /** Flush all pending requestAnimationFrame callbacks by advancing fake timers */
 async function flushAnimations() {
@@ -32,7 +32,9 @@ describe('useCanvasKeyboard', () => {
   });
 
   function setup() {
-    return renderHook(() => useCanvasKeyboard({ clipboard: mockClipboard, cancelPlotting: mockCancelPlotting }));
+    return renderHook(() =>
+      useCanvasKeyboard({ clipboard: mockClipboard, cancelPlotting: mockCancelPlotting }),
+    );
   }
 
   it('calls undo on Cmd+Z', () => {

@@ -12,7 +12,9 @@ function getImage(dataUri: string): HTMLImageElement | null {
   const img = new Image();
   img.src = dataUri;
   imageCache.set(dataUri, img);
-  img.onload = () => { window.dispatchEvent(new CustomEvent('blueprint-loaded')); };
+  img.onload = () => {
+    window.dispatchEvent(new CustomEvent('blueprint-loaded'));
+  };
   return null;
 }
 
@@ -20,7 +22,8 @@ export function renderBlueprint(
   ctx: CanvasRenderingContext2D,
   blueprint: Blueprint | null,
   view: ViewTransform,
-  canvasWidth: number, canvasHeight: number,
+  canvasWidth: number,
+  canvasHeight: number,
   layerOpacity: number,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);

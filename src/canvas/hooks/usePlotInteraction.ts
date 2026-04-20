@@ -11,7 +11,13 @@ interface PlotDeps {
   dpr: number;
 }
 
-export function usePlotInteraction({ containerRef, selectionCanvasRef, width, height, dpr }: PlotDeps) {
+export function usePlotInteraction({
+  containerRef,
+  selectionCanvasRef,
+  width,
+  height,
+  dpr,
+}: PlotDeps) {
   const isPlotting = useRef(false);
   const plotStart = useRef({ worldX: 0, worldY: 0 });
   const plotCurrent = useRef({ worldX: 0, worldY: 0 });
@@ -31,7 +37,11 @@ export function usePlotInteraction({ containerRef, selectionCanvasRef, width, he
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return false;
     const { panX, panY, zoom } = useUiStore.getState();
-    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX, panY, zoom });
+    const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, {
+      panX,
+      panY,
+      zoom,
+    });
     const { garden } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
     plotCurrent.current = {
@@ -56,7 +66,7 @@ export function usePlotInteraction({ containerRef, selectionCanvasRef, width, he
       const sy = view.panY + y * view.zoom;
       const sw = w * view.zoom;
       const sh = h * view.zoom;
-      ctx.fillStyle = (plottingTool?.color ?? '#8B6914') + '66';
+      ctx.fillStyle = `${plottingTool?.color ?? '#8B6914'}66`;
       ctx.fillRect(sx, sy, sw, sh);
       ctx.strokeStyle = plottingTool?.color ?? '#8B6914';
       ctx.lineWidth = 2;
