@@ -102,22 +102,38 @@ export function hitTestPlantings(
 ): HitResult | null {
   if (useUiStore.getState().layerLocked.plantings) return null;
 
-  const parentMap = new Map<string, { x: number; y: number }>();
+  const parentMap = new Map<string, Structure | Zone>();
   for (const z of zones) parentMap.set(z.id, z);
   for (const s of structures) {
     if (s.container) parentMap.set(s.id, s);
+  }
+
+  // Count children per parent
+  const childCount = new Map<string, number>();
+  for (const p of plantings) {
+    childCount.set(p.parentId, (childCount.get(p.parentId) ?? 0) + 1);
   }
 
   for (const p of plantings) {
     const parent = parentMap.get(p.parentId);
     if (!parent) continue;
     const cultivar = getCultivar(p.cultivarId);
-    const radius = (cultivar?.footprintFt ?? 0.5) / 2;
+
+    // Single-arrangement container with one plant fills the container
+    const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+    const half = isSingleFill
+      ? Math.min(parent.width, parent.height) / 2
+      : (cultivar?.footprintFt ?? 0.5) / 2;
+    const isCircle = isSingleFill && 'shape' in parent && parent.shape === 'circle';
+
     const cx = parent.x + p.x;
     const cy = parent.y + p.y;
     const dx = worldX - cx;
     const dy = worldY - cy;
-    if (dx * dx + dy * dy <= radius * radius) {
+    const hit = isCircle
+      ? dx * dx + dy * dy <= half * half
+      : Math.abs(dx) <= half && Math.abs(dy) <= half;
+    if (hit) {
       return { id: p.id, layer: 'plantings' };
     }
   }

@@ -1,10 +1,13 @@
-import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
+import { getAllCultivars } from '../../model/cultivars';
 
 export interface PaletteEntry {
   id: string;
   name: string;
   category: 'structures' | 'zones' | 'plantings';
-  subcategory?: CultivarCategory;
+  /** Species grouping key for plantings, e.g. "Pepper, Hot" or "Tomato" */
+  species?: string;
+  /** Display name within the species group (variety name, or full name if no variety) */
+  varietyLabel?: string;
   type: string;
   defaultWidth: number;
   defaultHeight: number;
@@ -106,17 +109,24 @@ export const paletteItems: PaletteEntry[] = [
     color: 'transparent',
     pattern: 'crosshatch',
   },
-  // Plantings
-  ...getAllCultivars().map((c) => ({
-    id: c.id,
-    name: c.name,
-    category: 'plantings' as const,
-    subcategory: c.category,
-    type: 'planting',
-    defaultWidth: 0,
-    defaultHeight: 0,
-    color: c.color,
-  })),
+  // Plantings — grouped by species, sorted by variety within each
+  ...getAllCultivars().map((c) => {
+    // Derive species: strip the variety (last segment) from the name
+    const species = c.variety
+      ? c.name.slice(0, c.name.lastIndexOf(',')).trim()
+      : c.name;
+    return {
+      id: c.id,
+      name: c.name,
+      category: 'plantings' as const,
+      species,
+      varietyLabel: c.variety ?? c.name,
+      type: 'planting',
+      defaultWidth: 0,
+      defaultHeight: 0,
+      color: c.color,
+    };
+  }),
 ];
 
 export const categories = [
@@ -125,20 +135,13 @@ export const categories = [
   { id: 'plantings', label: 'Plantings' },
 ] as const;
 
-export const cultivarCategoryLabels: Record<CultivarCategory, string> = {
-  fruits: 'Fruits',
-  vegetables: 'Vegetables',
-  'root-vegetables': 'Root Vegetables',
-  herbs: 'Herbs',
-  flowers: 'Flowers',
-  legumes: 'Legumes',
-};
-
-export const cultivarCategoryOrder: CultivarCategory[] = [
-  'fruits',
-  'vegetables',
-  'root-vegetables',
-  'herbs',
-  'legumes',
-  'flowers',
-];
+/** Get the ordered list of species for plantings, sorted alphabetically. */
+export function getPlantingSpecies(items: PaletteEntry[]): string[] {
+  const speciesSet = new Set<string>();
+  for (const item of items) {
+    if (item.category === 'plantings' && item.species) {
+      speciesSet.add(item.species);
+    }
+  }
+  return [...speciesSet].sort();
+}

@@ -1,368 +1,530 @@
 /**
- * Per-plant-type top-down renderers.
- * Each renderer draws a plant centered at (0, 0) within the given radius.
+ * Plant renderers — each plant is drawn as a transparent square with an opaque
+ * diagonal hatch pattern, plus a stylized icon of the plant's product (fruit,
+ * leaf, root, etc.) centered inside.
+ *
+ * `renderPlant(ctx, cultivarId, radius, color)` draws within a square from
+ * (-radius, -radius) to (+radius, +radius), centered on the current origin.
  */
 
-type PlantRenderer = (
-  ctx: CanvasRenderingContext2D,
-  radius: number,
-  color: string,
-) => void;
+type IconRenderer = (ctx: CanvasRenderingContext2D, r: number, color: string) => void;
 
-function renderBasil(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
-  const leafCount = 6;
-  const leafLen = radius * 0.75;
-  const leafWidth = radius * 0.35;
+// ---------------------------------------------------------------------------
+// Color normalization — ensure hatch patterns are perceptually equivalent
+// ---------------------------------------------------------------------------
 
-  // Leaves radiating from center
-  for (let i = 0; i < leafCount; i++) {
-    const angle = (i * Math.PI * 2) / leafCount;
-    ctx.save();
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.ellipse(leafLen * 0.5, 0, leafLen * 0.5, leafWidth, 0, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = '#2D5A27';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // Center dot
-  ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.15, 0, Math.PI * 2);
-  ctx.fillStyle = '#2D5A27';
-  ctx.fill();
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
 }
 
-function renderTomato(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
-  // Tomato plants from above: sprawling compound pinnate leaves on branching stems
-  // Outer canopy — irregular, bushy spread of compound leaves
-  const branches = 6;
-  for (let i = 0; i < branches; i++) {
-    const angle = (i * Math.PI * 2) / branches + (i % 2) * 0.3;
-    ctx.save();
-    ctx.rotate(angle);
-
-    // Main branch stem
-    const branchLen = radius * (0.7 + (i % 3) * 0.1);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(branchLen, 0);
-    ctx.strokeStyle = '#4A6A30';
-    ctx.lineWidth = Math.max(1, radius * 0.06);
-    ctx.stroke();
-
-    // Compound leaflets along the branch (pinnate arrangement)
-    const leaflets = 4;
-    for (let j = 1; j <= leaflets; j++) {
-      const pos = (j / (leaflets + 0.5)) * branchLen;
-      const leafletLen = radius * 0.3 * (1 - j * 0.1);
-      const leafletWidth = leafletLen * 0.45;
-      const side = j % 2 === 0 ? 1 : -1;
-
-      ctx.save();
-      ctx.translate(pos, 0);
-      ctx.rotate(side * 0.5);
-      ctx.beginPath();
-      // Pointed, serrated-looking leaflet shape
-      ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(leafletLen * 0.3, -leafletWidth, leafletLen * 0.7, -leafletWidth * 0.8, leafletLen, 0);
-      ctx.bezierCurveTo(leafletLen * 0.7, leafletWidth * 0.8, leafletLen * 0.3, leafletWidth, 0, 0);
-      ctx.fillStyle = '#3A6B30';
-      ctx.fill();
-      ctx.strokeStyle = '#2D5520';
-      ctx.lineWidth = 0.4;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Terminal leaflet (larger)
-    ctx.save();
-    ctx.translate(branchLen, 0);
-    const termLen = radius * 0.28;
-    const termWidth = termLen * 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(termLen * 0.4, -termWidth, termLen * 0.8, -termWidth * 0.7, termLen, 0);
-    ctx.bezierCurveTo(termLen * 0.8, termWidth * 0.7, termLen * 0.4, termWidth, 0, 0);
-    ctx.fillStyle = '#4A7A38';
-    ctx.fill();
-    ctx.restore();
-
-    ctx.restore();
-  }
-
-  // Center — visible fruit clusters peeking through foliage
-  ctx.beginPath();
-  ctx.arc(radius * 0.12, -radius * 0.08, radius * 0.12, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.strokeStyle = '#2D5520';
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(-radius * 0.08, radius * 0.1, radius * 0.09, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.7;
-  ctx.fill();
-  ctx.globalAlpha = 1;
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (max === g) h = ((b - r) / d + 2) / 6;
+  else h = ((r - g) / d + 4) / 6;
+  return [h, s, l];
 }
 
-function renderPepper(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
-  // Pepper plant from above: upright, compact with broad pointed leaves in pairs
-  // More structured/symmetrical than tomato, with a visible Y-branching habit
-  const branchPairs = 4;
-
-  for (let i = 0; i < branchPairs; i++) {
-    const angle = (i * Math.PI * 2) / branchPairs + 0.2;
-    ctx.save();
-    ctx.rotate(angle);
-
-    // Branch
-    const branchLen = radius * (0.55 + (i % 2) * 0.15);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(branchLen, 0);
-    ctx.strokeStyle = '#3A5A28';
-    ctx.lineWidth = Math.max(1, radius * 0.07);
-    ctx.stroke();
-
-    // Broad, pointed ovate leaves — peppers have smooth-edged, waxy leaves
-    const leafLen = radius * 0.45;
-    const leafWidth = leafLen * 0.4;
-
-    // Left leaf
-    ctx.save();
-    ctx.translate(branchLen * 0.5, 0);
-    ctx.rotate(-0.6);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(leafLen * 0.2, -leafWidth, leafLen * 0.6, -leafWidth * 0.9, leafLen, 0);
-    ctx.bezierCurveTo(leafLen * 0.6, leafWidth * 0.9, leafLen * 0.2, leafWidth, 0, 0);
-    ctx.fillStyle = '#4A8040';
-    ctx.fill();
-    ctx.strokeStyle = '#2D5A20';
-    ctx.lineWidth = 0.4;
-    ctx.stroke();
-    // Midrib
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(leafLen * 0.9, 0);
-    ctx.strokeStyle = '#3A6A30';
-    ctx.lineWidth = 0.4;
-    ctx.stroke();
-    ctx.restore();
-
-    // Right leaf
-    ctx.save();
-    ctx.translate(branchLen * 0.75, 0);
-    ctx.rotate(0.5);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(leafLen * 0.2, -leafWidth, leafLen * 0.6, -leafWidth * 0.9, leafLen, 0);
-    ctx.bezierCurveTo(leafLen * 0.6, leafWidth * 0.9, leafLen * 0.2, leafWidth, 0, 0);
-    ctx.fillStyle = '#3D7538';
-    ctx.fill();
-    ctx.strokeStyle = '#2D5A20';
-    ctx.lineWidth = 0.4;
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.restore();
+function hslToHex(h: number, s: number, l: number): string {
+  function hue2rgb(p: number, q: number, t: number): number {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
   }
+  let r: number, g: number, b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  const toHex = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
 
-  // Center stem node
-  ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.08, 0, Math.PI * 2);
-  ctx.fillStyle = '#3A5A28';
-  ctx.fill();
+/** Normalize a color for hatch rendering: desaturate by 60% and ensure
+ *  at least 50% lightness so all hatch patterns are muted and equivalent. */
+function normalizeHatchColor(hex: string): string {
+  const [r, g, b] = hexToRgb(hex);
+  const [h, s, l] = rgbToHsl(r, g, b);
+  const ns = s * 0.4; // desaturate by 60%
+  const nl = Math.max(0.5, l); // at least 50% light
+  return hslToHex(h, ns, nl);
+}
 
-  // A pepper or two visible among leaves
+// ---------------------------------------------------------------------------
+// Hatch background — shared by all plants
+// ---------------------------------------------------------------------------
+
+export type PlantShape = 'square' | 'circle';
+
+function drawHatch(ctx: CanvasRenderingContext2D, radius: number, color: string, shape: PlantShape = 'square'): void {
+  const hatchColor = normalizeHatchColor(color);
+  const size = radius * 2;
+  const half = radius;
+
   ctx.save();
-  ctx.translate(radius * 0.15, radius * 0.05);
-  ctx.rotate(0.8);
+
+  // Clip to shape
   ctx.beginPath();
-  ctx.ellipse(0, 0, radius * 0.06, radius * 0.12, 0, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.strokeStyle = '#2D5A20';
-  ctx.lineWidth = 0.4;
-  ctx.stroke();
+  if (shape === 'circle') {
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  } else {
+    ctx.rect(-half, -half, size, size);
+  }
+  ctx.clip();
+
+  // Diagonal lines
+  ctx.strokeStyle = hatchColor;
+  ctx.lineWidth = Math.max(1, radius * 0.08);
+  ctx.globalAlpha = 0.55;
+  const spacing = Math.max(3, radius * 0.25);
+  const span = size * 2;
+  for (let d = -span; d <= span; d += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(d - half, -half);
+    ctx.lineTo(d + half, half);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Border
+  ctx.strokeStyle = hatchColor;
+  ctx.lineWidth = Math.max(1, radius * 0.06);
+  ctx.globalAlpha = 0.7;
+  if (shape === 'circle') {
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    ctx.strokeRect(-half, -half, size, size);
+  }
+  ctx.globalAlpha = 1;
+
   ctx.restore();
 }
 
-function renderLettuce(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
-  // Rosette of overlapping rounded leaves
-  const layers = 3;
-  for (let layer = layers; layer >= 1; layer--) {
-    const count = layer + 3;
-    const r = radius * (layer / layers) * 0.85;
-    const w = r * 0.5;
-    for (let i = 0; i < count; i++) {
-      const angle = (i * Math.PI * 2) / count + (layer * 0.3);
-      ctx.save();
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.ellipse(r * 0.4, 0, r * 0.45, w, 0, 0, Math.PI * 2);
-      ctx.fillStyle = layer === 1 ? '#A8D48A' : color;
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-}
+// ---------------------------------------------------------------------------
+// Fruit / product icons
+// ---------------------------------------------------------------------------
 
-function renderCucumber(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
-  // Large palmate leaves radiating from center, like a vine viewed from above
-  const leafCount = 5;
-  const leafLen = radius * 0.9;
-  const leafWidth = radius * 0.45;
-
-  for (let i = 0; i < leafCount; i++) {
-    const angle = (i * Math.PI * 2) / leafCount;
-    ctx.save();
-    ctx.rotate(angle);
-
-    // Broad, lobed leaf shape
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(leafLen * 0.3, -leafWidth * 0.6, leafLen * 0.7, -leafWidth * 0.8, leafLen, -leafWidth * 0.2);
-    ctx.bezierCurveTo(leafLen * 1.05, 0, leafLen * 1.05, 0, leafLen, leafWidth * 0.2);
-    ctx.bezierCurveTo(leafLen * 0.7, leafWidth * 0.8, leafLen * 0.3, leafWidth * 0.6, 0, 0);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = '#1A5C18';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Leaf vein
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(leafLen * 0.85, 0);
-    ctx.strokeStyle = '#1A5C18';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  // Center node
+/** Round fruit — tomato, tomatillo, ground cherry */
+function iconRoundFruit(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const s = r * 0.4;
+  const squish = 0.85; // slightly oblate
   ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.12, 0, Math.PI * 2);
-  ctx.fillStyle = '#1A5C18';
-  ctx.fill();
-
-  // Curling tendrils
-  for (let i = 0; i < 3; i++) {
-    const angle = (i * Math.PI * 2) / 3 + Math.PI / 5;
-    ctx.save();
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(radius * 0.4, 0);
-    ctx.quadraticCurveTo(radius * 0.7, -radius * 0.15, radius * 0.6, -radius * 0.3);
-    ctx.strokeStyle = '#5DAE55';
-    ctx.lineWidth = 0.7;
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
-function renderCarrot(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
-  // Feathery carrot tops viewed from above — fine fronds radiating from center
-  const frondCount = 8;
-
-  for (let i = 0; i < frondCount; i++) {
-    const angle = (i * Math.PI * 2) / frondCount;
-    const frondLen = radius * (0.75 + Math.random() * 0.2);
-    ctx.save();
-    ctx.rotate(angle);
-
-    // Main stem of frond
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(frondLen, 0);
-    ctx.strokeStyle = '#3A7A30';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-
-    // Tiny leaflets along the stem
-    const leaflets = 4;
-    for (let j = 1; j <= leaflets; j++) {
-      const pos = (j / (leaflets + 1)) * frondLen;
-      const leafletLen = radius * 0.18;
-      ctx.beginPath();
-      ctx.moveTo(pos, 0);
-      ctx.lineTo(pos + leafletLen * 0.3, -leafletLen);
-      ctx.moveTo(pos, 0);
-      ctx.lineTo(pos + leafletLen * 0.3, leafletLen);
-      ctx.strokeStyle = '#4A9A40';
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
-
-  // Center crown (top of the root showing)
-  ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.2, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, s, s * squish, 0, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.strokeStyle = '#C07830';
-  ctx.lineWidth = 0.7;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = Math.max(0.5, s * 0.08);
   ctx.stroke();
+  // Pointy calyx leaves fanning from near the top, horizontally centered
+  const leafCount = 5;
+  const leafLen = s * 0.45;
+  const leafHalfW = s * 0.1;
+  ctx.fillStyle = '#3A6A20';
+  for (let i = 0; i < leafCount; i++) {
+    const angle = ((i - (leafCount - 1) / 2) * Math.PI * 0.6) / (leafCount - 1);
+    ctx.save();
+    ctx.translate(0, -s * squish * 0.6);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-leafHalfW, -leafLen * 0.4);
+    ctx.lineTo(0, -leafLen);
+    ctx.lineTo(leafHalfW, -leafLen * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
-function renderGeneric(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
+/** Elongated pepper shape */
+function iconPepper(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const w = r * 0.18;
+  const h = r * 0.5;
   ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.75, 0, Math.PI * 2);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = radius * 0.25;
-  ctx.setLineDash([radius * 0.3, radius * 0.2]);
+  ctx.moveTo(0, -h);
+  ctx.bezierCurveTo(w * 1.4, -h * 0.6, w * 1.6, h * 0.3, w * 0.3, h);
+  ctx.bezierCurveTo(0, h * 1.05, 0, h * 1.05, -w * 0.3, h);
+  ctx.bezierCurveTo(-w * 1.6, h * 0.3, -w * 1.4, -h * 0.6, 0, -h);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
   ctx.stroke();
-  ctx.setLineDash([]);
+  // Stem
+  ctx.beginPath();
+  ctx.moveTo(0, -h);
+  ctx.lineTo(0, -h - r * 0.12);
+  ctx.strokeStyle = '#3A6A20';
+  ctx.lineWidth = Math.max(0.5, r * 0.06);
+  ctx.stroke();
 }
 
-const renderers: Record<string, PlantRenderer> = {
-  basil: renderBasil,
-  'thai-basil': renderBasil,
-  tomato: renderTomato,
-  'black-krim-tomato': renderTomato,
-  'cherokee-purple-tomato': renderTomato,
-  'valencia-tomato': renderTomato,
-  'chocolate-cherry-tomato': renderTomato,
-  'san-marzano-tomato': renderTomato,
-  'bell-pepper': renderPepper,
-  jalapeno: renderPepper,
-  poblano: renderPepper,
-  shishito: renderPepper,
-  anaheim: renderPepper,
-  habanero: renderPepper,
-  tomatillo: renderTomato,
-  'ground-cherry': renderTomato,
-  eggplant: renderPepper,
-  lettuce: renderLettuce,
-  kale: renderLettuce,
-  cucumber: renderCucumber,
-  honeydew: renderCucumber,
-  watermelon: renderCucumber,
-  carrot: renderCarrot,
-  radish: renderCarrot,
-  parsnip: renderCarrot,
-  potato: renderCarrot,
-  zucchini: renderCucumber,
-  'summer-squash': renderCucumber,
-  strawberry: renderLettuce,
+/** Eggplant — teardrop shape */
+function iconEggplant(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const w = r * 0.22;
+  const h = r * 0.5;
+  ctx.beginPath();
+  ctx.moveTo(0, -h * 0.8);
+  ctx.bezierCurveTo(w * 2, -h * 0.4, w * 2.2, h * 0.5, 0, h);
+  ctx.bezierCurveTo(-w * 2.2, h * 0.5, -w * 2, -h * 0.4, 0, -h * 0.8);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Calyx
+  ctx.beginPath();
+  ctx.arc(0, -h * 0.75, r * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = '#4A7A30';
+  ctx.fill();
+}
+
+/** Cucumber / zucchini — elongated oval */
+function iconCucumber(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const w = r * 0.16;
+  const h = r * 0.48;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Subtle stripes
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = Math.max(0.3, r * 0.02);
+  for (const dx of [-w * 0.4, 0, w * 0.4]) {
+    ctx.beginPath();
+    ctx.moveTo(dx, -h * 0.8);
+    ctx.lineTo(dx, h * 0.8);
+    ctx.stroke();
+  }
+}
+
+/** Large round melon */
+function iconMelon(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const s = r * 0.42;
+  ctx.beginPath();
+  ctx.arc(0, 0, s, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, s * 0.08);
+  ctx.stroke();
+  // Segment lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = Math.max(0.3, s * 0.04);
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 4;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * s * 0.3, Math.sin(a) * s * 0.3);
+    ctx.lineTo(Math.cos(a) * s * 0.9, Math.sin(a) * s * 0.9);
+    ctx.stroke();
+  }
+}
+
+/** Lettuce / kale — ruffled leaf rosette */
+function iconLeafRosette(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const s = r * 0.38;
+  const leaves = 5;
+  for (let i = 0; i < leaves; i++) {
+    const angle = (i * Math.PI * 2) / leaves;
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.ellipse(s * 0.35, 0, s * 0.45, s * 0.3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.beginPath();
+  ctx.arc(0, 0, s * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = '#A8D48A';
+  ctx.fill();
+}
+
+/** Carrot — orange triangle/wedge */
+function iconCarrot(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const h = r * 0.55;
+  const w = r * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(0, -h * 0.4);
+  ctx.bezierCurveTo(w, -h * 0.3, w * 0.8, h * 0.6, 0, h * 0.6);
+  ctx.bezierCurveTo(-w * 0.8, h * 0.6, -w, -h * 0.3, 0, -h * 0.4);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Green top
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.08, -h * 0.4);
+  ctx.lineTo(-r * 0.12, -h * 0.7);
+  ctx.moveTo(0, -h * 0.42);
+  ctx.lineTo(0, -h * 0.75);
+  ctx.moveTo(r * 0.08, -h * 0.4);
+  ctx.lineTo(r * 0.12, -h * 0.7);
+  ctx.strokeStyle = '#3A8A30';
+  ctx.lineWidth = Math.max(0.5, r * 0.06);
+  ctx.stroke();
+}
+
+/** Radish — small round root */
+function iconRadish(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const s = r * 0.3;
+  ctx.beginPath();
+  ctx.arc(0, s * 0.1, s, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Root tip
+  ctx.beginPath();
+  ctx.moveTo(0, s * 1.1);
+  ctx.lineTo(0, s * 1.6);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(0.5, r * 0.06);
+  ctx.stroke();
+  // Leaf sprout
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.8);
+  ctx.lineTo(-r * 0.1, -s * 1.5);
+  ctx.moveTo(0, -s * 0.8);
+  ctx.lineTo(r * 0.1, -s * 1.5);
+  ctx.strokeStyle = '#3A8A30';
+  ctx.lineWidth = Math.max(0.5, r * 0.05);
+  ctx.stroke();
+}
+
+/** Potato — lumpy oval */
+function iconPotato(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const w = r * 0.36;
+  const h = r * 0.28;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w, h, 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Eyes
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  for (const [dx, dy] of [[-w * 0.4, -h * 0.2], [w * 0.2, h * 0.3], [w * 0.5, -h * 0.1]]) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, r * 0.03, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/** Herb sprig — small leafy branch */
+function iconHerbSprig(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const h = r * 0.5;
+  // Stem
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.4);
+  ctx.lineTo(0, -h * 0.5);
+  ctx.strokeStyle = '#5A8A40';
+  ctx.lineWidth = Math.max(0.5, r * 0.06);
+  ctx.stroke();
+  // Leaf pairs
+  const pairs = 3;
+  for (let i = 0; i < pairs; i++) {
+    const y = h * 0.2 - i * h * 0.3;
+    const leafW = r * 0.18 * (1 - i * 0.15);
+    const leafH = r * 0.1;
+    ctx.beginPath();
+    ctx.ellipse(-leafW * 0.6, y, leafW, leafH, -0.3, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(leafW * 0.6, y, leafW, leafH, 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+}
+
+/** Strawberry — heart shape */
+function iconStrawberry(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const s = r * 0.35;
+  ctx.beginPath();
+  ctx.moveTo(0, s);
+  ctx.bezierCurveTo(-s * 0.5, s * 0.6, -s * 1.2, -s * 0.2, 0, -s * 0.7);
+  ctx.bezierCurveTo(s * 1.2, -s * 0.2, s * 0.5, s * 0.6, 0, s);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Seeds
+  ctx.fillStyle = 'rgba(255,255,200,0.5)';
+  for (const [dx, dy] of [[0, 0], [-s * 0.25, s * 0.3], [s * 0.25, s * 0.3], [0, -s * 0.3]]) {
+    ctx.beginPath();
+    ctx.ellipse(dx, dy, r * 0.02, r * 0.03, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Leaves
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.08, -s * 0.75);
+  ctx.lineTo(-r * 0.15, -s * 1.1);
+  ctx.moveTo(r * 0.08, -s * 0.75);
+  ctx.lineTo(r * 0.15, -s * 1.1);
+  ctx.strokeStyle = '#3A8A30';
+  ctx.lineWidth = Math.max(0.5, r * 0.06);
+  ctx.stroke();
+}
+
+/** Pea pod */
+function iconPeaPod(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const w = r * 0.14;
+  const h = r * 0.45;
+  ctx.beginPath();
+  ctx.moveTo(0, -h);
+  ctx.bezierCurveTo(w * 2, -h * 0.5, w * 2, h * 0.5, 0, h);
+  ctx.bezierCurveTo(-w * 2, h * 0.5, -w * 2, -h * 0.5, 0, -h);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Peas inside
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  for (const dy of [-h * 0.35, 0, h * 0.35]) {
+    ctx.beginPath();
+    ctx.arc(0, dy, w * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/** Bean */
+function iconBean(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const w = r * 0.12;
+  const h = r * 0.42;
+  ctx.beginPath();
+  ctx.moveTo(0, -h);
+  ctx.bezierCurveTo(w * 1.8, -h * 0.5, w * 1.8, h * 0.5, w * 0.3, h);
+  ctx.bezierCurveTo(-w * 1.5, h * 0.5, -w * 1.5, -h * 0.5, 0, -h);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+}
+
+/** Squash — bulbous gourd shape */
+function iconSquash(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  const s = r * 0.35;
+  // Bulbous bottom
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.15, s * 0.9, s, 0, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Stem
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.8);
+  ctx.lineTo(0, -s * 1.2);
+  ctx.strokeStyle = '#6A8A40';
+  ctx.lineWidth = Math.max(0.5, r * 0.07);
+  ctx.stroke();
+}
+
+// ---------------------------------------------------------------------------
+// Icon dispatch table
+// ---------------------------------------------------------------------------
+
+const icons: Record<string, IconRenderer> = {
+  // Tomatoes
+  'tomato': iconRoundFruit,
+  'black-krim-tomato': iconRoundFruit,
+  'cherokee-purple-tomato': iconRoundFruit,
+  'valencia-tomato': iconRoundFruit,
+  'chocolate-cherry-tomato': iconRoundFruit,
+  'san-marzano-tomato': iconRoundFruit,
+  'tomatillo': iconRoundFruit,
+  'ground-cherry': iconRoundFruit,
+
+  // Peppers
+  'bell-pepper': iconPepper,
+  'jalapeno': iconPepper,
+  'poblano': iconPepper,
+  'shishito': iconPepper,
+  'anaheim': iconPepper,
+  'habanero': iconPepper,
+
+  // Eggplant
+  'eggplant': iconEggplant,
+
+  // Cucurbits
+  'cucumber': iconCucumber,
+  'zucchini': iconCucumber,
+  'summer-squash': iconSquash,
+  'honeydew': iconMelon,
+  'watermelon': iconMelon,
+
+  // Leafy
+  'lettuce': iconLeafRosette,
+  'kale': iconLeafRosette,
+
+  // Root vegetables
+  'carrot': iconCarrot,
+  'parsnip': iconCarrot,
+  'radish': iconRadish,
+  'potato': iconPotato,
+
+  // Herbs
+  'basil': iconHerbSprig,
+  'thai-basil': iconHerbSprig,
+  'thyme': iconHerbSprig,
+  'chives': iconHerbSprig,
+  'garlic-chives': iconHerbSprig,
+  'sage': iconHerbSprig,
+  'rosemary': iconHerbSprig,
+  'parsley': iconHerbSprig,
+  'cilantro': iconHerbSprig,
+  'chervil': iconHerbSprig,
+  'dill': iconHerbSprig,
+  'chocolate-mint': iconHerbSprig,
+
+  // Fruits
+  'strawberry': iconStrawberry,
+
+  // Legumes
+  'peas': iconPeaPod,
+  'green-beans': iconBean,
 };
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export function renderPlant(
   ctx: CanvasRenderingContext2D,
   cultivarId: string,
   radius: number,
   color: string,
+  shape: PlantShape = 'square',
 ): void {
-  const renderer = renderers[cultivarId] ?? renderGeneric;
-  renderer(ctx, radius, color);
+  drawHatch(ctx, radius, color, shape);
+  const icon = icons[cultivarId] ?? iconHerbSprig;
+  icon(ctx, radius, color);
 }

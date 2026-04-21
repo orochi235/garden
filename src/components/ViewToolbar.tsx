@@ -80,6 +80,8 @@ const tools: { mode: ViewMode; label: string }[] = [
 export function ViewToolbar() {
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
+  const setZoom = useUiStore((s) => s.setZoom);
+  const setPan = useUiStore((s) => s.setPan);
 
   return (
     <div className={styles.container}>
@@ -88,6 +90,7 @@ export function ViewToolbar() {
           key={t.mode}
           className={`${styles.button} ${viewMode === t.mode ? styles.active : ''}`}
           onClick={() => setViewMode(t.mode)}
+          onDoubleClick={t.mode === 'zoom' ? () => { setZoom(1); setPan(0, 0); } : undefined}
           title={t.label}
         >
           <span className={styles.icon}>{icons[t.mode]}</span>

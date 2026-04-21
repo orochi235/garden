@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { renderPlant } from '../../canvas/plantRenderers';
-import { getCultivar } from '../../model/cultivars';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/PaletteItem.module.css';
 import type { PaletteEntry } from './paletteData';
@@ -11,8 +10,7 @@ interface Props {
   onDragEnd?: () => void;
 }
 
-const MAX_RADIUS = 28;
-const MAX_FOOTPRINT = 1.5;
+const ICON_RADIUS = 28;
 
 function PlantIcon({ name, color }: { name: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -29,9 +27,7 @@ function PlantIcon({ name, color }: { name: string; color: string }) {
     ctx.clearRect(0, 0, size, size);
     ctx.save();
     ctx.translate(size / 2, size / 2);
-    const cultivar = getCultivar(name);
-    const radius = cultivar ? (cultivar.footprintFt / MAX_FOOTPRINT) * MAX_RADIUS : MAX_RADIUS;
-    renderPlant(ctx, name, radius, color);
+    renderPlant(ctx, name, ICON_RADIUS, color);
     ctx.restore();
   }, [name, color]);
 

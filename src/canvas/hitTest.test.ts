@@ -52,10 +52,18 @@ describe('hitTestPlantings', () => {
     expect(result!.layer).toBe('plantings');
   });
 
-  it('returns null when point is outside footprint radius', () => {
-    // tomato footprint radius = 0.5, center at (1,1), point at (2,2) is ~1.41 away
+  it('returns null when point is outside footprint square', () => {
+    // tomato footprint half = 0.5, center at (1,1), point at (2,2) is outside
     const result = hitTestPlantings(2, 2, plantings, structures, zones);
     expect(result).toBeNull();
+  });
+
+  it('hits corner of square that would miss a circle', () => {
+    // tomato footprint half = 0.5, center at (1,1)
+    // point at (1.49, 1.49) is inside the square but ~0.69 from center (outside circle)
+    const result = hitTestPlantings(1.49, 1.49, plantings, structures, zones);
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('p1');
   });
 
   it('returns null when plantings layer is locked', () => {

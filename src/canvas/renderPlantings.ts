@@ -1,3 +1,4 @@
+import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
@@ -7,6 +8,10 @@ import { renderPlant } from './plantRenderers';
 interface PlantingParent {
   x: number;
   y: number;
+  width: number;
+  height: number;
+  shape?: string;
+  arrangement: Arrangement | null;
 }
 
 interface RenderedRect {
@@ -58,6 +63,12 @@ export function renderPlantings(
     occupied.push({ x: zx, y: zy, w: z.width * view.zoom, h: z.height * view.zoom });
   }
 
+  // Count plantings per parent to detect single-plant containers
+  const childCount = new Map<string, number>();
+  for (const p of plantings) {
+    childCount.set(p.parentId, (childCount.get(p.parentId) ?? 0) + 1);
+  }
+
   // First pass: render plants and collect their bounding rects
   const labelCandidates: { text: string; rect: RenderedRect; selected: boolean }[] = [];
 
@@ -69,16 +80,21 @@ export function renderPlantings(
     const footprint = cultivar?.footprintFt ?? 0.5;
     const spacing = cultivar?.spacingFt ?? 0.5;
 
+    // When a single-arrangement container has exactly one plant, fill the container
+    const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+
     const worldX = parent.x + p.x;
     const worldY = parent.y + p.y;
     const [sx, sy] = worldToScreen(worldX, worldY, view);
-    const radius = Math.max(3, (footprint / 2) * view.zoom);
+    const radius = isSingleFill
+      ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom)
+      : Math.max(3, (footprint / 2) * view.zoom);
 
     if (showSpacing) {
-      const spacingRadius = (spacing / 2) * view.zoom;
+      const spacingHalf = (spacing / 2) * view.zoom;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(sx, sy, spacingRadius, 0, Math.PI * 2);
+      ctx.rect(sx - spacingHalf, sy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
       ctx.fill();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -89,9 +105,11 @@ export function renderPlantings(
       ctx.restore();
     }
 
+    const shape = isSingleFill && parent.shape === 'circle' ? 'circle' as const : 'square' as const;
+
     ctx.save();
     ctx.translate(sx, sy);
-    renderPlant(ctx, p.cultivarId, radius, color);
+    renderPlant(ctx, p.cultivarId, radius, color, shape);
     ctx.restore();
 
     if (highlightOpacity > 0) {
@@ -100,7 +118,11 @@ export function renderPlantings(
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
+      if (shape === 'circle') {
+        ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
+      } else {
+        ctx.rect(sx - radius - 1, sy - radius - 1, (radius + 1) * 2, (radius + 1) * 2);
+      }
       ctx.stroke();
       ctx.restore();
     }

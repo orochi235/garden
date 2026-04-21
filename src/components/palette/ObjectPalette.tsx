@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useActiveTheme } from '../../hooks/useActiveTheme';
 import styles from '../../styles/ObjectPalette.module.css';
 import { PaletteItem } from './PaletteItem';
 import {
   categories,
-  cultivarCategoryLabels,
-  cultivarCategoryOrder,
+  getPlantingSpecies,
   type PaletteEntry,
   paletteItems,
 } from './paletteData';
@@ -21,6 +20,8 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
   const filtered = search
     ? paletteItems.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     : paletteItems;
+
+  const speciesOrder = useMemo(() => getPlantingSpecies(filtered), [filtered]);
 
   return (
     <div className={styles.palette}>
@@ -47,19 +48,21 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
               >
                 {cat.label}
               </div>
-              {cultivarCategoryOrder.map((subcat) => {
-                const subItems = items.filter((item) => item.subcategory === subcat);
-                if (subItems.length === 0) return null;
+              {speciesOrder.map((species) => {
+                const speciesItems = items
+                  .filter((item) => item.species === species)
+                  .sort((a, b) => (a.varietyLabel ?? '').localeCompare(b.varietyLabel ?? ''));
+                if (speciesItems.length === 0) return null;
                 return (
-                  <div key={subcat} className={styles.subcategory}>
+                  <div key={species} className={styles.subcategory}>
                     <div
                       className={styles.subcategoryLabel}
                       style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}
                     >
-                      {cultivarCategoryLabels[subcat]}
+                      {species}
                     </div>
                     <div className={styles.itemGrid}>
-                      {subItems.map((item) => (
+                      {speciesItems.map((item) => (
                         <PaletteItem
                           key={item.id}
                           entry={item}
