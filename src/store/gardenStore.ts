@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { computeSlots } from '../model/arrangement';
+import type { Arrangement, ParentBounds } from '../model/arrangement';
+import { getCultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone } from '../model/types';
 import { structuresCollide } from '../utils/collision';
@@ -28,7 +31,7 @@ interface GardenStore {
   updateStructure: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   commitStructureUpdate: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   removeStructure: (id: string) => void;
-  addZone: (opts: { x: number; y: number; width: number; height: number }) => void;
+  addZone: (opts: { x: number; y: number; width: number; height: number; color?: string; pattern?: string | null }) => void;
   updateZone: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   commitZoneUpdate: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   removeZone: (id: string) => void;
@@ -72,6 +75,111 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     return items.map((item) => (item.id === id ? { ...item, ...updates } : item));
   }
 
+  /** Rearrange all plantings in a parent using cultivar spacing to determine positions. */
+  function rearrangePlantings(
+    plantings: Planting[],
+    parentId: string,
+    parent: { x: number; y: number; width: number; height: number; shape?: string; arrangement: Arrangement | null },
+  ): Planting[] {
+    const arrangement = parent.arrangement;
+    if (!arrangement || arrangement.type === 'free') return plantings;
+
+    const bounds: ParentBounds = {
+      x: parent.x,
+      y: parent.y,
+      width: parent.width,
+      height: parent.height,
+      shape: (parent.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
+    };
+
+    const children = plantings.filter((p) => p.parentId === parentId);
+    const others = plantings.filter((p) => p.parentId !== parentId);
+
+    if (arrangement.type === 'single') {
+      // Single: center the first planting
+      const slots = computeSlots(arrangement, bounds);
+      const rearranged = children.map((p, i) =>
+        i < slots.length ? { ...p, x: slots[i].x - parent.x, y: slots[i].y - parent.y } : p,
+      );
+      return [...others, ...rearranged];
+    }
+
+    if (arrangement.type === 'ring') {
+      // Ring: distribute evenly around the ring
+      const slots = computeSlots(arrangement, bounds);
+      const rearranged = children.map((p, i) =>
+        i < slots.length ? { ...p, x: slots[i].x - parent.x, y: slots[i].y - parent.y } : p,
+      );
+      return [...others, ...rearranged];
+    }
+
+    // Grid/Rows: pack using each plant's cultivar spacing
+    const margin = 'marginFt' in arrangement ? arrangement.marginFt : 0.25;
+    const vertical = arrangement.type === 'rows' && arrangement.direction === 90;
+
+    const rearranged: Planting[] = [];
+    const positions: { x: number; y: number }[] = [];
+
+    // Pack row by row (or column by column)
+    let primaryPos = margin;
+    let rowMaxSpacing = 0;
+    let secondaryPositions: { pos: number; spacing: number }[] = [];
+    let rowPlantings: Planting[] = [];
+
+    for (const p of children) {
+      const cultivar = getCultivar(p.cultivarId);
+      const spacing = cultivar?.spacingFt ?? 0.5;
+
+      const secondaryPos = secondaryPositions.length === 0
+        ? margin + spacing / 2
+        : secondaryPositions[secondaryPositions.length - 1].pos + secondaryPositions[secondaryPositions.length - 1].spacing / 2 + spacing / 2;
+
+      const secondaryLimit = vertical ? parent.height : parent.width;
+      const primaryLimit = vertical ? parent.width : parent.height;
+
+      // Check if this plant fits in the current row
+      if (secondaryPos + spacing / 2 > secondaryLimit - margin && secondaryPositions.length > 0) {
+        // Flush current row
+        for (let i = 0; i < rowPlantings.length; i++) {
+          const sp = secondaryPositions[i];
+          const px = vertical ? primaryPos + rowMaxSpacing / 2 : sp.pos;
+          const py = vertical ? sp.pos : primaryPos + rowMaxSpacing / 2;
+          positions.push({ x: px, y: py });
+          rearranged.push({ ...rowPlantings[i], x: px, y: py });
+        }
+        primaryPos += rowMaxSpacing;
+        secondaryPositions = [];
+        rowPlantings = [];
+        rowMaxSpacing = 0;
+
+        // Start new row with this plant
+        const newSecondaryPos = margin + spacing / 2;
+        if (primaryPos + spacing > primaryLimit - margin) {
+          // No more room — leave remaining plants in place
+          rearranged.push(p);
+          continue;
+        }
+        secondaryPositions.push({ pos: newSecondaryPos, spacing });
+        rowPlantings.push(p);
+        rowMaxSpacing = Math.max(rowMaxSpacing, spacing);
+      } else {
+        secondaryPositions.push({ pos: secondaryPos, spacing });
+        rowPlantings.push(p);
+        rowMaxSpacing = Math.max(rowMaxSpacing, spacing);
+      }
+    }
+
+    // Flush final row
+    for (let i = 0; i < rowPlantings.length; i++) {
+      const sp = secondaryPositions[i];
+      const px = vertical ? primaryPos + rowMaxSpacing / 2 : sp.pos;
+      const py = vertical ? sp.pos : primaryPos + rowMaxSpacing / 2;
+      rearranged.push({ ...rowPlantings[i], x: px, y: py });
+    }
+
+    return [...others, ...rearranged];
+  }
+
   return {
     garden: defaultGarden(),
 
@@ -110,7 +218,16 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     commitStructureUpdate: (id, updates) => {
       if (isLocked('structures')) return;
-      commitPatch({ structures: mapCollection(get().garden.structures, id, updates) });
+      const newStructures = mapCollection(get().garden.structures, id, updates);
+      if ('arrangement' in updates) {
+        const parent = newStructures.find((s) => s.id === id);
+        if (parent) {
+          const newPlantings = rearrangePlantings(get().garden.plantings, id, parent);
+          commitPatch({ structures: newStructures, plantings: newPlantings });
+          return;
+        }
+      }
+      commitPatch({ structures: newStructures });
     },
 
     removeStructure: (id) => {
@@ -137,7 +254,16 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     commitZoneUpdate: (id, updates) => {
       if (isLocked('zones')) return;
-      commitPatch({ zones: mapCollection(get().garden.zones, id, updates) });
+      const newZones = mapCollection(get().garden.zones, id, updates);
+      if ('arrangement' in updates) {
+        const parent = newZones.find((z) => z.id === id);
+        if (parent) {
+          const newPlantings = rearrangePlantings(get().garden.plantings, id, parent);
+          commitPatch({ zones: newZones, plantings: newPlantings });
+          return;
+        }
+      }
+      commitPatch({ zones: newZones });
     },
 
     removeZone: (id) => {
@@ -153,8 +279,15 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     addPlanting: (opts) => {
       if (isLocked('plantings')) return;
-      const { plantings } = get().garden;
-      commitPatch({ plantings: [...plantings, createPlanting(opts)] });
+      const { plantings, structures, zones } = get().garden;
+      const newPlantings = [...plantings, createPlanting(opts)];
+      const parent = structures.find((s) => s.id === opts.parentId)
+        ?? zones.find((z) => z.id === opts.parentId);
+      if (parent) {
+        commitPatch({ plantings: rearrangePlantings(newPlantings, opts.parentId, parent) });
+      } else {
+        commitPatch({ plantings: newPlantings });
+      }
     },
 
     updatePlanting: (id, updates) => {

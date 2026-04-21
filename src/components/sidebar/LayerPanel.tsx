@@ -24,7 +24,7 @@ export function LayerPanel() {
         <div
           key={layer.id}
           className={`${styles.layer} ${activeLayer === layer.id ? styles.active : ''}`}
-          onClick={() => setActiveLayer(layer.id)}
+          onClick={() => setActiveLayer(layer.id, true)}
         >
           <ToggleSwitch
             checked={visibility[layer.id]}

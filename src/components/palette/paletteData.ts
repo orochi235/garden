@@ -1,13 +1,15 @@
-import { getAllCultivars } from '../../model/cultivars';
+import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
 
 export interface PaletteEntry {
   id: string;
   name: string;
   category: 'structures' | 'zones' | 'plantings';
+  subcategory?: CultivarCategory;
   type: string;
   defaultWidth: number;
   defaultHeight: number;
   color: string;
+  pattern?: string | null;
 }
 
 export const paletteItems: PaletteEntry[] = [
@@ -95,19 +97,21 @@ export const paletteItems: PaletteEntry[] = [
     color: '#7FB06944',
   },
   {
-    id: 'herb-zone',
-    name: 'Herb Zone',
+    id: 'exclusion-zone',
+    name: 'Exclusion Zone',
     category: 'zones',
     type: 'zone',
     defaultWidth: 3,
     defaultHeight: 3,
-    color: '#4A7C5944',
+    color: 'transparent',
+    pattern: 'crosshatch',
   },
   // Plantings
   ...getAllCultivars().map((c) => ({
     id: c.id,
     name: c.name,
     category: 'plantings' as const,
+    subcategory: c.category,
     type: 'planting',
     defaultWidth: 0,
     defaultHeight: 0,
@@ -120,3 +124,21 @@ export const categories = [
   { id: 'zones', label: 'Zones' },
   { id: 'plantings', label: 'Plantings' },
 ] as const;
+
+export const cultivarCategoryLabels: Record<CultivarCategory, string> = {
+  fruits: 'Fruits',
+  vegetables: 'Vegetables',
+  'root-vegetables': 'Root Vegetables',
+  herbs: 'Herbs',
+  flowers: 'Flowers',
+  legumes: 'Legumes',
+};
+
+export const cultivarCategoryOrder: CultivarCategory[] = [
+  'fruits',
+  'vegetables',
+  'root-vegetables',
+  'herbs',
+  'legumes',
+  'flowers',
+];

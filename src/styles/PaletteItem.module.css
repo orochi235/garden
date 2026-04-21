@@ -5,6 +5,7 @@
   justify-content: center;
   gap: 8px;
   height: 80px;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--border-radius);
   background: rgba(0, 0, 0, 0.25);
@@ -37,12 +38,16 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .plantIcon {
-  width: 32px;
-  height: 32px;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  margin: -16px 0;
 }
 .label {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
   line-height: 1.2;
+  position: relative;
+  z-index: 1;
 }

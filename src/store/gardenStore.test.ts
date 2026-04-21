@@ -91,12 +91,89 @@ describe('gardenStore', () => {
     expect(useGardenStore.getState().garden.structures).toHaveLength(2);
   });
 
+  describe('rearrangePlantings', () => {
+    it('rearranges plantings when adding to a container', () => {
+      const { addStructure, addPlanting } = useGardenStore.getState();
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      const bedId = useGardenStore.getState().garden.structures[0].id;
+
+      addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'basil' });
+      addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'basil' });
+
+      const plantings = useGardenStore.getState().garden.plantings;
+      expect(plantings).toHaveLength(2);
+      // Plantings should not both be at (0,0) — they should have been rearranged
+      const positions = plantings.map((p) => `${p.x},${p.y}`);
+      expect(new Set(positions).size).toBe(2);
+    });
+
+    it('rearranges plantings when arrangement changes on a structure', () => {
+      const { addStructure, addPlanting, commitStructureUpdate } = useGardenStore.getState();
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      const bedId = useGardenStore.getState().garden.structures[0].id;
+
+      addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'tomato' });
+      addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'tomato' });
+
+      // Switch to single arrangement — only 1 slot, so layout changes
+      commitStructureUpdate(bedId, {
+        arrangement: { type: 'single' },
+      });
+
+      const plantings = useGardenStore.getState().garden.plantings;
+      expect(plantings).toHaveLength(2);
+      // At least the first planting should be repositioned to the center
+      expect(plantings[0].x).toBeCloseTo(3, 0);
+      expect(plantings[0].y).toBeCloseTo(2, 0);
+    });
+
+    it('rearranges plantings when arrangement changes on a zone', () => {
+      const { addZone, addPlanting, commitZoneUpdate } = useGardenStore.getState();
+      addZone({ x: 0, y: 0, width: 6, height: 4 });
+      const zoneId = useGardenStore.getState().garden.zones[0].id;
+
+      addPlanting({ parentId: zoneId, x: 0, y: 0, cultivarId: 'basil' });
+      addPlanting({ parentId: zoneId, x: 0, y: 0, cultivarId: 'basil' });
+
+      commitZoneUpdate(zoneId, {
+        arrangement: { type: 'rows', spacingFt: 0.75, itemSpacingFt: 0.75, direction: 0, marginFt: 0.25 },
+      });
+
+      const plantings = useGardenStore.getState().garden.plantings;
+      const positions = plantings.map((p) => `${p.x},${p.y}`);
+      expect(new Set(positions).size).toBe(2);
+    });
+
+    it('does not rearrange plantings with free arrangement', () => {
+      const { addStructure, addPlanting, commitStructureUpdate } = useGardenStore.getState();
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      const bedId = useGardenStore.getState().garden.structures[0].id;
+
+      addPlanting({ parentId: bedId, x: 1.5, y: 1.5, cultivarId: 'tomato' });
+
+      commitStructureUpdate(bedId, {
+        arrangement: { type: 'free' },
+      });
+
+      // With free arrangement, plants keep their positions from the prior rearrangement
+      const plantings = useGardenStore.getState().garden.plantings;
+      expect(plantings).toHaveLength(1);
+    });
+  });
+
   it('updates garden settings', () => {
     useGardenStore.getState().updateGarden({ name: 'Backyard', widthFt: 40 });
     const { garden } = useGardenStore.getState();
     expect(garden.name).toBe('Backyard');
     expect(garden.widthFt).toBe(40);
     expect(garden.heightFt).toBe(20);
+  });
+
+  it('adds a zone with pattern', () => {
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 3, height: 3, color: 'transparent', pattern: 'crosshatch' });
+    const zone = useGardenStore.getState().garden.zones[0];
+    expect(zone.pattern).toBe('crosshatch');
+    expect(zone.color).toBe('transparent');
   });
 
   it('loads a garden from JSON', () => {

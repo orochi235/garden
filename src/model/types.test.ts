@@ -73,4 +73,19 @@ describe('factory functions', () => {
     expect(p.label).toBe('Tomato');
     expect(p.icon).toBeNull();
   });
+
+  it('createZone defaults pattern to null', () => {
+    const z = createZone({ x: 0, y: 0, width: 3, height: 3 });
+    expect(z.pattern).toBeNull();
+  });
+
+  it('createZone accepts a custom pattern', () => {
+    const z = createZone({ x: 0, y: 0, width: 3, height: 3, pattern: 'crosshatch' });
+    expect(z.pattern).toBe('crosshatch');
+  });
+
+  it('createZone accepts a custom color', () => {
+    const z = createZone({ x: 0, y: 0, width: 3, height: 3, color: 'transparent' });
+    expect(z.color).toBe('transparent');
+  });
 });

@@ -1,4 +1,5 @@
-import type { LayerId, Structure, Zone } from '../model/types';
+import { getCultivar } from '../model/cultivars';
+import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import type { ViewTransform } from '../utils/grid';
 
@@ -83,6 +84,41 @@ export function hitTestHandles(
       if (Math.abs(screenX - h.cx) <= hitRadius && Math.abs(screenY - h.cy) <= hitRadius) {
         return { id: obj.id, layer: obj.layer, handle: h.pos };
       }
+    }
+  }
+  return null;
+}
+
+/**
+ * Hit-test plantings by checking distance to each planting's world-space center
+ * against its footprint radius.
+ */
+export function hitTestPlantings(
+  worldX: number,
+  worldY: number,
+  plantings: Planting[],
+  structures: Structure[],
+  zones: Zone[],
+): HitResult | null {
+  if (useUiStore.getState().layerLocked.plantings) return null;
+
+  const parentMap = new Map<string, { x: number; y: number }>();
+  for (const z of zones) parentMap.set(z.id, z);
+  for (const s of structures) {
+    if (s.container) parentMap.set(s.id, s);
+  }
+
+  for (const p of plantings) {
+    const parent = parentMap.get(p.parentId);
+    if (!parent) continue;
+    const cultivar = getCultivar(p.cultivarId);
+    const radius = (cultivar?.footprintFt ?? 0.5) / 2;
+    const cx = parent.x + p.x;
+    const cy = parent.y + p.y;
+    const dx = worldX - cx;
+    const dy = worldY - cy;
+    if (dx * dx + dy * dy <= radius * radius) {
+      return { id: p.id, layer: 'plantings' };
     }
   }
   return null;

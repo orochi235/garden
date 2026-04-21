@@ -7,6 +7,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
   zones: Zone[] = [];
   structures: Structure[] = [];
   selectedIds: string[] = [];
+  showSpacing: boolean = false;
 
   protected draw(ctx: CanvasRenderingContext2D): void {
     renderPlantings(
@@ -19,6 +20,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
       this.height,
       this.highlight,
       this.selectedIds,
+      this.showSpacing,
     );
   }
 }

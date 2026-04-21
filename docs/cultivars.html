@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cultivar Database Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+    h1 { margin-bottom: 16px; font-size: 22px; color: #fff; }
+    .toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+    .toolbar button { padding: 6px 14px; border: 1px solid #444; border-radius: 6px; background: #2a2a4a; color: #e0e0e0; cursor: pointer; font-size: 13px; }
+    .toolbar button:hover { background: #3a3a5a; }
+    .toolbar button.primary { background: #4a7c59; border-color: #4a7c59; }
+    .toolbar button.primary:hover { background: #5a9c69; }
+    .toolbar button.danger { background: #7c4a4a; border-color: #7c4a4a; }
+    .toolbar button.danger:hover { background: #9c5a5a; }
+    .filter { padding: 6px 10px; border: 1px solid #444; border-radius: 6px; background: #2a2a4a; color: #e0e0e0; font-size: 13px; }
+    .filter:focus { outline: none; border-color: #4a7c59; }
+    .stats { font-size: 12px; color: #888; margin-left: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { position: sticky; top: 0; background: #1a1a2e; z-index: 1; }
+    th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #333; color: #aaa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; user-select: none; }
+    th:hover { color: #fff; }
+    th.sorted::after { content: ' \u25B2'; }
+    th.sorted.desc::after { content: ' \u25BC'; }
+    td { padding: 5px 6px; border-bottom: 1px solid #2a2a3a; }
+    tr:hover td { background: #2a2a4a; }
+    tr.selected td { background: #3a4a5a; }
+    td input, td select { width: 100%; padding: 3px 5px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #e0e0e0; font-size: 13px; }
+    td input:focus, td select:focus { outline: none; border-color: #4a7c59; background: #2a2a4a; }
+    td select { background: #2a2a4a; }
+    .color-cell { display: flex; align-items: center; gap: 6px; }
+    .color-swatch { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #555; flex-shrink: 0; cursor: pointer; }
+    .color-input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .num { width: 60px; text-align: right; }
+    .actions { display: flex; gap: 4px; }
+    .actions button { padding: 2px 8px; border: 1px solid #444; border-radius: 4px; background: #2a2a4a; color: #ccc; cursor: pointer; font-size: 11px; }
+    .actions button:hover { background: #3a3a5a; }
+    .actions button.del:hover { background: #7c4a4a; }
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 16px; border-radius: 6px; background: #4a7c59; color: #fff; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #2a2a4a; border: 1px solid #444; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow: auto; }
+    .modal h2 { margin-bottom: 12px; font-size: 16px; }
+    .modal pre { background: #1a1a2e; padding: 12px; border-radius: 6px; font-size: 12px; overflow: auto; max-height: 50vh; white-space: pre; }
+    .modal .btn-row { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+  <h1>Cultivar Database Editor</h1>
+  <div class="toolbar">
+    <button class="primary" onclick="addRow()">+ Add Cultivar</button>
+    <button onclick="showExport()">Export JSON</button>
+    <button onclick="showImport()">Import JSON</button>
+    <input class="filter" type="text" placeholder="Filter..." oninput="applyFilter(this.value)">
+    <select class="filter" onchange="applyCategoryFilter(this.value)">
+      <option value="">All Categories</option>
+      <option value="fruits">Fruits</option>
+      <option value="vegetables">Vegetables</option>
+      <option value="root-vegetables">Root Vegetables</option>
+      <option value="herbs">Herbs</option>
+      <option value="legumes">Legumes</option>
+      <option value="flowers">Flowers</option>
+    </select>
+    <span class="stats" id="stats"></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortBy('id')">ID</th>
+        <th onclick="sortBy('name')">Name</th>
+        <th onclick="sortBy('category')">Category</th>
+        <th onclick="sortBy('taxonomicName')">Taxonomic Name</th>
+        <th onclick="sortBy('variety')">Variety</th>
+        <th onclick="sortBy('color')">Color</th>
+        <th onclick="sortBy('footprintFt')">Footprint (ft)</th>
+        <th onclick="sortBy('spacingFt')">Spacing (ft)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="toast" id="toast"></div>
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal">
+      <h2>Export JSON</h2>
+      <pre id="exportContent"></pre>
+      <div class="btn-row">
+        <button onclick="copyExport()">Copy to Clipboard</button>
+        <button onclick="downloadExport()">Download</button>
+        <button onclick="closeModal('exportModal')">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="importModal">
+    <div class="modal">
+      <h2>Import JSON</h2>
+      <p style="margin-bottom:8px;font-size:13px;color:#aaa">Paste cultivars JSON array below. This will replace all current data.</p>
+      <textarea id="importArea" style="width:100%;height:200px;background:#1a1a2e;border:1px solid #444;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;font-family:monospace;resize:vertical"></textarea>
+      <div class="btn-row">
+        <button class="danger" onclick="doImport()">Replace All</button>
+        <button onclick="closeModal('importModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const CATEGORIES = ['fruits','vegetables','root-vegetables','herbs','legumes','flowers'];
+    let cultivars = [];
+    let sortField = 'category';
+    let sortDesc = false;
+    let textFilter = '';
+    let categoryFilter = '';
+
+    // Load from localStorage or fetch default
+    const stored = localStorage.getItem('cultivars-editor-data');
+    if (stored) {
+      cultivars = JSON.parse(stored);
+      render();
+    } else {
+      fetch('../src/data/cultivars.json')
+        .then(r => r.json())
+        .then(data => { cultivars = data; render(); })
+        .catch(() => { cultivars = []; render(); });
+    }
+
+    function save() {
+      localStorage.setItem('cultivars-editor-data', JSON.stringify(cultivars));
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    function applyFilter(v) { textFilter = v.toLowerCase(); render(); }
+    function applyCategoryFilter(v) { categoryFilter = v; render(); }
+
+    function sortBy(field) {
+      if (sortField === field) { sortDesc = !sortDesc; }
+      else { sortField = field; sortDesc = false; }
+      render();
+    }
+
+    function getFiltered() {
+      let list = cultivars;
+      if (categoryFilter) list = list.filter(c => c.category === categoryFilter);
+      if (textFilter) list = list.filter(c =>
+        c.id.toLowerCase().includes(textFilter) ||
+        c.name.toLowerCase().includes(textFilter) ||
+        c.taxonomicName.toLowerCase().includes(textFilter) ||
+        (c.variety || '').toLowerCase().includes(textFilter)
+      );
+      list = [...list].sort((a, b) => {
+        let av = a[sortField] ?? '', bv = b[sortField] ?? '';
+        if (typeof av === 'number') return sortDesc ? bv - av : av - bv;
+        return sortDesc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+      });
+      return list;
+    }
+
+    function render() {
+      const filtered = getFiltered();
+      document.getElementById('stats').textContent = `${filtered.length} of ${cultivars.length} cultivars`;
+
+      // Update sort indicators
+      document.querySelectorAll('th').forEach(th => {
+        th.classList.remove('sorted', 'desc');
+      });
+      const headers = document.querySelectorAll('th');
+      const fields = ['id','name','category','taxonomicName','variety','color','footprintFt','spacingFt'];
+      const idx = fields.indexOf(sortField);
+      if (idx >= 0 && headers[idx]) {
+        headers[idx].classList.add('sorted');
+        if (sortDesc) headers[idx].classList.add('desc');
+      }
+
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = filtered.map(c => `
+        <tr data-id="${c.id}">
+          <td><input value="${esc(c.id)}" onchange="updateField('${c.id}','id',this.value)"></td>
+          <td><input value="${esc(c.name)}" onchange="updateField('${c.id}','name',this.value)"></td>
+          <td><select onchange="updateField('${c.id}','category',this.value)">
+            ${CATEGORIES.map(cat => `<option value="${cat}"${c.category===cat?' selected':''}>${cat}</option>`).join('')}
+          </select></td>
+          <td><input value="${esc(c.taxonomicName)}" onchange="updateField('${c.id}','taxonomicName',this.value)" style="font-style:italic"></td>
+          <td><input value="${esc(c.variety || '')}" onchange="updateField('${c.id}','variety',this.value||null)"></td>
+          <td><div class="color-cell">
+            <div class="color-swatch" style="background:${c.color}" onclick="this.nextElementSibling.click()"></div>
+            <input type="color" class="color-input" value="${c.color}" onchange="updateField('${c.id}','color',this.value);this.previousElementSibling.style.background=this.value">
+            <input value="${esc(c.color)}" style="width:75px" onchange="updateField('${c.id}','color',this.value)">
+          </div></td>
+          <td><input class="num" type="number" step="0.25" min="0" value="${c.footprintFt}" onchange="updateField('${c.id}','footprintFt',+this.value)"></td>
+          <td><input class="num" type="number" step="0.25" min="0" value="${c.spacingFt}" onchange="updateField('${c.id}','spacingFt',+this.value)"></td>
+          <td class="actions">
+            <button onclick="duplicateRow('${c.id}')">dup</button>
+            <button class="del" onclick="deleteRow('${c.id}')">del</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function esc(s) { return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+    function updateField(id, field, value) {
+      const c = cultivars.find(x => x.id === id);
+      if (!c) return;
+      if (field === 'id') {
+        // Update the id
+        c.id = value;
+      } else {
+        c[field] = value;
+      }
+      save();
+      // Don't re-render on every keystroke for smooth editing
+      if (field === 'category') render();
+    }
+
+    function addRow() {
+      const newId = 'new-cultivar-' + Date.now();
+      cultivars.push({
+        id: newId, name: 'New Cultivar', category: 'herbs',
+        taxonomicName: '', variety: null, color: '#4A7C59',
+        footprintFt: 0.5, spacingFt: 0.5
+      });
+      save(); render();
+      toast('Added new cultivar');
+    }
+
+    function duplicateRow(id) {
+      const c = cultivars.find(x => x.id === id);
+      if (!c) return;
+      const dup = { ...c, id: c.id + '-copy' };
+      cultivars.push(dup);
+      save(); render();
+      toast('Duplicated ' + c.name);
+    }
+
+    function deleteRow(id) {
+      const c = cultivars.find(x => x.id === id);
+      if (!c || !confirm(`Delete "${c.name}"?`)) return;
+      cultivars = cultivars.filter(x => x.id !== id);
+      save(); render();
+      toast('Deleted ' + c.name);
+    }
+
+    function showExport() {
+      document.getElementById('exportContent').textContent = JSON.stringify(cultivars, null, 2);
+      document.getElementById('exportModal').classList.add('show');
+    }
+
+    function copyExport() {
+      navigator.clipboard.writeText(JSON.stringify(cultivars, null, 2));
+      toast('Copied to clipboard');
+    }
+
+    function downloadExport() {
+      const blob = new Blob([JSON.stringify(cultivars, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cultivars.json';
+      a.click();
+      toast('Downloaded cultivars.json');
+    }
+
+    function showImport() {
+      document.getElementById('importArea').value = '';
+      document.getElementById('importModal').classList.add('show');
+    }
+
+    function doImport() {
+      try {
+        const data = JSON.parse(document.getElementById('importArea').value);
+        if (!Array.isArray(data)) throw new Error('Must be an array');
+        cultivars = data;
+        save(); render();
+        closeModal('importModal');
+        toast('Imported ' + data.length + ' cultivars');
+      } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+
+    // Close modals on escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+      }
+    });
+  </script>
+</body>
+</html>

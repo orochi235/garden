@@ -213,7 +213,8 @@
       "parentId": null,
       "soilType": null,
       "sunExposure": null,
-      "arrangement": { "type": "grid", "spacingXFt": 0.5, "spacingYFt": 0.5, "marginFt": 0.25 }
+      "arrangement": { "type": "grid", "spacingXFt": 0.5, "spacingYFt": 0.5, "marginFt": 0.25 },
+      "pattern": null
     }
   ],
   "plantings": [
@@ -251,6 +252,78 @@
       "x": 0.5,
       "y": 0.5,
       "label": "Basil",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-1",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 1,
+      "y": 1,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-2",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 3,
+      "y": 1,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-3",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 1,
+      "y": 3,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-4",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 3,
+      "y": 3,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-5",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 1,
+      "y": 5,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-6",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 3,
+      "y": 5,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-7",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 1,
+      "y": 7,
+      "label": "Tomato, Cherokee Purple",
+      "icon": null
+    },
+    {
+      "id": "default-planting-cp-8",
+      "parentId": "default-bed-1",
+      "cultivarId": "cherokee-purple-tomato",
+      "x": 3,
+      "y": 7,
+      "label": "Tomato, Cherokee Purple",
       "icon": null
     }
   ]

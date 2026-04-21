@@ -10,7 +10,7 @@ function cycleLayer(dir: 1 | -1): void {
   for (let step = 1; step < LAYERS.length; step++) {
     const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
     if (layerVisibility[LAYERS[next]]) {
-      useUiStore.getState().setActiveLayer(LAYERS[next]);
+      useUiStore.getState().setActiveLayer(LAYERS[next], true);
       return;
     }
   }

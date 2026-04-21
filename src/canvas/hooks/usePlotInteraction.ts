@@ -89,7 +89,7 @@ export function usePlotInteraction({
       if (plottingTool.category === 'structures') {
         addStructure({ type: plottingTool.type, x, y, width: w, height: h });
       } else if (plottingTool.category === 'zones') {
-        addZone({ x, y, width: w, height: h });
+        addZone({ x, y, width: w, height: h, color: plottingTool.color, pattern: plottingTool.pattern ?? null });
       }
     }
 

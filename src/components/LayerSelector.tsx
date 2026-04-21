@@ -315,7 +315,7 @@ export function LayerSelector() {
         if (!vis[layerId]) {
           setLayerVisible(layerId, true);
         }
-        setActiveLayer(layerId);
+        setActiveLayer(layerId, true);
       }
     },
     [setActiveLayer],
@@ -336,7 +336,7 @@ export function LayerSelector() {
       for (let step = 1; step < LAYERS.length; step++) {
         const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
         if (vis[LAYERS[next].id]) {
-          setActiveLayer(LAYERS[next].id);
+          setActiveLayer(LAYERS[next].id, true);
           return;
         }
       }

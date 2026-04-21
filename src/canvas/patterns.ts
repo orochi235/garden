@@ -37,7 +37,7 @@ function cacheKey(id: PatternId, params: ResolvedParams): string {
 
 const DEFAULTS: { [P in PatternId]: Required<PatternParamMap[P]> } = {
   hatch: { color: 'goldenrod', size: 5, lineWidth: 1 },
-  crosshatch: { color: 'goldenrod', size: 6, lineWidth: 0.8 },
+  crosshatch: { color: '#E03030', size: 6, lineWidth: 0.8 },
   dots: { color: 'goldenrod', size: 6, radius: 1 },
 };
 

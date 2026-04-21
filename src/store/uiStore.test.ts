@@ -97,4 +97,59 @@ describe('uiStore', () => {
     expect(useUiStore.getState().layerSelectorHovered).toBe(false);
     expect(useUiStore.getState().showSurfaces).toBe(false);
   });
+
+  describe('layerFlashCounter', () => {
+    it('starts at zero', () => {
+      expect(useUiStore.getState().layerFlashCounter).toBe(0);
+    });
+
+    it('increments when setActiveLayer called with flash=true', () => {
+      useUiStore.getState().setActiveLayer('zones', true);
+      expect(useUiStore.getState().layerFlashCounter).toBe(1);
+      expect(useUiStore.getState().activeLayer).toBe('zones');
+    });
+
+    it('does not increment when setActiveLayer called without flash', () => {
+      useUiStore.getState().setActiveLayer('zones');
+      expect(useUiStore.getState().layerFlashCounter).toBe(0);
+    });
+
+    it('does not increment when setActiveLayer called with flash=false', () => {
+      useUiStore.getState().setActiveLayer('zones', false);
+      expect(useUiStore.getState().layerFlashCounter).toBe(0);
+    });
+
+    it('increments each time flash=true is used', () => {
+      useUiStore.getState().setActiveLayer('zones', true);
+      useUiStore.getState().setActiveLayer('ground', true);
+      useUiStore.getState().setActiveLayer('plantings', true);
+      expect(useUiStore.getState().layerFlashCounter).toBe(3);
+    });
+
+    it('resets to zero on store reset', () => {
+      useUiStore.getState().setActiveLayer('zones', true);
+      useUiStore.getState().setActiveLayer('ground', true);
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().layerFlashCounter).toBe(0);
+    });
+  });
+
+  describe('showPlantingSpacing', () => {
+    it('starts as false', () => {
+      expect(useUiStore.getState().showPlantingSpacing).toBe(false);
+    });
+
+    it('toggles on and off', () => {
+      useUiStore.getState().setShowPlantingSpacing(true);
+      expect(useUiStore.getState().showPlantingSpacing).toBe(true);
+      useUiStore.getState().setShowPlantingSpacing(false);
+      expect(useUiStore.getState().showPlantingSpacing).toBe(false);
+    });
+
+    it('resets to false on store reset', () => {
+      useUiStore.getState().setShowPlantingSpacing(true);
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().showPlantingSpacing).toBe(false);
+    });
+  });
 });

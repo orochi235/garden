@@ -11,6 +11,7 @@ export interface PlottingTool {
   category: 'structures' | 'zones';
   type: string;
   color: string;
+  pattern?: string | null;
 }
 
 interface UiStore {
@@ -26,13 +27,16 @@ interface UiStore {
   themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
   showSurfaces: boolean;
+  showPlantingSpacing: boolean;
+  layerFlashCounter: number;
   viewMode: ViewMode;
   setLayerSelectorHovered: (hovered: boolean) => void;
   setShowSurfaces: (show: boolean) => void;
+  setShowPlantingSpacing: (show: boolean) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
-  setActiveLayer: (layer: LayerId) => void;
+  setActiveLayer: (layer: LayerId, flash?: boolean) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
   setLayerLocked: (layer: LayerId, locked: boolean) => void;
@@ -64,13 +68,19 @@ export const useUiStore = create<UiStore>((set) => ({
   themeOverride: null,
   layerSelectorHovered: false,
   showSurfaces: false,
+  showPlantingSpacing: false,
+  layerFlashCounter: 0,
   viewMode: 'select',
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
   setShowSurfaces: (show) => set({ showSurfaces: show }),
+  setShowPlantingSpacing: (show) => set({ showPlantingSpacing: show }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
-  setActiveLayer: (layer) => set({ activeLayer: layer }),
+  setActiveLayer: (layer, flash) => set((s) => ({
+    activeLayer: layer,
+    layerFlashCounter: flash ? s.layerFlashCounter + 1 : s.layerFlashCounter,
+  })),
   setLayerVisible: (layer, visible) =>
     set((state) => {
       if (!visible && state.activeLayer === layer) return state;
@@ -102,6 +112,8 @@ export const useUiStore = create<UiStore>((set) => ({
       themeOverride: null,
       layerSelectorHovered: false,
       showSurfaces: false,
+      showPlantingSpacing: false,
+      layerFlashCounter: 0,
       viewMode: 'select',
     }),
 }));

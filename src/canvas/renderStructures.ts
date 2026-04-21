@@ -31,7 +31,7 @@ export function renderStructures(
       const cx = sx + sw / 2;
       const cy = sy + sh / 2;
       const r = Math.min(sw, sh) / 2;
-      const rimWidth = s.type === 'felt-planter' ? Math.max(2, view.zoom * 0.06) : Math.max(3, view.zoom * 0.12);
+      const rimWidth = s.type === 'felt-planter' ? Math.max(1.5, view.zoom * 0.04) : Math.max(2, view.zoom * 0.06);
       // Outer rim
       ctx.beginPath();
       ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);

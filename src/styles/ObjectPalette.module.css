@@ -4,14 +4,15 @@
   height: 100%;
   padding-top: var(--menu-height);
   border-right: none;
-  overflow-y: auto;
+  overflow: hidden;
 }
 .search {
   padding: 8px;
-  position: sticky;
-  top: 0;
-  background: transparent;
-  z-index: 1;
+  flex-shrink: 0;
+}
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
 }
 .searchInput {
   width: 100%;
@@ -42,8 +43,19 @@
   /* transition set by parent */
   padding: 8px 4px 4px;
 }
+.subcategory {
+  padding-top: 2px;
+}
+.subcategoryLabel {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  padding: 6px 4px 3px;
+}
 .itemGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 6px;
 }

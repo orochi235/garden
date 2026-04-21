@@ -59,6 +59,7 @@ export interface Zone {
   soilType: string | null;
   sunExposure: string | null;
   arrangement: Arrangement | null;
+  pattern: string | null;
 }
 
 export interface Planting {
@@ -161,20 +162,21 @@ export function createStructure(opts: {
   };
 }
 
-export function createZone(opts: { x: number; y: number; width: number; height: number }): Zone {
+export function createZone(opts: { x: number; y: number; width: number; height: number; color?: string; pattern?: string | null }): Zone {
   return {
     id: generateId(),
     x: opts.x,
     y: opts.y,
     width: opts.width,
     height: opts.height,
-    color: '#7FB06944',
+    color: opts.color ?? '#7FB06944',
     label: 'zone',
     zIndex: 0,
     parentId: null,
     soilType: null,
     sunExposure: null,
     arrangement: defaultArrangement('grid'),
+    pattern: opts.pattern ?? null,
   };
 }
 

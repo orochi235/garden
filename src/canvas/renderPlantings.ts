@@ -30,6 +30,7 @@ export function renderPlantings(
   canvasHeight: number,
   highlightOpacity: number = 0,
   selectedIds: string[] = [],
+  showSpacing: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -66,11 +67,27 @@ export function renderPlantings(
     const cultivar = getCultivar(p.cultivarId);
     const color = cultivar?.color ?? '#4A7C59';
     const footprint = cultivar?.footprintFt ?? 0.5;
+    const spacing = cultivar?.spacingFt ?? 0.5;
 
     const worldX = parent.x + p.x;
     const worldY = parent.y + p.y;
     const [sx, sy] = worldToScreen(worldX, worldY, view);
     const radius = Math.max(3, (footprint / 2) * view.zoom);
+
+    if (showSpacing) {
+      const spacingRadius = (spacing / 2) * view.zoom;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sx, sy, spacingRadius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
 
     ctx.save();
     ctx.translate(sx, sy);

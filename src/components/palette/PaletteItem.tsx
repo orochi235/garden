@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { renderPlant } from '../../canvas/plantRenderers';
+import { getCultivar } from '../../model/cultivars';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/PaletteItem.module.css';
 import type { PaletteEntry } from './paletteData';
@@ -10,6 +11,9 @@ interface Props {
   onDragEnd?: () => void;
 }
 
+const MAX_RADIUS = 28;
+const MAX_FOOTPRINT = 1.5;
+
 function PlantIcon({ name, color }: { name: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -18,18 +22,20 @@ function PlantIcon({ name, color }: { name: string; color: string }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     const dpr = window.devicePixelRatio || 1;
-    const size = 32;
+    const size = 64;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, size, size);
     ctx.save();
     ctx.translate(size / 2, size / 2);
-    renderPlant(ctx, name, 12, color);
+    const cultivar = getCultivar(name);
+    const radius = cultivar ? (cultivar.footprintFt / MAX_FOOTPRINT) * MAX_RADIUS : MAX_RADIUS;
+    renderPlant(ctx, name, radius, color);
     ctx.restore();
   }, [name, color]);
 
-  return <canvas ref={canvasRef} className={styles.plantIcon} width={32} height={32} />;
+  return <canvas ref={canvasRef} className={styles.plantIcon} width={64} height={64} />;
 }
 
 export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
@@ -48,6 +54,7 @@ export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
           category: entry.category,
           type: entry.type,
           color: entry.color,
+          pattern: entry.pattern,
         });
       }
     }
@@ -62,11 +69,16 @@ export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
       onClick={handleClick}
     >
       {entry.category === 'plantings' ? (
-        <PlantIcon name={entry.id} color={entry.color} />
+        <>
+          <PlantIcon name={entry.id} color={entry.color} />
+          <span className={styles.label}>{entry.name}</span>
+        </>
       ) : (
-        <div className={styles.icon} style={{ backgroundColor: entry.color }} />
+        <>
+          <div className={styles.icon} style={{ backgroundColor: entry.color }} />
+          <span className={styles.label}>{entry.name}</span>
+        </>
       )}
-      <span className={styles.label}>{entry.name}</span>
     </div>
   );
 }

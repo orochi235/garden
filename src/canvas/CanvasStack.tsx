@@ -9,7 +9,7 @@ import type { Planting, Structure, Zone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { screenToWorld, snapToGrid, worldToScreen } from '../utils/grid';
-import { handleCursor, hitTestAllLayers, hitTestHandles, hitTestObjects } from './hitTest';
+import { handleCursor, hitTestAllLayers, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
 import { useAutoCenter } from './hooks/useAutoCenter';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { useClipboard } from './hooks/useClipboard';
@@ -105,6 +105,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   const activeLayer = useUiStore((s) => s.activeLayer);
   const layerSelectorHovered = useUiStore((s) => s.layerSelectorHovered);
   const showSurfaces = useUiStore((s) => s.showSurfaces);
+  const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
   const viewMode = useUiStore((s) => s.viewMode);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
@@ -129,18 +130,19 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     };
   }, [invalidate]);
 
-  // Flash the active layer's renderer when it changes
-  const prevLayerRef = useRef(activeLayer);
+  // Flash the active layer's renderer only when explicitly requested
+  const layerFlashCounter = useUiStore((s) => s.layerFlashCounter);
+  const prevFlashRef = useRef(layerFlashCounter);
   useEffect(() => {
-    if (activeLayer !== prevLayerRef.current) {
-      prevLayerRef.current = activeLayer;
+    if (layerFlashCounter !== prevFlashRef.current) {
+      prevFlashRef.current = layerFlashCounter;
       const renderer =
         activeLayer === 'structures' ? structureRenderer.current :
         activeLayer === 'zones' ? zoneRenderer.current :
         activeLayer === 'plantings' ? plantingRenderer.current : null;
       renderer?.flash();
     }
-  }, [activeLayer]);
+  }, [layerFlashCounter, activeLayer]);
 
   // Sync hover highlight to all renderers
   useEffect(() => {
@@ -244,6 +246,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
+  plantingRenderer.current.showSpacing = showPlantingSpacing;
   plantingRenderer.current.setView(view, width, height);
 
   useLayerEffect(
@@ -264,7 +267,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, plantingRenderer.current.highlight],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight],
   );
 
   useLayerEffect(
@@ -330,14 +333,20 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
           return;
         }
 
-        // Object hit test — try active layer first, then fall back to all layers
-        let hit = hitTestObjects(
-          worldX,
-          worldY,
-          garden.structures,
-          garden.zones,
-          currentActiveLayer,
-        );
+        // Object hit test — try plantings first, then active layer, then all layers
+        let hit = hitTestPlantings(worldX, worldY, garden.plantings, garden.structures, garden.zones);
+        if (hit) {
+          useUiStore.getState().setActiveLayer('plantings');
+        }
+        if (!hit) {
+          hit = hitTestObjects(
+            worldX,
+            worldY,
+            garden.structures,
+            garden.zones,
+            currentActiveLayer,
+          );
+        }
         if (!hit) {
           const crossHit = hitTestAllLayers(worldX, worldY, garden.structures, garden.zones);
           if (crossHit) {
@@ -417,6 +426,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         });
         const { garden } = useGardenStore.getState();
         const hit =
+          hitTestPlantings(worldX, worldY, garden.plantings, garden.structures, garden.zones) ||
           hitTestObjects(worldX, worldY, garden.structures, garden.zones, currentActiveLayer) ||
           hitTestAllLayers(worldX, worldY, garden.structures, garden.zones);
         setActiveCursor(hit ? 'pointer' : null);

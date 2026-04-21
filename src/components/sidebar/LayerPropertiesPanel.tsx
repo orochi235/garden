@@ -157,6 +157,8 @@ export function LayerPropertiesPanel() {
   const updateGarden = useGardenStore((s) => s.updateGarden);
   const showSurfaces = useUiStore((s) => s.showSurfaces);
   const setShowSurfaces = useUiStore((s) => s.setShowSurfaces);
+  const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
+  const setShowPlantingSpacing = useUiStore((s) => s.setShowPlantingSpacing);
   const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const unit = garden.displayUnit;
 
@@ -335,7 +337,14 @@ export function LayerPropertiesPanel() {
 
       <LayerSection title="Plantings" layerId="plantings">
         <div className={f.grid}>
-          <span className={f.label}>No properties yet</span>
+          <label className={styles.surfaceToggle}>
+            <input
+              type="checkbox"
+              checked={showPlantingSpacing}
+              onChange={(e) => setShowPlantingSpacing(e.target.checked)}
+            />
+            <span>Show spacing areas</span>
+          </label>
         </div>
       </LayerSection>
 

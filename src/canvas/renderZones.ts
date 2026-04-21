@@ -32,8 +32,9 @@ export function renderZones(
     ctx.strokeRect(sx, sy, sw, sh);
     ctx.setLineDash([]);
 
-    if (patternOverride) {
-      renderPatternOverlay(ctx, patternOverride, { x: sx, y: sy, w: sw, h: sh, shape: 'rectangle' });
+    const pattern = patternOverride ?? z.pattern;
+    if (pattern) {
+      renderPatternOverlay(ctx, pattern as PatternId, { x: sx, y: sy, w: sw, h: sh, shape: 'rectangle' });
     }
 
     if (highlightOpacity > 0) {
