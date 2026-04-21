@@ -1,3 +1,4 @@
+import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
@@ -62,15 +63,18 @@ export function renderPlantings(
   for (const p of plantings) {
     const parent = parentMap.get(p.parentId);
     if (!parent) continue;
+    const cultivar = getCultivar(p.cultivarId);
+    const color = cultivar?.color ?? '#4A7C59';
+    const footprint = cultivar?.footprintFt ?? 0.5;
 
     const worldX = parent.x + p.x;
     const worldY = parent.y + p.y;
     const [sx, sy] = worldToScreen(worldX, worldY, view);
-    const radius = Math.max(3, (p.footprintFt / 2) * view.zoom);
+    const radius = Math.max(3, (footprint / 2) * view.zoom);
 
     ctx.save();
     ctx.translate(sx, sy);
-    renderPlant(ctx, p.name, radius, p.color);
+    renderPlant(ctx, p.cultivarId, radius, color);
     ctx.restore();
 
     if (highlightOpacity > 0) {
@@ -87,7 +91,7 @@ export function renderPlantings(
     // Track the plant's bounding box
     occupied.push({ x: sx - radius, y: sy - radius, w: radius * 2, h: radius * 2 });
 
-    const labelText = p.label || p.name;
+    const labelText = p.label || cultivar?.name || p.cultivarId;
     if ((showLabel || highlightOpacity > 0) && labelText) {
       const labelW = ctx.measureText(labelText).width;
       const labelH = 13;

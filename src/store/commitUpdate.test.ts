@@ -49,14 +49,14 @@ describe('commit vs live updates', () => {
   it('commitPlantingUpdate IS undoable', () => {
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Tomato' });
+    useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, cultivarId: 'tomato' });
     const id = useGardenStore.getState().garden.plantings[0].id;
 
-    useGardenStore.getState().commitPlantingUpdate(id, { name: 'Basil' });
-    expect(useGardenStore.getState().garden.plantings[0].name).toBe('Basil');
+    useGardenStore.getState().commitPlantingUpdate(id, { cultivarId: 'basil' });
+    expect(useGardenStore.getState().garden.plantings[0].cultivarId).toBe('basil');
 
     useGardenStore.getState().undo();
-    expect(useGardenStore.getState().garden.plantings[0].name).toBe('Tomato');
+    expect(useGardenStore.getState().garden.plantings[0].cultivarId).toBe('tomato');
   });
 
   it('commit respects layer lock', () => {

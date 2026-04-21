@@ -537,7 +537,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
             parentId: parent.id,
             x: pos.x,
             y: pos.y,
-            name: entry.name,
+            cultivarId: entry.id,
           });
         }
       }

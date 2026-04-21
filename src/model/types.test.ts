@@ -66,12 +66,11 @@ describe('factory functions', () => {
   });
 
   it('createPlanting returns valid defaults', () => {
-    const p = createPlanting({ parentId: 'zone-1', x: 0.5, y: 0.5, name: 'Tomato' });
+    const p = createPlanting({ parentId: 'zone-1', x: 0.5, y: 0.5, cultivarId: 'tomato' });
     expect(p.id).toBeTruthy();
     expect(p.parentId).toBe('zone-1');
-    expect(p.name).toBe('Tomato');
-    expect(p.variety).toBeNull();
+    expect(p.cultivarId).toBe('tomato');
+    expect(p.label).toBe('Tomato');
     expect(p.icon).toBeNull();
-    expect(p.spacingFt).toBeNull();
   });
 });

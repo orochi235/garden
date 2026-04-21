@@ -1,3 +1,5 @@
+import { getAllCultivars } from '../../model/cultivars';
+
 export interface PaletteEntry {
   id: string;
   name: string;
@@ -102,60 +104,15 @@ export const paletteItems: PaletteEntry[] = [
     color: '#4A7C5944',
   },
   // Plantings
-  {
-    id: 'tomato',
-    name: 'Tomato',
-    category: 'plantings',
+  ...getAllCultivars().map((c) => ({
+    id: c.id,
+    name: c.name,
+    category: 'plantings' as const,
     type: 'planting',
     defaultWidth: 0,
     defaultHeight: 0,
-    color: '#E05555',
-  },
-  {
-    id: 'basil',
-    name: 'Basil',
-    category: 'plantings',
-    type: 'planting',
-    defaultWidth: 0,
-    defaultHeight: 0,
-    color: '#4A7C59',
-  },
-  {
-    id: 'pepper',
-    name: 'Pepper',
-    category: 'plantings',
-    type: 'planting',
-    defaultWidth: 0,
-    defaultHeight: 0,
-    color: '#E07B3C',
-  },
-  {
-    id: 'lettuce',
-    name: 'Lettuce',
-    category: 'plantings',
-    type: 'planting',
-    defaultWidth: 0,
-    defaultHeight: 0,
-    color: '#7FB069',
-  },
-  {
-    id: 'carrot',
-    name: 'Carrot',
-    category: 'plantings',
-    type: 'planting',
-    defaultWidth: 0,
-    defaultHeight: 0,
-    color: '#E0943C',
-  },
-  {
-    id: 'cucumber',
-    name: 'Cucumber',
-    category: 'plantings',
-    type: 'planting',
-    defaultWidth: 0,
-    defaultHeight: 0,
-    color: '#2D7A27',
-  },
+    color: c.color,
+  })),
 ];
 
 export const categories = [

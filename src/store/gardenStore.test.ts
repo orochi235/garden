@@ -53,7 +53,7 @@ describe('gardenStore', () => {
     const { addZone, addPlanting, removeZone } = useGardenStore.getState();
     addZone({ x: 0, y: 0, width: 3, height: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    addPlanting({ parentId: zoneId, x: 0.5, y: 0.5, name: 'Tomato' });
+    addPlanting({ parentId: zoneId, x: 0.5, y: 0.5, cultivarId: 'tomato' });
     expect(useGardenStore.getState().garden.plantings).toHaveLength(1);
     removeZone(zoneId);
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);
@@ -64,9 +64,9 @@ describe('gardenStore', () => {
     const { addZone, addPlanting } = useGardenStore.getState();
     addZone({ x: 0, y: 0, width: 3, height: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
-    addPlanting({ parentId: zoneId, x: 1, y: 1, name: 'Basil' });
+    addPlanting({ parentId: zoneId, x: 1, y: 1, cultivarId: 'basil' });
     const p = useGardenStore.getState().garden.plantings[0];
-    expect(p.name).toBe('Basil');
+    expect(p.cultivarId).toBe('basil');
     expect(p.parentId).toBe(zoneId);
   });
 

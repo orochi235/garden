@@ -122,18 +122,18 @@ function renderGeneric(ctx: CanvasRenderingContext2D, radius: number, color: str
 }
 
 const renderers: Record<string, PlantRenderer> = {
-  Basil: renderBasil,
-  Tomato: renderTomato,
-  Pepper: renderPepper,
-  Lettuce: renderLettuce,
+  basil: renderBasil,
+  tomato: renderTomato,
+  pepper: renderPepper,
+  lettuce: renderLettuce,
 };
 
 export function renderPlant(
   ctx: CanvasRenderingContext2D,
-  name: string,
+  cultivarId: string,
   radius: number,
   color: string,
 ): void {
-  const renderer = renderers[name] ?? renderGeneric;
+  const renderer = renderers[cultivarId] ?? renderGeneric;
   renderer(ctx, radius, color);
 }

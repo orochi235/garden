@@ -1,5 +1,6 @@
 import type { Arrangement } from './arrangement';
 import { defaultArrangement } from './arrangement';
+import { getCultivar } from './cultivars';
 
 export type DisplayUnit = 'ft' | 'in' | 'm' | 'cm';
 
@@ -63,15 +64,11 @@ export interface Zone {
 export interface Planting {
   id: string;
   parentId: string;
+  cultivarId: string;
   x: number;
   y: number;
-  name: string;
   label: string;
-  color: string;
   icon: string | null;
-  variety: string | null;
-  spacingFt: number | null;
-  footprintFt: number;
 }
 
 export interface Garden {
@@ -185,19 +182,16 @@ export function createPlanting(opts: {
   parentId: string;
   x: number;
   y: number;
-  name: string;
+  cultivarId: string;
 }): Planting {
+  const cultivar = getCultivar(opts.cultivarId);
   return {
     id: generateId(),
     parentId: opts.parentId,
+    cultivarId: opts.cultivarId,
     x: opts.x,
     y: opts.y,
-    name: opts.name,
-    label: opts.name,
-    color: '#4A7C59',
+    label: cultivar?.name ?? opts.cultivarId,
     icon: null,
-    variety: null,
-    spacingFt: null,
-    footprintFt: 0.5,
   };
 }

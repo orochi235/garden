@@ -32,7 +32,7 @@ interface GardenStore {
   updateZone: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   commitZoneUpdate: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   removeZone: (id: string) => void;
-  addPlanting: (opts: { parentId: string; x: number; y: number; name: string }) => void;
+  addPlanting: (opts: { parentId: string; x: number; y: number; cultivarId: string }) => void;
   updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
