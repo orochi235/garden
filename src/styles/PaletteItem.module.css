@@ -93,7 +93,7 @@
 }
 /* Fixed-width column for species icon */
 .rowIconCol {
-  width: 28px;
+  width: 32px;
   flex-shrink: 0;
   display: flex;
   align-items: center;

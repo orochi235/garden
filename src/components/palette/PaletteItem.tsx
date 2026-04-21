@@ -160,7 +160,7 @@ export function PlantingParentRow({ node, expanded, onToggle }: ParentRowProps) 
         <DisclosureTriangle expanded={expanded} />
       </div>
       <div className={styles.rowIconCol}>
-        <SmallPlantIcon cultivarId={node.children[0].entry.id} color={node.color} />
+        <SmallPlantIcon cultivarId={node.defaultCultivarId} color={node.color} />
       </div>
       <span className={styles.rowLabel}>{node.speciesName}</span>
     </div>

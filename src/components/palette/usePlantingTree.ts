@@ -18,6 +18,8 @@ export interface PlantingGroupNode {
   speciesName: string;
   /** The default species color (from first cultivar with variety === null, or first entry). */
   color: string;
+  /** Cultivar ID to use for the parent row icon. */
+  defaultCultivarId: string;
   children: PlantingChildNode[];
 }
 
@@ -47,6 +49,7 @@ export function buildPlantingTree(entries: PaletteEntry[]): PlantingTreeNode[] {
         speciesId,
         speciesName,
         color: defaultEntry.color,
+        defaultCultivarId: defaultEntry.id,
         children: sorted.map((e) => ({ entry: e })),
       });
     }

@@ -37,6 +37,7 @@ describe('buildPlantingTree', () => {
     expect(tree[0].kind).toBe('group');
     if (tree[0].kind === 'group') {
       expect(tree[0].speciesName).toBe('Tomato');
+      expect(tree[0].defaultCultivarId).toBe('tomato');
       expect(tree[0].children).toHaveLength(2);
       expect(tree[0].children[0].entry.id).toBe('black-krim-tomato');
       expect(tree[0].children[1].entry.id).toBe('tomato');
