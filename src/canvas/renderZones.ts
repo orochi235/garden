@@ -1,6 +1,8 @@
 import type { Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
+import type { PatternId } from './patterns';
+import { renderPatternOverlay } from './patterns';
 
 export function renderZones(
   ctx: CanvasRenderingContext2D,
@@ -9,6 +11,7 @@ export function renderZones(
   canvasWidth: number,
   canvasHeight: number,
   highlightOpacity: number = 0,
+  patternOverride: PatternId | null = null,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (zones.length === 0) return;
@@ -28,6 +31,10 @@ export function renderZones(
     ctx.setLineDash([6, 3]);
     ctx.strokeRect(sx, sy, sw, sh);
     ctx.setLineDash([]);
+
+    if (patternOverride) {
+      renderPatternOverlay(ctx, patternOverride, { x: sx, y: sy, w: sw, h: sh, shape: 'rectangle' });
+    }
 
     if (highlightOpacity > 0) {
       ctx.save();

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pattern Samples</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    margin: 2rem;
+  }
+  h1 { margin-bottom: 1.5rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+  }
+  .card {
+    background: #16213e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .card canvas {
+    border: 1px solid #444;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  .card .name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<h1>Registered Patterns</h1>
+<div class="grid" id="grid"></div>
+<script>
+const patterns = {
+  hatch: (ctx, size) => {
+    ctx.strokeStyle = 'goldenrod';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, size);
+    ctx.lineTo(size, 0);
+    ctx.stroke();
+  },
+  crosshatch: (ctx, size) => {
+    ctx.strokeStyle = 'goldenrod';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, size);
+    ctx.lineTo(size, 0);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(size, size);
+    ctx.stroke();
+  },
+  dots: (ctx, size) => {
+    ctx.fillStyle = 'goldenrod';
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, 1, 0, Math.PI * 2);
+    ctx.fill();
+  },
+};
+
+const grid = document.getElementById('grid');
+
+for (const [name, factory] of Object.entries(patterns)) {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const canvas = document.createElement('canvas');
+  const w = 160, h = 120;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Create tile
+  const tileSize = name === 'crosshatch' ? 6 : name === 'dots' ? 6 : 5;
+  const tile = document.createElement('canvas');
+  tile.width = tileSize;
+  tile.height = tileSize;
+  factory(tile.getContext('2d'), tileSize);
+
+  // Fill background
+  ctx.fillStyle = '#2a4a3a';
+  ctx.fillRect(0, 0, w, h);
+
+  // Fill with pattern
+  const pat = ctx.createPattern(tile, 'repeat');
+  ctx.fillStyle = pat;
+  ctx.globalAlpha = 0.9;
+  ctx.fillRect(0, 0, w, h);
+
+  const label = document.createElement('div');
+  label.className = 'name';
+  label.textContent = name;
+
+  card.appendChild(canvas);
+  card.appendChild(label);
+  grid.appendChild(card);
+}
+</script>
+</body>
+</html>

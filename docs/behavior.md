@@ -40,6 +40,20 @@ Running list of intended application behaviors.
 - Default theme is "Live" (time-based)
 - Active layer outlines only appear while hovering over the layer selector
 
+## Patterns
+
+- Zones and surfaces support pattern overlays (hatch, crosshatch, dots, etc.)
+- Pattern is passed as a render-time argument, not bound to any object type
+- To add a new pattern: add its key to `PatternId`, its params interface to `PatternParamMap`, its defaults to `DEFAULTS`, and its factory to `patternFactories` in `src/canvas/patterns.ts`
+- Params are type-safe per pattern — TypeScript will error if you pass params that don't belong to the specified pattern
+- Visual reference: `docs/patterns.html`
+
+## Cultivars
+
+- Plant types are defined as static `Cultivar` entries in `src/model/cultivars.ts`
+- Each planting references a cultivar by ID; display data (color, footprint, name) is resolved at render time
+- To add a new plant type: add an entry to the `cultivars` array and optionally a custom renderer in `src/canvas/plantRenderers.ts`
+
 ## Sidebar
 
 - Right-hand panel section titles have less space to the left of the toggle slider and a bit more to the right
