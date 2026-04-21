@@ -18,7 +18,6 @@
   border-radius: var(--border-radius);
   font-size: 13px;
   cursor: pointer;
-  user-select: none;
 }
 .layer:hover {
   background: rgba(0, 0, 0, 0.04);

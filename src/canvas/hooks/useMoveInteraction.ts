@@ -10,6 +10,7 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
   const moveObjectId = useRef<string | null>(null);
   const moveObjectLayer = useRef<string | null>(null);
   const forceSnap = useRef(false);
+  const childStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
 
   function start(
     worldX: number,
@@ -26,6 +27,16 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
     moveObjectId.current = objId;
     moveObjectLayer.current = layer;
     forceSnap.current = alwaysSnap;
+
+    // Capture initial positions of child structures so they move with the parent
+    childStartPositions.current.clear();
+    if (layer === 'structures') {
+      for (const s of useGardenStore.getState().garden.structures) {
+        if (s.parentId === objId) {
+          childStartPositions.current.set(s.id, { x: s.x, y: s.y });
+        }
+      }
+    }
   }
 
   function move(e: React.MouseEvent) {
@@ -51,9 +62,21 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
       const moving = garden.structures.find((s) => s.id === moveObjectId.current);
       if (moving) {
         const moved = { ...moving, x: snappedX, y: snappedY };
-        const others = garden.structures.filter((s) => s.id !== moveObjectId.current);
+        const childIds = new Set(childStartPositions.current.keys());
+        const others = garden.structures.filter(
+          (s) => s.id !== moveObjectId.current && !childIds.has(s.id),
+        );
         if (!structuresCollide(moved, others)) {
           updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
+          // Move child structures by the same delta
+          const dx = snappedX - moveStart.current.objX;
+          const dy = snappedY - moveStart.current.objY;
+          for (const [childId, startPos] of childStartPositions.current) {
+            updateStructure(childId, {
+              x: startPos.x + dx,
+              y: startPos.y + dy,
+            });
+          }
         }
       }
     } else if (moveObjectLayer.current === 'zones') {
@@ -66,6 +89,7 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
     isMoving.current = false;
     moveObjectId.current = null;
     moveObjectLayer.current = null;
+    childStartPositions.current.clear();
   }
 
   return { start, move, end, isMoving };

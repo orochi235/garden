@@ -5,6 +5,7 @@ import { deleteAction } from './editing/delete';
 import { copyAction } from './editing/copy';
 import { pasteAction } from './editing/paste';
 import { selectAllAction } from './editing/selectAll';
+import { cycleSelectionNextAction, cycleSelectionPrevAction } from './editing/cycleSelection';
 import { cycleViewModeAction } from './view/cycleViewMode';
 import { cycleLayerDownAction, cycleLayerUpAction } from './layers/cycleLayer';
 import { rotateCwAction, rotateCcwAction } from './objects/rotate';
@@ -17,6 +18,8 @@ export const allActions: ActionDescriptor[] = [
   copyAction,
   pasteAction,
   selectAllAction,
+  cycleSelectionNextAction,
+  cycleSelectionPrevAction,
   cycleViewModeAction,
   cycleLayerDownAction,
   cycleLayerUpAction,

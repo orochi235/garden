@@ -123,7 +123,6 @@
   font-size: 11px;
   color: var(--color-text-muted);
   cursor: pointer;
-  user-select: none;
   grid-column: span 12;
 }
 .surfaceToggle input {
