@@ -1,9 +1,24 @@
 import cultivarData from '../data/cultivars.json';
+import type { IconType } from './species';
+import { getSpecies } from './species';
 
 export type CultivarCategory = 'herbs' | 'vegetables' | 'fruits' | 'flowers' | 'root-vegetables' | 'legumes';
 
+/** Raw cultivar entry as stored in JSON — only overrides are present. */
+interface CultivarRaw {
+  id: string;
+  speciesId: string;
+  variety: string | null;
+  color?: string;
+  footprintFt?: number;
+  spacingFt?: number;
+  icon?: IconType;
+}
+
+/** Resolved cultivar with all fields populated from species defaults. */
 export interface Cultivar {
   id: string;
+  speciesId: string;
   name: string;
   category: CultivarCategory;
   taxonomicName: string;
@@ -11,10 +26,30 @@ export interface Cultivar {
   color: string;
   footprintFt: number;
   spacingFt: number;
+  icon: IconType;
 }
 
-const cultivars: Cultivar[] = cultivarData as Cultivar[];
+function resolveCultivar(raw: CultivarRaw): Cultivar {
+  const species = getSpecies(raw.speciesId);
+  if (!species) {
+    throw new Error(`Unknown species "${raw.speciesId}" for cultivar "${raw.id}"`);
+  }
+  const name = raw.variety ? `${species.name}, ${raw.variety}` : species.name;
+  return {
+    id: raw.id,
+    speciesId: raw.speciesId,
+    name,
+    category: species.category,
+    taxonomicName: species.taxonomicName,
+    variety: raw.variety,
+    color: raw.color ?? species.color,
+    footprintFt: raw.footprintFt ?? species.footprintFt,
+    spacingFt: raw.spacingFt ?? species.spacingFt,
+    icon: raw.icon ?? species.icon,
+  };
+}
 
+const cultivars: Cultivar[] = (cultivarData as CultivarRaw[]).map(resolveCultivar);
 const cultivarMap = new Map<string, Cultivar>(cultivars.map((c) => [c.id, c]));
 
 export function getCultivar(id: string): Cultivar | undefined {

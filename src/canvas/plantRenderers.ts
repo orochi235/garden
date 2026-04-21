@@ -449,74 +449,38 @@ function iconSquash(ctx: CanvasRenderingContext2D, r: number, color: string): vo
 }
 
 // ---------------------------------------------------------------------------
-// Icon dispatch table
+// Icon dispatch by icon type string (matches Species.icon / Cultivar.icon)
 // ---------------------------------------------------------------------------
 
-const icons: Record<string, IconRenderer> = {
-  // Tomatoes
-  'tomato': iconRoundFruit,
-  'black-krim-tomato': iconRoundFruit,
-  'cherokee-purple-tomato': iconRoundFruit,
-  'valencia-tomato': iconRoundFruit,
-  'chocolate-cherry-tomato': iconRoundFruit,
-  'san-marzano-tomato': iconRoundFruit,
-  'tomatillo': iconRoundFruit,
-  'ground-cherry': iconRoundFruit,
+import type { IconType } from '../model/species';
+import { getCultivar } from '../model/cultivars';
 
-  // Peppers
-  'bell-pepper': iconPepper,
-  'jalapeno': iconPepper,
-  'poblano': iconPepper,
-  'shishito': iconPepper,
-  'anaheim': iconPepper,
-  'habanero': iconPepper,
-
-  // Eggplant
+const iconRenderers: Record<IconType, IconRenderer> = {
+  'round-fruit': iconRoundFruit,
+  'pepper': iconPepper,
   'eggplant': iconEggplant,
-
-  // Cucurbits
   'cucumber': iconCucumber,
-  'zucchini': iconCucumber,
-  'summer-squash': iconSquash,
-  'honeydew': iconMelon,
-  'watermelon': iconMelon,
-
-  // Leafy
-  'lettuce': iconLeafRosette,
-  'kale': iconLeafRosette,
-
-  // Root vegetables
+  'melon': iconMelon,
+  'squash': iconSquash,
+  'leaf-rosette': iconLeafRosette,
   'carrot': iconCarrot,
-  'parsnip': iconCarrot,
   'radish': iconRadish,
   'potato': iconPotato,
-
-  // Herbs
-  'basil': iconHerbSprig,
-  'thai-basil': iconHerbSprig,
-  'thyme': iconHerbSprig,
-  'chives': iconHerbSprig,
-  'garlic-chives': iconHerbSprig,
-  'sage': iconHerbSprig,
-  'rosemary': iconHerbSprig,
-  'parsley': iconHerbSprig,
-  'cilantro': iconHerbSprig,
-  'chervil': iconHerbSprig,
-  'dill': iconHerbSprig,
-  'chocolate-mint': iconHerbSprig,
-
-  // Fruits
+  'herb-sprig': iconHerbSprig,
   'strawberry': iconStrawberry,
-
-  // Legumes
-  'peas': iconPeaPod,
-  'green-beans': iconBean,
+  'pea-pod': iconPeaPod,
+  'bean': iconBean,
 };
+
+function getIconRenderer(iconType: IconType): IconRenderer {
+  return iconRenderers[iconType] ?? iconHerbSprig;
+}
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
+/** Render a full plant tile (hatch background + icon) for a cultivar. */
 export function renderPlant(
   ctx: CanvasRenderingContext2D,
   cultivarId: string,
@@ -524,7 +488,19 @@ export function renderPlant(
   color: string,
   shape: PlantShape = 'square',
 ): void {
-  drawHatch(ctx, radius, color, shape);
-  const icon = icons[cultivarId] ?? iconHerbSprig;
-  icon(ctx, radius, color);
+  const cultivar = getCultivar(cultivarId);
+  const iconType = cultivar?.icon ?? 'herb-sprig';
+  const iconColor = color;
+  drawHatch(ctx, radius, iconColor, shape);
+  getIconRenderer(iconType)(ctx, radius, iconColor);
+}
+
+/** Render just the icon (no hatch) — used for palette buttons. */
+export function renderIcon(
+  ctx: CanvasRenderingContext2D,
+  iconType: IconType,
+  radius: number,
+  color: string,
+): void {
+  getIconRenderer(iconType)(ctx, radius, color);
 }

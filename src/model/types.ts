@@ -125,6 +125,7 @@ const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
 };
 
 const SURFACE_TYPES = new Set(['patio', 'path']);
+// TODO: containers should have some conception of their wall thickness/internal area for child shading purposes
 const CONTAINER_TYPES = new Set(['raised-bed', 'pot', 'felt-planter']);
 
 const DEFAULT_ARRANGEMENTS: Record<string, () => Arrangement> = {

@@ -51,4 +51,33 @@ describe('cultivar registry', () => {
     const categories = new Set(getAllCultivars().map((c) => c.category));
     expect(categories.size).toBeGreaterThanOrEqual(4);
   });
+
+  it('every cultivar has a speciesId and icon', () => {
+    for (const c of getAllCultivars()) {
+      expect(c.speciesId).toBeTruthy();
+      expect(c.icon).toBeTruthy();
+    }
+  });
+
+  it('cultivar inherits defaults from species', () => {
+    const tomato = getCultivar('tomato');
+    expect(tomato).toBeDefined();
+    expect(tomato!.icon).toBe('round-fruit');
+    expect(tomato!.category).toBe('fruits');
+  });
+
+  it('cultivar overrides species color', () => {
+    const bk = getCultivar('black-krim-tomato');
+    expect(bk).toBeDefined();
+    expect(bk!.color).toBe('#6B2D3A');
+    expect(bk!.icon).toBe('round-fruit'); // inherited
+    expect(bk!.name).toBe('Tomato, Black Krim');
+  });
+
+  it('cultivar name is composed from species name and variety', () => {
+    const thai = getCultivar('thai-basil');
+    expect(thai).toBeDefined();
+    expect(thai!.name).toBe('Basil, Thai');
+    expect(thai!.variety).toBe('Thai');
+  });
 });
