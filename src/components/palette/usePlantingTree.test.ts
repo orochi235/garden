@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlantingTree, type PlantingTreeNode } from './usePlantingTree';
+import { buildPlantingTree } from './usePlantingTree';
 import type { PaletteEntry } from './paletteData';
 
 const makeEntry = (id: string, speciesId: string, speciesName: string, varietyLabel: string, color = '#000'): PaletteEntry => ({
