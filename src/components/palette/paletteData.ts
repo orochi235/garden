@@ -1,11 +1,14 @@
 import { getAllCultivars } from '../../model/cultivars';
+import { getSpecies } from '../../model/species';
 
 export interface PaletteEntry {
   id: string;
   name: string;
   category: 'structures' | 'zones' | 'plantings';
-  /** Species grouping key for plantings, e.g. "Pepper, Hot" or "Tomato" */
-  species?: string;
+  /** Species ID for grouping plantings */
+  speciesId?: string;
+  /** Species display name for section headers */
+  speciesName?: string;
   /** Display name within the species group (variety name, or full name if no variety) */
   varietyLabel?: string;
   type: string;
@@ -111,15 +114,13 @@ export const paletteItems: PaletteEntry[] = [
   },
   // Plantings — grouped by species, sorted by variety within each
   ...getAllCultivars().map((c) => {
-    // Derive species: strip the variety (last segment) from the name
-    const species = c.variety
-      ? c.name.slice(0, c.name.lastIndexOf(',')).trim()
-      : c.name;
+    const species = getSpecies(c.speciesId);
     return {
       id: c.id,
       name: c.name,
       category: 'plantings' as const,
-      species,
+      speciesId: c.speciesId,
+      speciesName: species?.name ?? c.speciesId,
       varietyLabel: c.variety ?? c.name,
       type: 'planting',
       defaultWidth: 0,
@@ -135,13 +136,3 @@ export const categories = [
   { id: 'plantings', label: 'Plantings' },
 ] as const;
 
-/** Get the ordered list of species for plantings, sorted alphabetically. */
-export function getPlantingSpecies(items: PaletteEntry[]): string[] {
-  const speciesSet = new Set<string>();
-  for (const item of items) {
-    if (item.category === 'plantings' && item.species) {
-      speciesSet.add(item.species);
-    }
-  }
-  return [...speciesSet].sort();
-}
