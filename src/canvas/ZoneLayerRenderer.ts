@@ -4,11 +4,15 @@ import { renderZones } from './renderZones';
 
 export class ZoneLayerRenderer extends LayerRenderer {
   zones: Zone[] = [];
+  hideIds: string[] = [];
 
   protected draw(ctx: CanvasRenderingContext2D): void {
+    const visibleZones = this.hideIds.length > 0
+      ? this.zones.filter((z) => !this.hideIds.includes(z.id))
+      : this.zones;
     renderZones(
       ctx,
-      this.zones,
+      visibleZones,
       this.view,
       this.width,
       this.height,

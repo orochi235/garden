@@ -9,11 +9,15 @@ export class PlantingLayerRenderer extends LayerRenderer {
   selectedIds: string[] = [];
   showSpacing: boolean = false;
   ghost: GhostPlanting | null = null;
+  hideIds: string[] = [];
 
   protected draw(ctx: CanvasRenderingContext2D): void {
+    const visiblePlantings = this.hideIds.length > 0
+      ? this.plantings.filter((p) => !this.hideIds.includes(p.id))
+      : this.plantings;
     renderPlantings(
       ctx,
-      this.plantings,
+      visiblePlantings,
       this.zones,
       this.structures,
       this.view,

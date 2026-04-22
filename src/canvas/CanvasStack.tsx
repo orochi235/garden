@@ -256,25 +256,30 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     : null;
   plantingRenderer.current.setView(view, width, height);
 
+  const overlay = useUiStore.getState().dragOverlay;
+  plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
+  structureRenderer.current.hideIds = overlay?.layer === 'structures' ? overlay.hideIds : [];
+  zoneRenderer.current.hideIds = overlay?.layer === 'zones' ? overlay.hideIds : [];
+
   useLayerEffect(
     structureCanvasRef, width, height, dpr,
     layerVisibility.structures,
     (ctx) => structureRenderer.current.render(ctx),
-    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, structureRenderer.current.highlight],
+    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, structureRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
     zoneCanvasRef, width, height, dpr,
     layerVisibility.zones,
     (ctx) => zoneRenderer.current.render(ctx),
-    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, zoneRenderer.current.highlight],
+    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, zoneRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, plantingRenderer.current.ghost],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, plantingRenderer.current.ghost, overlay],
   );
 
   useLayerEffect(
