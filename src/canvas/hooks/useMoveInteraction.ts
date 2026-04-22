@@ -30,6 +30,15 @@ export function useMoveInteraction(
   const moveObjectId = useRef<string | null>(null);
   const moveObjectLayer = useRef<string | null>(null);
   const forceSnap = useRef(false);
+  const isClone = useRef(false);
+  const pendingClone = useRef<{
+    parentId: string;
+    x: number;
+    y: number;
+    cultivarId: string;
+    parentWorldX: number;
+    parentWorldY: number;
+  } | null>(null);
   const childStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
 
   // Original planting position for snap-back detection
@@ -57,7 +66,22 @@ export function useMoveInteraction(
   function activateDrag() {
     isPending.current = false;
     isMoving.current = true;
-    useGardenStore.getState().checkpoint();
+
+    // Create deferred clone before checkpoint so undo reverts both in one step
+    if (pendingClone.current) {
+      const clone = pendingClone.current;
+      const { addPlanting } = useGardenStore.getState();
+      addPlanting({ parentId: clone.parentId, x: clone.x, y: clone.y, cultivarId: clone.cultivarId });
+      const newPlantings = useGardenStore.getState().garden.plantings;
+      const created = newPlantings[newPlantings.length - 1];
+      moveObjectId.current = created.id;
+      moveStart.current.objX = clone.parentWorldX + created.x;
+      moveStart.current.objY = clone.parentWorldY + created.y;
+      useUiStore.getState().select(created.id);
+      pendingClone.current = null;
+    } else {
+      useGardenStore.getState().checkpoint();
+    }
 
     // Capture original planting position for snap-back
     originalPlantingPos.current = null;
@@ -94,6 +118,7 @@ export function useMoveInteraction(
     objX: number,
     objY: number,
     alwaysSnap = false,
+    cloneData?: { parentId: string; x: number; y: number; cultivarId: string; parentWorldX: number; parentWorldY: number },
   ) {
     isPending.current = true;
     isMoving.current = false;
@@ -101,6 +126,8 @@ export function useMoveInteraction(
     moveObjectId.current = objId;
     moveObjectLayer.current = layer;
     forceSnap.current = alwaysSnap;
+    isClone.current = !!cloneData;
+    pendingClone.current = cloneData ?? null;
     clearSnap();
 
     const rect = containerRef.current?.getBoundingClientRect();
@@ -263,6 +290,7 @@ export function useMoveInteraction(
     // If drag threshold was never exceeded, this was just a click — no-op
     if (isPending.current) {
       isPending.current = false;
+      pendingClone.current = null;
       moveObjectId.current = null;
       moveObjectLayer.current = null;
       return;
@@ -288,7 +316,7 @@ export function useMoveInteraction(
 
       if (planting) {
         const altHeld = e?.altKey ?? false;
-        if (altHeld) {
+        if (altHeld && !isClone.current) {
           // Clone: leave original in place, create new planting in target container
           addPlanting({
             parentId: snap.containerId,
@@ -309,6 +337,8 @@ export function useMoveInteraction(
 
     clearSnap();
     isMoving.current = false;
+    isClone.current = false;
+    pendingClone.current = null;
     originalPlantingPos.current = null;
     isAtOriginalPos.current = false;
     moveObjectId.current = null;

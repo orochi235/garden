@@ -370,12 +370,16 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
                 const parent = garden.structures.find((s) => s.id === planting.parentId)
                   ?? garden.zones.find((z) => z.id === planting.parentId);
                 if (parent) {
-                  const { addPlanting } = useGardenStore.getState();
-                  addPlanting({ parentId: planting.parentId, x: planting.x, y: planting.y, cultivarId: planting.cultivarId });
-                  const newPlantings = useGardenStore.getState().garden.plantings;
-                  const clone = newPlantings[newPlantings.length - 1];
-                  select(clone.id);
-                  moveInteraction.start(worldX, worldY, clone.id, hit.layer, parent.x + clone.x, parent.y + clone.y);
+                  // Defer clone creation until drag threshold is exceeded
+                  select(hit.id);
+                  moveInteraction.start(worldX, worldY, hit.id, hit.layer, parent.x + planting.x, parent.y + planting.y, false, {
+                    parentId: planting.parentId,
+                    x: planting.x,
+                    y: planting.y,
+                    cultivarId: planting.cultivarId,
+                    parentWorldX: parent.x,
+                    parentWorldY: parent.y,
+                  });
                   setActiveCursor('copy');
                 }
               }
