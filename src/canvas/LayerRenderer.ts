@@ -68,6 +68,11 @@ export abstract class LayerRenderer {
       this.highlight = 0;
       return;
     }
+    // If flash is active but the animation loop was killed (e.g. React StrictMode
+    // cleanup calling dispose()), restart it so the highlight properly decays.
+    if (this._animFrame === null) {
+      this._scheduleAnimation();
+    }
     const elapsed = performance.now() - this._flashStart;
     const fadeInMs = 80;
     if (elapsed < fadeInMs) {

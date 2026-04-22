@@ -176,6 +176,46 @@ function iconPepper(ctx: CanvasRenderingContext2D, r: number, color: string): vo
   ctx.stroke();
 }
 
+/** Bell pepper — keystone / arch shape with very rounded corners */
+function iconBellPepper(ctx: CanvasRenderingContext2D, r: number, color: string): void {
+  // Wider at the top (shoulders), narrower at the bottom — like an arch keystone
+  const topW = r * 0.38;   // half-width at shoulders
+  const botW = r * 0.28;   // half-width at base
+  const h = r * 0.5;       // half-height
+  const rnd = r * 0.14;    // corner rounding radius
+  ctx.beginPath();
+  // Top-left corner
+  ctx.moveTo(-topW + rnd, -h);
+  ctx.lineTo(topW - rnd, -h);
+  // Top-right corner (round)
+  ctx.quadraticCurveTo(topW, -h, topW, -h + rnd);
+  // Right side tapers inward
+  ctx.lineTo(botW, h - rnd);
+  // Bottom-right corner (round)
+  ctx.quadraticCurveTo(botW, h, botW - rnd, h);
+  // Bottom edge
+  ctx.lineTo(-botW + rnd, h);
+  // Bottom-left corner (round)
+  ctx.quadraticCurveTo(-botW, h, -botW, h - rnd);
+  // Left side tapers outward going up
+  ctx.lineTo(-topW, -h + rnd);
+  // Top-left corner (round)
+  ctx.quadraticCurveTo(-topW, -h, -topW + rnd, -h);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = Math.max(0.5, r * 0.04);
+  ctx.stroke();
+  // Stem
+  ctx.beginPath();
+  ctx.moveTo(0, -h);
+  ctx.lineTo(0, -h - r * 0.15);
+  ctx.strokeStyle = '#3A6A20';
+  ctx.lineWidth = Math.max(0.5, r * 0.06);
+  ctx.stroke();
+}
+
 /** Eggplant — teardrop shape */
 function iconEggplant(ctx: CanvasRenderingContext2D, r: number, color: string): void {
   const w = r * 0.22;
@@ -458,6 +498,7 @@ import { getCultivar } from '../model/cultivars';
 const iconRenderers: Record<IconType, IconRenderer> = {
   'round-fruit': iconRoundFruit,
   'pepper': iconPepper,
+  'bell-pepper': iconBellPepper,
   'eggplant': iconEggplant,
   'cucumber': iconCucumber,
   'melon': iconMelon,

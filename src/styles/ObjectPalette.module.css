@@ -62,14 +62,23 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 6px;
+  padding: 5px 3px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* Treeview container for plantings */
 .treeContainer {
+  padding: 5px 3px;
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--border-radius);
+  border-radius: 16px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 1px 3px rgba(0, 0, 0, 0.25);
@@ -89,4 +98,15 @@
 }
 .treeContainer::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* Lozenge wrapper for parent groups */
+.lozenge {
+  border-radius: 12px;
+  margin: 2px 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.lozengeExpanded {
+  background: rgba(255, 255, 255, 0.14);
+  padding-bottom: 4px;
 }

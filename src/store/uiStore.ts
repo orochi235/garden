@@ -28,11 +28,13 @@ interface UiStore {
   layerSelectorHovered: boolean;
   showSurfaces: boolean;
   showPlantingSpacing: boolean;
+  magentaHighlight: boolean;
   layerFlashCounter: number;
   viewMode: ViewMode;
   setLayerSelectorHovered: (hovered: boolean) => void;
   setShowSurfaces: (show: boolean) => void;
   setShowPlantingSpacing: (show: boolean) => void;
+  setMagentaHighlight: (show: boolean) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
@@ -69,11 +71,13 @@ export const useUiStore = create<UiStore>((set) => ({
   layerSelectorHovered: false,
   showSurfaces: false,
   showPlantingSpacing: false,
+  magentaHighlight: false,
   layerFlashCounter: 0,
   viewMode: 'select',
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
   setShowSurfaces: (show) => set({ showSurfaces: show }),
   setShowPlantingSpacing: (show) => set({ showPlantingSpacing: show }),
+  setMagentaHighlight: (show) => set({ magentaHighlight: show }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
@@ -113,6 +117,7 @@ export const useUiStore = create<UiStore>((set) => ({
       layerSelectorHovered: false,
       showSurfaces: false,
       showPlantingSpacing: false,
+      magentaHighlight: false,
       layerFlashCounter: 0,
       viewMode: 'select',
     }),

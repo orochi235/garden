@@ -36,7 +36,11 @@ export function MenuBar() {
       <div className={styles.menus}>
         <span onClick={handleNew}>New</span>
         <span onClick={handleOpen}>Open</span>
-        <span onClick={handleSave}>Save</span>
+        <span
+          onClick={handleSave}
+          className={styles.saveButton}
+          style={{ background: theme.listHover }}
+        >Save</span>
       </div>
     </div>
   );

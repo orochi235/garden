@@ -57,7 +57,10 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
                 >
                   {cat.label}
                 </div>
-                <div className={styles.treeContainer}>
+                <div
+                  className={styles.treeContainer}
+                  style={{ '--list-hover': theme.listHover } as React.CSSProperties}
+                >
                   {tree.map((node) => {
                     if (node.kind === 'leaf') {
                       return (
@@ -71,7 +74,10 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
                     }
                     const isExpanded = expanded.has(node.speciesId);
                     return (
-                      <div key={node.speciesId}>
+                      <div
+                        key={node.speciesId}
+                        className={`${styles.lozenge} ${isExpanded ? styles.lozengeExpanded : ''}`}
+                      >
                         <PlantingParentRow
                           node={node}
                           expanded={isExpanded}
@@ -102,7 +108,10 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
               >
                 {cat.label}
               </div>
-              <div className={styles.itemGrid}>
+              <div
+                className={styles.itemGrid}
+                style={{ '--list-hover': theme.listHover } as React.CSSProperties}
+              >
                 {items.map((item) => (
                   <PaletteItem
                     key={item.id}

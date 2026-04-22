@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Themes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a1e; color: #e0e0e0; padding: 32px; }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 24px; color: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 48px; }
+  .card { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+  .thumb { height: 180px; position: relative; }
+  .thumb-bar { position: absolute; top: 8px; left: 8px; right: 8px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .thumb-bar .title { font-size: 14px; font-weight: 700; }
+  .card-label { padding: 8px 12px; background: rgba(0,0,0,0.4); font-size: 14px; font-weight: 600; text-align: center; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 32px; }
+  th { text-align: left; padding: 8px 12px; background: rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 600; color: #aaa; }
+  td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+  .swatch { display: inline-block; width: 16px; height: 16px; border-radius: 4px; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(255,255,255,0.15); }
+  code { font-size: 12px; color: #ccc; }
+</style>
+</head>
+<body>
+
+<h1>Time Themes</h1>
+
+<div class="grid" id="thumbnails"></div>
+
+<h2>Theme Values</h2>
+<table id="values">
+  <thead>
+    <tr>
+      <th>Theme</th>
+      <th>Menu Bar Bg</th>
+      <th>Menu Bar Title</th>
+      <th>Menu Bar Text</th>
+      <th>Search Overlay</th>
+      <th>List Hover</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const themes = {
+  sunrise: {
+    paletteBackground: `linear-gradient(to top, #2E2A2A 0%, #3E3432 3%, #6A4530 8%, #7A5828 12%, #688038 16%, #558A40 19%, #5A9648 22%, #78A050 25%, #9A9058 30%, #857858 35%, #6A6058 42%, #6E5848 50%, #8E604A 58%, #A8684A 65%, #C47848 72%, #D48850 80%, #E09860 90%, #E8A868 100%)`,
+    searchOverlay: 'rgba(200, 140, 80, 0.75)',
+    menuBarBg: '#E8A868',
+    menuBarTitle: '#4A2810',
+    menuBarText: '#5C3418',
+    listHover: 'rgba(232, 168, 104, 0.15)',
+  },
+  morning: {
+    paletteBackground: `linear-gradient(to top, #302C28 0%, #403830 3%, #704828 8%, #806020 12%, #6A8830 16%, #509428 19%, #54A040 22%, #78AC48 25%, #9C9850 30%, #888060 35%, #6A6058 42%, #748068 50%, #7A9070 58%, #80A078 65%, #78B0A0 72%, #70B8C0 80%, #68C0D8 90%, #60C8E8 100%)`,
+    searchOverlay: 'rgba(80, 170, 210, 0.8)',
+    menuBarBg: '#60C8E8',
+    menuBarTitle: '#1A3040',
+    menuBarText: '#204050',
+    listHover: 'rgba(96, 200, 232, 0.12)',
+  },
+  noon: {
+    paletteBackground: `linear-gradient(to top, #322E28 0%, #443A2E 3%, #785020 8%, #8A681A 12%, #5C9428 16%, #40A822 19%, #44B438 22%, #68B840 25%, #90A840 30%, #888060 35%, #6A6058 42%, #688060 50%, #6A9468 58%, #68A87A 65%, #60B8A0 72%, #58C0C0 80%, #50C0D8 90%, #48C0E0 100%)`,
+    searchOverlay: 'rgba(60, 160, 190, 0.8)',
+    menuBarBg: '#48C0E0',
+    menuBarTitle: '#1A3038',
+    menuBarText: '#1E3848',
+    listHover: 'rgba(72, 192, 224, 0.12)',
+  },
+  afternoon: {
+    paletteBackground: `linear-gradient(to top, #322E28 0%, #443A2E 3%, #785020 8%, #8A681A 12%, #709428 16%, #4CA020 19%, #50AC38 22%, #80B840 25%, #A8A048 30%, #908860 35%, #706858 42%, #687078 50%, #607888 58%, #588898 65%, #5090A8 72%, #4898B8 80%, #50A0C0 90%, #58A8C8 100%)`,
+    searchOverlay: 'rgba(70, 130, 160, 0.8)',
+    menuBarBg: '#58A8C8',
+    menuBarTitle: '#1A3040',
+    menuBarText: '#1E3848',
+    listHover: 'rgba(88, 168, 200, 0.12)',
+  },
+  sunset: {
+    paletteBackground: `linear-gradient(to top, #2E2A2A 0%, #3E3432 3%, #6A4530 8%, #7A5828 12%, #648038 16%, #508840 19%, #559448 22%, #72984A 25%, #968C58 30%, #807058 35%, #6A6058 42%, #7A5848 50%, #9A5840 58%, #B85838 65%, #C85840 72%, #C04858 80%, #A04870 90%, #804878 100%)`,
+    searchOverlay: 'rgba(128, 72, 120, 0.85)',
+    menuBarBg: '#804878',
+    menuBarTitle: '#F0D0E0',
+    menuBarText: '#E0B8D0',
+    listHover: 'rgba(224, 184, 208, 0.12)',
+  },
+  twilight: {
+    paletteBackground: `linear-gradient(to top, #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%, #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%, #8A8460 30%, #7D7060 35%, #6A6058 42%, #5E5058 50%, #5A4858 58%, #5C4260 65%, #5E3E68 72%, #5A3870 80%, #4E3470 90%, #3E2E60 100%)`,
+    searchOverlay: 'rgba(62, 46, 96, 0.85)',
+    menuBarBg: '#3E2E60',
+    menuBarTitle: '#D8C0E0',
+    menuBarText: '#C0A8D0',
+    listHover: 'rgba(192, 168, 208, 0.12)',
+  },
+  night: {
+    paletteBackground: `linear-gradient(to top, #2A2A2E 0%, #3A3335 3%, #5C4033 8%, #6B4E2A 12%, #5A6B3A 16%, #4A7C42 19%, #4E8848 22%, #6B8E50 25%, #8A8460 30%, #7D7060 35%, #6A6058 42%, #5A5560 50%, #4E4E5E 58%, #4A4A5E 65%, #3E4260 72%, #343A58 80%, #2A3450 90%, #1A2744 100%)`,
+    searchOverlay: 'rgba(26, 39, 68, 0.85)',
+    menuBarBg: '#1A2744',
+    menuBarTitle: '#E8D08C',
+    menuBarText: '#D4B870',
+    listHover: 'rgba(212, 184, 112, 0.12)',
+  },
+  midnight: {
+    paletteBackground: `linear-gradient(to top, #1A1A1E 0%, #252228 3%, #3A2820 8%, #4A3620 12%, #3A4828 16%, #2E5530 19%, #325A34 22%, #4A6038 25%, #5A5840 30%, #524A40 35%, #484040 42%, #3A3840 50%, #333340 58%, #2E2E40 65%, #282E48 72%, #222840 80%, #1C2238 90%, #101828 100%)`,
+    searchOverlay: 'rgba(16, 24, 40, 0.9)',
+    menuBarBg: '#101828',
+    menuBarTitle: '#B8A870',
+    menuBarText: '#9A8E6A',
+    listHover: 'rgba(154, 142, 106, 0.12)',
+  },
+};
+
+const order = ['sunrise', 'morning', 'noon', 'afternoon', 'sunset', 'twilight', 'night', 'midnight'];
+const grid = document.getElementById('thumbnails');
+const tbody = document.querySelector('#values tbody');
+
+for (const name of order) {
+  const t = themes[name];
+
+  // Thumbnail card
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="thumb" style="background: ${t.paletteBackground}">
+      <div class="thumb-bar" style="background: ${t.menuBarBg}">
+        <span class="title" style="color: ${t.menuBarTitle}">Garden Planner</span>
+        <span style="color: ${t.menuBarText}">Save</span>
+      </div>
+    </div>
+    <div class="card-label">${name}</div>
+  `;
+  grid.appendChild(card);
+
+  // Table row
+  const row = document.createElement('tr');
+  const fields = [
+    { val: t.menuBarBg, solid: true },
+    { val: t.menuBarTitle, solid: true },
+    { val: t.menuBarText, solid: true },
+    { val: t.searchOverlay, showSolid: true },
+    { val: t.listHover, showSolid: true },
+  ];
+  // Extract the solid RGB from an rgba() string
+  function rgbaToSolid(rgba) {
+    const m = rgba.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
+    return m ? `rgb(${m[1]}, ${m[2]}, ${m[3]})` : rgba;
+  }
+
+  let cells = `<td><strong>${name}</strong></td>`;
+  for (const f of fields) {
+    if (f.showSolid) {
+      const solid = rgbaToSolid(f.val);
+      cells += `<td><span class="swatch" style="background: ${solid}"></span><span class="swatch" style="background: ${f.val}"></span><code>${f.val}</code></td>`;
+    } else {
+      cells += `<td><span class="swatch" style="background: ${f.val}"></span><code>${f.val}</code></td>`;
+    }
+  }
+  row.innerHTML = cells;
+  tbody.appendChild(row);
+}
+</script>
+
+</body>
+</html>

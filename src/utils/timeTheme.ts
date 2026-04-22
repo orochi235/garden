@@ -11,6 +11,8 @@ export interface TimeTheme {
   menuBarTitle: string;
   /** Menu bar text color */
   menuBarText: string;
+  /** Hover highlight for list rows */
+  listHover: string;
 }
 
 const night: TimeTheme = {
@@ -28,6 +30,7 @@ const night: TimeTheme = {
   menuBarBg: '#1A2744',
   menuBarTitle: '#E8D08C',
   menuBarText: '#D4B870',
+  listHover: 'rgba(212, 184, 112, 0.12)',
 };
 
 const midnight: TimeTheme = {
@@ -45,6 +48,7 @@ const midnight: TimeTheme = {
   menuBarBg: '#101828',
   menuBarTitle: '#B8A870',
   menuBarText: '#9A8E6A',
+  listHover: 'rgba(154, 142, 106, 0.12)',
 };
 
 const sunrise: TimeTheme = {
@@ -62,6 +66,7 @@ const sunrise: TimeTheme = {
   menuBarBg: '#E8A868',
   menuBarTitle: '#4A2810',
   menuBarText: '#5C3418',
+  listHover: 'rgba(232, 168, 104, 0.15)',
 };
 
 const morning: TimeTheme = {
@@ -79,6 +84,7 @@ const morning: TimeTheme = {
   menuBarBg: '#60C8E8',
   menuBarTitle: '#1A3040',
   menuBarText: '#204050',
+  listHover: 'rgba(96, 200, 232, 0.12)',
 };
 
 const noon: TimeTheme = {
@@ -96,6 +102,7 @@ const noon: TimeTheme = {
   menuBarBg: '#48C0E0',
   menuBarTitle: '#1A3038',
   menuBarText: '#1E3848',
+  listHover: 'rgba(72, 192, 224, 0.12)',
 };
 
 const afternoon: TimeTheme = {
@@ -113,6 +120,7 @@ const afternoon: TimeTheme = {
   menuBarBg: '#58A8C8',
   menuBarTitle: '#1A3040',
   menuBarText: '#1E3848',
+  listHover: 'rgba(88, 168, 200, 0.12)',
 };
 
 const sunset: TimeTheme = {
@@ -130,6 +138,7 @@ const sunset: TimeTheme = {
   menuBarBg: '#804878',
   menuBarTitle: '#F0D0E0',
   menuBarText: '#E0B8D0',
+  listHover: 'rgba(224, 184, 208, 0.12)',
 };
 
 const twilight: TimeTheme = {
@@ -147,6 +156,7 @@ const twilight: TimeTheme = {
   menuBarBg: '#3E2E60',
   menuBarTitle: '#D8C0E0',
   menuBarText: '#C0A8D0',
+  listHover: 'rgba(192, 168, 208, 0.12)',
 };
 
 const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight };

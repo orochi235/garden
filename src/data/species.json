@@ -1,6 +1,6 @@
 [
   { "id": "tomato", "name": "Tomato", "taxonomicName": "Solanum lycopersicum", "category": "fruits", "icon": "round-fruit", "color": "#E05555", "footprintFt": 1, "spacingFt": 2 },
-  { "id": "pepper-sweet", "name": "Pepper, Sweet", "taxonomicName": "Capsicum annuum", "category": "fruits", "icon": "pepper", "color": "#E07B3C", "footprintFt": 1, "spacingFt": 1.5 },
+  { "id": "pepper-sweet", "name": "Pepper, Sweet", "taxonomicName": "Capsicum annuum", "category": "fruits", "icon": "bell-pepper", "color": "#C62828", "footprintFt": 1, "spacingFt": 1.5 },
   { "id": "pepper-hot", "name": "Pepper, Hot", "taxonomicName": "Capsicum annuum", "category": "fruits", "icon": "pepper", "color": "#3D7A2D", "footprintFt": 0.75, "spacingFt": 1.5 },
   { "id": "tomatillo", "name": "Tomatillo", "taxonomicName": "Physalis philadelphica", "category": "fruits", "icon": "round-fruit", "color": "#8BC34A", "footprintFt": 1, "spacingFt": 2 },
   { "id": "ground-cherry", "name": "Ground Cherry", "taxonomicName": "Physalis pruinosa", "category": "fruits", "icon": "round-fruit", "color": "#F0C040", "footprintFt": 0.75, "spacingFt": 1.5 },

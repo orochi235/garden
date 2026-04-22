@@ -1,4 +1,5 @@
-import type { Structure, StructureShape, Zone } from '../model/types';
+import { getCultivar } from '../model/cultivars';
+import type { Planting, Structure, StructureShape, Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 
@@ -20,9 +21,38 @@ export function renderSelection(
   view: ViewTransform,
   canvasWidth: number,
   canvasHeight: number,
+  plantings: Planting[] = [],
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (selectedIds.length === 0) return;
+
+  // Build parent lookup for resolving planting world positions
+  const parentMap = new Map<string, { x: number; y: number; width: number; height: number; shape?: string }>();
+  for (const z of zones) parentMap.set(z.id, z);
+  for (const s of structures) {
+    if (s.container) parentMap.set(s.id, s);
+  }
+
+  // Render selected plantings as dashed circles
+  const selectedPlantings = plantings.filter((p) => selectedIds.includes(p.id));
+  for (const p of selectedPlantings) {
+    const parent = parentMap.get(p.parentId);
+    if (!parent) continue;
+    const cultivar = getCultivar(p.cultivarId);
+    const footprint = cultivar?.footprintFt ?? 0.5;
+    const worldX = parent.x + p.x;
+    const worldY = parent.y + p.y;
+    const [sx, sy] = worldToScreen(worldX, worldY, view);
+    const radius = Math.max(3, (footprint / 2) * view.zoom);
+
+    ctx.strokeStyle = '#5BA4CF';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius + 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   const allObjects: SelectableObject[] = [...structures, ...zones];
   const selected = allObjects.filter((obj) => selectedIds.includes(obj.id));

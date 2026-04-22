@@ -35,3 +35,13 @@
 .menus span:hover {
   background: rgba(255, 255, 255, 0.12);
 }
+
+.saveButton {
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: background 0.15s, border-color 0.15s;
+}
+.saveButton:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}

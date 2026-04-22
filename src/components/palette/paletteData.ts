@@ -95,7 +95,7 @@ export const paletteItems: PaletteEntry[] = [
   // Zones
   {
     id: 'planting-zone',
-    name: 'Planting Zone',
+    name: 'Allow',
     category: 'zones',
     type: 'zone',
     defaultWidth: 4,
@@ -104,7 +104,7 @@ export const paletteItems: PaletteEntry[] = [
   },
   {
     id: 'exclusion-zone',
-    name: 'Exclusion Zone',
+    name: 'Exclude',
     category: 'zones',
     type: 'zone',
     defaultWidth: 3,

@@ -2,7 +2,7 @@ import type { CultivarCategory } from './cultivars';
 import speciesData from '../data/species.json';
 
 export type IconType =
-  | 'round-fruit' | 'pepper' | 'eggplant' | 'cucumber' | 'melon'
+  | 'round-fruit' | 'pepper' | 'bell-pepper' | 'eggplant' | 'cucumber' | 'melon'
   | 'squash' | 'leaf-rosette' | 'carrot' | 'radish' | 'potato'
   | 'herb-sprig' | 'strawberry' | 'pea-pod' | 'bean';
 
