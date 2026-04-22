@@ -15,11 +15,10 @@ import {
 import { usePlantingTree } from './usePlantingTree';
 
 interface Props {
-  onDragStart: (entry: PaletteEntry, e: React.DragEvent) => void;
-  onDragEnd?: () => void;
+  onDragBegin: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
-export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
+export function ObjectPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
   const { theme, transitionDuration: dur } = useActiveTheme();
   const filtered = search
@@ -67,8 +66,7 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
                         <PlantingLeafRow
                           key={node.entry.id}
                           entry={node.entry}
-                          onDragStart={onDragStart}
-                          onDragEnd={onDragEnd}
+                          onDragBegin={onDragBegin}
                         />
                       );
                     }
@@ -88,8 +86,7 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
                             <PlantingChildRow
                               key={child.entry.id}
                               entry={child.entry}
-                              onDragStart={onDragStart}
-                              onDragEnd={onDragEnd}
+                              onDragBegin={onDragBegin}
                             />
                           ))}
                       </div>
@@ -116,8 +113,7 @@ export function ObjectPalette({ onDragStart, onDragEnd }: Props) {
                   <PaletteItem
                     key={item.id}
                     entry={item}
-                    onDragStart={onDragStart}
-                    onDragEnd={onDragEnd}
+                    onDragBegin={onDragBegin}
                   />
                 ))}
               </div>

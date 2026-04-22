@@ -1,8 +1,15 @@
 import { create } from 'zustand';
-import type { LayerId } from '../model/types';
+import type { Planting, Structure, Zone, LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 
 export type ViewMode = 'select' | 'pan' | 'zoom' | 'draw';
+
+export interface DragOverlay {
+  layer: 'plantings' | 'structures' | 'zones';
+  objects: (Planting | Structure | Zone)[];
+  hideIds: string[];
+  snapped: boolean;
+}
 
 type LayerRecord<T> = Record<LayerId, T>;
 
@@ -31,6 +38,9 @@ interface UiStore {
   magentaHighlight: boolean;
   layerFlashCounter: number;
   viewMode: ViewMode;
+  dragOverlay: DragOverlay | null;
+  setDragOverlay: (overlay: DragOverlay) => void;
+  clearDragOverlay: () => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
   setShowSurfaces: (show: boolean) => void;
   setShowPlantingSpacing: (show: boolean) => void;
@@ -74,6 +84,9 @@ export const useUiStore = create<UiStore>((set) => ({
   magentaHighlight: false,
   layerFlashCounter: 0,
   viewMode: 'select',
+  dragOverlay: null,
+  setDragOverlay: (overlay) => set({ dragOverlay: overlay }),
+  clearDragOverlay: () => set({ dragOverlay: null }),
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
   setShowSurfaces: (show) => set({ showSurfaces: show }),
   setShowPlantingSpacing: (show) => set({ showPlantingSpacing: show }),
@@ -120,5 +133,6 @@ export const useUiStore = create<UiStore>((set) => ({
       magentaHighlight: false,
       layerFlashCounter: 0,
       viewMode: 'select',
+      dragOverlay: null,
     }),
 }));

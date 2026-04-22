@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayerSelector } from '../components/LayerSelector';
 import { ReturnToGarden } from '../components/ReturnToGarden';
 import { ScaleIndicator } from '../components/ScaleIndicator';
-import type { PaletteEntry } from '../components/palette/paletteData';
 import { ViewToolbar } from '../components/ViewToolbar';
-import { computeSlots } from '../model/arrangement';
 import type { Planting, Structure, Zone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { screenToWorld, snapToGrid, worldToScreen } from '../utils/grid';
+import { screenToWorld } from '../utils/grid';
 import { handleCursor, hitTestAllLayers, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
 import { useAutoCenter } from './hooks/useAutoCenter';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
@@ -27,59 +25,7 @@ import { useCanvasSize } from './useCanvasSize';
 import { computeWheelAction } from './wheelHandler';
 import { ZoneLayerRenderer } from './ZoneLayerRenderer';
 
-/**
- * Determine where to place a new planting inside a parent.
- * If the parent has an arrangement (not 'free'), find the next open slot.
- * Otherwise, use the raw drop position relative to the parent.
- */
-function getPlantingPosition(
-  parent: { x: number; y: number; width: number; height: number; arrangement: import('../model/arrangement').Arrangement | null; shape?: string },
-  existing: Planting[],
-  worldX: number,
-  worldY: number,
-  cellSize: number,
-): { x: number; y: number } {
-  const arrangement = parent.arrangement;
-  if (!arrangement || arrangement.type === 'free') {
-    return {
-      x: snapToGrid(worldX - parent.x, cellSize),
-      y: snapToGrid(worldY - parent.y, cellSize),
-    };
-  }
-
-  const bounds = {
-    x: parent.x,
-    y: parent.y,
-    width: parent.width,
-    height: parent.height,
-    shape: (parent.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
-  };
-
-  const slots = computeSlots(arrangement, bounds);
-  const occupiedSet = new Set(existing.map(p => `${p.x},${p.y}`));
-
-  // Find first open slot
-  for (const slot of slots) {
-    const relX = slot.x - parent.x;
-    const relY = slot.y - parent.y;
-    if (!occupiedSet.has(`${relX},${relY}`)) {
-      return { x: relX, y: relY };
-    }
-  }
-
-  // All slots full — place at drop position
-  return {
-    x: snapToGrid(worldX - parent.x, cellSize),
-    y: snapToGrid(worldY - parent.y, cellSize),
-  };
-}
-
-interface CanvasStackProps {
-  draggingEntry: PaletteEntry | null;
-  onDragEnd: () => void;
-}
-
-export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
+export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
   const blueprintCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -107,6 +53,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   const showSurfaces = useUiStore((s) => s.showSurfaces);
   const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
   const viewMode = useUiStore((s) => s.viewMode);
+  const overlay = useUiStore((s) => s.dragOverlay);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
   const structureRenderer = useRef<StructureLayerRenderer>(null!);
@@ -152,11 +99,6 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   }, [layerSelectorHovered, activeLayer]);
 
   const [activeCursor, setActiveCursor] = useState<string | null>(null);
-  const [dragGhost, setDragGhost] = useState<{
-    entry: PaletteEntry;
-    screenX: number;
-    screenY: number;
-  } | null>(null);
 
   const view = { panX, panY, zoom };
 
@@ -174,11 +116,13 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         plot.cancel();
+        moveInteraction.cancel();
+        setActiveCursor(null);
       }
     }
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [plot]);
+  }, [plot, moveInteraction]);
 
   // --- Layer rendering ---
   useLayerEffect(
@@ -241,40 +185,59 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   zoneRenderer.current.opacity = layerOpacity.zones;
   zoneRenderer.current.setView(view, width, height);
 
-  const snapState = moveInteraction.putativeSnap.current;
   plantingRenderer.current.plantings = garden.plantings;
   plantingRenderer.current.zones = garden.zones;
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
   plantingRenderer.current.showSpacing = showPlantingSpacing;
-  plantingRenderer.current.ghost = snapState
-    ? (() => {
-        const p = garden.plantings.find((pl) => pl.id === selectedIds[0]);
-        return p ? { cultivarId: p.cultivarId, containerId: snapState.containerId, slotX: snapState.slotX, slotY: snapState.slotY } : null;
-      })()
-    : null;
   plantingRenderer.current.setView(view, width, height);
+
+  plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
+  structureRenderer.current.hideIds = overlay?.layer === 'structures' ? overlay.hideIds : [];
+  zoneRenderer.current.hideIds = overlay?.layer === 'zones' ? overlay.hideIds : [];
+
+  if (overlay?.layer === 'plantings') {
+    plantingRenderer.current.overlayPlantings = overlay.objects as Planting[];
+    plantingRenderer.current.overlaySnapped = overlay.snapped;
+  } else {
+    plantingRenderer.current.overlayPlantings = [];
+    plantingRenderer.current.overlaySnapped = false;
+  }
+  if (overlay?.layer === 'structures') {
+    structureRenderer.current.overlayStructures = overlay.objects as Structure[];
+    structureRenderer.current.overlaySnapped = overlay.snapped;
+  } else {
+    structureRenderer.current.overlayStructures = [];
+    structureRenderer.current.overlaySnapped = false;
+  }
+  if (overlay?.layer === 'zones') {
+    zoneRenderer.current.overlayZones = overlay.objects as Zone[];
+    zoneRenderer.current.overlaySnapped = overlay.snapped;
+  } else {
+    zoneRenderer.current.overlayZones = [];
+    zoneRenderer.current.overlaySnapped = false;
+  }
 
   useLayerEffect(
     structureCanvasRef, width, height, dpr,
     layerVisibility.structures,
     (ctx) => structureRenderer.current.render(ctx),
-    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, structureRenderer.current.highlight],
+    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, structureRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
     zoneCanvasRef, width, height, dpr,
     layerVisibility.zones,
     (ctx) => zoneRenderer.current.render(ctx),
-    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, zoneRenderer.current.highlight],
+    [garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, zoneRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, plantingRenderer.current.ghost],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
@@ -498,101 +461,6 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     e.preventDefault();
   }, []);
 
-  const handleDragOver = useCallback(
-    (e: React.DragEvent) => {
-      if (e.dataTransfer.types.includes('application/garden-object')) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        if (draggingEntry) {
-          setDragGhost({
-            entry: draggingEntry,
-            screenX: e.clientX - rect.left,
-            screenY: e.clientY - rect.top,
-          });
-        }
-      }
-    },
-    [draggingEntry],
-  );
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear when actually leaving the container, not entering a child
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    setDragGhost(null);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragGhost(null);
-      onDragEnd();
-      const raw = e.dataTransfer.getData('application/garden-object');
-      if (!raw) return;
-
-      let entry: PaletteEntry;
-      try {
-        entry = JSON.parse(raw) as PaletteEntry;
-      } catch {
-        return;
-      }
-
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-
-      const { panX, panY, zoom } = useUiStore.getState();
-      const view = { panX, panY, zoom };
-      const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, view);
-
-      const { garden, addStructure, addZone, addPlanting } = useGardenStore.getState();
-      const cellSize = garden.gridCellSizeFt;
-
-      const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
-      const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
-
-      if (entry.category === 'structures') {
-        addStructure({
-          type: entry.type,
-          x: snappedX,
-          y: snappedY,
-          width: entry.defaultWidth,
-          height: entry.defaultHeight,
-        });
-      } else if (entry.category === 'zones') {
-        addZone({
-          x: snappedX,
-          y: snappedY,
-          width: entry.defaultWidth,
-          height: entry.defaultHeight,
-        });
-      } else if (entry.category === 'plantings') {
-        // Find a container structure or zone under the drop point
-        const container = garden.structures.find(
-          (s) =>
-            s.container &&
-            worldX >= s.x && worldX <= s.x + s.width &&
-            worldY >= s.y && worldY <= s.y + s.height,
-        );
-        const zone = garden.zones.find(
-          (z) =>
-            worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.height,
-        );
-        const parent: (Structure | Zone) | undefined = container ?? zone;
-        if (parent) {
-          const pos = getPlantingPosition(parent, garden.plantings.filter(p => p.parentId === parent.id), worldX, worldY, cellSize);
-          addPlanting({
-            parentId: parent.id,
-            x: pos.x,
-            y: pos.y,
-            cultivarId: entry.id,
-          });
-        }
-      }
-    },
-    [onDragEnd],
-  );
-
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
@@ -617,31 +485,6 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     },
     [setZoom, setPan],
   );
-
-  const ghostStyle = useMemo(() => {
-    if (!dragGhost) return null;
-    const { entry, screenX, screenY } = dragGhost;
-    if (entry.defaultWidth === 0 || entry.defaultHeight === 0) return null;
-    const { panX, panY, zoom } = useUiStore.getState();
-    const cellSize = useGardenStore.getState().garden.gridCellSizeFt;
-    const [worldX, worldY] = screenToWorld(screenX, screenY, { panX, panY, zoom });
-    const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
-    const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
-    const [sx, sy] = worldToScreen(snappedX, snappedY, { panX, panY, zoom });
-    return {
-      position: 'absolute' as const,
-      left: sx,
-      top: sy,
-      width: entry.defaultWidth * zoom,
-      height: entry.defaultHeight * zoom,
-      backgroundColor: entry.color,
-      opacity: 0.4,
-      border: '2px dashed rgba(255,255,255,0.6)',
-      borderRadius: 2,
-      pointerEvents: 'none' as const,
-      zIndex: 10,
-    };
-  }, [dragGhost]);
 
   const canvasStyle = {
     position: 'absolute' as const,
@@ -676,9 +519,6 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
       onMouseUp={handleMouseUp}
       onContextMenu={handleContextMenu}
       onWheel={handleWheel}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
     >
       <canvas ref={gridCanvasRef} style={{ ...canvasStyle, mixBlendMode: 'multiply' }} />
       <canvas ref={blueprintCanvasRef} style={canvasStyle} />
@@ -686,7 +526,6 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
       <canvas ref={zoneCanvasRef} style={canvasStyle} />
       <canvas ref={plantingCanvasRef} style={canvasStyle} />
       <canvas ref={selectionCanvasRef} style={canvasStyle} />
-      {ghostStyle && <div style={ghostStyle} />}
       <ReturnToGarden canvasWidth={width} canvasHeight={height} />
       <ScaleIndicator canvasHeight={height} />
       <ViewToolbar />

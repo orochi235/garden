@@ -25,15 +25,6 @@ function rectsOverlap(a: RenderedRect, b: RenderedRect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-export interface GhostPlanting {
-  cultivarId: string;
-  /** Target container ID */
-  containerId: string;
-  /** Slot position relative to target container */
-  slotX: number;
-  slotY: number;
-}
-
 export function renderPlantings(
   ctx: CanvasRenderingContext2D,
   plantings: Planting[],
@@ -45,7 +36,6 @@ export function renderPlantings(
   highlightOpacity: number = 0,
   selectedIds: string[] = [],
   showSpacing: boolean = false,
-  ghost: GhostPlanting | null = null,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -154,50 +144,6 @@ export function renderPlantings(
     }
   }
 
-  // Render ghost planting (putative container snap preview)
-  if (ghost) {
-    const ghostParent = parentMap.get(ghost.containerId);
-    if (ghostParent) {
-      const cultivar = getCultivar(ghost.cultivarId);
-      const color = cultivar?.color ?? '#4A7C59';
-      const footprint = cultivar?.footprintFt ?? 0.5;
-
-      const ghostWorldX = ghostParent.x + ghost.slotX;
-      const ghostWorldY = ghostParent.y + ghost.slotY;
-      const [gsx, gsy] = worldToScreen(ghostWorldX, ghostWorldY, view);
-
-      // Check if this would be single-fill
-      const existingCount = childCount.get(ghost.containerId) ?? 0;
-      const wouldBeSingle = ghostParent.arrangement?.type === 'single' && existingCount === 0;
-      const radius = wouldBeSingle
-        ? Math.max(3, (Math.min(ghostParent.width, ghostParent.height) / 2) * view.zoom)
-        : Math.max(3, (footprint / 2) * view.zoom);
-      const shape = wouldBeSingle && ghostParent.shape === 'circle' ? 'circle' as const : 'square' as const;
-
-      ctx.save();
-      ctx.globalAlpha = 0.4;
-      ctx.translate(gsx, gsy);
-      renderPlant(ctx, ghost.cultivarId, radius, color, shape);
-      ctx.restore();
-
-      // Dashed outline around ghost
-      ctx.save();
-      ctx.globalAlpha = 0.6;
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      if (shape === 'circle') {
-        ctx.arc(gsx, gsy, radius + 1, 0, Math.PI * 2);
-      } else {
-        ctx.rect(gsx - radius - 1, gsy - radius - 1, (radius + 1) * 2, (radius + 1) * 2);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
-  }
-
   // Second pass: render labels that don't overlap other objects
   ctx.fillStyle = '#1A2E22';
   ctx.font = '13px sans-serif';
@@ -214,4 +160,73 @@ export function renderPlantings(
     occupied.push(label.rect);
   }
 
+}
+
+export function renderOverlayPlantings(
+  ctx: CanvasRenderingContext2D,
+  plantings: Planting[],
+  zones: Zone[],
+  structures: Structure[],
+  view: ViewTransform,
+  snapped: boolean,
+): void {
+  if (plantings.length === 0) return;
+
+  // Build parent lookup map from zones and container structures
+  const parentMap = new Map<string, PlantingParent>();
+  for (const zone of zones) {
+    parentMap.set(zone.id, zone);
+  }
+  for (const s of structures) {
+    if (s.container) parentMap.set(s.id, s);
+  }
+
+  // Count plantings per parent to detect single-plant containers
+  const childCount = new Map<string, number>();
+  for (const p of plantings) {
+    childCount.set(p.parentId, (childCount.get(p.parentId) ?? 0) + 1);
+  }
+
+  for (const p of plantings) {
+    const parent = parentMap.get(p.parentId);
+    if (!parent) continue;
+    const cultivar = getCultivar(p.cultivarId);
+    const color = cultivar?.color ?? '#4A7C59';
+    const footprint = cultivar?.footprintFt ?? 0.5;
+
+    const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+
+    // Overlay plantings already have world coords — don't add parent offset
+    const worldX = p.x;
+    const worldY = p.y;
+    const [sx, sy] = worldToScreen(worldX, worldY, view);
+    const radius = isSingleFill
+      ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom)
+      : Math.max(3, (footprint / 2) * view.zoom);
+
+    const shape = isSingleFill && parent.shape === 'circle' ? 'circle' as const : 'square' as const;
+
+    ctx.save();
+    if (snapped) ctx.globalAlpha = 0.4;
+    ctx.translate(sx, sy);
+    renderPlant(ctx, p.cultivarId, radius, color, shape);
+    ctx.restore();
+
+    if (snapped) {
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      if (shape === 'circle') {
+        ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
+      } else {
+        ctx.rect(sx - radius - 1, sy - radius - 1, (radius + 1) * 2, (radius + 1) * 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
 }
