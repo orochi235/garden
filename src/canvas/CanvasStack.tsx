@@ -364,27 +364,43 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         if (hit) {
           if (e.altKey) {
             // Clone the object and drag the clone
-            const obj =
-              hit.layer === 'structures'
-                ? garden.structures.find((s) => s.id === hit.id)
-                : garden.zones.find((z) => z.id === hit.id);
-            if (obj) {
-              const { addStructure, addZone } = useGardenStore.getState();
-              if (hit.layer === 'structures') {
-                addStructure({ type: (obj as typeof garden.structures[0]).type, x: obj.x, y: obj.y, width: obj.width, height: obj.height });
-                // The new structure is the last one added
-                const newStructures = useGardenStore.getState().garden.structures;
-                const clone = newStructures[newStructures.length - 1];
-                select(clone.id);
-                moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
-              } else {
-                addZone({ x: obj.x, y: obj.y, width: obj.width, height: obj.height });
-                const newZones = useGardenStore.getState().garden.zones;
-                const clone = newZones[newZones.length - 1];
-                select(clone.id);
-                moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
+            if (hit.layer === 'plantings') {
+              const planting = garden.plantings.find((p) => p.id === hit.id);
+              if (planting) {
+                const parent = garden.structures.find((s) => s.id === planting.parentId)
+                  ?? garden.zones.find((z) => z.id === planting.parentId);
+                if (parent) {
+                  const { addPlanting } = useGardenStore.getState();
+                  addPlanting({ parentId: planting.parentId, x: planting.x, y: planting.y, cultivarId: planting.cultivarId });
+                  const newPlantings = useGardenStore.getState().garden.plantings;
+                  const clone = newPlantings[newPlantings.length - 1];
+                  select(clone.id);
+                  moveInteraction.start(worldX, worldY, clone.id, hit.layer, parent.x + clone.x, parent.y + clone.y);
+                  setActiveCursor('copy');
+                }
               }
-              setActiveCursor('copy');
+            } else {
+              const obj =
+                hit.layer === 'structures'
+                  ? garden.structures.find((s) => s.id === hit.id)
+                  : garden.zones.find((z) => z.id === hit.id);
+              if (obj) {
+                const { addStructure, addZone } = useGardenStore.getState();
+                if (hit.layer === 'structures') {
+                  addStructure({ type: (obj as typeof garden.structures[0]).type, x: obj.x, y: obj.y, width: obj.width, height: obj.height });
+                  const newStructures = useGardenStore.getState().garden.structures;
+                  const clone = newStructures[newStructures.length - 1];
+                  select(clone.id);
+                  moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
+                } else {
+                  addZone({ x: obj.x, y: obj.y, width: obj.width, height: obj.height });
+                  const newZones = useGardenStore.getState().garden.zones;
+                  const clone = newZones[newZones.length - 1];
+                  select(clone.id);
+                  moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
+                }
+                setActiveCursor('copy');
+              }
             }
           } else if (e.shiftKey) {
             addToSelection(hit.id);
