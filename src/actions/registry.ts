@@ -7,6 +7,7 @@ import { pasteAction } from './editing/paste';
 import { selectAllAction } from './editing/selectAll';
 import { cycleSelectionNextAction, cycleSelectionPrevAction } from './editing/cycleSelection';
 import { cycleViewModeAction } from './view/cycleViewMode';
+import { resetViewAction } from './view/resetView';
 import { cycleLayerDownAction, cycleLayerUpAction } from './layers/cycleLayer';
 import { rotateCwAction, rotateCcwAction } from './objects/rotate';
 import { duplicateAction } from './objects/duplicate';
@@ -21,6 +22,7 @@ export const allActions: ActionDescriptor[] = [
   cycleSelectionNextAction,
   cycleSelectionPrevAction,
   cycleViewModeAction,
+  resetViewAction,
   cycleLayerDownAction,
   cycleLayerUpAction,
   rotateCwAction,

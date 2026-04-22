@@ -72,39 +72,23 @@ function normalizeHatchColor(hex: string): string {
 export type PlantShape = 'square' | 'circle';
 
 function drawHatch(ctx: CanvasRenderingContext2D, radius: number, color: string, shape: PlantShape = 'square'): void {
-  const hatchColor = normalizeHatchColor(color);
-  const size = radius * 2;
+  const fillColor = normalizeHatchColor(color);
   const half = radius;
+  const size = radius * 2;
 
   ctx.save();
-
-  // Clip to shape
-  ctx.beginPath();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = fillColor;
   if (shape === 'circle') {
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-  } else {
-    ctx.rect(-half, -half, size, size);
-  }
-  ctx.clip();
-
-  // Diagonal lines
-  ctx.strokeStyle = hatchColor;
-  ctx.lineWidth = Math.max(1, radius * 0.08);
-  ctx.globalAlpha = 0.55;
-  const spacing = Math.max(3, radius * 0.25);
-  const span = size * 2;
-  for (let d = -span; d <= span; d += spacing) {
     ctx.beginPath();
-    ctx.moveTo(d - half, -half);
-    ctx.lineTo(d + half, half);
-    ctx.stroke();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillRect(-half, -half, size, size);
   }
-  ctx.globalAlpha = 1;
-
-  // Border
-  ctx.strokeStyle = hatchColor;
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = fillColor;
   ctx.lineWidth = Math.max(1, radius * 0.06);
-  ctx.globalAlpha = 0.7;
   if (shape === 'circle') {
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -113,7 +97,6 @@ function drawHatch(ctx: CanvasRenderingContext2D, radius: number, color: string,
     ctx.strokeRect(-half, -half, size, size);
   }
   ctx.globalAlpha = 1;
-
   ctx.restore();
 }
 
