@@ -1,6 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { useUiStore } from '../../store/uiStore';
 
+/** Compute zoom and pan values that fit the garden within the viewport. */
+export function computeFitView(
+  viewportW: number,
+  viewportH: number,
+  gardenWidthFt: number,
+  gardenHeightFt: number,
+): { zoom: number; panX: number; panY: number } {
+  const padding = 0.85;
+  const zoom = Math.min(
+    (viewportW * padding) / gardenWidthFt,
+    (viewportH * padding) / gardenHeightFt,
+  );
+  const gardenW = gardenWidthFt * zoom;
+  const gardenH = gardenHeightFt * zoom;
+  return { zoom, panX: (viewportW - gardenW) / 2, panY: (viewportH - gardenH) / 2 };
+}
+
 export function useAutoCenter(
   width: number,
   height: number,
@@ -13,15 +30,9 @@ export function useAutoCenter(
   useEffect(() => {
     if (width > 0 && height > 0 && !hasCentered.current) {
       hasCentered.current = true;
-      const padding = 0.85;
-      const fitZoom = Math.min(
-        (width * padding) / gardenWidthFt,
-        (height * padding) / gardenHeightFt,
-      );
-      useUiStore.getState().setZoom(fitZoom);
-      const gardenW = gardenWidthFt * fitZoom;
-      const gardenH = gardenHeightFt * fitZoom;
-      setPan((width - gardenW) / 2, (height - gardenH) / 2);
+      const fit = computeFitView(width, height, gardenWidthFt, gardenHeightFt);
+      useUiStore.getState().setZoom(fit.zoom);
+      setPan(fit.panX, fit.panY);
     }
   }, [width, height, gardenWidthFt, gardenHeightFt, setPan]);
 }

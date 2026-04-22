@@ -1,4 +1,6 @@
 import type { JSX } from 'react';
+import { computeFitView } from '../canvas/hooks/useAutoCenter';
+import { useGardenStore } from '../store/gardenStore';
 import type { ViewMode } from '../store/uiStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/ViewToolbar.module.css';
@@ -82,6 +84,15 @@ export function ViewToolbar() {
   const setViewMode = useUiStore((s) => s.setViewMode);
   const setZoom = useUiStore((s) => s.setZoom);
   const setPan = useUiStore((s) => s.setPan);
+  const garden = useGardenStore((s) => s.garden);
+
+  function handleZoomReset() {
+    const el = document.querySelector('[data-canvas-container]');
+    if (!el) return;
+    const fit = computeFitView(el.clientWidth, el.clientHeight, garden.widthFt, garden.heightFt);
+    setZoom(fit.zoom);
+    setPan(fit.panX, fit.panY);
+  }
 
   return (
     <div className={styles.container}>
@@ -90,7 +101,7 @@ export function ViewToolbar() {
           key={t.mode}
           className={`${styles.button} ${viewMode === t.mode ? styles.active : ''}`}
           onClick={() => setViewMode(t.mode)}
-          onDoubleClick={t.mode === 'zoom' ? () => { setZoom(1); setPan(0, 0); } : undefined}
+          onDoubleClick={t.mode === 'zoom' ? handleZoomReset : undefined}
           title={t.label}
         >
           <span className={styles.icon}>{icons[t.mode]}</span>

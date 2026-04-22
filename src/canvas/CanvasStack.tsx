@@ -617,6 +617,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   return (
     <div
       ref={containerRef}
+      data-canvas-container
       style={{
         width: '100%',
         height: '100%',
