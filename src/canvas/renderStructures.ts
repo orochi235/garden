@@ -12,8 +12,9 @@ export function renderStructures(
   canvasHeight: number,
   highlightOpacity: number = 0,
   showSurfaces: boolean = false,
+  skipClear: boolean = false,
 ): void {
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
 
   const sorted = [...structures].sort((a, b) => a.zIndex - b.zIndex);

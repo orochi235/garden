@@ -12,8 +12,9 @@ export function renderZones(
   canvasHeight: number,
   highlightOpacity: number = 0,
   patternOverride: PatternId | null = null,
+  skipClear: boolean = false,
 ): void {
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (zones.length === 0) return;
 
   const sorted = [...zones].sort((a, b) => a.zIndex - b.zIndex);

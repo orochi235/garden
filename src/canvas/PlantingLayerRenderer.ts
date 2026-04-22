@@ -1,6 +1,6 @@
 import type { Planting, Structure, Zone } from '../model/types';
 import { LayerRenderer } from './LayerRenderer';
-import { renderPlantings, type GhostPlanting } from './renderPlantings';
+import { renderOverlayPlantings, renderPlantings, type GhostPlanting } from './renderPlantings';
 
 export class PlantingLayerRenderer extends LayerRenderer {
   plantings: Planting[] = [];
@@ -10,6 +10,8 @@ export class PlantingLayerRenderer extends LayerRenderer {
   showSpacing: boolean = false;
   ghost: GhostPlanting | null = null;
   hideIds: string[] = [];
+  overlayPlantings: Planting[] = [];
+  overlaySnapped: boolean = false;
 
   protected draw(ctx: CanvasRenderingContext2D): void {
     const visiblePlantings = this.hideIds.length > 0
@@ -28,5 +30,8 @@ export class PlantingLayerRenderer extends LayerRenderer {
       this.showSpacing,
       this.ghost,
     );
+    if (this.overlayPlantings.length > 0) {
+      renderOverlayPlantings(ctx, this.overlayPlantings, this.zones, this.structures, this.view, this.overlaySnapped);
+    }
   }
 }

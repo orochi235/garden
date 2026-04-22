@@ -261,6 +261,28 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   structureRenderer.current.hideIds = overlay?.layer === 'structures' ? overlay.hideIds : [];
   zoneRenderer.current.hideIds = overlay?.layer === 'zones' ? overlay.hideIds : [];
 
+  if (overlay?.layer === 'plantings') {
+    plantingRenderer.current.overlayPlantings = overlay.objects as Planting[];
+    plantingRenderer.current.overlaySnapped = overlay.snapped;
+  } else {
+    plantingRenderer.current.overlayPlantings = [];
+    plantingRenderer.current.overlaySnapped = false;
+  }
+  if (overlay?.layer === 'structures') {
+    structureRenderer.current.overlayStructures = overlay.objects as Structure[];
+    structureRenderer.current.overlaySnapped = overlay.snapped;
+  } else {
+    structureRenderer.current.overlayStructures = [];
+    structureRenderer.current.overlaySnapped = false;
+  }
+  if (overlay?.layer === 'zones') {
+    zoneRenderer.current.overlayZones = overlay.objects as Zone[];
+    zoneRenderer.current.overlaySnapped = overlay.snapped;
+  } else {
+    zoneRenderer.current.overlayZones = [];
+    zoneRenderer.current.overlaySnapped = false;
+  }
+
   useLayerEffect(
     structureCanvasRef, width, height, dpr,
     layerVisibility.structures,
