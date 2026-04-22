@@ -385,10 +385,21 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
             select(hit.id);
           }
           if (!e.altKey) {
-            const obj =
-              hit.layer === 'structures'
+            let obj: { x: number; y: number } | undefined;
+            if (hit.layer === 'plantings') {
+              const planting = garden.plantings.find((p) => p.id === hit.id);
+              if (planting) {
+                const parent = garden.structures.find((s) => s.id === planting.parentId)
+                  ?? garden.zones.find((z) => z.id === planting.parentId);
+                if (parent) {
+                  obj = { x: parent.x + planting.x, y: parent.y + planting.y };
+                }
+              }
+            } else {
+              obj = hit.layer === 'structures'
                 ? garden.structures.find((s) => s.id === hit.id)
                 : garden.zones.find((z) => z.id === hit.id);
+            }
             if (obj) {
               moveInteraction.start(worldX, worldY, hit.id, hit.layer, obj.x, obj.y);
               setActiveCursor('move');

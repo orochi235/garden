@@ -81,6 +81,20 @@ export function useMoveInteraction(containerRef: React.RefObject<HTMLDivElement 
       }
     } else if (moveObjectLayer.current === 'zones') {
       updateZone(moveObjectId.current, { x: snappedX, y: snappedY });
+    } else if (moveObjectLayer.current === 'plantings') {
+      const planting = garden.plantings.find((p) => p.id === moveObjectId.current);
+      if (planting) {
+        const parent = garden.structures.find((s) => s.id === planting.parentId)
+          ?? garden.zones.find((z) => z.id === planting.parentId);
+        if (parent) {
+          // Convert world coords back to parent-relative
+          const { updatePlanting } = useGardenStore.getState();
+          updatePlanting(moveObjectId.current, {
+            x: snappedX - parent.x,
+            y: snappedY - parent.y,
+          });
+        }
+      }
     }
     return true;
   }
