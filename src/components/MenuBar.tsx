@@ -33,6 +33,12 @@ export function MenuBar() {
       >
         Garden Planner
       </div>
+      <div className={styles.devNav}>
+        <span className={styles.devLabel}>dev</span>
+        <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>
+        <a href="docs/cultivars.html" target="_blank" rel="noreferrer">Cultivars</a>
+        <a href="docs/themes.html" target="_blank" rel="noreferrer">Themes</a>
+      </div>
       <div className={styles.menus}>
         <span onClick={handleNew}>New</span>
         <span onClick={handleOpen}>Open</span>
