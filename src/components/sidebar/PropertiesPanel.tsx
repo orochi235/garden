@@ -1,5 +1,6 @@
 import type { Arrangement, ArrangementType } from '../../model/arrangement';
 import { defaultArrangement } from '../../model/arrangement';
+import { getCultivar } from '../../model/cultivars';
 import type { FillType } from '../../model/types';
 import { FILL_COLORS } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
@@ -48,7 +49,94 @@ export function PropertiesPanel() {
   const selectedId = selectedIds[0];
   const structure = garden.structures.find((s) => s.id === selectedId);
   const zone = !structure ? garden.zones.find((z) => z.id === selectedId) : undefined;
+  const planting = !structure && !zone ? garden.plantings.find((p) => p.id === selectedId) : undefined;
   const obj = structure ?? zone;
+
+  if (planting) {
+    const cultivar = getCultivar(planting.cultivarId);
+    const parent = garden.structures.find((s) => s.id === planting.parentId)
+      ?? garden.zones.find((z) => z.id === planting.parentId);
+    return (
+      <div className={f.panel}>
+        <div className={f.title}>Planting</div>
+        <div className={f.grid}>
+          <span className={f.label}>Name</span>
+          <span className={`${f.readOnly} ${f.span12}`}>{cultivar?.name ?? planting.cultivarId}</span>
+
+          {cultivar?.variety && (
+            <>
+              <span className={f.label}>Variety</span>
+              <span className={`${f.readOnly} ${f.span12}`}>{cultivar.variety}</span>
+            </>
+          )}
+
+          <span className={f.label}>Species</span>
+          <span className={`${f.readOnly} ${f.span12}`} style={{ fontStyle: 'italic' }}>
+            {cultivar?.taxonomicName ?? ''}
+          </span>
+
+          <span className={f.label}>Label</span>
+          <input
+            className={`${f.input} ${f.span12}`}
+            type="text"
+            value={planting.label}
+            onChange={(e) => useGardenStore.getState().commitPlantingUpdate(selectedId, { label: e.target.value })}
+          />
+
+          <span className={f.label}>Position</span>
+          <span className={`${f.miniLabel} ${f.span2}`}>X</span>
+          <input
+            className={`${f.input} ${f.span4}`}
+            type="number"
+            step="0.1"
+            value={parseFloat(feetToDisplay(planting.x, unit).toFixed(2))}
+            onChange={(e) => useGardenStore.getState().commitPlantingUpdate(selectedId, { x: displayToFeet(parseFloat(e.target.value) || 0, unit) })}
+          />
+          <span className={`${f.miniLabel} ${f.span2}`}>Y</span>
+          <input
+            className={`${f.input} ${f.span4}`}
+            type="number"
+            step="0.1"
+            value={parseFloat(feetToDisplay(planting.y, unit).toFixed(2))}
+            onChange={(e) => useGardenStore.getState().commitPlantingUpdate(selectedId, { y: displayToFeet(parseFloat(e.target.value) || 0, unit) })}
+          />
+
+          {cultivar && (
+            <>
+              <span className={f.label}>Footprint</span>
+              <span className={`${f.readOnly} ${f.span12}`}>
+                {feetToDisplay(cultivar.footprintFt, unit).toFixed(1)} {unit}
+              </span>
+
+              <span className={f.label}>Spacing</span>
+              <span className={`${f.readOnly} ${f.span12}`}>
+                {feetToDisplay(cultivar.spacingFt, unit).toFixed(1)} {unit}
+              </span>
+            </>
+          )}
+
+          {parent && (
+            <>
+              <span className={f.label}>Container</span>
+              <span className={`${f.readOnly} ${f.span12}`}>{parent.label || ('type' in parent ? parent.type : 'zone')}</span>
+            </>
+          )}
+
+          <span className={f.label}></span>
+          <button
+            className={`${f.input} ${f.span12}`}
+            style={{ cursor: 'pointer', textAlign: 'center', color: 'var(--color-terracotta)' }}
+            onClick={() => {
+              useGardenStore.getState().removePlanting(selectedId);
+              useUiStore.getState().clearSelection();
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!obj) {
     return (
