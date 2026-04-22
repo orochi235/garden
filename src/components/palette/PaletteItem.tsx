@@ -9,8 +9,7 @@ import type { PlantingGroupNode } from './usePlantingTree';
 
 interface Props {
   entry: PaletteEntry;
-  onDragStart: (entry: PaletteEntry, e: React.DragEvent) => void;
-  onDragEnd?: () => void;
+  onDragBegin: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
 const ICON_RADIUS = 28;
@@ -39,7 +38,7 @@ function PlantIcon({ cultivarId, color }: { cultivarId: string; color: string })
   return <canvas ref={canvasRef} className={styles.plantIcon} width={64} height={64} />;
 }
 
-export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
+export function PaletteItem({ entry, onDragBegin }: Props) {
   const plottingTool = useUiStore((s) => s.plottingTool);
   const setPlottingTool = useUiStore((s) => s.setPlottingTool);
   const viewMode = useUiStore((s) => s.viewMode);
@@ -64,9 +63,7 @@ export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
   return (
     <div
       className={`${styles.item} ${isActive ? styles.active : ''}`}
-      draggable
-      onDragStart={(e) => onDragStart(entry, e)}
-      onDragEnd={onDragEnd}
+      onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
       onClick={handleClick}
     >
       {entry.category === 'plantings' ? (
@@ -112,17 +109,14 @@ function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: stri
 
 interface LeafRowProps {
   entry: PaletteEntry;
-  onDragStart: (entry: PaletteEntry, e: React.DragEvent) => void;
-  onDragEnd?: () => void;
+  onDragBegin: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
-export function PlantingLeafRow({ entry, onDragStart, onDragEnd }: LeafRowProps) {
+export function PlantingLeafRow({ entry, onDragBegin }: LeafRowProps) {
   return (
     <div
       className={styles.row}
-      draggable
-      onDragStart={(e) => onDragStart(entry, e)}
-      onDragEnd={onDragEnd}
+      onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
     >
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
@@ -154,17 +148,14 @@ export function PlantingParentRow({ node, expanded: _, onToggle }: ParentRowProp
 
 interface ChildRowProps {
   entry: PaletteEntry;
-  onDragStart: (entry: PaletteEntry, e: React.DragEvent) => void;
-  onDragEnd?: () => void;
+  onDragBegin: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
-export function PlantingChildRow({ entry, onDragStart, onDragEnd }: ChildRowProps) {
+export function PlantingChildRow({ entry, onDragBegin }: ChildRowProps) {
   return (
     <div
       className={`${styles.row} ${styles.rowChild}`}
-      draggable
-      onDragStart={(e) => onDragStart(entry, e)}
-      onDragEnd={onDragEnd}
+      onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
     >
       <div className={styles.rowColorDot} style={{ backgroundColor: entry.color }} />
       <span className={styles.rowLabel}>{entry.varietyLabel ?? entry.name}</span>

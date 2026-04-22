@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasStack } from '../canvas/CanvasStack';
 import { useActiveTheme } from '../hooks/useActiveTheme';
+import { createPlanting, createStructure, createZone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
+import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
 import { autosave } from '../utils/file';
+import { screenToWorld, snapToGrid } from '../utils/grid';
+import { getPlantingPosition } from '../utils/planting';
 import { FpsMeter } from './FpsMeter';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
@@ -37,17 +41,191 @@ export function App() {
     autosave(garden);
   }, [garden]);
 
-  const [draggingEntry, setDraggingEntry] = useState<PaletteEntry | null>(null);
+  const handlePaletteDragBegin = useCallback(
+    (entry: PaletteEntry, e: React.PointerEvent) => {
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const target = e.currentTarget as HTMLElement;
+      target.setPointerCapture(e.pointerId);
 
-  function handlePaletteDragStart(entry: PaletteEntry, e: React.DragEvent) {
-    e.dataTransfer.setData('application/garden-object', JSON.stringify(entry));
-    e.dataTransfer.effectAllowed = 'copy';
-    // Minimize the default drag image — we show a custom ghost on the canvas
-    const img = new Image();
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
-    e.dataTransfer.setDragImage(img, 0, 0);
-    setDraggingEntry(entry);
-  }
+      const THRESHOLD = 4;
+      let dragging = false;
+
+      function getCanvasRect() {
+        const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
+        return el?.getBoundingClientRect() ?? null;
+      }
+
+      function updateOverlay(clientX: number, clientY: number) {
+        const rect = getCanvasRect();
+        if (!rect) return;
+        const { panX, panY, zoom } = useUiStore.getState();
+        const [worldX, worldY] = screenToWorld(
+          clientX - rect.left,
+          clientY - rect.top,
+          { panX, panY, zoom },
+        );
+        const { garden } = useGardenStore.getState();
+        const cellSize = garden.gridCellSizeFt;
+
+        if (entry.category === 'structures') {
+          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const obj = createStructure({
+            type: entry.type,
+            x: snappedX,
+            y: snappedY,
+            width: entry.defaultWidth,
+            height: entry.defaultHeight,
+          });
+          useUiStore.getState().setDragOverlay({
+            layer: 'structures',
+            objects: [obj],
+            hideIds: [],
+            snapped: true,
+          });
+        } else if (entry.category === 'zones') {
+          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const obj = createZone({
+            x: snappedX,
+            y: snappedY,
+            width: entry.defaultWidth,
+            height: entry.defaultHeight,
+            color: entry.color,
+            pattern: entry.pattern ?? null,
+          });
+          useUiStore.getState().setDragOverlay({
+            layer: 'zones',
+            objects: [obj],
+            hideIds: [],
+            snapped: true,
+          });
+        } else if (entry.category === 'plantings') {
+          // Find a container under the cursor
+          const container = garden.structures.find(
+            (s) =>
+              s.container &&
+              worldX >= s.x && worldX <= s.x + s.width &&
+              worldY >= s.y && worldY <= s.y + s.height,
+          );
+          const zone = garden.zones.find(
+            (z) =>
+              worldX >= z.x && worldX <= z.x + z.width &&
+              worldY >= z.y && worldY <= z.y + z.height,
+          );
+          const parent = container ?? zone;
+          if (parent) {
+            const pos = getPlantingPosition(
+              parent,
+              garden.plantings.filter((p) => p.parentId === parent.id),
+              worldX,
+              worldY,
+              cellSize,
+            );
+            const obj = createPlanting({
+              parentId: parent.id,
+              x: pos.x,
+              y: pos.y,
+              cultivarId: entry.id,
+            });
+            useUiStore.getState().setDragOverlay({
+              layer: 'plantings',
+              objects: [obj],
+              hideIds: [],
+              snapped: true,
+            });
+          } else {
+            useUiStore.getState().clearDragOverlay();
+          }
+        }
+      }
+
+      function onPointerMove(ev: PointerEvent) {
+        if (!dragging) {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
+          dragging = true;
+        }
+        updateOverlay(ev.clientX, ev.clientY);
+      }
+
+      function onPointerUp(ev: PointerEvent) {
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        target.releasePointerCapture(ev.pointerId);
+
+        if (!dragging) return;
+
+        // Commit the drop
+        const rect = getCanvasRect();
+        if (rect) {
+          const { panX, panY, zoom } = useUiStore.getState();
+          const [worldX, worldY] = screenToWorld(
+            ev.clientX - rect.left,
+            ev.clientY - rect.top,
+            { panX, panY, zoom },
+          );
+          const { garden, addStructure, addZone, addPlanting } = useGardenStore.getState();
+          const cellSize = garden.gridCellSizeFt;
+          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+
+          if (entry.category === 'structures') {
+            addStructure({
+              type: entry.type,
+              x: snappedX,
+              y: snappedY,
+              width: entry.defaultWidth,
+              height: entry.defaultHeight,
+            });
+          } else if (entry.category === 'zones') {
+            addZone({
+              x: snappedX,
+              y: snappedY,
+              width: entry.defaultWidth,
+              height: entry.defaultHeight,
+            });
+          } else if (entry.category === 'plantings') {
+            const container = garden.structures.find(
+              (s) =>
+                s.container &&
+                worldX >= s.x && worldX <= s.x + s.width &&
+                worldY >= s.y && worldY <= s.y + s.height,
+            );
+            const zone = garden.zones.find(
+              (z) =>
+                worldX >= z.x && worldX <= z.x + z.width &&
+                worldY >= z.y && worldY <= z.y + z.height,
+            );
+            const parent = container ?? zone;
+            if (parent) {
+              const pos = getPlantingPosition(
+                parent,
+                garden.plantings.filter((p) => p.parentId === parent.id),
+                worldX,
+                worldY,
+                cellSize,
+              );
+              addPlanting({
+                parentId: parent.id,
+                x: pos.x,
+                y: pos.y,
+                cultivarId: entry.id,
+              });
+            }
+          }
+        }
+
+        useUiStore.getState().clearDragOverlay();
+      }
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+    },
+    [],
+  );
 
   const handleResizeStart = useCallback(
     (side: 'left' | 'right', e: React.MouseEvent) => {
@@ -118,17 +296,14 @@ export function App() {
         <MenuBar />
       </div>
       <div className={styles.palette}>
-        <ObjectPalette
-          onDragStart={handlePaletteDragStart}
-          onDragEnd={() => setDraggingEntry(null)}
-        />
+        <ObjectPalette onDragBegin={handlePaletteDragBegin} />
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.leftHandle}`}
         onMouseDown={(e) => handleResizeStart('left', e)}
       />
       <div className={styles.canvas}>
-        <CanvasStack draggingEntry={draggingEntry} onDragEnd={() => setDraggingEntry(null)} />
+        <CanvasStack />
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.rightHandle}`}
