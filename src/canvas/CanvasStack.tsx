@@ -174,11 +174,13 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         plot.cancel();
+        moveInteraction.cancel();
+        setActiveCursor(null);
       }
     }
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [plot]);
+  }, [plot, moveInteraction]);
 
   // --- Layer rendering ---
   useLayerEffect(
@@ -241,19 +243,12 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   zoneRenderer.current.opacity = layerOpacity.zones;
   zoneRenderer.current.setView(view, width, height);
 
-  const snapState = moveInteraction.putativeSnap.current;
   plantingRenderer.current.plantings = garden.plantings;
   plantingRenderer.current.zones = garden.zones;
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
   plantingRenderer.current.showSpacing = showPlantingSpacing;
-  plantingRenderer.current.ghost = snapState
-    ? (() => {
-        const p = garden.plantings.find((pl) => pl.id === selectedIds[0]);
-        return p ? { cultivarId: p.cultivarId, containerId: snapState.containerId, slotX: snapState.slotX, slotY: snapState.slotY } : null;
-      })()
-    : null;
   plantingRenderer.current.setView(view, width, height);
 
   const overlay = useUiStore.getState().dragOverlay;
@@ -301,7 +296,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, plantingRenderer.current.ghost, overlay],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
