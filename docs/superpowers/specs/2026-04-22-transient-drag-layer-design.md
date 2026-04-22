@@ -22,24 +22,24 @@ Add a `dragOverlay` field to `uiStore`:
 ```ts
 interface DragOverlay {
   layer: 'plantings' | 'structures' | 'zones';
-  /** The object being dragged, with position updated in real time */
-  object: Planting | Structure | Zone;
-  /** ID of the object to hide from normal rendering (null for clones) */
-  hideId: string | null;
-  /** Whether the object is snapped to a container slot */
+  /** The objects being dragged, with positions updated in real time */
+  objects: (Planting | Structure | Zone)[];
+  /** IDs to hide from normal rendering (empty for clones) */
+  hideIds: string[];
+  /** Whether the primary object is snapped to a container slot */
   snapped: boolean;
 }
 ```
 
-- **Moves:** `hideId` is set to the moved object's ID. The garden state is unchanged; the object appears to move because normal rendering hides it and the overlay renders it at the cursor position.
-- **Clones:** `hideId` is null. The clone exists only in the overlay until drop. The source container's child count is unaffected, preserving single-plant rendering.
-- **Snaps:** When dwell/proximity detection fires, the overlay object's position is updated to the snap slot and `snapped` is set to `true`. The renderer draws it ghosted (reduced opacity, dashed outline). This replaces the separate `GhostPlanting` mechanism.
+- **Moves:** `hideIds` contains the moved object's ID (plus children if dragging a parent structure). The garden state is unchanged; the objects appear to move because normal rendering hides them and the overlay renders them at cursor-relative positions.
+- **Clones:** `hideIds` is empty. The clone exists only in the overlay until drop. The source container's child count is unaffected, preserving single-plant rendering.
+- **Snaps:** When dwell/proximity detection fires, the primary overlay object's position is updated to the snap slot and `snapped` is set to `true`. The renderer draws it ghosted (reduced opacity, dashed outline). This replaces the separate `GhostPlanting` mechanism.
 
 ### Changes to useMoveInteraction
 
 **`activateDrag()`** — Instead of calling `checkpoint()` or `addPlanting()`:
-- For moves: snapshot the object from garden state, set `dragOverlay` with `hideId`.
-- For clones: create a transient object (using `createPlanting`/etc. for ID generation), set `dragOverlay` with `hideId: null`.
+- For moves: snapshot the object (and children if applicable) from garden state, set `dragOverlay` with `hideIds`.
+- For clones: create a transient object (using `createPlanting`/etc. for ID generation), set `dragOverlay` with `hideIds: []`.
 - No garden mutation. No history push.
 
 **`move()`** — Instead of calling `updatePlanting()`/`updateStructure()`/`updateZone()`:
@@ -61,11 +61,11 @@ interface DragOverlay {
 ### Changes to rendering
 
 **PlantingLayerRenderer:**
-- Receives `hideId: string | null` and filters that ID from its plantings array before rendering.
+- Receives `hideIds: string[]` and filters those IDs from its plantings array before rendering.
 - The `ghost: GhostPlanting | null` field and related code is removed.
 
 **StructureLayerRenderer / ZoneLayerRenderer:**
-- Same pattern: receive `hideId`, filter it out.
+- Same pattern: receive `hideIds`, filter them out.
 
 **Overlay rendering:**
 - The overlay object is drawn on the same canvas as its layer (e.g., planting overlay draws on the planting canvas, after the normal plantings). No new canvas element needed.
@@ -81,20 +81,44 @@ interface DragOverlay {
 - **Container collision detection:** For structures, collision checks still run against garden state (which is correct — the dragged structure is excluded via `hideId`).
 - **Child structure movement:** When dragging a parent structure, child structures still need to move with it. This continues to work by updating their positions in the overlay or by batching their updates at commit time.
 
-### Child structure handling
+### Multiple overlay objects
 
-When dragging a structure that has children (nested structures), the children need to visually move with the parent. Two options:
+The overlay holds an array of objects rather than a single object. This handles:
+- Dragging a parent structure with its children (all move together)
+- Future multi-select drag (arbitrary set of objects)
 
-**Option A — Multiple overlay entries:** Expand `dragOverlay` to hold an array of objects. The parent and all children are in the overlay, all hidden from garden rendering, all updated together during `move()`.
+All overlay objects are hidden from normal rendering and updated together during `move()`. The `hideId` field becomes `hideIds: string[]` accordingly.
 
-**Option B — Render-time offset:** Only the parent is in the overlay. Children remain in the garden but the renderer applies a delta offset based on the parent's overlay position vs. its garden position.
+### Palette drag unification
 
-Option B is simpler and avoids changing the overlay shape. The delta is just `overlay.x - garden.x` for the parent, applied to each child at render time. Use Option B.
+Palette drags currently use the browser's native drag API (`draggable`, `onDragOver`, `onDrop`) with a CSS-positioned ghost div for preview. This is replaced with pointer-event-based dragging that uses the same overlay mechanism as canvas drags.
+
+**Changes to palette items:**
+- Replace `draggable` / `onDragStart` / `onDragEnd` with `onPointerDown`.
+- On pointer down, capture the pointer and begin tracking.
+- Once the cursor enters the canvas area (or crosses a drag threshold), create the transient object in the overlay with `hideIds: []` (it's a new object, nothing to hide).
+
+**Changes to CanvasStack:**
+- Remove `handleDragOver`, `handleDragLeave`, `handleDrop`, the `dragGhost` state, and the `ghostStyle` CSS ghost div.
+- Palette drops are handled the same as clone drops: `end()` commits the overlay object to the garden.
+
+**Changes to App:**
+- Remove `draggingEntry` state and the prop plumbing between `ObjectPalette` and `CanvasStack`.
+
+**Behavior differences from current palette drag:**
+- The object renders on the canvas (via the overlay) during the drag instead of as a CSS div. This means it respects zoom, grid snapping, and layer rendering.
+- For plantings, snap detection (dwell/proximity) works during palette drag, giving a live preview of where the plant will land in a container.
+- For structures/zones, the object snaps to the grid in real time.
+- If the drag ends outside a valid drop target (e.g., planting not over a container), the overlay is cleared with no garden mutation.
 
 ## Scope
 
-This refactor is internal to the drag interaction and rendering pipeline. No changes to:
+This refactor covers:
+- Canvas drag interactions (move, clone, snap)
+- Palette-to-canvas drag interactions
+- Ghost/preview rendering unification
+
+No changes to:
 - Garden data model
 - Persistence / serialization
-- Palette drag-and-drop (which creates objects on drop, not during drag)
 - Keyboard shortcuts or other interactions
