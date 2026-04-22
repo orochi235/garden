@@ -65,8 +65,8 @@ export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
     <div
       className={`${styles.item} ${isActive ? styles.active : ''}`}
       draggable
-      onDragStart={(e) => onDragStart(entry, e)}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => { e.currentTarget.classList.add(styles.dragging); onDragStart(entry, e); }}
+      onDragEnd={(e) => { e.currentTarget.classList.remove(styles.dragging); onDragEnd?.(); }}
       onClick={handleClick}
     >
       {entry.category === 'plantings' ? (
@@ -121,8 +121,8 @@ export function PlantingLeafRow({ entry, onDragStart, onDragEnd }: LeafRowProps)
     <div
       className={styles.row}
       draggable
-      onDragStart={(e) => onDragStart(entry, e)}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => { e.currentTarget.classList.add(styles.dragging); onDragStart(entry, e); }}
+      onDragEnd={(e) => { e.currentTarget.classList.remove(styles.dragging); onDragEnd?.(); }}
     >
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
@@ -163,8 +163,8 @@ export function PlantingChildRow({ entry, onDragStart, onDragEnd }: ChildRowProp
     <div
       className={`${styles.row} ${styles.rowChild}`}
       draggable
-      onDragStart={(e) => onDragStart(entry, e)}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => { e.currentTarget.classList.add(styles.dragging); onDragStart(entry, e); }}
+      onDragEnd={(e) => { e.currentTarget.classList.remove(styles.dragging); onDragEnd?.(); }}
     >
       <div className={styles.rowColorDot} style={{ backgroundColor: entry.color }} />
       <span className={styles.rowLabel}>{entry.varietyLabel ?? entry.name}</span>
