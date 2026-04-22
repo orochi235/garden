@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import { findSnapContainer } from '../findSnapContainer';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { createPlanting } from '../../model/types';
+import type { Planting, Structure } from '../../model/types';
 import { screenToWorld, snapToGrid } from '../../utils/grid';
 import { structuresCollide } from '../../utils/collision';
 
@@ -30,8 +32,9 @@ export function useMoveInteraction(
   const moveObjectId = useRef<string | null>(null);
   const moveObjectLayer = useRef<string | null>(null);
   const forceSnap = useRef(false);
-  const isClone = useRef(false);
-  const pendingClone = useRef<{
+
+  // Clone data replaces old pendingClone + isClone refs
+  const cloneData = useRef<{
     parentId: string;
     x: number;
     y: number;
@@ -39,11 +42,9 @@ export function useMoveInteraction(
     parentWorldX: number;
     parentWorldY: number;
   } | null>(null);
-  const childStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // Original planting position for snap-back detection
-  const originalPlantingPos = useRef<{ relX: number; relY: number; parentId: string } | null>(null);
-  const isAtOriginalPos = useRef(false);
+  // Map of child ID -> {dx, dy} offset from primary object
+  const childOffsets = useRef<Map<string, { dx: number; dy: number }>>(new Map());
 
   // Container snap state
   const dwellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,50 +64,97 @@ export function useMoveInteraction(
     putativeSnap.current = null;
   }
 
+  function cleanup() {
+    clearSnap();
+    isMoving.current = false;
+    isPending.current = false;
+    cloneData.current = null;
+    moveObjectId.current = null;
+    moveObjectLayer.current = null;
+    childOffsets.current.clear();
+  }
+
   function activateDrag() {
     isPending.current = false;
     isMoving.current = true;
 
-    // Create deferred clone before checkpoint so undo reverts both in one step
-    if (pendingClone.current) {
-      const clone = pendingClone.current;
-      const { addPlanting } = useGardenStore.getState();
-      addPlanting({ parentId: clone.parentId, x: clone.x, y: clone.y, cultivarId: clone.cultivarId });
-      const newPlantings = useGardenStore.getState().garden.plantings;
-      const created = newPlantings[newPlantings.length - 1];
-      moveObjectId.current = created.id;
-      moveStart.current.objX = clone.parentWorldX + created.x;
-      moveStart.current.objY = clone.parentWorldY + created.y;
-      useUiStore.getState().select(created.id);
-      pendingClone.current = null;
-    } else {
-      useGardenStore.getState().checkpoint();
-    }
+    const { garden } = useGardenStore.getState();
+    const layer = moveObjectLayer.current;
 
-    // Capture original planting position for snap-back
-    originalPlantingPos.current = null;
-    isAtOriginalPos.current = false;
-    if (moveObjectLayer.current === 'plantings' && moveObjectId.current) {
-      const planting = useGardenStore.getState().garden.plantings.find(
-        (p) => p.id === moveObjectId.current,
-      );
-      if (planting) {
-        originalPlantingPos.current = {
-          relX: planting.x,
-          relY: planting.y,
-          parentId: planting.parentId,
-        };
-      }
-    }
+    if (cloneData.current) {
+      // Clone: create a transient planting for the overlay (not added to garden)
+      const clone = cloneData.current;
+      const transient = createPlanting({
+        parentId: clone.parentId,
+        x: clone.x,
+        y: clone.y,
+        cultivarId: clone.cultivarId,
+      });
+      moveObjectId.current = transient.id;
+      // Set objX/objY to world coords for the clone
+      moveStart.current.objX = clone.parentWorldX + clone.x;
+      moveStart.current.objY = clone.parentWorldY + clone.y;
 
-    // Capture initial positions of child structures so they move with the parent
-    childStartPositions.current.clear();
-    if (moveObjectLayer.current === 'structures') {
-      for (const s of useGardenStore.getState().garden.structures) {
-        if (s.parentId === moveObjectId.current) {
-          childStartPositions.current.set(s.id, { x: s.x, y: s.y });
-        }
+      useUiStore.getState().setDragOverlay({
+        layer: 'plantings',
+        objects: [transient],
+        hideIds: [], // clone: original stays visible
+        snapped: false,
+      });
+      useUiStore.getState().select(transient.id);
+      cloneData.current = null;
+    } else if (layer === 'structures') {
+      const primary = garden.structures.find(s => s.id === moveObjectId.current);
+      if (!primary) return;
+
+      const children = garden.structures.filter(s => s.parentId === primary.id);
+      // Store child offsets relative to primary
+      childOffsets.current.clear();
+      for (const child of children) {
+        childOffsets.current.set(child.id, {
+          dx: child.x - primary.x,
+          dy: child.y - primary.y,
+        });
       }
+
+      const allObjects = [{ ...primary }, ...children.map(c => ({ ...c }))];
+      const allIds = allObjects.map(o => o.id);
+
+      useUiStore.getState().setDragOverlay({
+        layer: 'structures',
+        objects: allObjects,
+        hideIds: allIds,
+        snapped: false,
+      });
+    } else if (layer === 'zones') {
+      const zone = garden.zones.find(z => z.id === moveObjectId.current);
+      if (!zone) return;
+
+      useUiStore.getState().setDragOverlay({
+        layer: 'zones',
+        objects: [{ ...zone }],
+        hideIds: [zone.id],
+        snapped: false,
+      });
+    } else if (layer === 'plantings') {
+      const planting = garden.plantings.find(p => p.id === moveObjectId.current);
+      if (!planting) return;
+
+      // Convert planting position to world coords for overlay
+      const parent = garden.structures.find(s => s.id === planting.parentId)
+        ?? garden.zones.find(z => z.id === planting.parentId);
+      const worldPlanting: Planting = {
+        ...planting,
+        x: parent ? parent.x + planting.x : planting.x,
+        y: parent ? parent.y + planting.y : planting.y,
+      };
+
+      useUiStore.getState().setDragOverlay({
+        layer: 'plantings',
+        objects: [worldPlanting],
+        hideIds: [planting.id],
+        snapped: false,
+      });
     }
   }
 
@@ -118,7 +166,7 @@ export function useMoveInteraction(
     objX: number,
     objY: number,
     alwaysSnap = false,
-    cloneData?: { parentId: string; x: number; y: number; cultivarId: string; parentWorldX: number; parentWorldY: number },
+    cloneInfo?: { parentId: string; x: number; y: number; cultivarId: string; parentWorldX: number; parentWorldY: number },
   ) {
     isPending.current = true;
     isMoving.current = false;
@@ -126,8 +174,7 @@ export function useMoveInteraction(
     moveObjectId.current = objId;
     moveObjectLayer.current = layer;
     forceSnap.current = alwaysSnap;
-    isClone.current = !!cloneData;
-    pendingClone.current = cloneData ?? null;
+    cloneData.current = cloneInfo ?? null;
     clearSnap();
 
     const rect = containerRef.current?.getBoundingClientRect();
@@ -158,6 +205,7 @@ export function useMoveInteraction(
       }
       activateDrag();
     }
+
     const { panX, panY, zoom } = useUiStore.getState();
     const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, {
       panX,
@@ -168,43 +216,74 @@ export function useMoveInteraction(
     const deltaY = worldY - moveStart.current.worldY;
     const newX = moveStart.current.objX + deltaX;
     const newY = moveStart.current.objY + deltaY;
-    const { garden, updateStructure, updateZone } = useGardenStore.getState();
+    const { garden } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
     const freeMove = e.altKey && !forceSnap.current;
     const snappedX = freeMove ? newX : snapToGrid(newX, cellSize);
     const snappedY = freeMove ? newY : snapToGrid(newY, cellSize);
+
+    const overlay = useUiStore.getState().dragOverlay;
+    if (!overlay) return true;
+
     if (moveObjectLayer.current === 'structures') {
-      const moving = garden.structures.find((s) => s.id === moveObjectId.current);
-      if (moving) {
-        const moved = { ...moving, x: snappedX, y: snappedY };
-        const childIds = new Set(childStartPositions.current.keys());
-        const others = garden.structures.filter(
-          (s) => s.id !== moveObjectId.current && !childIds.has(s.id),
-        );
+      const primary = overlay.objects.find(o => o.id === moveObjectId.current) as Structure | undefined;
+      if (primary) {
+        const moved = { ...primary, x: snappedX, y: snappedY };
+        // Collision check against garden structures not in the overlay
+        const others = garden.structures.filter(s => !overlay.hideIds.includes(s.id));
         if (!structuresCollide(moved, others)) {
-          updateStructure(moveObjectId.current, { x: snappedX, y: snappedY });
-          // Move child structures by the same delta
-          const dx = snappedX - moveStart.current.objX;
-          const dy = snappedY - moveStart.current.objY;
-          for (const [childId, startPos] of childStartPositions.current) {
-            updateStructure(childId, {
-              x: startPos.x + dx,
-              y: startPos.y + dy,
-            });
-          }
+          const updatedObjects = overlay.objects.map(obj => {
+            if (obj.id === moveObjectId.current) {
+              return { ...obj, x: snappedX, y: snappedY };
+            }
+            const offset = childOffsets.current.get(obj.id);
+            if (offset) {
+              return { ...obj, x: snappedX + offset.dx, y: snappedY + offset.dy };
+            }
+            return obj;
+          });
+          useUiStore.getState().setDragOverlay({ ...overlay, objects: updatedObjects });
         }
       }
     } else if (moveObjectLayer.current === 'zones') {
-      updateZone(moveObjectId.current, { x: snappedX, y: snappedY });
+      const updatedObjects = overlay.objects.map(obj => {
+        if (obj.id === moveObjectId.current) {
+          return { ...obj, x: snappedX, y: snappedY };
+        }
+        return obj;
+      });
+      useUiStore.getState().setDragOverlay({ ...overlay, objects: updatedObjects });
     } else if (moveObjectLayer.current === 'plantings') {
-      const planting = garden.plantings.find((p) => p.id === moveObjectId.current);
+      const planting = overlay.objects.find(o => o.id === moveObjectId.current) as Planting | undefined;
       if (planting) {
+        // Create a fake planting with parent-relative coords for findSnapContainer
+        // The overlay planting has world coords, so we need to create something compatible
+        const fakePlanting: Planting = {
+          ...planting,
+          // findSnapContainer uses parent.x + planting.x to compute world pos
+          // and checks if it's inside parent. For a planting being dragged freely,
+          // set parentId to empty so it won't match any parent exclusion.
+          parentId: overlay.hideIds.length > 0 ? overlay.hideIds[0] : '',
+        };
+        // For the parent-relative check in findSnapContainer, we need to find
+        // the original parent and compute relative coords
+        const origParent = garden.structures.find(s => s.id === fakePlanting.parentId)
+          ?? garden.zones.find(z => z.id === fakePlanting.parentId);
+        if (origParent) {
+          fakePlanting.x = snappedX - origParent.x;
+          fakePlanting.y = snappedY - origParent.y;
+        } else {
+          fakePlanting.x = snappedX;
+          fakePlanting.y = snappedY;
+        }
+
         // If we have an active putative snap, check whether cursor moved away
         if (putativeSnap.current) {
-          const snap = findSnapContainer(worldX, worldY, planting, garden);
+          const snap = findSnapContainer(worldX, worldY, fakePlanting, garden);
           if (!snap || snap.id !== putativeSnap.current.containerId) {
             // Moved away from snapped container — cancel and resume cursor-following
             clearSnap();
+            useUiStore.getState().setDragOverlay({ ...overlay, snapped: false });
             onSnapChange?.();
           } else {
             // Still over the same container — keep the snap, don't update position
@@ -213,7 +292,7 @@ export function useMoveInteraction(
         }
 
         // Run proximity detection for container snapping
-        const snap = findSnapContainer(worldX, worldY, planting, garden);
+        const snap = findSnapContainer(worldX, worldY, fakePlanting, garden);
         if (snap) {
           if (snap.cursorInside && snap.empty) {
             // Cursor inside an empty container — snap immediately, no dwell
@@ -224,6 +303,17 @@ export function useMoveInteraction(
               slotX: snap.slotX,
               slotY: snap.slotY,
             };
+            // Update overlay to show snapped position (convert slot to world coords)
+            const snapParent = garden.structures.find(s => s.id === snap.id)
+              ?? garden.zones.find(z => z.id === snap.id);
+            if (snapParent) {
+              const updatedObjects = overlay.objects.map(obj =>
+                obj.id === moveObjectId.current
+                  ? { ...obj, x: snapParent.x + snap.slotX, y: snapParent.y + snap.slotY }
+                  : obj,
+              );
+              useUiStore.getState().setDragOverlay({ ...overlay, objects: updatedObjects, snapped: true });
+            }
             onSnapChange?.();
           } else if (dwellContainerId.current === snap.id) {
             // Timer already running for this container — keep going
@@ -240,6 +330,20 @@ export function useMoveInteraction(
                 slotY: capturedSnap.slotY,
               };
               dwellTimer.current = null;
+              // Update overlay to show snapped position
+              const currentOverlay = useUiStore.getState().dragOverlay;
+              if (currentOverlay) {
+                const snapContainer = garden.structures.find(s => s.id === capturedSnap.id)
+                  ?? garden.zones.find(z => z.id === capturedSnap.id);
+                if (snapContainer) {
+                  const updatedObjects = currentOverlay.objects.map(obj =>
+                    obj.id === moveObjectId.current
+                      ? { ...obj, x: snapContainer.x + capturedSnap.slotX, y: snapContainer.y + capturedSnap.slotY }
+                      : obj,
+                  );
+                  useUiStore.getState().setDragOverlay({ ...currentOverlay, objects: updatedObjects, snapped: true });
+                }
+              }
               onSnapChange?.();
             }, SNAP_DWELL_MS);
           }
@@ -251,100 +355,114 @@ export function useMoveInteraction(
         // If snapped, don't update position (planting stays at snap slot visually)
         if (putativeSnap.current) return true;
 
-        const parent = garden.structures.find((s) => s.id === planting.parentId)
-          ?? garden.zones.find((z) => z.id === planting.parentId);
-        if (parent) {
-          // Check if cursor is back near where the drag started (snap-back)
-          const orig = originalPlantingPos.current;
-          if (orig) {
-            const halfCell = cellSize / 2;
-            const snapBackWorld = Math.max(halfCell, DRAG_THRESHOLD_PX / zoom);
-            const wdx = worldX - moveStart.current.worldX;
-            const wdy = worldY - moveStart.current.worldY;
-            if (wdx * wdx + wdy * wdy < snapBackWorld * snapBackWorld) {
-              // Snap back to original arrangement position
-              const { updatePlanting } = useGardenStore.getState();
-              updatePlanting(moveObjectId.current!, {
-                x: orig.relX,
-                y: orig.relY,
-              });
-              isAtOriginalPos.current = true;
-              return true;
-            }
-          }
-          isAtOriginalPos.current = false;
-
-          // Convert world coords back to parent-relative
-          const { updatePlanting } = useGardenStore.getState();
-          updatePlanting(moveObjectId.current, {
-            x: snappedX - parent.x,
-            y: snappedY - parent.y,
-          });
-        }
+        // Update overlay with world coords (free drag)
+        const updatedObjects = overlay.objects.map(obj =>
+          obj.id === moveObjectId.current
+            ? { ...obj, x: snappedX, y: snappedY }
+            : obj,
+        );
+        useUiStore.getState().setDragOverlay({ ...overlay, objects: updatedObjects, snapped: false });
       }
     }
     return true;
   }
 
-  function end(e?: React.MouseEvent) {
+  function end(_e?: React.MouseEvent) {
     // If drag threshold was never exceeded, this was just a click — no-op
     if (isPending.current) {
-      isPending.current = false;
-      pendingClone.current = null;
-      moveObjectId.current = null;
-      moveObjectLayer.current = null;
+      cleanup();
       return;
     }
 
-    // If planting was returned to its original position, undo the drag entirely
-    if (moveObjectLayer.current === 'plantings' && isAtOriginalPos.current && !putativeSnap.current) {
-      useGardenStore.getState().undo();
-      clearSnap();
-      isMoving.current = false;
-      originalPlantingPos.current = null;
-      isAtOriginalPos.current = false;
-      moveObjectId.current = null;
-      moveObjectLayer.current = null;
-      childStartPositions.current.clear();
+    const overlay = useUiStore.getState().dragOverlay;
+    if (!overlay) {
+      cleanup();
       return;
     }
 
-    if (moveObjectLayer.current === 'plantings' && putativeSnap.current && moveObjectId.current) {
-      const snap = putativeSnap.current;
-      const { garden, updatePlanting, addPlanting } = useGardenStore.getState();
-      const planting = garden.plantings.find((p) => p.id === moveObjectId.current);
+    const { garden, checkpoint, updateStructure, updateZone, updatePlanting, addPlanting } =
+      useGardenStore.getState();
 
-      if (planting) {
-        const altHeld = e?.altKey ?? false;
-        if (altHeld && !isClone.current) {
-          // Clone: leave original in place, create new planting in target container
+    // Push pre-drag state to history (one undo entry)
+    checkpoint();
+
+    if (moveObjectLayer.current === 'structures') {
+      for (const obj of overlay.objects) {
+        updateStructure(obj.id, { x: obj.x, y: obj.y });
+      }
+    } else if (moveObjectLayer.current === 'zones') {
+      for (const obj of overlay.objects) {
+        updateZone(obj.id, { x: obj.x, y: obj.y });
+      }
+    } else if (moveObjectLayer.current === 'plantings') {
+      const overlayPlanting = overlay.objects[0] as Planting;
+
+      if (putativeSnap.current) {
+        const snap = putativeSnap.current;
+        if (overlay.hideIds.length > 0) {
+          // Move: re-parent planting to snap container
+          updatePlanting(overlay.hideIds[0], {
+            parentId: snap.containerId,
+            x: snap.slotX,
+            y: snap.slotY,
+          });
+        } else {
+          // Clone/palette: add new planting in target container
           addPlanting({
             parentId: snap.containerId,
             x: snap.slotX,
             y: snap.slotY,
-            cultivarId: planting.cultivarId,
+            cultivarId: overlayPlanting.cultivarId,
           });
+        }
+      } else {
+        // Free drag — convert world coords back to parent-relative
+        if (overlay.hideIds.length > 0) {
+          // Move: find parent and compute relative coords
+          const plantingId = overlay.hideIds[0];
+          const origPlanting = garden.plantings.find(p => p.id === plantingId);
+          const parentId = origPlanting?.parentId ?? '';
+          const parent = garden.structures.find(s => s.id === parentId)
+            ?? garden.zones.find(z => z.id === parentId);
+          if (parent) {
+            updatePlanting(plantingId, {
+              x: overlayPlanting.x - parent.x,
+              y: overlayPlanting.y - parent.y,
+            });
+          }
         } else {
-          // Re-parent: move planting to the new container
-          updatePlanting(moveObjectId.current, {
-            parentId: snap.containerId,
-            x: snap.slotX,
-            y: snap.slotY,
-          });
+          // Clone: find container under world coords and add planting
+          // For now, find any container that contains the point
+          const containers = [
+            ...garden.structures.filter(s => s.container),
+            ...garden.zones,
+          ];
+          for (const c of containers) {
+            if (
+              overlayPlanting.x >= c.x && overlayPlanting.x <= c.x + c.width &&
+              overlayPlanting.y >= c.y && overlayPlanting.y <= c.y + c.height
+            ) {
+              addPlanting({
+                parentId: c.id,
+                x: overlayPlanting.x - c.x,
+                y: overlayPlanting.y - c.y,
+                cultivarId: overlayPlanting.cultivarId,
+              });
+              break;
+            }
+          }
         }
       }
     }
 
-    clearSnap();
-    isMoving.current = false;
-    isClone.current = false;
-    pendingClone.current = null;
-    originalPlantingPos.current = null;
-    isAtOriginalPos.current = false;
-    moveObjectId.current = null;
-    moveObjectLayer.current = null;
-    childStartPositions.current.clear();
+    useUiStore.getState().clearDragOverlay();
+    cleanup();
   }
 
-  return { start, move, end, isMoving, putativeSnap };
+  function cancel() {
+    useUiStore.getState().clearDragOverlay();
+    cleanup();
+  }
+
+  return { start, move, end, cancel, isMoving, putativeSnap };
 }
