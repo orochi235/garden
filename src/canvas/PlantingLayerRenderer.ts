@@ -1,6 +1,6 @@
 import type { Planting, Structure, Zone } from '../model/types';
 import { LayerRenderer } from './LayerRenderer';
-import { renderPlantings } from './renderPlantings';
+import { renderPlantings, type GhostPlanting } from './renderPlantings';
 
 export class PlantingLayerRenderer extends LayerRenderer {
   plantings: Planting[] = [];
@@ -8,6 +8,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   selectedIds: string[] = [];
   showSpacing: boolean = false;
+  ghost: GhostPlanting | null = null;
 
   protected draw(ctx: CanvasRenderingContext2D): void {
     renderPlantings(
@@ -21,6 +22,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
       this.highlight,
       this.selectedIds,
       this.showSpacing,
+      this.ghost,
     );
   }
 }

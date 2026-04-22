@@ -8,6 +8,10 @@ Running list of intended application behaviors.
 - While the pan tool is selected, left-click drag on the canvas should pan it
 - Right-click drag always pans regardless of tool
 - While selecting, if you hold down alt and drag an object, it should clone it (snaps to grid)
+- Drag operations require a minimum screen-pixel distance (`DRAG_THRESHOLD_PX`, default 4px) before activating; clicks with a slow release do not trigger a drag or push undo state
+- If a planting is dragged and then returned within `DRAG_THRESHOLD_PX` of its original arrangement position, the drag is undone entirely — no undo history entry is created
+- When dragging a planting near an empty or partially-filled container for 500ms (configurable via `SNAP_DWELL_MS`), show a ghosted preview of the planting at the container's next available arrangement slot; releasing commits the re-parent (or clone if alt is held); moving away cancels
+- Container snap proximity is based on the planting's footprint radius × `SNAP_RADIUS_MULTIPLIER`, with a spatial cull buffer of `CULL_BUFFER_FT`; when multiple containers are candidates, the nearest one wins
 
 ## Cursor
 

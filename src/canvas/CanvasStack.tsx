@@ -164,7 +164,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   useAutoCenter(width, height, garden.widthFt, garden.heightFt, setPan);
   const clipboard = useClipboard();
   const pan = usePanInteraction(setPan);
-  const moveInteraction = useMoveInteraction(containerRef);
+  const moveInteraction = useMoveInteraction(containerRef, invalidate);
   const resize = useResizeInteraction(containerRef);
   const plot = usePlotInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
 
@@ -241,12 +241,19 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
   zoneRenderer.current.opacity = layerOpacity.zones;
   zoneRenderer.current.setView(view, width, height);
 
+  const snapState = moveInteraction.putativeSnap.current;
   plantingRenderer.current.plantings = garden.plantings;
   plantingRenderer.current.zones = garden.zones;
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
   plantingRenderer.current.showSpacing = showPlantingSpacing;
+  plantingRenderer.current.ghost = snapState
+    ? (() => {
+        const p = garden.plantings.find((pl) => pl.id === selectedIds[0]);
+        return p ? { cultivarId: p.cultivarId, containerId: snapState.containerId, slotX: snapState.slotX, slotY: snapState.slotY } : null;
+      })()
+    : null;
   plantingRenderer.current.setView(view, width, height);
 
   useLayerEffect(
@@ -267,7 +274,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, plantingRenderer.current.highlight, plantingRenderer.current.ghost],
   );
 
   useLayerEffect(
@@ -277,8 +284,8 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
     dpr,
     true,
     (ctx) =>
-      renderSelection(ctx, selectedIds, garden.structures, garden.zones, view, width, height),
-    [selectedIds, garden.structures, garden.zones, zoom, panX, panY],
+      renderSelection(ctx, selectedIds, garden.structures, garden.zones, view, width, height, garden.plantings),
+    [selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY],
   );
 
   // --- Event dispatch ---
@@ -456,7 +463,7 @@ export function CanvasStack({ draggingEntry, onDragEnd }: CanvasStackProps) {
         }
         pan.end();
         resize.end();
-        moveInteraction.end();
+        moveInteraction.end(e);
         setActiveCursor(null);
       }
       if (e.button === 2) {

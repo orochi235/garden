@@ -25,6 +25,15 @@ function rectsOverlap(a: RenderedRect, b: RenderedRect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
+export interface GhostPlanting {
+  cultivarId: string;
+  /** Target container ID */
+  containerId: string;
+  /** Slot position relative to target container */
+  slotX: number;
+  slotY: number;
+}
+
 export function renderPlantings(
   ctx: CanvasRenderingContext2D,
   plantings: Planting[],
@@ -36,6 +45,7 @@ export function renderPlantings(
   highlightOpacity: number = 0,
   selectedIds: string[] = [],
   showSpacing: boolean = false,
+  ghost: GhostPlanting | null = null,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -141,6 +151,50 @@ export function renderPlantings(
         rect: { x: labelX, y: labelY, w: labelW, h: labelH },
         selected: selectedIds.includes(p.id),
       });
+    }
+  }
+
+  // Render ghost planting (putative container snap preview)
+  if (ghost) {
+    const ghostParent = parentMap.get(ghost.containerId);
+    if (ghostParent) {
+      const cultivar = getCultivar(ghost.cultivarId);
+      const color = cultivar?.color ?? '#4A7C59';
+      const footprint = cultivar?.footprintFt ?? 0.5;
+
+      const ghostWorldX = ghostParent.x + ghost.slotX;
+      const ghostWorldY = ghostParent.y + ghost.slotY;
+      const [gsx, gsy] = worldToScreen(ghostWorldX, ghostWorldY, view);
+
+      // Check if this would be single-fill
+      const existingCount = childCount.get(ghost.containerId) ?? 0;
+      const wouldBeSingle = ghostParent.arrangement?.type === 'single' && existingCount === 0;
+      const radius = wouldBeSingle
+        ? Math.max(3, (Math.min(ghostParent.width, ghostParent.height) / 2) * view.zoom)
+        : Math.max(3, (footprint / 2) * view.zoom);
+      const shape = wouldBeSingle && ghostParent.shape === 'circle' ? 'circle' as const : 'square' as const;
+
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.translate(gsx, gsy);
+      renderPlant(ctx, ghost.cultivarId, radius, color, shape);
+      ctx.restore();
+
+      // Dashed outline around ghost
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      if (shape === 'circle') {
+        ctx.arc(gsx, gsy, radius + 1, 0, Math.PI * 2);
+      } else {
+        ctx.rect(gsx - radius - 1, gsy - radius - 1, (radius + 1) * 2, (radius + 1) * 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     }
   }
 

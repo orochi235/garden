@@ -84,7 +84,7 @@ export function PaletteItem({ entry, onDragStart, onDragEnd }: Props) {
   );
 }
 
-const SMALL_ICON_RADIUS = 14;
+const SMALL_ICON_RADIUS = 18;
 
 function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,17 +110,6 @@ function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: stri
   return <canvas ref={canvasRef} className={styles.rowPlantIcon} width={32} height={32} />;
 }
 
-function DisclosureTriangle({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 10 10"
-      className={`${styles.disclosureIcon}${expanded ? ` ${styles.disclosureExpanded}` : ''}`}
-    >
-      <path d="M3 1.5 L7 5 L3 8.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 interface LeafRowProps {
   entry: PaletteEntry;
   onDragStart: (entry: PaletteEntry, e: React.DragEvent) => void;
@@ -135,7 +124,6 @@ export function PlantingLeafRow({ entry, onDragStart, onDragEnd }: LeafRowProps)
       onDragStart={(e) => onDragStart(entry, e)}
       onDragEnd={onDragEnd}
     >
-      <div className={styles.rowDisclosure} />
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
       </div>
@@ -150,19 +138,16 @@ interface ParentRowProps {
   onToggle: () => void;
 }
 
-export function PlantingParentRow({ node, expanded, onToggle }: ParentRowProps) {
+export function PlantingParentRow({ node, expanded: _, onToggle }: ParentRowProps) {
   return (
     <div
       className={`${styles.row} ${styles.rowParent}`}
       onClick={onToggle}
     >
-      <div className={styles.rowDisclosure}>
-        <DisclosureTriangle expanded={expanded} />
-      </div>
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={node.defaultCultivarId} color={node.color} />
       </div>
-      <span className={styles.rowLabel}>{node.speciesName}</span>
+      <span className={`${styles.rowLabel} ${styles.rowLabelBold}`}>{node.speciesName}</span>
     </div>
   );
 }
