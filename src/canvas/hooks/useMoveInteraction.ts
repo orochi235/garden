@@ -383,6 +383,50 @@ export function useMoveInteraction(
     const { garden, checkpoint, updateStructure, updateZone, updatePlanting, addPlanting } =
       useGardenStore.getState();
 
+    // If this is a move (not a clone/palette drop), check if position actually changed
+    if (overlay.hideIds.length > 0) {
+      if (overlay.layer === 'structures') {
+        const original = garden.structures.find(s => s.id === overlay.hideIds[0]);
+        const moved = overlay.objects[0] as Structure;
+        if (original && original.x === moved.x && original.y === moved.y) {
+          cancel();
+          return;
+        }
+      } else if (overlay.layer === 'zones') {
+        const original = garden.zones.find(z => z.id === overlay.hideIds[0]);
+        const moved = overlay.objects[0];
+        if (original && original.x === moved.x && original.y === moved.y) {
+          cancel();
+          return;
+        }
+      } else if (overlay.layer === 'plantings') {
+        const original = garden.plantings.find(p => p.id === overlay.hideIds[0]);
+        if (original) {
+          if (putativeSnap.current) {
+            // Snapped: compare target container/slot with original
+            const snap = putativeSnap.current;
+            if (snap.containerId === original.parentId && snap.slotX === original.x && snap.slotY === original.y) {
+              cancel();
+              return;
+            }
+          } else {
+            // Free drag: compare world coords back to parent-relative
+            const moved = overlay.objects[0] as Planting;
+            const parent = garden.structures.find(s => s.id === original.parentId)
+              ?? garden.zones.find(z => z.id === original.parentId);
+            if (parent) {
+              const finalRelX = moved.x - parent.x;
+              const finalRelY = moved.y - parent.y;
+              if (original.x === finalRelX && original.y === finalRelY) {
+                cancel();
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Push pre-drag state to history (one undo entry)
     checkpoint();
 

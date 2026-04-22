@@ -196,8 +196,9 @@ export function renderOverlayPlantings(
 
     const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
 
-    const worldX = parent.x + p.x;
-    const worldY = parent.y + p.y;
+    // Overlay plantings already have world coords — don't add parent offset
+    const worldX = p.x;
+    const worldY = p.y;
     const [sx, sy] = worldToScreen(worldX, worldY, view);
     const radius = isSingleFill
       ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom)

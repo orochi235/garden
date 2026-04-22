@@ -53,6 +53,7 @@ export function CanvasStack() {
   const showSurfaces = useUiStore((s) => s.showSurfaces);
   const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
   const viewMode = useUiStore((s) => s.viewMode);
+  const overlay = useUiStore((s) => s.dragOverlay);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
   const structureRenderer = useRef<StructureLayerRenderer>(null!);
@@ -192,7 +193,6 @@ export function CanvasStack() {
   plantingRenderer.current.showSpacing = showPlantingSpacing;
   plantingRenderer.current.setView(view, width, height);
 
-  const overlay = useUiStore.getState().dragOverlay;
   plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
   structureRenderer.current.hideIds = overlay?.layer === 'structures' ? overlay.hideIds : [];
   zoneRenderer.current.hideIds = overlay?.layer === 'zones' ? overlay.hideIds : [];

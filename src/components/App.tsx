@@ -50,28 +50,29 @@ export function App() {
 
       const THRESHOLD = 4;
       let dragging = false;
+      let transientObj: ReturnType<typeof createStructure> | ReturnType<typeof createZone> | ReturnType<typeof createPlanting> | null = null;
 
       function getCanvasRect() {
         const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
         return el?.getBoundingClientRect() ?? null;
       }
 
-      function updateOverlay(clientX: number, clientY: number) {
+      function worldFromClient(clientX: number, clientY: number, rect: DOMRect) {
+        const { panX, panY, zoom } = useUiStore.getState();
+        return screenToWorld(clientX - rect.left, clientY - rect.top, { panX, panY, zoom });
+      }
+
+      function createTransientObject(clientX: number, clientY: number) {
         const rect = getCanvasRect();
         if (!rect) return;
-        const { panX, panY, zoom } = useUiStore.getState();
-        const [worldX, worldY] = screenToWorld(
-          clientX - rect.left,
-          clientY - rect.top,
-          { panX, panY, zoom },
-        );
+        const [worldX, worldY] = worldFromClient(clientX, clientY, rect);
         const { garden } = useGardenStore.getState();
         const cellSize = garden.gridCellSizeFt;
 
         if (entry.category === 'structures') {
           const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
           const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
-          const obj = createStructure({
+          transientObj = createStructure({
             type: entry.type,
             x: snappedX,
             y: snappedY,
@@ -80,14 +81,14 @@ export function App() {
           });
           useUiStore.getState().setDragOverlay({
             layer: 'structures',
-            objects: [obj],
+            objects: [transientObj],
             hideIds: [],
-            snapped: true,
+            snapped: false,
           });
         } else if (entry.category === 'zones') {
           const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
           const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
-          const obj = createZone({
+          transientObj = createZone({
             x: snappedX,
             y: snappedY,
             width: entry.defaultWidth,
@@ -97,12 +98,11 @@ export function App() {
           });
           useUiStore.getState().setDragOverlay({
             layer: 'zones',
-            objects: [obj],
+            objects: [transientObj],
             hideIds: [],
-            snapped: true,
+            snapped: false,
           });
         } else if (entry.category === 'plantings') {
-          // Find a container under the cursor
           const container = garden.structures.find(
             (s) =>
               s.container &&
@@ -123,7 +123,7 @@ export function App() {
               worldY,
               cellSize,
             );
-            const obj = createPlanting({
+            transientObj = createPlanting({
               parentId: parent.id,
               x: pos.x,
               y: pos.y,
@@ -131,10 +131,54 @@ export function App() {
             });
             useUiStore.getState().setDragOverlay({
               layer: 'plantings',
-              objects: [obj],
+              objects: [transientObj],
               hideIds: [],
-              snapped: true,
+              snapped: false,
             });
+          }
+        }
+      }
+
+      function updateOverlayPosition(clientX: number, clientY: number) {
+        if (!transientObj) return;
+        const rect = getCanvasRect();
+        if (!rect) return;
+        const [worldX, worldY] = worldFromClient(clientX, clientY, rect);
+        const { garden } = useGardenStore.getState();
+        const cellSize = garden.gridCellSizeFt;
+        const currentOverlay = useUiStore.getState().dragOverlay;
+        if (!currentOverlay) return;
+
+        if (entry.category === 'structures' || entry.category === 'zones') {
+          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const updated = { ...transientObj, x: snappedX, y: snappedY };
+          transientObj = updated;
+          useUiStore.getState().setDragOverlay({ ...currentOverlay, objects: [updated] });
+        } else if (entry.category === 'plantings') {
+          const container = garden.structures.find(
+            (s) =>
+              s.container &&
+              worldX >= s.x && worldX <= s.x + s.width &&
+              worldY >= s.y && worldY <= s.y + s.height,
+          );
+          const zone = garden.zones.find(
+            (z) =>
+              worldX >= z.x && worldX <= z.x + z.width &&
+              worldY >= z.y && worldY <= z.y + z.height,
+          );
+          const parent = container ?? zone;
+          if (parent) {
+            const pos = getPlantingPosition(
+              parent,
+              garden.plantings.filter((p) => p.parentId === parent.id),
+              worldX,
+              worldY,
+              cellSize,
+            );
+            const updated = { ...transientObj, parentId: parent.id, x: pos.x, y: pos.y };
+            transientObj = updated;
+            useUiStore.getState().setDragOverlay({ ...currentOverlay, objects: [updated], snapped: false });
           } else {
             useUiStore.getState().clearDragOverlay();
           }
@@ -147,8 +191,9 @@ export function App() {
           const dy = ev.clientY - startY;
           if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
           dragging = true;
+          createTransientObject(ev.clientX, ev.clientY);
         }
-        updateOverlay(ev.clientX, ev.clientY);
+        updateOverlayPosition(ev.clientX, ev.clientY);
       }
 
       function onPointerUp(ev: PointerEvent) {
