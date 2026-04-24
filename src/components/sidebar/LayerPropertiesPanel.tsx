@@ -79,6 +79,8 @@ function DebugThemePanel() {
   const setMagentaHighlight = useUiStore((s) => s.setMagentaHighlight);
   const labelMode = useUiStore((s) => s.labelMode);
   const setLabelMode = useUiStore((s) => s.setLabelMode);
+  const labelFontSize = useUiStore((s) => s.labelFontSize);
+  const setLabelFontSize = useUiStore((s) => s.setLabelFontSize);
   const loadGarden = useGardenStore((s) => s.loadGarden);
 
   function handleResetGarden() {
@@ -160,6 +162,19 @@ function DebugThemePanel() {
           onChange={(e) => setMagentaHighlight(e.target.checked)}
         />
         <span>Magenta highlight</span>
+      </label>
+      <hr className={styles.themeDivider} />
+      <label className={styles.sliderLabel}>
+        <span>Label font size: {labelFontSize}px</span>
+        <input
+          type="range"
+          min={8}
+          max={24}
+          step={1}
+          value={labelFontSize}
+          onChange={(e) => setLabelFontSize(Number(e.target.value))}
+          className={styles.slider}
+        />
       </label>
       <hr className={styles.themeDivider} />
       <fieldset className={styles.radioGroup}>

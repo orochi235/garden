@@ -38,6 +38,7 @@ interface UiStore {
   showPlantingSpacing: boolean;
   magentaHighlight: boolean;
   labelMode: LabelMode;
+  labelFontSize: number;
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
@@ -48,6 +49,7 @@ interface UiStore {
   setShowPlantingSpacing: (show: boolean) => void;
   setMagentaHighlight: (show: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
+  setLabelFontSize: (size: number) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
@@ -86,6 +88,7 @@ export const useUiStore = create<UiStore>((set) => ({
   showPlantingSpacing: false,
   magentaHighlight: false,
   labelMode: 'selection' as LabelMode,
+  labelFontSize: 13,
   layerFlashCounter: 0,
   viewMode: 'select',
   dragOverlay: null,
@@ -96,6 +99,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setShowPlantingSpacing: (show) => set({ showPlantingSpacing: show }),
   setMagentaHighlight: (show) => set({ magentaHighlight: show }),
   setLabelMode: (mode) => set({ labelMode: mode }),
+  setLabelFontSize: (size) => set({ labelFontSize: size }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
@@ -137,6 +141,7 @@ export const useUiStore = create<UiStore>((set) => ({
       showPlantingSpacing: false,
       magentaHighlight: false,
       labelMode: 'selection' as LabelMode,
+      labelFontSize: 13,
       layerFlashCounter: 0,
       viewMode: 'select',
       dragOverlay: null,

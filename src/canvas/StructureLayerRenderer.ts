@@ -1,11 +1,12 @@
 import type { Structure } from '../model/types';
+import type { LabelMode } from '../store/uiStore';
 import { LayerRenderer } from './LayerRenderer';
 import { renderStructures } from './renderStructures';
 
 export class StructureLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   showSurfaces = false;
-  showLabels = false;
+  labelMode: LabelMode | 'none' = 'none';
   hideIds: string[] = [];
   overlayStructures: Structure[] = [];
   overlaySnapped: boolean = false;
@@ -23,7 +24,7 @@ export class StructureLayerRenderer extends LayerRenderer {
       this.highlight,
       this.showSurfaces,
       false,
-      this.showLabels,
+      this.labelMode,
     );
     if (this.overlayStructures.length > 0) {
       ctx.save();

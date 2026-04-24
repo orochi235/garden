@@ -180,12 +180,12 @@ export function CanvasStack() {
   structureRenderer.current.structures = garden.structures;
   structureRenderer.current.opacity = layerOpacity.structures;
   structureRenderer.current.showSurfaces = showSurfaces;
-  structureRenderer.current.showLabels = labelMode === 'all' || (labelMode === 'active-layer' && activeLayer === 'structures');
+  structureRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'structures' ? 'none' : labelMode;
   structureRenderer.current.setView(view, width, height);
 
   zoneRenderer.current.zones = garden.zones;
   zoneRenderer.current.opacity = layerOpacity.zones;
-  zoneRenderer.current.showLabels = labelMode === 'all' || (labelMode === 'active-layer' && activeLayer === 'zones');
+  zoneRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'zones' ? 'none' : labelMode;
   zoneRenderer.current.setView(view, width, height);
 
   plantingRenderer.current.plantings = garden.plantings;
@@ -194,7 +194,7 @@ export function CanvasStack() {
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
   plantingRenderer.current.showSpacing = showPlantingSpacing;
-  plantingRenderer.current.showLabels = labelMode === 'all' || (labelMode === 'active-layer' && activeLayer === 'plantings');
+  plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
   plantingRenderer.current.setView(view, width, height);
 
   plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];

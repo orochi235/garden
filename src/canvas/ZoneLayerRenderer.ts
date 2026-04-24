@@ -1,10 +1,11 @@
 import type { Zone } from '../model/types';
+import type { LabelMode } from '../store/uiStore';
 import { LayerRenderer } from './LayerRenderer';
 import { renderZones } from './renderZones';
 
 export class ZoneLayerRenderer extends LayerRenderer {
   zones: Zone[] = [];
-  showLabels = false;
+  labelMode: LabelMode | 'none' = 'none';
   hideIds: string[] = [];
   overlayZones: Zone[] = [];
   overlaySnapped: boolean = false;
@@ -22,7 +23,7 @@ export class ZoneLayerRenderer extends LayerRenderer {
       this.highlight,
       null,
       false,
-      this.showLabels,
+      this.labelMode,
     );
     if (this.overlayZones.length > 0) {
       ctx.save();

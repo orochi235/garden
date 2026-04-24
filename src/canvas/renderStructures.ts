@@ -1,5 +1,6 @@
 import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
+import type { LabelMode } from '../store/uiStore';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 import { renderLabel } from './renderLabel';
@@ -14,7 +15,7 @@ export function renderStructures(
   highlightOpacity: number = 0,
   showSurfaces: boolean = false,
   skipClear: boolean = false,
-  showLabels: boolean = false,
+  labelMode: LabelMode | 'none' = 'none',
 ): void {
   if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
@@ -103,7 +104,7 @@ export function renderStructures(
       });
     }
 
-    if (showLabels && s.label) {
+    if (labelMode !== 'none' && labelMode !== 'selection' && s.label) {
       renderLabel(ctx, s.label, sx + sw / 2, sy + sh + 4, { fontSize: 10 });
     }
 

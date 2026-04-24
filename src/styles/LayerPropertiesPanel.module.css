@@ -155,3 +155,16 @@
 .radioLabel input {
   accent-color: var(--color-leaf);
 }
+.sliderLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: 4px 8px;
+}
+.slider {
+  width: 100%;
+  accent-color: var(--color-leaf);
+  height: 4px;
+}

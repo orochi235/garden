@@ -1,4 +1,5 @@
 import type { Zone } from '../model/types';
+import type { LabelMode } from '../store/uiStore';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 import { renderLabel } from './renderLabel';
@@ -14,7 +15,7 @@ export function renderZones(
   highlightOpacity: number = 0,
   patternOverride: PatternId | null = null,
   skipClear: boolean = false,
-  showLabels: boolean = false,
+  labelMode: LabelMode | 'none' = 'none',
 ): void {
   if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (zones.length === 0) return;
@@ -50,7 +51,7 @@ export function renderZones(
       ctx.restore();
     }
 
-    if (showLabels && z.label) {
+    if (labelMode !== 'none' && labelMode !== 'selection' && z.label) {
       renderLabel(ctx, z.label, sx + sw / 2, sy + sh + 4, { fontSize: 10 });
     }
 

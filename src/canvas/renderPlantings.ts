@@ -2,8 +2,10 @@ import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
 import { getSpecies } from '../model/species';
+import type { LabelMode } from '../store/uiStore';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
+import { createMarkdownRenderer } from './markdownText';
 import type { TextRenderer } from './renderLabel';
 import { renderLabel } from './renderLabel';
 import { renderPlant } from './plantRenderers';
@@ -39,7 +41,7 @@ export function renderPlantings(
   highlightOpacity: number = 0,
   selectedIds: string[] = [],
   showSpacing: boolean = false,
-  showLabels: boolean = false,
+  labelMode: LabelMode | 'none' = 'none',
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -134,45 +136,29 @@ export function renderPlantings(
     occupied.push({ x: sx - radius, y: sy - radius, w: radius * 2, h: radius * 2 });
 
     const isSelected = selectedIds.includes(p.id);
-    if ((showLabels || isSelected || highlightOpacity > 0) && cultivar) {
+    const showThisLabel = labelMode === 'all' || labelMode === 'active-layer'
+      || (labelMode === 'selection' && isSelected)
+      || highlightOpacity > 0;
+    if (showThisLabel && cultivar) {
       const species = getSpecies(cultivar.speciesId);
       const speciesName = species?.name ?? cultivar.name;
       const variety = cultivar.variety;
+      const mdText = variety
+        ? `[**${speciesName}**]\n(*${variety}*)`
+        : `**${speciesName}**`;
 
-      // Measure the wider line to size the pill
-      ctx.font = 'bold 13px sans-serif';
-      const speciesW = ctx.measureText(speciesName).width;
-      let labelW = speciesW;
-      let labelH = 13;
-      if (variety) {
-        ctx.font = 'italic 11px sans-serif';
-        const varietyW = ctx.measureText(variety).width;
-        labelW = Math.max(speciesW, varietyW);
-        labelH = 28; // two lines
-      }
-      ctx.font = '13px sans-serif'; // restore
+      const { renderer: mdRenderer, width: labelW, height: labelH } =
+        createMarkdownRenderer(ctx, mdText, 13);
 
-      const labelX = sx;
       const labelY = sy + radius + 8;
-      const displayText = variety ? `${speciesName}\n${variety}` : speciesName;
-
-      const plantTextRenderer: TextRenderer = (c, _text, tx, ty) => {
-        c.textAlign = 'center';
-        c.fillStyle = '#FFFFFF';
-        c.font = 'bold 13px sans-serif';
-        c.fillText(speciesName, tx, ty);
-        if (variety) {
-          c.font = 'italic 11px sans-serif';
-          c.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          c.fillText(variety, tx, ty + 15);
-        }
-      };
-
       labelCandidates.push({
-        text: displayText,
+        text: mdText,
         rect: { x: sx - labelW / 2, y: labelY, w: labelW, h: labelH },
-        selected: selectedIds.includes(p.id),
-        renderText: plantTextRenderer,
+        selected: isSelected,
+        renderText: (c, _text, tx, ty) => {
+          c.textAlign = 'center';
+          mdRenderer(c, _text, tx - labelW / 2, ty);
+        },
       });
     }
   }

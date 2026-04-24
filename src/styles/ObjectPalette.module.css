@@ -106,6 +106,7 @@
   border-radius: 12px;
   margin: 2px 4px;
   background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
 }
 .lozengeExpanded {
   background: rgba(255, 255, 255, 0.06);
