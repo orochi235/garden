@@ -189,3 +189,46 @@ export function layoutMarkdown(
   const height = lines.reduce((sum, l) => sum + l.height, 0);
   return { lines, width, height };
 }
+
+import type { TextRenderer } from './renderLabel';
+
+function buildFont(fontSize: number, bold: boolean, italic: boolean): string {
+  const parts: string[] = [];
+  if (italic) parts.push('italic');
+  if (bold) parts.push('bold');
+  parts.push(`${fontSize}px sans-serif`);
+  return parts.join(' ');
+}
+
+function canvasMeasure(ctx: CanvasRenderingContext2D): MeasureFn {
+  return (text, fontSize, bold, italic) => {
+    ctx.font = buildFont(fontSize, bold, italic);
+    return ctx.measureText(text).width;
+  };
+}
+
+export function createMarkdownRenderer(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  fontSize: number,
+  maxWidth: number = Infinity,
+): { renderer: TextRenderer; width: number; height: number } {
+  const measure = canvasMeasure(ctx);
+  const parsed = parseMarkdownRuns(text);
+  const layout = layoutMarkdown(parsed, maxWidth, fontSize, measure);
+
+  const renderer: TextRenderer = (_ctx, _text, x, y) => {
+    let lineY = y;
+    for (const line of layout.lines) {
+      for (const run of line.runs) {
+        const effSize = fontSize + run.sizeOffset;
+        _ctx.font = buildFont(effSize, run.bold, run.italic);
+        _ctx.fillStyle = run.italic && !run.bold ? 'rgba(255, 255, 255, 0.7)' : '#FFFFFF';
+        _ctx.fillText(run.text, x + run.x, lineY);
+      }
+      lineY += line.height;
+    }
+  };
+
+  return { renderer, width: layout.width, height: layout.height };
+}
