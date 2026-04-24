@@ -10,6 +10,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
   selectedIds: string[] = [];
   showSpacing: boolean = false;
   labelMode: LabelMode | 'none' = 'none';
+  labelFontSize = 13;
   hideIds: string[] = [];
   overlayPlantings: Planting[] = [];
   overlaySnapped: boolean = false;
@@ -18,21 +19,21 @@ export class PlantingLayerRenderer extends LayerRenderer {
     const visiblePlantings = this.hideIds.length > 0
       ? this.plantings.filter((p) => !this.hideIds.includes(p.id))
       : this.plantings;
-    renderPlantings(
-      ctx,
-      visiblePlantings,
-      this.zones,
-      this.structures,
-      this.view,
-      this.width,
-      this.height,
-      this.highlight,
-      this.selectedIds,
-      this.showSpacing,
-      this.labelMode,
-    );
+    renderPlantings(ctx, visiblePlantings, this.zones, this.structures, {
+      view: this.view,
+      canvasWidth: this.width,
+      canvasHeight: this.height,
+      highlightOpacity: this.highlight,
+      selectedIds: this.selectedIds,
+      showSpacing: this.showSpacing,
+      labelMode: this.labelMode,
+      labelFontSize: this.labelFontSize,
+    });
     if (this.overlayPlantings.length > 0) {
-      renderOverlayPlantings(ctx, this.overlayPlantings, this.zones, this.structures, this.view, this.overlaySnapped);
+      renderOverlayPlantings(ctx, this.overlayPlantings, this.zones, this.structures, {
+        view: this.view,
+        snapped: this.overlaySnapped,
+      });
     }
   }
 }

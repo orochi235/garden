@@ -1,22 +1,26 @@
 import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
-import type { LabelMode } from '../store/uiStore';
-import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 import { renderLabel } from './renderLabel';
 import { renderPatternOverlay } from './patterns';
+import type { StructureRenderOptions } from './renderOptions';
 
 export function renderStructures(
   ctx: CanvasRenderingContext2D,
   structures: Structure[],
-  view: ViewTransform,
-  canvasWidth: number,
-  canvasHeight: number,
-  highlightOpacity: number = 0,
-  showSurfaces: boolean = false,
-  skipClear: boolean = false,
-  labelMode: LabelMode | 'none' = 'none',
+  opts: StructureRenderOptions,
 ): void {
+  const {
+    view,
+    canvasWidth,
+    canvasHeight,
+    highlightOpacity = 0,
+    skipClear = false,
+    labelMode = 'none',
+    labelFontSize = 13,
+    showSurfaces = false,
+  } = opts;
+
   if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
 
@@ -105,7 +109,7 @@ export function renderStructures(
     }
 
     if (labelMode !== 'none' && labelMode !== 'selection' && s.label) {
-      renderLabel(ctx, s.label, sx + sw / 2, sy + sh + 4, { fontSize: 10 });
+      renderLabel(ctx, s.label, sx + sw / 2, sy + sh + 4, { fontSize: labelFontSize });
     }
 
   }

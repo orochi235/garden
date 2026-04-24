@@ -2,12 +2,11 @@ import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
 import { getSpecies } from '../model/species';
-import type { LabelMode } from '../store/uiStore';
-import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
 import { createMarkdownRenderer } from './markdownText';
 import type { TextRenderer } from './renderLabel';
 import { renderLabel } from './renderLabel';
+import type { OverlayRenderOptions, PlantingRenderOptions } from './renderOptions';
 import { renderPlant } from './plantRenderers';
 
 interface PlantingParent {
@@ -35,14 +34,19 @@ export function renderPlantings(
   plantings: Planting[],
   zones: Zone[],
   structures: Structure[],
-  view: ViewTransform,
-  canvasWidth: number,
-  canvasHeight: number,
-  highlightOpacity: number = 0,
-  selectedIds: string[] = [],
-  showSpacing: boolean = false,
-  labelMode: LabelMode | 'none' = 'none',
+  opts: PlantingRenderOptions,
 ): void {
+  const {
+    view,
+    canvasWidth,
+    canvasHeight,
+    highlightOpacity = 0,
+    labelMode = 'none',
+    labelFontSize = 13,
+    selectedIds = [],
+    showSpacing = false,
+  } = opts;
+
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
 
@@ -55,7 +59,7 @@ export function renderPlantings(
     if (s.container) parentMap.set(s.id, s);
   }
 
-  ctx.font = '13px sans-serif';
+  ctx.font = `${labelFontSize}px sans-serif`;
 
   // Collect occupied rects from structures and zones
   const occupied: RenderedRect[] = [];
@@ -148,7 +152,7 @@ export function renderPlantings(
         : `**${speciesName}**`;
 
       const { renderer: mdRenderer, width: labelW, height: labelH } =
-        createMarkdownRenderer(ctx, mdText, 13);
+        createMarkdownRenderer(ctx, mdText, labelFontSize);
 
       const labelY = sy + radius + 8;
       labelCandidates.push({
@@ -185,9 +189,10 @@ export function renderOverlayPlantings(
   plantings: Planting[],
   zones: Zone[],
   structures: Structure[],
-  view: ViewTransform,
-  snapped: boolean,
+  opts: OverlayRenderOptions,
 ): void {
+  const { view, snapped } = opts;
+
   if (plantings.length === 0) return;
 
   // Build parent lookup map from zones and container structures

@@ -7,6 +7,7 @@ export class StructureLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   showSurfaces = false;
   labelMode: LabelMode | 'none' = 'none';
+  labelFontSize = 13;
   hideIds: string[] = [];
   overlayStructures: Structure[] = [];
   overlaySnapped: boolean = false;
@@ -15,21 +16,25 @@ export class StructureLayerRenderer extends LayerRenderer {
     const visibleStructures = this.hideIds.length > 0
       ? this.structures.filter((s) => !this.hideIds.includes(s.id))
       : this.structures;
-    renderStructures(
-      ctx,
-      visibleStructures,
-      this.view,
-      this.width,
-      this.height,
-      this.highlight,
-      this.showSurfaces,
-      false,
-      this.labelMode,
-    );
+    renderStructures(ctx, visibleStructures, {
+      view: this.view,
+      canvasWidth: this.width,
+      canvasHeight: this.height,
+      highlightOpacity: this.highlight,
+      showSurfaces: this.showSurfaces,
+      labelMode: this.labelMode,
+      labelFontSize: this.labelFontSize,
+    });
     if (this.overlayStructures.length > 0) {
       ctx.save();
       if (this.overlaySnapped) ctx.globalAlpha = 0.4;
-      renderStructures(ctx, this.overlayStructures, this.view, this.width, this.height, 0, this.showSurfaces, true);
+      renderStructures(ctx, this.overlayStructures, {
+        view: this.view,
+        canvasWidth: this.width,
+        canvasHeight: this.height,
+        showSurfaces: this.showSurfaces,
+        skipClear: true,
+      });
       ctx.restore();
     }
   }
