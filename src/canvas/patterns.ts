@@ -4,12 +4,13 @@
  * To add a new pattern, add an entry to the `patternFactories` map.
  */
 
-export type PatternId = 'hatch' | 'crosshatch' | 'dots';
+export type PatternId = 'hatch' | 'crosshatch' | 'dots' | 'chunks';
 
 export interface PatternParamMap {
   hatch: { color?: string; size?: number; lineWidth?: number };
   crosshatch: { color?: string; size?: number; lineWidth?: number };
   dots: { color?: string; size?: number; radius?: number };
+  chunks: { color?: string; bg?: string; size?: number; density?: number; chunkSize?: number; seed?: number };
 }
 
 export interface PatternRegion {
@@ -39,6 +40,7 @@ const DEFAULTS: { [P in PatternId]: Required<PatternParamMap[P]> } = {
   hatch: { color: 'goldenrod', size: 5, lineWidth: 1 },
   crosshatch: { color: '#E03030', size: 6, lineWidth: 0.8 },
   dots: { color: 'goldenrod', size: 6, radius: 1 },
+  chunks: { color: '#ffffff', bg: '#2e2218', size: 88, density: 0.1, chunkSize: 1.5, seed: 134 },
 };
 
 function createHatch(ctx: CanvasRenderingContext2D, params: ResolvedParams): CanvasPattern | null {
@@ -92,10 +94,63 @@ function createDots(ctx: CanvasRenderingContext2D, params: ResolvedParams): Canv
   return ctx.createPattern(off, 'repeat');
 }
 
+/** Simple seeded PRNG (mulberry32) for deterministic chunk placement. */
+function mulberry32(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function createChunks(ctx: CanvasRenderingContext2D, params: ResolvedParams): CanvasPattern | null {
+  const size = Number(params.size) || 48;
+  const color = String(params.color || '#C4A45A');
+  const bg = String(params.bg || '#6B4226');
+  const density = Number(params.density) || 0.35;
+  const chunkSize = Number(params.chunkSize) || 3;
+  const seed = Number(params.seed) || 42;
+
+  const off = document.createElement('canvas');
+  off.width = size;
+  off.height = size;
+  const oc = off.getContext('2d')!;
+
+  // Fill background
+  oc.fillStyle = bg;
+  oc.fillRect(0, 0, size, size);
+
+  // Scatter chunks using seeded PRNG
+  const rand = mulberry32(seed);
+  const count = Math.round(size * size * density / (chunkSize * chunkSize));
+  oc.fillStyle = color;
+
+  for (let i = 0; i < count; i++) {
+    const cx = rand() * size;
+    const cy = rand() * size;
+    const w = chunkSize * (0.5 + rand());
+    const h = chunkSize * (0.5 + rand());
+    const angle = rand() * Math.PI;
+
+    oc.save();
+    oc.translate(cx, cy);
+    oc.rotate(angle);
+    oc.beginPath();
+    oc.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+    oc.fill();
+    oc.restore();
+  }
+
+  return ctx.createPattern(off, 'repeat');
+}
+
 const patternFactories: Record<PatternId, PatternFactory> = {
   hatch: createHatch,
   crosshatch: createCrosshatch,
   dots: createDots,
+  chunks: createChunks,
 };
 
 function getPattern<P extends PatternId>(ctx: CanvasRenderingContext2D, id: P, params: PatternParamMap[P] = {}): CanvasPattern | null {
@@ -127,6 +182,8 @@ export function renderPatternOverlay<P extends PatternId>(
 
   ctx.save();
   ctx.globalAlpha = opacity;
+  // Pin pattern to the region so it moves with content during pan/zoom
+  pattern.setTransform(new DOMMatrix().translateSelf(x, y));
   ctx.fillStyle = pattern;
 
   if (shape === 'circle') {

@@ -13,7 +13,7 @@
   h1 { margin-bottom: 1.5rem; }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.5rem;
   }
   .card {
@@ -21,16 +21,54 @@
     border: 1px solid #333;
     border-radius: 8px;
     padding: 1rem;
-    text-align: center;
   }
   .card canvas {
     border: 1px solid #444;
     border-radius: 4px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    width: 100%;
   }
   .card .name {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .control-row label {
+    width: 70px;
+    flex-shrink: 0;
+    text-align: right;
+    color: #aaa;
+  }
+  .control-row input[type="range"] {
+    flex: 1;
+    accent-color: #6a9;
+  }
+  .control-row input[type="color"] {
+    width: 28px;
+    height: 22px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .control-row .val {
+    width: 36px;
+    text-align: right;
+    color: #888;
+    font-variant-numeric: tabular-nums;
   }
 </style>
 </head>
@@ -38,74 +76,198 @@
 <h1>Registered Patterns</h1>
 <div class="grid" id="grid"></div>
 <script>
-const patterns = {
-  hatch: (ctx, size) => {
-    ctx.strokeStyle = 'goldenrod';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, size);
-    ctx.lineTo(size, 0);
-    ctx.stroke();
+// -- mulberry32 PRNG --
+function mulberry32(seed) {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// -- Pattern definitions: factory + param descriptors --
+const patternDefs = {
+  hatch: {
+    params: {
+      color:     { type: 'color', default: '#DAA520' },
+      size:      { type: 'range', min: 2, max: 20, step: 1, default: 5 },
+      lineWidth: { type: 'range', min: 0.2, max: 4, step: 0.2, default: 1 },
+    },
+    hasBg: false,
+    factory(ctx, size, p) {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(0, size);
+      ctx.lineTo(size, 0);
+      ctx.stroke();
+    },
   },
-  crosshatch: (ctx, size) => {
-    ctx.strokeStyle = 'goldenrod';
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.moveTo(0, size);
-    ctx.lineTo(size, 0);
-    ctx.moveTo(0, 0);
-    ctx.lineTo(size, size);
-    ctx.stroke();
+  crosshatch: {
+    params: {
+      color:     { type: 'color', default: '#E03030' },
+      size:      { type: 'range', min: 2, max: 20, step: 1, default: 6 },
+      lineWidth: { type: 'range', min: 0.2, max: 4, step: 0.2, default: 0.8 },
+    },
+    hasBg: false,
+    factory(ctx, size, p) {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(0, size);
+      ctx.lineTo(size, 0);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(size, size);
+      ctx.stroke();
+    },
   },
-  dots: (ctx, size) => {
-    ctx.fillStyle = 'goldenrod';
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, 1, 0, Math.PI * 2);
-    ctx.fill();
+  dots: {
+    params: {
+      color:  { type: 'color', default: '#DAA520' },
+      size:   { type: 'range', min: 2, max: 20, step: 1, default: 6 },
+      radius: { type: 'range', min: 0.2, max: 6, step: 0.2, default: 1 },
+    },
+    hasBg: false,
+    factory(ctx, size, p) {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    },
+  },
+  chunks: {
+    params: {
+      color:     { type: 'color', default: '#ffffff' },
+      bg:        { type: 'color', default: '#2e2218' },
+      size:      { type: 'range', min: 16, max: 128, step: 2, default: 88 },
+      density:   { type: 'range', min: 0.05, max: 0.8, step: 0.05, default: 0.1 },
+      chunkSize: { type: 'range', min: 0.5, max: 10, step: 0.5, default: 1.5 },
+      seed:      { type: 'range', min: 1, max: 999, step: 1, default: 134 },
+    },
+    hasBg: true,
+    factory(ctx, size, p) {
+      ctx.fillStyle = p.bg;
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = p.color;
+      const rand = mulberry32(p.seed);
+      const count = Math.round(size * size * p.density / (p.chunkSize * p.chunkSize));
+      for (let i = 0; i < count; i++) {
+        const cx = rand() * size, cy = rand() * size;
+        const w = p.chunkSize * (0.5 + rand()), h = p.chunkSize * (0.5 + rand());
+        const angle = rand() * Math.PI;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    },
   },
 };
 
+const CANVAS_W = 240, CANVAS_H = 160;
 const grid = document.getElementById('grid');
 
-for (const [name, factory] of Object.entries(patterns)) {
+for (const [name, def] of Object.entries(patternDefs)) {
   const card = document.createElement('div');
   card.className = 'card';
 
-  const canvas = document.createElement('canvas');
-  const w = 160, h = 120;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  // Create tile
-  const tileSize = name === 'crosshatch' ? 6 : name === 'dots' ? 6 : 5;
-  const tile = document.createElement('canvas');
-  tile.width = tileSize;
-  tile.height = tileSize;
-  factory(tile.getContext('2d'), tileSize);
-
-  // Fill background
-  ctx.fillStyle = '#2a4a3a';
-  ctx.fillRect(0, 0, w, h);
-
-  // Fill with pattern
-  const pat = ctx.createPattern(tile, 'repeat');
-  ctx.fillStyle = pat;
-  ctx.globalAlpha = 0.9;
-  ctx.fillRect(0, 0, w, h);
-
+  // Title
   const label = document.createElement('div');
   label.className = 'name';
   label.textContent = name;
-
-  card.appendChild(canvas);
   card.appendChild(label);
+
+  // Preview canvas
+  const canvas = document.createElement('canvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = CANVAS_W * dpr;
+  canvas.height = CANVAS_H * dpr;
+  canvas.style.width = CANVAS_W + 'px';
+  canvas.style.height = CANVAS_H + 'px';
+  card.appendChild(canvas);
+
+  // Current param values
+  const current = {};
+  for (const [k, desc] of Object.entries(def.params)) {
+    current[k] = desc.default;
+  }
+
+  // Render function
+  function render() {
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const tileSize = current.size;
+    const tile = document.createElement('canvas');
+    tile.width = tileSize;
+    tile.height = tileSize;
+    def.factory(tile.getContext('2d'), tileSize, current);
+
+    // Background
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#2a4a3a';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Pattern fill
+    const pat = ctx.createPattern(tile, 'repeat');
+    ctx.fillStyle = pat;
+    ctx.globalAlpha = def.hasBg ? 1.0 : 0.9;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  }
+
+  // Controls
+  const controls = document.createElement('div');
+  controls.className = 'controls';
+
+  for (const [k, desc] of Object.entries(def.params)) {
+    const row = document.createElement('div');
+    row.className = 'control-row';
+
+    const lbl = document.createElement('label');
+    lbl.textContent = k;
+    row.appendChild(lbl);
+
+    if (desc.type === 'color') {
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = desc.default;
+      input.addEventListener('input', () => {
+        current[k] = input.value;
+        render();
+      });
+      row.appendChild(input);
+    } else {
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = desc.min;
+      input.max = desc.max;
+      input.step = desc.step;
+      input.value = desc.default;
+
+      const val = document.createElement('span');
+      val.className = 'val';
+      val.textContent = desc.default;
+
+      input.addEventListener('input', () => {
+        const v = parseFloat(input.value);
+        current[k] = v;
+        val.textContent = v % 1 === 0 ? v : v.toFixed(1);
+        render();
+      });
+      row.appendChild(input);
+      row.appendChild(val);
+    }
+    controls.appendChild(row);
+  }
+
+  card.appendChild(controls);
   grid.appendChild(card);
+  render();
 }
 </script>
 </body>

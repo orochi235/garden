@@ -26,18 +26,27 @@
     th.sorted.desc::after { content: ' \u25BC'; }
     td { padding: 5px 6px; border-bottom: 1px solid #2a2a3a; }
     tr:hover td { background: #2a2a4a; }
-    tr.selected td { background: #3a4a5a; }
     td input, td select { width: 100%; padding: 3px 5px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #e0e0e0; font-size: 13px; }
     td input:focus, td select:focus { outline: none; border-color: #4a7c59; background: #2a2a4a; }
     td select { background: #2a2a4a; }
     .color-cell { display: flex; align-items: center; gap: 6px; }
     .color-swatch { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #555; flex-shrink: 0; cursor: pointer; }
+    .cultivar-row .color-swatch { border-radius: 50%; }
+    .cultivar-row .color-swatch.inherited { width: 8px; height: 8px; margin: 5px; }
     .color-input { position: absolute; opacity: 0; width: 0; height: 0; }
     .num { width: 60px; text-align: right; }
+    .inherited { color: #666; font-style: italic; }
+    .overridden { color: #e0e0e0; }
     .actions { display: flex; gap: 4px; }
     .actions button { padding: 2px 8px; border: 1px solid #444; border-radius: 4px; background: #2a2a4a; color: #ccc; cursor: pointer; font-size: 11px; }
     .actions button:hover { background: #3a3a5a; }
     .actions button.del:hover { background: #7c4a4a; }
+    .actions button.revert { color: #888; }
+    .actions button.revert:hover { background: #4a4a3a; color: #dda; }
+    .species-row td { background: #22223a; border-top: 2px solid #4a7c59; }
+    .species-row td:first-child { font-weight: 600; color: #8cb8a0; }
+    .species-row .actions button { font-size: 10px; }
+    .cultivar-row td:first-child { padding-left: 24px; }
     .toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 16px; border-radius: 6px; background: #4a7c59; color: #fff; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     .toast.show { opacity: 1; }
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
@@ -51,7 +60,8 @@
 <body>
   <h1>Cultivar Database Editor</h1>
   <div class="toolbar">
-    <button class="primary" onclick="addRow()">+ Add Cultivar</button>
+    <button class="danger" onclick="resetData()">Reset</button>
+    <button class="primary" onclick="addSpecies()">+ Add Species</button>
     <button onclick="showExport()">Export JSON</button>
     <button onclick="showImport()">Import JSON</button>
     <input class="filter" type="text" placeholder="Filter..." oninput="applyFilter(this.value)">
@@ -64,16 +74,15 @@
       <option value="legumes">Legumes</option>
       <option value="flowers">Flowers</option>
     </select>
+    <label style="font-size:12px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="showDefaults" onchange="render()"> Show defaults</label>
     <span class="stats" id="stats"></span>
   </div>
   <table>
     <thead>
       <tr>
-        <th onclick="sortBy('id')">ID</th>
-        <th onclick="sortBy('name')">Name</th>
-        <th onclick="sortBy('category')">Category</th>
-        <th onclick="sortBy('taxonomicName')">Taxonomic Name</th>
-        <th onclick="sortBy('variety')">Variety</th>
+        <th onclick="sortBy('speciesId')">Species / ID</th>
+        <th onclick="sortBy('category')">Category / Variety</th>
+        <th onclick="sortBy('icon')">Icon</th>
         <th onclick="sortBy('color')">Color</th>
         <th onclick="sortBy('footprintFt')">Footprint (ft)</th>
         <th onclick="sortBy('spacingFt')">Spacing (ft)</th>
@@ -97,7 +106,7 @@
   <div class="modal-overlay" id="importModal">
     <div class="modal">
       <h2>Import JSON</h2>
-      <p style="margin-bottom:8px;font-size:13px;color:#aaa">Paste cultivars JSON array below. This will replace all current data.</p>
+      <p style="margin-bottom:8px;font-size:13px;color:#aaa">Paste JSON below — either a cultivars array or a {species, cultivars} object. This will replace all current data.</p>
       <textarea id="importArea" style="width:100%;height:200px;background:#1a1a2e;border:1px solid #444;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;font-family:monospace;resize:vertical"></textarea>
       <div class="btn-row">
         <button class="danger" onclick="doImport()">Replace All</button>
@@ -106,27 +115,64 @@
     </div>
   </div>
   <script>
+    const ICON_TYPES = [
+      'round-fruit','pepper','bell-pepper','eggplant','cucumber','melon',
+      'squash','leaf-rosette','carrot','radish','potato',
+      'herb-sprig','strawberry','pea-pod','bean'
+    ];
     const CATEGORIES = ['fruits','vegetables','root-vegetables','herbs','legumes','flowers'];
+
+    let species = [];
+    let speciesMap = {};
     let cultivars = [];
-    let sortField = 'category';
+    let sortField = 'speciesId';
     let sortDesc = false;
     let textFilter = '';
     let categoryFilter = '';
 
-    // Load from localStorage or fetch default
-    const stored = localStorage.getItem('cultivars-editor-data');
-    if (stored) {
-      cultivars = JSON.parse(stored);
-      render();
-    } else {
-      fetch('../src/data/cultivars.json')
-        .then(r => r.json())
-        .then(data => { cultivars = data; render(); })
-        .catch(() => { cultivars = []; render(); });
+    // Load species first, then cultivars
+    fetch('../src/data/species.json')
+      .then(r => r.json())
+      .then(data => {
+        const storedSp = localStorage.getItem('species-editor-data');
+        species = storedSp ? JSON.parse(storedSp) : data;
+        speciesMap = Object.fromEntries(species.map(s => [s.id, s]));
+        const stored = localStorage.getItem('cultivars-editor-data');
+        if (stored) {
+          cultivars = JSON.parse(stored);
+          render();
+        } else {
+          fetch('../src/data/cultivars.json')
+            .then(r => r.json())
+            .then(data => { cultivars = data; render(); })
+            .catch(() => { cultivars = []; render(); });
+        }
+      });
+
+    function resolve(c) {
+      const sp = speciesMap[c.speciesId];
+      if (!sp) return { name: c.id, category: '?', color: '#888', footprintFt: 0, spacingFt: 0, icon: 'herb-sprig' };
+      return {
+        name: c.variety ? `${sp.name}, ${c.variety}` : sp.name,
+        category: sp.category,
+        color: c.color ?? sp.color,
+        footprintFt: c.footprintFt ?? sp.footprintFt,
+        spacingFt: c.spacingFt ?? sp.spacingFt,
+        icon: c.icon ?? sp.icon,
+      };
+    }
+
+    function isOverridden(c, field) {
+      return c[field] !== undefined;
     }
 
     function save() {
       localStorage.setItem('cultivars-editor-data', JSON.stringify(cultivars));
+    }
+
+    function saveSpecies() {
+      speciesMap = Object.fromEntries(species.map(s => [s.id, s]));
+      localStorage.setItem('species-editor-data', JSON.stringify(species));
     }
 
     function toast(msg) {
@@ -145,33 +191,64 @@
       render();
     }
 
-    function getFiltered() {
-      let list = cultivars;
-      if (categoryFilter) list = list.filter(c => c.category === categoryFilter);
-      if (textFilter) list = list.filter(c =>
-        c.id.toLowerCase().includes(textFilter) ||
-        c.name.toLowerCase().includes(textFilter) ||
-        c.taxonomicName.toLowerCase().includes(textFilter) ||
-        (c.variety || '').toLowerCase().includes(textFilter)
+    function getGrouped() {
+      // Group cultivars by species, filter, then sort species
+      const showDefaults = document.getElementById('showDefaults')?.checked;
+      let items = cultivars.map(c => ({ raw: c, resolved: resolve(c) }));
+      if (!showDefaults) items = items.filter(x => x.raw.variety);
+      if (categoryFilter) items = items.filter(x => x.resolved.category === categoryFilter);
+      if (textFilter) items = items.filter(x =>
+        x.raw.id.toLowerCase().includes(textFilter) ||
+        x.resolved.name.toLowerCase().includes(textFilter) ||
+        x.raw.speciesId.toLowerCase().includes(textFilter) ||
+        (x.raw.variety || '').toLowerCase().includes(textFilter)
       );
-      list = [...list].sort((a, b) => {
-        let av = a[sortField] ?? '', bv = b[sortField] ?? '';
-        if (typeof av === 'number') return sortDesc ? bv - av : av - bv;
+
+      // Group by speciesId
+      const groups = {};
+      for (const item of items) {
+        const sid = item.raw.speciesId;
+        if (!groups[sid]) groups[sid] = [];
+        groups[sid].push(item);
+      }
+
+      // Sort cultivars within each group by variety
+      for (const sid in groups) {
+        groups[sid].sort((a, b) => {
+          const av = a.raw.variety || '';
+          const bv = b.raw.variety || '';
+          return av.localeCompare(bv);
+        });
+      }
+
+      // Sort species groups
+      let speciesIds = Object.keys(groups);
+      speciesIds.sort((a, b) => {
+        const sa = speciesMap[a] || {};
+        const sb = speciesMap[b] || {};
+        let av, bv;
+        if (sortField === 'speciesId') { av = sa.name || a; bv = sb.name || b; }
+        else if (sortField === 'category') { av = sa.category || ''; bv = sb.category || ''; }
+        else if (['color','footprintFt','spacingFt','icon'].includes(sortField)) { av = sa[sortField] ?? ''; bv = sb[sortField] ?? ''; }
+        else { av = sa.name || a; bv = sb.name || b; }
+        if (typeof av === 'number' && typeof bv === 'number') return sortDesc ? bv - av : av - bv;
         return sortDesc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
       });
-      return list;
+
+      return { speciesIds, groups };
     }
 
+    function esc(s) { return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
     function render() {
-      const filtered = getFiltered();
-      document.getElementById('stats').textContent = `${filtered.length} of ${cultivars.length} cultivars`;
+      const { speciesIds, groups } = getGrouped();
+      const totalFiltered = speciesIds.reduce((n, sid) => n + groups[sid].length, 0);
+      document.getElementById('stats').textContent = `${totalFiltered} of ${cultivars.length} cultivars · ${species.length} species`;
 
       // Update sort indicators
-      document.querySelectorAll('th').forEach(th => {
-        th.classList.remove('sorted', 'desc');
-      });
+      document.querySelectorAll('th').forEach(th => th.classList.remove('sorted', 'desc'));
       const headers = document.querySelectorAll('th');
-      const fields = ['id','name','category','taxonomicName','variety','color','footprintFt','spacingFt'];
+      const fields = ['speciesId','category','icon','color','footprintFt','spacingFt'];
       const idx = fields.indexOf(sortField);
       if (idx >= 0 && headers[idx]) {
         headers[idx].classList.add('sorted');
@@ -179,55 +256,162 @@
       }
 
       const tbody = document.getElementById('tbody');
-      tbody.innerHTML = filtered.map(c => `
-        <tr data-id="${c.id}">
-          <td><input value="${esc(c.id)}" onchange="updateField('${c.id}','id',this.value)"></td>
-          <td><input value="${esc(c.name)}" onchange="updateField('${c.id}','name',this.value)"></td>
-          <td><select onchange="updateField('${c.id}','category',this.value)">
-            ${CATEGORIES.map(cat => `<option value="${cat}"${c.category===cat?' selected':''}>${cat}</option>`).join('')}
-          </select></td>
-          <td><input value="${esc(c.taxonomicName)}" onchange="updateField('${c.id}','taxonomicName',this.value)" style="font-style:italic"></td>
-          <td><input value="${esc(c.variety || '')}" onchange="updateField('${c.id}','variety',this.value||null)"></td>
-          <td><div class="color-cell">
-            <div class="color-swatch" style="background:${c.color}" onclick="this.nextElementSibling.click()"></div>
-            <input type="color" class="color-input" value="${c.color}" onchange="updateField('${c.id}','color',this.value);this.previousElementSibling.style.background=this.value">
-            <input value="${esc(c.color)}" style="width:75px" onchange="updateField('${c.id}','color',this.value)">
-          </div></td>
-          <td><input class="num" type="number" step="0.25" min="0" value="${c.footprintFt}" onchange="updateField('${c.id}','footprintFt',+this.value)"></td>
-          <td><input class="num" type="number" step="0.25" min="0" value="${c.spacingFt}" onchange="updateField('${c.id}','spacingFt',+this.value)"></td>
-          <td class="actions">
-            <button onclick="duplicateRow('${c.id}')">dup</button>
-            <button class="del" onclick="deleteRow('${c.id}')">del</button>
-          </td>
-        </tr>
-      `).join('');
+      let html = '';
+
+      for (const sid of speciesIds) {
+        const sp = speciesMap[sid];
+        const cultivarRows = groups[sid];
+
+        // Species header row
+        if (sp) {
+          html += `
+          <tr class="species-row" data-species="${esc(sp.id)}">
+            <td><input value="${esc(sp.name)}" onchange="updateSpeciesField('${esc(sp.id)}','name',this.value)" style="font-weight:600;color:#8cb8a0"><span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic;margin-left:4px">${esc(sp.taxonomicName)}</span></td>
+            <td><select onchange="updateSpeciesField('${esc(sp.id)}','category',this.value)">
+              ${CATEGORIES.map(cat => `<option value="${cat}"${sp.category===cat?' selected':''}>${cat}</option>`).join('')}
+            </select></td>
+            <td><select onchange="updateSpeciesField('${esc(sp.id)}','icon',this.value)">
+              ${ICON_TYPES.map(ic => `<option value="${ic}"${sp.icon===ic?' selected':''}>${ic}</option>`).join('')}
+            </select></td>
+            <td><div class="color-cell">
+              <div class="color-swatch" style="background:${sp.color}" onclick="this.nextElementSibling.click()"></div>
+              <input type="color" class="color-input" value="${sp.color}" onchange="updateSpeciesField('${esc(sp.id)}','color',this.value);this.previousElementSibling.style.background=this.value">
+              <input value="${esc(sp.color)}" style="width:75px" onchange="updateSpeciesField('${esc(sp.id)}','color',this.value)">
+            </div></td>
+            <td><input class="num" type="number" step="0.25" min="0" value="${sp.footprintFt}" onchange="updateSpeciesField('${esc(sp.id)}','footprintFt',+this.value)"></td>
+            <td><input class="num" type="number" step="0.25" min="0" value="${sp.spacingFt}" onchange="updateSpeciesField('${esc(sp.id)}','spacingFt',+this.value)"></td>
+            <td class="actions">
+              <button onclick="addCultivarToSpecies('${esc(sp.id)}')">+ var</button>
+              <button class="del" onclick="deleteSpecies('${esc(sp.id)}')">del</button>
+            </td>
+          </tr>`;
+        } else {
+          html += `<tr class="species-row"><td colspan="8" style="color:#c66">Unknown species: ${esc(sid)}</td></tr>`;
+        }
+
+        // Cultivar rows under this species
+        for (const { raw: c, resolved: r } of cultivarRows) {
+          const hasColorOvr = isOverridden(c, 'color');
+          const hasFootOvr = isOverridden(c, 'footprintFt');
+          const hasSpaceOvr = isOverridden(c, 'spacingFt');
+          const hasIconOvr = isOverridden(c, 'icon');
+          const hasAnyOvr = hasColorOvr || hasFootOvr || hasSpaceOvr || hasIconOvr;
+          html += `
+          <tr class="cultivar-row" data-id="${esc(c.id)}">
+            <td><input value="${esc(c.id)}" onchange="updateField('${esc(c.id)}','id',this.value)" style="color:#aaa;font-size:12px"></td>
+            <td><input value="${esc(c.variety || '')}" onchange="updateField('${esc(c.id)}','variety',this.value||null)" placeholder="(base)"></td>
+            <td><select class="${hasIconOvr ? 'overridden' : 'inherited'}" onchange="updateField('${esc(c.id)}','icon',this.value)">
+              <option value=""${!hasIconOvr ? ' selected' : ''} class="inherited">inherit</option>
+              ${ICON_TYPES.map(ic => `<option value="${ic}"${c.icon===ic?' selected':''}>${ic}</option>`).join('')}
+            </select></td>
+            <td><div class="color-cell">
+              <div class="color-swatch${hasColorOvr ? '' : ' inherited'}" style="background:${r.color}" onclick="this.nextElementSibling.click()"></div>
+              <input type="color" class="color-input" value="${r.color}" onchange="updateField('${esc(c.id)}','color',this.value);this.previousElementSibling.style.background=this.value">
+              <input class="${hasColorOvr ? 'overridden' : 'inherited'}" value="${esc(r.color)}" style="width:75px" onchange="updateField('${esc(c.id)}','color',this.value)" placeholder="inherit">
+            </div></td>
+            <td><input class="num ${hasFootOvr ? 'overridden' : 'inherited'}" type="number" step="0.25" min="0" value="${r.footprintFt}" onchange="updateField('${esc(c.id)}','footprintFt',this.value===''?null:+this.value)" placeholder="inherit"></td>
+            <td><input class="num ${hasSpaceOvr ? 'overridden' : 'inherited'}" type="number" step="0.25" min="0" value="${r.spacingFt}" onchange="updateField('${esc(c.id)}','spacingFt',this.value===''?null:+this.value)" placeholder="inherit"></td>
+            <td class="actions">
+              <button onclick="duplicateRow('${esc(c.id)}')">dup</button>
+              ${hasAnyOvr ? `<button class="revert" onclick="revertOverrides('${esc(c.id)}')" title="Clear overrides, inherit from species">revert</button>` : ''}
+              <button class="del" onclick="deleteRow('${esc(c.id)}')">del</button>
+            </td>
+          </tr>`;
+        }
+      }
+
+      tbody.innerHTML = html;
     }
 
-    function esc(s) { return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+    function updateSpeciesField(id, field, value) {
+      const sp = species.find(s => s.id === id);
+      if (!sp) return;
+      sp[field] = value;
+      saveSpecies();
+      render();
+    }
 
     function updateField(id, field, value) {
       const c = cultivars.find(x => x.id === id);
       if (!c) return;
       if (field === 'id') {
-        // Update the id
         c.id = value;
+      } else if (field === 'icon') {
+        if (value === '') {
+          delete c.icon;
+        } else {
+          c.icon = value;
+        }
+      } else if (field === 'color') {
+        const sp = speciesMap[c.speciesId];
+        if (sp && value === sp.color) {
+          delete c.color;
+        } else {
+          c.color = value;
+        }
+      } else if (field === 'footprintFt' || field === 'spacingFt') {
+        if (value === null) {
+          delete c[field];
+        } else {
+          const sp = speciesMap[c.speciesId];
+          if (sp && value === sp[field]) {
+            delete c[field];
+          } else {
+            c[field] = value;
+          }
+        }
       } else {
         c[field] = value;
       }
       save();
-      // Don't re-render on every keystroke for smooth editing
-      if (field === 'category') render();
+      if (['speciesId', 'icon'].includes(field)) render();
+    }
+
+    function revertOverrides(id) {
+      const c = cultivars.find(x => x.id === id);
+      if (!c) return;
+      delete c.color;
+      delete c.footprintFt;
+      delete c.spacingFt;
+      delete c.icon;
+      save();
+      render();
+      toast('Reverted overrides for ' + (resolve(c).name));
     }
 
     function addRow() {
+      const firstSpecies = species[0]?.id || 'tomato';
       const newId = 'new-cultivar-' + Date.now();
-      cultivars.push({
-        id: newId, name: 'New Cultivar', category: 'herbs',
-        taxonomicName: '', variety: null, color: '#4A7C59',
-        footprintFt: 0.5, spacingFt: 0.5
-      });
+      cultivars.push({ id: newId, speciesId: firstSpecies, variety: null });
       save(); render();
       toast('Added new cultivar');
+    }
+
+    function addCultivarToSpecies(speciesId) {
+      const newId = speciesId + '-var-' + Date.now();
+      cultivars.push({ id: newId, speciesId, variety: 'New Variety' });
+      save(); render();
+      toast('Added variety to ' + (speciesMap[speciesId]?.name || speciesId));
+    }
+
+    function addSpecies() {
+      const newId = 'new-species-' + Date.now();
+      species.push({ id: newId, name: 'New Species', taxonomicName: '', category: 'vegetables', icon: 'herb-sprig', color: '#888888', footprintFt: 0.5, spacingFt: 0.5 });
+      saveSpecies();
+      // Also add a base cultivar for it
+      cultivars.push({ id: newId, speciesId: newId, variety: null });
+      save(); render();
+      toast('Added new species');
+    }
+
+    function deleteSpecies(id) {
+      const sp = speciesMap[id];
+      const count = cultivars.filter(c => c.speciesId === id).length;
+      if (!confirm(`Delete species "${sp?.name || id}" and its ${count} cultivar(s)?`)) return;
+      species = species.filter(s => s.id !== id);
+      cultivars = cultivars.filter(c => c.speciesId !== id);
+      saveSpecies(); save(); render();
+      toast('Deleted ' + (sp?.name || id));
     }
 
     function duplicateRow(id) {
@@ -236,34 +420,43 @@
       const dup = { ...c, id: c.id + '-copy' };
       cultivars.push(dup);
       save(); render();
-      toast('Duplicated ' + c.name);
+      toast('Duplicated ' + resolve(c).name);
     }
 
     function deleteRow(id) {
       const c = cultivars.find(x => x.id === id);
-      if (!c || !confirm(`Delete "${c.name}"?`)) return;
+      if (!c || !confirm(`Delete "${resolve(c).name}"?`)) return;
       cultivars = cultivars.filter(x => x.id !== id);
       save(); render();
-      toast('Deleted ' + c.name);
+      toast('Deleted ' + resolve(c).name);
     }
 
     function showExport() {
-      document.getElementById('exportContent').textContent = JSON.stringify(cultivars, null, 2);
+      const data = { species, cultivars };
+      document.getElementById('exportContent').textContent = JSON.stringify(data, null, 2);
       document.getElementById('exportModal').classList.add('show');
     }
 
     function copyExport() {
-      navigator.clipboard.writeText(JSON.stringify(cultivars, null, 2));
+      const data = { species, cultivars };
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2));
       toast('Copied to clipboard');
     }
 
     function downloadExport() {
-      const blob = new Blob([JSON.stringify(cultivars, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'cultivars.json';
-      a.click();
-      toast('Downloaded cultivars.json');
+      // Download species and cultivars separately
+      const spBlob = new Blob([JSON.stringify(species, null, 2)], { type: 'application/json' });
+      const a1 = document.createElement('a');
+      a1.href = URL.createObjectURL(spBlob);
+      a1.download = 'species.json';
+      a1.click();
+
+      const cvBlob = new Blob([JSON.stringify(cultivars, null, 2)], { type: 'application/json' });
+      const a2 = document.createElement('a');
+      a2.href = URL.createObjectURL(cvBlob);
+      a2.download = 'cultivars.json';
+      a2.click();
+      toast('Downloaded species.json & cultivars.json');
     }
 
     function showImport() {
@@ -273,22 +466,37 @@
 
     function doImport() {
       try {
-        const data = JSON.parse(document.getElementById('importArea').value);
-        if (!Array.isArray(data)) throw new Error('Must be an array');
-        cultivars = data;
-        save(); render();
+        const text = document.getElementById('importArea').value;
+        const data = JSON.parse(text);
+        if (Array.isArray(data)) {
+          // Legacy: cultivars-only array
+          cultivars = data;
+          save(); render();
+        } else if (data.species && data.cultivars) {
+          species = data.species;
+          cultivars = data.cultivars;
+          saveSpecies(); save(); render();
+        } else {
+          throw new Error('Expected array or {species, cultivars} object');
+        }
         closeModal('importModal');
-        toast('Imported ' + data.length + ' cultivars');
+        toast('Imported ' + cultivars.length + ' cultivars, ' + species.length + ' species');
       } catch (e) {
         alert('Invalid JSON: ' + e.message);
       }
+    }
+
+    function resetData() {
+      if (!confirm('Reset all changes and reload defaults from disk?')) return;
+      localStorage.removeItem('species-editor-data');
+      localStorage.removeItem('cultivars-editor-data');
+      location.reload();
     }
 
     function closeModal(id) {
       document.getElementById(id).classList.remove('show');
     }
 
-    // Close modals on escape
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
