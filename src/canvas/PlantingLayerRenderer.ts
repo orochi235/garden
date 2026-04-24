@@ -8,6 +8,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   selectedIds: string[] = [];
   showSpacing: boolean = false;
+  showLabels: boolean = false;
   hideIds: string[] = [];
   overlayPlantings: Planting[] = [];
   overlaySnapped: boolean = false;
@@ -27,6 +28,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
       this.highlight,
       this.selectedIds,
       this.showSpacing,
+      this.showLabels,
     );
     if (this.overlayPlantings.length > 0) {
       renderOverlayPlantings(ctx, this.overlayPlantings, this.zones, this.structures, this.view, this.overlaySnapped);

@@ -5,6 +5,7 @@ import { renderStructures } from './renderStructures';
 export class StructureLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   showSurfaces = false;
+  showLabels = false;
   hideIds: string[] = [];
   overlayStructures: Structure[] = [];
   overlaySnapped: boolean = false;
@@ -21,6 +22,8 @@ export class StructureLayerRenderer extends LayerRenderer {
       this.height,
       this.highlight,
       this.showSurfaces,
+      false,
+      this.showLabels,
     );
     if (this.overlayStructures.length > 0) {
       ctx.save();

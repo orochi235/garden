@@ -2,6 +2,7 @@ import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, StructureShape, Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
+import { renderLabel } from './renderLabel';
 
 interface SelectableObject {
   id: string;
@@ -98,16 +99,7 @@ export function renderSelection(
 
     // Label below object
     if (obj.label) {
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      const textX = sx + w / 2;
-      const textY = sy + h + 8;
-      const metrics = ctx.measureText(obj.label);
-      ctx.fillRect(textX - metrics.width / 2 - 3, textY - 1, metrics.width + 6, 14);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(obj.label, textX, textY);
+      renderLabel(ctx, obj.label, sx + w / 2, sy + h + 8, { align: 'center', fontSize: 10 });
     }
   }
 }

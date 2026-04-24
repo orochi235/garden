@@ -3,6 +3,7 @@ import type { Planting, Structure, Zone, LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 
 export type ViewMode = 'select' | 'pan' | 'zoom' | 'draw';
+export type LabelMode = 'all' | 'active-layer' | 'selection';
 
 export interface DragOverlay {
   layer: 'plantings' | 'structures' | 'zones';
@@ -36,6 +37,7 @@ interface UiStore {
   showSurfaces: boolean;
   showPlantingSpacing: boolean;
   magentaHighlight: boolean;
+  labelMode: LabelMode;
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
@@ -45,6 +47,7 @@ interface UiStore {
   setShowSurfaces: (show: boolean) => void;
   setShowPlantingSpacing: (show: boolean) => void;
   setMagentaHighlight: (show: boolean) => void;
+  setLabelMode: (mode: LabelMode) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
@@ -82,6 +85,7 @@ export const useUiStore = create<UiStore>((set) => ({
   showSurfaces: false,
   showPlantingSpacing: false,
   magentaHighlight: false,
+  labelMode: 'selection' as LabelMode,
   layerFlashCounter: 0,
   viewMode: 'select',
   dragOverlay: null,
@@ -91,6 +95,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setShowSurfaces: (show) => set({ showSurfaces: show }),
   setShowPlantingSpacing: (show) => set({ showPlantingSpacing: show }),
   setMagentaHighlight: (show) => set({ magentaHighlight: show }),
+  setLabelMode: (mode) => set({ labelMode: mode }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
@@ -131,6 +136,7 @@ export const useUiStore = create<UiStore>((set) => ({
       showSurfaces: false,
       showPlantingSpacing: false,
       magentaHighlight: false,
+      labelMode: 'selection' as LabelMode,
       layerFlashCounter: 0,
       viewMode: 'select',
       dragOverlay: null,

@@ -2,6 +2,7 @@ import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
+import { renderLabel } from './renderLabel';
 import { renderPatternOverlay } from './patterns';
 
 export function renderStructures(
@@ -13,6 +14,7 @@ export function renderStructures(
   highlightOpacity: number = 0,
   showSurfaces: boolean = false,
   skipClear: boolean = false,
+  showLabels: boolean = false,
 ): void {
   if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (structures.length === 0) return;
@@ -43,6 +45,13 @@ export function renderStructures(
       ctx.beginPath();
       ctx.ellipse(cx, cy, r - rimWidth, r - rimWidth, 0, 0, Math.PI * 2);
       ctx.fill();
+      // Soil texture for potting mix
+      if (s.fill === 'potting-mix') {
+        const innerD = (r - rimWidth) * 2;
+        renderPatternOverlay(ctx, 'chunks', {
+          x: cx - (r - rimWidth), y: cy - (r - rimWidth), w: innerD, h: innerD, shape: 'circle',
+        }, { params: { bg: FILL_COLORS[s.fill] } });
+      }
     } else if (s.type === 'raised-bed') {
       const wallWidth = Math.max(3, view.zoom * 0.15);
       // Outer wall
@@ -51,6 +60,12 @@ export function renderStructures(
       // Inner fill
       ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
       ctx.fillRect(sx + wallWidth, sy + wallWidth, sw - wallWidth * 2, sh - wallWidth * 2);
+      // Soil texture for potting mix
+      if (s.fill === 'potting-mix') {
+        renderPatternOverlay(ctx, 'chunks', {
+          x: sx + wallWidth, y: sy + wallWidth, w: sw - wallWidth * 2, h: sh - wallWidth * 2, shape: 'rectangle',
+        }, { params: { bg: FILL_COLORS[s.fill] } });
+      }
     } else if (s.shape === 'circle') {
       const cx = sx + sw / 2;
       const cy = sy + sh / 2;
@@ -86,6 +101,10 @@ export function renderStructures(
         x: sx, y: sy, w: sw, h: sh,
         shape: s.shape === 'circle' ? 'circle' : 'rectangle',
       });
+    }
+
+    if (showLabels && s.label) {
+      renderLabel(ctx, s.label, sx + sw / 2, sy + sh + 4, { fontSize: 10 });
     }
 
   }

@@ -1,6 +1,7 @@
 import type { Zone } from '../model/types';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
+import { renderLabel } from './renderLabel';
 import type { PatternId } from './patterns';
 import { renderPatternOverlay } from './patterns';
 
@@ -13,6 +14,7 @@ export function renderZones(
   highlightOpacity: number = 0,
   patternOverride: PatternId | null = null,
   skipClear: boolean = false,
+  showLabels: boolean = false,
 ): void {
   if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (zones.length === 0) return;
@@ -46,6 +48,10 @@ export function renderZones(
       ctx.setLineDash([]);
       ctx.strokeRect(sx, sy, sw, sh);
       ctx.restore();
+    }
+
+    if (showLabels && z.label) {
+      renderLabel(ctx, z.label, sx + sw / 2, sy + sh + 4, { fontSize: 10 });
     }
 
   }

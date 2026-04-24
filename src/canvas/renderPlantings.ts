@@ -1,8 +1,11 @@
 import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
+import { getSpecies } from '../model/species';
 import type { ViewTransform } from '../utils/grid';
 import { worldToScreen } from '../utils/grid';
+import type { TextRenderer } from './renderLabel';
+import { renderLabel } from './renderLabel';
 import { renderPlant } from './plantRenderers';
 
 interface PlantingParent {
@@ -36,6 +39,7 @@ export function renderPlantings(
   highlightOpacity: number = 0,
   selectedIds: string[] = [],
   showSpacing: boolean = false,
+  showLabels: boolean = false,
 ): void {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (plantings.length === 0) return;
@@ -49,7 +53,6 @@ export function renderPlantings(
     if (s.container) parentMap.set(s.id, s);
   }
 
-  const showLabel = view.zoom >= 0.5;
   ctx.font = '13px sans-serif';
 
   // Collect occupied rects from structures and zones
@@ -70,7 +73,7 @@ export function renderPlantings(
   }
 
   // First pass: render plants and collect their bounding rects
-  const labelCandidates: { text: string; rect: RenderedRect; selected: boolean }[] = [];
+  const labelCandidates: { text: string; rect: RenderedRect; selected: boolean; renderText?: TextRenderer }[] = [];
 
   for (const p of plantings) {
     const parent = parentMap.get(p.parentId);
@@ -130,32 +133,61 @@ export function renderPlantings(
     // Track the plant's bounding box
     occupied.push({ x: sx - radius, y: sy - radius, w: radius * 2, h: radius * 2 });
 
-    const labelText = p.label || cultivar?.name || p.cultivarId;
-    if ((showLabel || highlightOpacity > 0) && labelText) {
-      const labelW = ctx.measureText(labelText).width;
-      const labelH = 13;
-      const labelX = sx - labelW / 2;
+    const isSelected = selectedIds.includes(p.id);
+    if ((showLabels || isSelected || highlightOpacity > 0) && cultivar) {
+      const species = getSpecies(cultivar.speciesId);
+      const speciesName = species?.name ?? cultivar.name;
+      const variety = cultivar.variety;
+
+      // Measure the wider line to size the pill
+      ctx.font = 'bold 13px sans-serif';
+      const speciesW = ctx.measureText(speciesName).width;
+      let labelW = speciesW;
+      let labelH = 13;
+      if (variety) {
+        ctx.font = 'italic 11px sans-serif';
+        const varietyW = ctx.measureText(variety).width;
+        labelW = Math.max(speciesW, varietyW);
+        labelH = 28; // two lines
+      }
+      ctx.font = '13px sans-serif'; // restore
+
+      const labelX = sx;
       const labelY = sy + radius + 8;
+      const displayText = variety ? `${speciesName}\n${variety}` : speciesName;
+
+      const plantTextRenderer: TextRenderer = (c, _text, tx, ty) => {
+        c.textAlign = 'center';
+        c.fillStyle = '#FFFFFF';
+        c.font = 'bold 13px sans-serif';
+        c.fillText(speciesName, tx, ty);
+        if (variety) {
+          c.font = 'italic 11px sans-serif';
+          c.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          c.fillText(variety, tx, ty + 15);
+        }
+      };
+
       labelCandidates.push({
-        text: labelText,
-        rect: { x: labelX, y: labelY, w: labelW, h: labelH },
+        text: displayText,
+        rect: { x: sx - labelW / 2, y: labelY, w: labelW, h: labelH },
         selected: selectedIds.includes(p.id),
+        renderText: plantTextRenderer,
       });
     }
   }
 
   // Second pass: render labels that don't overlap other objects
-  ctx.fillStyle = '#1A2E22';
-  ctx.font = '13px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-
   for (const label of labelCandidates) {
     if (!label.selected) {
       const overlaps = occupied.some((r) => rectsOverlap(label.rect, r));
       if (overlaps) continue;
     }
-    ctx.fillText(label.text, label.rect.x, label.rect.y);
+    renderLabel(ctx, label.text, label.rect.x + label.rect.w / 2, label.rect.y, {
+      renderText: label.renderText,
+      width: label.rect.w,
+      height: label.rect.h,
+    });
     // Add label to occupied so later labels don't overlap it either
     occupied.push(label.rect);
   }

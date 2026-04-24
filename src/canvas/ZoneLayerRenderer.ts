@@ -4,6 +4,7 @@ import { renderZones } from './renderZones';
 
 export class ZoneLayerRenderer extends LayerRenderer {
   zones: Zone[] = [];
+  showLabels = false;
   hideIds: string[] = [];
   overlayZones: Zone[] = [];
   overlaySnapped: boolean = false;
@@ -19,6 +20,9 @@ export class ZoneLayerRenderer extends LayerRenderer {
       this.width,
       this.height,
       this.highlight,
+      null,
+      false,
+      this.showLabels,
     );
     if (this.overlayZones.length > 0) {
       ctx.save();

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Blueprint, DisplayUnit, LayerId } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
+import type { LabelMode } from '../../store/uiStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
@@ -65,11 +66,19 @@ function LayerSection({
   );
 }
 
+const LABEL_MODES: { value: LabelMode; label: string }[] = [
+  { value: 'all', label: 'All layers' },
+  { value: 'active-layer', label: 'Active layer' },
+  { value: 'selection', label: 'Selection' },
+];
+
 function DebugThemePanel() {
   const themeOverride = useUiStore((s) => s.themeOverride);
   const setThemeOverride = useUiStore((s) => s.setThemeOverride);
   const magentaHighlight = useUiStore((s) => s.magentaHighlight);
   const setMagentaHighlight = useUiStore((s) => s.setMagentaHighlight);
+  const labelMode = useUiStore((s) => s.labelMode);
+  const setLabelMode = useUiStore((s) => s.setLabelMode);
   const loadGarden = useGardenStore((s) => s.loadGarden);
 
   function handleResetGarden() {
@@ -152,6 +161,21 @@ function DebugThemePanel() {
         />
         <span>Magenta highlight</span>
       </label>
+      <hr className={styles.themeDivider} />
+      <fieldset className={styles.radioGroup}>
+        <legend className={styles.radioLegend}>Show labels</legend>
+        {LABEL_MODES.map((m) => (
+          <label key={m.value} className={styles.radioLabel}>
+            <input
+              type="radio"
+              name="labelMode"
+              checked={labelMode === m.value}
+              onChange={() => setLabelMode(m.value)}
+            />
+            <span>{m.label}</span>
+          </label>
+        ))}
+      </fieldset>
       <hr className={styles.themeDivider} />
       <button
         className={styles.resetButton}

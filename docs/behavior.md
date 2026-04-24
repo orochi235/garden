@@ -27,6 +27,13 @@ Running list of intended application behaviors.
 
 - Only show object labels while the object is selected
 - Labels appear below the object in smaller text
+- Label text supports a minimal markdown syntax:
+  - `*text*` for italic, `**text**` for bold, `***text***` for bold italic
+  - `[text]` increases font size by 2px per nesting level, `(text)` decreases by 2px
+  - `\n` or literal newlines for line breaks
+  - Backslash-escape special characters: `\*`, `\[`, `\]`, `\(`, `\)`, `\\`
+  - Labels accept a max width for word wrapping at space boundaries
+- Label visibility is controlled by a debug toggle with three modes: all layers, active layer, selection only (default)
 
 ## Scale Indicator
 

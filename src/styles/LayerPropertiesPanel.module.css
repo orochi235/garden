@@ -133,3 +133,25 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 2px;
 }
+.radioGroup {
+  border: none;
+  padding: 4px 8px;
+  margin: 0;
+}
+.radioLegend {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: 0 0 4px;
+}
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 2px 0;
+}
+.radioLabel input {
+  accent-color: var(--color-leaf);
+}
