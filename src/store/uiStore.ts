@@ -32,7 +32,7 @@ interface UiStore {
   panX: number;
   panY: number;
   plottingTool: PlottingTool | null;
-  themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
+  themeOverride: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
   showSurfaces: boolean;
   showPlantingSpacing: boolean;
@@ -52,7 +52,7 @@ interface UiStore {
   setLabelFontSize: (size: number) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
-  setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
+  setThemeOverride: (period: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null) => void;
   setActiveLayer: (layer: LayerId, flash?: boolean) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
