@@ -23,8 +23,15 @@ export function parseMarkdownRuns(input: string): StyledRun[] {
   while (i < input.length) {
     const ch = input[i];
 
+    // Backslash escape
+    if (ch === '\\' && i + 1 < input.length && '*[]()\\'.includes(input[i + 1])) {
+      buf += input[i + 1];
+      i += 2;
+      continue;
+    }
+
+    // Asterisks toggle bold/italic
     if (ch === '*') {
-      // Count consecutive asterisks
       let count = 0;
       while (i + count < input.length && input[i + count] === '*') count++;
       flush();
@@ -39,6 +46,40 @@ export function parseMarkdownRuns(input: string): StyledRun[] {
         italic = !italic;
         i += 1;
       }
+      continue;
+    }
+
+    // Size modifiers
+    if (ch === '[') {
+      flush();
+      sizeOffset += 2;
+      i++;
+      continue;
+    }
+    if (ch === ']') {
+      flush();
+      sizeOffset -= 2;
+      i++;
+      continue;
+    }
+    if (ch === '(') {
+      flush();
+      sizeOffset -= 2;
+      i++;
+      continue;
+    }
+    if (ch === ')') {
+      flush();
+      sizeOffset += 2;
+      i++;
+      continue;
+    }
+
+    // Newline
+    if (ch === '\n') {
+      flush();
+      runs.push({ text: '\n', bold: false, italic: false, sizeOffset: 0 });
+      i++;
       continue;
     }
 
