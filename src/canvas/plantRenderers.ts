@@ -54,25 +54,12 @@ function drawFallback(
   shape: PlantShape,
 ): void {
   ctx.save();
-  ctx.globalAlpha = 0.5;
-  ctx.fillStyle = color;
-  if (shape === 'circle') {
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
-  }
   ctx.globalAlpha = 0.7;
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(1, radius * 0.06);
-  if (shape === 'circle') {
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.stroke();
-  } else {
-    ctx.strokeRect(-radius, -radius, radius * 2, radius * 2);
-  }
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -87,25 +74,35 @@ export function renderPlant(
   radius: number,
   color: string,
   shape: PlantShape = 'square',
+  iconBgColor?: string | null,
 ): void {
   const cultivar = getCultivar(cultivarId);
   const dataUri = cultivar?.iconImage;
+  const bgColor = iconBgColor ?? cultivar?.iconBgColor ?? color;
+
+  // Always draw the footprint circle background
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.restore();
 
   if (dataUri) {
     const img = getImage(dataUri);
     if (img) {
       ctx.save();
-      if (shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(0, 0, radius, 0, Math.PI * 2);
-        ctx.clip();
-      }
+      // Clip to circle regardless of shape
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.clip();
       ctx.drawImage(img, -radius, -radius, radius * 2, radius * 2);
       ctx.restore();
       return;
     }
   }
 
+  // Fallback: draw colored shape on top of the bg circle
   drawFallback(ctx, radius, color, shape);
 }
 
