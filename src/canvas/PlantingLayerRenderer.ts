@@ -8,7 +8,9 @@ export class PlantingLayerRenderer extends LayerRenderer {
   zones: Zone[] = [];
   structures: Structure[] = [];
   selectedIds: string[] = [];
-  showSpacing: boolean = false;
+  showSpacingBorders: boolean = true;
+  showFootprintCircles: boolean = true;
+  showMeasurements: boolean = false;
   labelMode: LabelMode | 'none' = 'none';
   labelFontSize = 13;
   plantIconScale = 1;
@@ -26,7 +28,9 @@ export class PlantingLayerRenderer extends LayerRenderer {
       canvasHeight: this.height,
       highlightOpacity: this.highlight,
       selectedIds: this.selectedIds,
-      showSpacing: this.showSpacing,
+      showSpacingBorders: this.showSpacingBorders,
+      showFootprintCircles: this.showFootprintCircles,
+      showMeasurements: this.showMeasurements,
       labelMode: this.labelMode,
       labelFontSize: this.labelFontSize,
       plantIconScale: this.plantIconScale,

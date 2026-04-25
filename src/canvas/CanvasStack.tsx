@@ -51,7 +51,9 @@ export function CanvasStack() {
   const activeLayer = useUiStore((s) => s.activeLayer);
   const layerSelectorHovered = useUiStore((s) => s.layerSelectorHovered);
   const showSurfaces = useUiStore((s) => s.showSurfaces);
-  const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
+  const showSpacingBorders = useUiStore((s) => s.showSpacingBorders);
+  const showFootprintCircles = useUiStore((s) => s.showFootprintCircles);
+  const showMeasurements = useUiStore((s) => s.showMeasurements);
   const labelMode = useUiStore((s) => s.labelMode);
   const labelFontSize = useUiStore((s) => s.labelFontSize);
   const plantIconScale = useUiStore((s) => s.plantIconScale);
@@ -197,7 +199,9 @@ export function CanvasStack() {
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
-  plantingRenderer.current.showSpacing = showPlantingSpacing;
+  plantingRenderer.current.showSpacingBorders = showSpacingBorders;
+  plantingRenderer.current.showFootprintCircles = showFootprintCircles;
+  plantingRenderer.current.showMeasurements = showMeasurements;
   plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
   plantingRenderer.current.labelFontSize = labelFontSize;
   plantingRenderer.current.plantIconScale = plantIconScale;
@@ -247,7 +251,7 @@ export function CanvasStack() {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showSpacingBorders, showFootprintCircles, showMeasurements, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
