@@ -44,8 +44,11 @@ export function renderPlantings(
     labelMode = 'none',
     labelFontSize = 13,
     selectedIds = [],
-    showSpacing = false,
+    showSpacingBorders = true,
+    showFootprintCircles = true,
+    showMeasurements = false,
     plantIconScale = 1,
+    overlays,
   } = opts;
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -92,16 +95,40 @@ export function renderPlantings(
       ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom * plantIconScale)
       : Math.max(3, (footprint / 2) * view.zoom * plantIconScale);
 
-    if (showSpacing) {
-      const spacingHalf = (spacing / 2) * view.zoom;
+    const overlay = overlays?.get(p.id);
+
+    // Draw spacing border
+    if (showSpacingBorders && !isSingleFill) {
+      const spacingHalf = (spacing / 2) * view.zoom * plantIconScale;
+      const borderStroke = overlay?.spacingStroke ?? 'rgba(255, 255, 255, 0.3)';
+      const borderOpacity = overlay?.spacingOpacity ?? 1;
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(sx - spacingHalf, sy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.globalAlpha = borderOpacity;
+      ctx.strokeStyle = borderStroke;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      if (parent.shape === 'circle') {
+        ctx.arc(sx, sy, spacingHalf, 0, Math.PI * 2);
+      } else {
+        ctx.rect(sx - spacingHalf, sy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // Draw highlight ring from overlay
+    if (overlay?.highlightRing) {
+      const ringRadius = (overlay.highlightRing.radiusFt / 2) * view.zoom * plantIconScale;
+      ctx.save();
+      ctx.strokeStyle = overlay.highlightRing.color;
+      ctx.lineWidth = 1.5;
+      if (overlay.highlightRing.dashPattern) {
+        ctx.setLineDash(overlay.highlightRing.dashPattern);
+      }
+      ctx.beginPath();
+      ctx.arc(sx, sy, ringRadius, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
@@ -109,10 +136,28 @@ export function renderPlantings(
 
     const shape = isSingleFill && parent.shape === 'circle' ? 'circle' as const : 'square' as const;
 
+    const footprintFill = overlay?.footprintFill ?? null;
+    const footprintOpacity = overlay?.footprintOpacity ?? 1;
+
     ctx.save();
     ctx.translate(sx, sy);
-    renderPlant(ctx, p.cultivarId, radius, color, shape);
+    if (footprintOpacity !== 1) ctx.globalAlpha = footprintOpacity;
+    renderPlant(ctx, p.cultivarId, radius, color, shape, showFootprintCircles ? (footprintFill ?? undefined) : 'transparent');
     ctx.restore();
+
+    // Draw measurement labels
+    if (showMeasurements && !isSingleFill) {
+      const ftLabel = `${footprint.toFixed(1)}ft`;
+      const spLabel = `${spacing.toFixed(1)}ft`;
+      ctx.save();
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillText(ftLabel, sx + radius + 3, sy - 2);
+      ctx.fillStyle = 'rgba(255, 255, 200, 0.5)';
+      ctx.fillText(spLabel, sx + radius + 3, sy + 8);
+      ctx.restore();
+    }
 
     if (highlightOpacity > 0) {
       ctx.save();
