@@ -3,7 +3,7 @@ import { computeSlots } from '../model/arrangement';
 import type { Arrangement, ParentBounds } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
-import { createGarden, createPlanting, createStructure, createZone } from '../model/types';
+import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT } from '../model/types';
 import { structuresCollide } from '../utils/collision';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
@@ -185,6 +185,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     loadGarden: (garden) => {
       clearHistory();
+      // Backfill wallThicknessFt for saves predating the field
+      for (const s of garden.structures) {
+        if (s.wallThicknessFt == null) {
+          s.wallThicknessFt = DEFAULT_WALL_THICKNESS_FT[s.type] ?? 0;
+        }
+      }
       set({ garden });
     },
 

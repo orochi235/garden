@@ -27,6 +27,7 @@ describe('hitTestPlantings', () => {
       container: true,
       fill: 'soil',
       arrangement: null,
+      wallThicknessFt: 1 / 12,
     },
   ];
   const zones: Zone[] = [];
@@ -118,6 +119,7 @@ describe('hitTestObjects', () => {
       container: true,
       fill: 'soil',
       arrangement: { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, direction: 0, marginFt: 0.25 },
+      wallThicknessFt: 1 / 12,
     },
   ];
   const zones: Zone[] = [

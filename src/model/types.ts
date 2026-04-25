@@ -34,6 +34,7 @@ export interface Structure {
   container: boolean;
   fill: FillType | null;
   arrangement: Arrangement | null;
+  wallThicknessFt: number;
 }
 
 export type FillType = 'soil' | 'sand' | 'rocks' | 'peat' | 'potting-mix';
@@ -125,8 +126,13 @@ const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
 };
 
 const SURFACE_TYPES = new Set(['patio', 'path']);
-// TODO: containers should have some conception of their wall thickness/internal area for child shading purposes
 const CONTAINER_TYPES = new Set(['raised-bed', 'pot', 'felt-planter']);
+
+export const DEFAULT_WALL_THICKNESS_FT: Record<string, number> = {
+  'raised-bed': 1 / 12,
+  pot: 0.06,
+  'felt-planter': 0.04,
+};
 
 const DEFAULT_ARRANGEMENTS: Record<string, () => Arrangement> = {
   'raised-bed': () => defaultArrangement('rows'),
@@ -160,6 +166,7 @@ export function createStructure(opts: {
     container: CONTAINER_TYPES.has(opts.type),
     fill: CONTAINER_TYPES.has(opts.type) ? 'soil' : null,
     arrangement: DEFAULT_ARRANGEMENTS[opts.type]?.() ?? null,
+    wallThicknessFt: DEFAULT_WALL_THICKNESS_FT[opts.type] ?? 0,
   };
 }
 

@@ -39,7 +39,7 @@ export function renderStructures(
       const cx = sx + sw / 2;
       const cy = sy + sh / 2;
       const r = Math.min(sw, sh) / 2;
-      const rimWidth = s.type === 'felt-planter' ? Math.max(1.5, view.zoom * 0.04) : Math.max(2, view.zoom * 0.06);
+      const rimWidth = Math.max(1.5, s.wallThicknessFt * view.zoom);
       // Outer rim
       ctx.beginPath();
       ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
@@ -58,7 +58,7 @@ export function renderStructures(
         }, { params: { bg: FILL_COLORS[s.fill] } });
       }
     } else if (s.type === 'raised-bed') {
-      const wallWidth = Math.max(3, view.zoom * 0.15);
+      const wallWidth = Math.max(2, s.wallThicknessFt * view.zoom);
       // Outer wall
       ctx.fillRect(sx, sy, sw, sh);
       ctx.strokeRect(sx, sy, sw, sh);
