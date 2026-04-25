@@ -268,10 +268,11 @@ export function renderOverlayPlantings(
 
     const shape = isSingleFill && parent.shape === 'circle' ? 'circle' as const : 'square' as const;
 
+    const cultivarBgColor = cultivar?.iconBgColor ?? null;
     ctx.save();
     if (snapped) ctx.globalAlpha = 0.4;
     ctx.translate(sx, sy);
-    renderPlant(ctx, p.cultivarId, radius, color, shape);
+    renderPlant(ctx, p.cultivarId, radius, color, shape, cultivarBgColor);
     ctx.restore();
 
     if (snapped) {
