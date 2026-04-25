@@ -134,22 +134,48 @@ describe('uiStore', () => {
     });
   });
 
-  describe('showPlantingSpacing', () => {
-    it('starts as false', () => {
-      expect(useUiStore.getState().showPlantingSpacing).toBe(false);
+  describe('plant rendering toggles', () => {
+    it('showSpacingBorders starts as true', () => {
+      expect(useUiStore.getState().showSpacingBorders).toBe(true);
     });
 
-    it('toggles on and off', () => {
-      useUiStore.getState().setShowPlantingSpacing(true);
-      expect(useUiStore.getState().showPlantingSpacing).toBe(true);
-      useUiStore.getState().setShowPlantingSpacing(false);
-      expect(useUiStore.getState().showPlantingSpacing).toBe(false);
+    it('showFootprintCircles starts as true', () => {
+      expect(useUiStore.getState().showFootprintCircles).toBe(true);
     });
 
-    it('resets to false on store reset', () => {
-      useUiStore.getState().setShowPlantingSpacing(true);
+    it('showMeasurements starts as false', () => {
+      expect(useUiStore.getState().showMeasurements).toBe(false);
+    });
+
+    it('toggles showSpacingBorders on and off', () => {
+      useUiStore.getState().setShowSpacingBorders(false);
+      expect(useUiStore.getState().showSpacingBorders).toBe(false);
+      useUiStore.getState().setShowSpacingBorders(true);
+      expect(useUiStore.getState().showSpacingBorders).toBe(true);
+    });
+
+    it('toggles showFootprintCircles on and off', () => {
+      useUiStore.getState().setShowFootprintCircles(false);
+      expect(useUiStore.getState().showFootprintCircles).toBe(false);
+      useUiStore.getState().setShowFootprintCircles(true);
+      expect(useUiStore.getState().showFootprintCircles).toBe(true);
+    });
+
+    it('toggles showMeasurements on and off', () => {
+      useUiStore.getState().setShowMeasurements(true);
+      expect(useUiStore.getState().showMeasurements).toBe(true);
+      useUiStore.getState().setShowMeasurements(false);
+      expect(useUiStore.getState().showMeasurements).toBe(false);
+    });
+
+    it('resets all to defaults on store reset', () => {
+      useUiStore.getState().setShowSpacingBorders(false);
+      useUiStore.getState().setShowFootprintCircles(false);
+      useUiStore.getState().setShowMeasurements(true);
       useUiStore.getState().reset();
-      expect(useUiStore.getState().showPlantingSpacing).toBe(false);
+      expect(useUiStore.getState().showSpacingBorders).toBe(true);
+      expect(useUiStore.getState().showFootprintCircles).toBe(true);
+      expect(useUiStore.getState().showMeasurements).toBe(false);
     });
   });
 

@@ -35,7 +35,9 @@ interface UiStore {
   themeOverride: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
   showSurfaces: boolean;
-  showPlantingSpacing: boolean;
+  showSpacingBorders: boolean;
+  showFootprintCircles: boolean;
+  showMeasurements: boolean;
   magentaHighlight: boolean;
   labelMode: LabelMode;
   labelFontSize: number;
@@ -47,7 +49,9 @@ interface UiStore {
   clearDragOverlay: () => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
   setShowSurfaces: (show: boolean) => void;
-  setShowPlantingSpacing: (show: boolean) => void;
+  setShowSpacingBorders: (show: boolean) => void;
+  setShowFootprintCircles: (show: boolean) => void;
+  setShowMeasurements: (show: boolean) => void;
   setMagentaHighlight: (show: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
   setLabelFontSize: (size: number) => void;
@@ -87,7 +91,9 @@ export const useUiStore = create<UiStore>((set) => ({
   themeOverride: null,
   layerSelectorHovered: false,
   showSurfaces: false,
-  showPlantingSpacing: false,
+  showSpacingBorders: true,
+  showFootprintCircles: true,
+  showMeasurements: false,
   magentaHighlight: false,
   labelMode: 'selection' as LabelMode,
   labelFontSize: 13,
@@ -99,7 +105,9 @@ export const useUiStore = create<UiStore>((set) => ({
   clearDragOverlay: () => set({ dragOverlay: null }),
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
   setShowSurfaces: (show) => set({ showSurfaces: show }),
-  setShowPlantingSpacing: (show) => set({ showPlantingSpacing: show }),
+  setShowSpacingBorders: (show) => set({ showSpacingBorders: show }),
+  setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),
+  setShowMeasurements: (show) => set({ showMeasurements: show }),
   setMagentaHighlight: (show) => set({ magentaHighlight: show }),
   setLabelMode: (mode) => set({ labelMode: mode }),
   setLabelFontSize: (size) => set({ labelFontSize: size }),
@@ -142,7 +150,9 @@ export const useUiStore = create<UiStore>((set) => ({
       themeOverride: null,
       layerSelectorHovered: false,
       showSurfaces: false,
-      showPlantingSpacing: false,
+      showSpacingBorders: true,
+      showFootprintCircles: true,
+      showMeasurements: false,
       magentaHighlight: false,
       labelMode: 'selection' as LabelMode,
       labelFontSize: 13,
