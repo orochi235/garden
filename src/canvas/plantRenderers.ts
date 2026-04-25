@@ -7,7 +7,6 @@
 
 import { getCultivar } from '../model/cultivars';
 
-export type PlantShape = 'square' | 'circle';
 
 // ---------------------------------------------------------------------------
 // Image cache — decode base64 data URIs once, reuse across frames
@@ -51,7 +50,6 @@ function drawFallback(
   ctx: CanvasRenderingContext2D,
   radius: number,
   color: string,
-  shape: PlantShape,
 ): void {
   ctx.save();
   ctx.globalAlpha = 0.7;
@@ -73,7 +71,6 @@ export function renderPlant(
   cultivarId: string,
   radius: number,
   color: string,
-  shape: PlantShape = 'square',
   iconBgColor?: string | null,
 ): void {
   const cultivar = getCultivar(cultivarId);
@@ -103,7 +100,7 @@ export function renderPlant(
   }
 
   // Fallback: draw colored shape on top of the bg circle
-  drawFallback(ctx, radius, color, shape);
+  drawFallback(ctx, radius, color);
 }
 
 /** Render a plant icon — used for palette buttons. */
@@ -124,5 +121,5 @@ export function renderIcon(
     }
   }
 
-  drawFallback(ctx, radius, color, 'square');
+  drawFallback(ctx, radius, color);
 }

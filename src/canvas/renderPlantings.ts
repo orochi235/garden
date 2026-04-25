@@ -134,15 +134,13 @@ export function renderPlantings(
       ctx.restore();
     }
 
-    const shape = isSingleFill && parent.shape === 'circle' ? 'circle' as const : 'square' as const;
-
     const footprintFill = overlay?.footprintFill ?? null;
     const footprintOpacity = overlay?.footprintOpacity ?? 1;
 
     ctx.save();
     ctx.translate(sx, sy);
     if (footprintOpacity !== 1) ctx.globalAlpha = footprintOpacity;
-    renderPlant(ctx, p.cultivarId, radius, color, shape, showFootprintCircles ? (footprintFill ?? undefined) : 'transparent');
+    renderPlant(ctx, p.cultivarId, radius, color, showFootprintCircles ? (footprintFill ?? undefined) : 'transparent');
     ctx.restore();
 
     // Draw measurement labels
@@ -165,11 +163,7 @@ export function renderPlantings(
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      if (shape === 'circle') {
-        ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
-      } else {
-        ctx.rect(sx - radius - 1, sy - radius - 1, (radius + 1) * 2, (radius + 1) * 2);
-      }
+      ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
@@ -266,13 +260,11 @@ export function renderOverlayPlantings(
       ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom)
       : Math.max(3, (footprint / 2) * view.zoom);
 
-    const shape = isSingleFill && parent.shape === 'circle' ? 'circle' as const : 'square' as const;
-
     const cultivarBgColor = cultivar?.iconBgColor ?? null;
     ctx.save();
     if (snapped) ctx.globalAlpha = 0.4;
     ctx.translate(sx, sy);
-    renderPlant(ctx, p.cultivarId, radius, color, shape, cultivarBgColor);
+    renderPlant(ctx, p.cultivarId, radius, color, cultivarBgColor);
     ctx.restore();
 
     if (snapped) {
@@ -282,11 +274,7 @@ export function renderOverlayPlantings(
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
-      if (shape === 'circle') {
-        ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
-      } else {
-        ctx.rect(sx - radius - 1, sy - radius - 1, (radius + 1) * 2, (radius + 1) * 2);
-      }
+      ctx.arc(sx, sy, radius + 1, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
