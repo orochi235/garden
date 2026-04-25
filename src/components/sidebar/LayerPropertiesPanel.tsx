@@ -241,6 +241,8 @@ export function LayerPropertiesPanel() {
   const setShowFootprintCircles = useUiStore((s) => s.setShowFootprintCircles);
   const showMeasurements = useUiStore((s) => s.showMeasurements);
   const setShowMeasurements = useUiStore((s) => s.setShowMeasurements);
+  const showPlantableArea = useUiStore((s) => s.showPlantableArea);
+  const setShowPlantableArea = useUiStore((s) => s.setShowPlantableArea);
   const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const unit = garden.displayUnit;
 
@@ -407,6 +409,14 @@ export function LayerPropertiesPanel() {
               )}
             </svg>
             <span>Show surface hatching</span>
+          </label>
+          <label className={styles.surfaceToggle}>
+            <input
+              type="checkbox"
+              checked={showPlantableArea}
+              onChange={(e) => setShowPlantableArea(e.target.checked)}
+            />
+            <span>Show plantable area</span>
           </label>
         </div>
       </LayerSection>

@@ -51,6 +51,7 @@ export function CanvasStack() {
   const activeLayer = useUiStore((s) => s.activeLayer);
   const layerSelectorHovered = useUiStore((s) => s.layerSelectorHovered);
   const showSurfaces = useUiStore((s) => s.showSurfaces);
+  const showPlantableArea = useUiStore((s) => s.showPlantableArea);
   const showSpacingBorders = useUiStore((s) => s.showSpacingBorders);
   const showFootprintCircles = useUiStore((s) => s.showFootprintCircles);
   const showMeasurements = useUiStore((s) => s.showMeasurements);
@@ -184,6 +185,7 @@ export function CanvasStack() {
   structureRenderer.current.structures = garden.structures;
   structureRenderer.current.opacity = layerOpacity.structures;
   structureRenderer.current.showSurfaces = showSurfaces;
+  structureRenderer.current.showPlantableArea = showPlantableArea;
   structureRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'structures' ? 'none' : labelMode;
   structureRenderer.current.labelFontSize = labelFontSize;
   structureRenderer.current.setView(view, width, height);
@@ -237,7 +239,7 @@ export function CanvasStack() {
     structureCanvasRef, width, height, dpr,
     layerVisibility.structures,
     (ctx) => structureRenderer.current.render(ctx),
-    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, labelMode, labelFontSize, structureRenderer.current.highlight, overlay],
+    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, showPlantableArea, labelMode, labelFontSize, structureRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(

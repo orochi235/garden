@@ -19,6 +19,7 @@ export function renderStructures(
     labelMode = 'none',
     labelFontSize = 13,
     showSurfaces = false,
+    showPlantableArea = false,
   } = opts;
 
   if (!skipClear) ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -57,6 +58,13 @@ export function renderStructures(
           x: cx - (r - rimWidth), y: cy - (r - rimWidth), w: innerD, h: innerD, shape: 'circle',
         }, { params: { bg: FILL_COLORS[s.fill] } });
       }
+      // Plantable area overlay
+      if (showPlantableArea) {
+        const innerD = (r - rimWidth) * 2;
+        renderPatternOverlay(ctx, 'hatch', {
+          x: cx - (r - rimWidth), y: cy - (r - rimWidth), w: innerD, h: innerD, shape: 'circle',
+        }, { params: { color: '#00FF00' } });
+      }
     } else if (s.type === 'raised-bed') {
       const wallWidth = Math.max(2, s.wallThicknessFt * view.zoom);
       // Outer wall
@@ -72,6 +80,12 @@ export function renderStructures(
         renderPatternOverlay(ctx, 'chunks', {
           x: sx + wallWidth, y: sy + wallWidth, w: sw - wallWidth * 2, h: sh - wallWidth * 2, shape: 'rectangle',
         }, { params: { bg: FILL_COLORS[s.fill] } });
+      }
+      // Plantable area overlay
+      if (showPlantableArea) {
+        renderPatternOverlay(ctx, 'hatch', {
+          x: sx + wallWidth, y: sy + wallWidth, w: sw - wallWidth * 2, h: sh - wallWidth * 2, shape: 'rectangle',
+        }, { params: { color: '#00FF00' } });
       }
     } else if (s.shape === 'circle') {
       const cx = sx + sw / 2;

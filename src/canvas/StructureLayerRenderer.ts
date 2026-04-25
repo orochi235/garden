@@ -6,6 +6,7 @@ import { renderStructures } from './renderStructures';
 export class StructureLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   showSurfaces = false;
+  showPlantableArea = false;
   labelMode: LabelMode | 'none' = 'none';
   labelFontSize = 13;
   hideIds: string[] = [];
@@ -22,6 +23,7 @@ export class StructureLayerRenderer extends LayerRenderer {
       canvasHeight: this.height,
       highlightOpacity: this.highlight,
       showSurfaces: this.showSurfaces,
+      showPlantableArea: this.showPlantableArea,
       labelMode: this.labelMode,
       labelFontSize: this.labelFontSize,
     });

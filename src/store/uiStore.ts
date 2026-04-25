@@ -38,6 +38,7 @@ interface UiStore {
   showSpacingBorders: boolean;
   showFootprintCircles: boolean;
   showMeasurements: boolean;
+  showPlantableArea: boolean;
   magentaHighlight: boolean;
   labelMode: LabelMode;
   labelFontSize: number;
@@ -52,6 +53,7 @@ interface UiStore {
   setShowSpacingBorders: (show: boolean) => void;
   setShowFootprintCircles: (show: boolean) => void;
   setShowMeasurements: (show: boolean) => void;
+  setShowPlantableArea: (show: boolean) => void;
   setMagentaHighlight: (show: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
   setLabelFontSize: (size: number) => void;
@@ -94,6 +96,7 @@ export const useUiStore = create<UiStore>((set) => ({
   showSpacingBorders: true,
   showFootprintCircles: true,
   showMeasurements: false,
+  showPlantableArea: false,
   magentaHighlight: false,
   labelMode: 'selection' as LabelMode,
   labelFontSize: 13,
@@ -108,6 +111,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setShowSpacingBorders: (show) => set({ showSpacingBorders: show }),
   setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),
   setShowMeasurements: (show) => set({ showMeasurements: show }),
+  setShowPlantableArea: (show) => set({ showPlantableArea: show }),
   setMagentaHighlight: (show) => set({ magentaHighlight: show }),
   setLabelMode: (mode) => set({ labelMode: mode }),
   setLabelFontSize: (size) => set({ labelFontSize: size }),
@@ -153,6 +157,7 @@ export const useUiStore = create<UiStore>((set) => ({
       showSpacingBorders: true,
       showFootprintCircles: true,
       showMeasurements: false,
+      showPlantableArea: false,
       magentaHighlight: false,
       labelMode: 'selection' as LabelMode,
       labelFontSize: 13,
