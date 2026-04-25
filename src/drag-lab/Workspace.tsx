@@ -48,6 +48,15 @@ export function Workspace({
     setDragItem(null);
   }, []);
 
+  const handlePickUpItem = useCallback(
+    (itemId: string): LabItem | undefined => {
+      const item = state.items.find((i) => i.id === itemId);
+      if (item) onRemoveItem(itemId);
+      return item;
+    },
+    [state.items, onRemoveItem],
+  );
+
   const handleDrop = useCallback(
     (pos: Point, item: LabItem) => {
       const bounds = { x: 0, y: 0, width: state.containerWidth, height: state.containerHeight };
@@ -91,8 +100,9 @@ export function Workspace({
             strategy={strategy}
             config={state.config}
             onDrop={handleDrop}
-            onRemoveItem={onRemoveItem}
+            onPickUpItem={handlePickUpItem}
             dragItem={dragItem}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           />
         </div>

@@ -11,12 +11,26 @@ interface CanvasRendererProps {
   strategy: LayoutStrategy;
   config: Record<string, unknown>;
   onDrop: (pos: Point, item: LabItem) => void;
-  onRemoveItem: (itemId: string) => void;
+  onPickUpItem: (itemId: string) => LabItem | undefined;
   dragItem: LabItem | null;
+  onDragStart: (item: LabItem) => void;
   onDragEnd: () => void;
 }
 
-export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onRemoveItem, dragItem, onDragEnd }: CanvasRendererProps) {
+function hitTestItem(items: LabItem[], pos: Point): LabItem | null {
+  let nearest: LabItem | null = null;
+  let nearestDist = Infinity;
+  for (const item of items) {
+    const d = Math.sqrt((item.x - pos.x) ** 2 + (item.y - pos.y) ** 2);
+    if (d < item.radiusFt + 0.05 && d < nearestDist) {
+      nearest = item;
+      nearestDist = d;
+    }
+  }
+  return nearest;
+}
+
+export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onPickUpItem, dragItem, onDragStart, onDragEnd }: CanvasRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point | null>(null);
   const [feedback, setFeedback] = useState<DragFeedback | null>(null);
@@ -37,10 +51,29 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
     [width, height],
   );
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLCanvasElement>) => {
+      const pos = pxToFt(e.clientX, e.clientY);
+      const hit = hitTestItem(items, pos);
+      if (hit) {
+        const picked = onPickUpItem(hit.id);
+        if (picked) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', '');
+          onDragStart(picked);
+          return;
+        }
+      }
+      // No item under cursor — cancel the drag
+      e.preventDefault();
+    },
+    [pxToFt, items, onPickUpItem, onDragStart],
+  );
+
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLCanvasElement>) => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
+      e.dataTransfer.dropEffect = dragItem ? 'copy' : 'none';
       const pos = pxToFt(e.clientX, e.clientY);
       setMousePos(pos);
       if (dragItem) {
@@ -72,18 +105,10 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
       const pos = pxToFt(e.clientX, e.clientY);
-      let nearest: LabItem | null = null;
-      let nearestDist = Infinity;
-      for (const item of items) {
-        const d = Math.sqrt((item.x - pos.x) ** 2 + (item.y - pos.y) ** 2);
-        if (d < item.radiusFt + 0.1 && d < nearestDist) {
-          nearest = item;
-          nearestDist = d;
-        }
-      }
-      if (nearest) onRemoveItem(nearest.id);
+      const hit = hitTestItem(items, pos);
+      if (hit) onPickUpItem(hit.id);
     },
-    [pxToFt, items, onRemoveItem],
+    [pxToFt, items, onPickUpItem],
   );
 
   useEffect(() => {
@@ -133,7 +158,9 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       ref={canvasRef}
       width={canvasW}
       height={canvasH}
-      style={{ width: canvasW, height: canvasH }}
+      style={{ width: canvasW, height: canvasH, cursor: 'default' }}
+      draggable
+      onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}

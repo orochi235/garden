@@ -33,11 +33,6 @@ export interface DropResult {
   state: unknown;
 }
 
-export interface ReflowResult {
-  items: LabItem[];
-  state: unknown;
-}
-
 export interface ConfigField {
   key: string;
   label: string;
@@ -54,7 +49,6 @@ export interface LayoutStrategy {
   render(ctx: CanvasRenderingContext2D, bounds: Rect, shape: ContainerShape, items: LabItem[], config: Record<string, unknown>): void;
   onDragOver(bounds: Rect, shape: ContainerShape, pos: Point, items: LabItem[], config: Record<string, unknown>): DragFeedback | null;
   onDrop(bounds: Rect, shape: ContainerShape, pos: Point, item: LabItem, items: LabItem[], config: Record<string, unknown>): DropResult;
-  onRemove?(items: LabItem[], removed: LabItem, config: Record<string, unknown>): ReflowResult;
   defaultConfig(): Record<string, unknown>;
   configSchema(): ConfigField[];
 }
