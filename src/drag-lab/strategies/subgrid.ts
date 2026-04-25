@@ -1,5 +1,5 @@
 // src/drag-lab/strategies/subgrid.ts
-import type { LabItem, LayoutStrategy, Rect, ContainerShape, Point, ConfigField, DragFeedback, DropResult } from '../types';
+import type { LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult } from '../types';
 
 interface CellCoord { col: number; row: number; }
 

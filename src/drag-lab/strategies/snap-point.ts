@@ -1,5 +1,5 @@
 // src/drag-lab/strategies/snap-point.ts
-import type { LabItem, LayoutStrategy, Rect, ContainerShape, Point, ConfigField, DragFeedback, DropResult } from '../types';
+import type { LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult } from '../types';
 
 type PatternType = 'corners' | 'edges' | 'center' | 'grid';
 
