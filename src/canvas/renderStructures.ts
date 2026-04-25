@@ -65,6 +65,8 @@ export function renderStructures(
       // Inner fill
       ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
       ctx.fillRect(sx + wallWidth, sy + wallWidth, sw - wallWidth * 2, sh - wallWidth * 2);
+      // Inner border
+      ctx.strokeRect(sx + wallWidth, sy + wallWidth, sw - wallWidth * 2, sh - wallWidth * 2);
       // Soil texture for potting mix
       if (s.fill === 'potting-mix') {
         renderPatternOverlay(ctx, 'chunks', {
