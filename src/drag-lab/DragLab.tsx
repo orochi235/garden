@@ -1,5 +1,13 @@
+import { useMemo } from 'react';
 import { useWorkspaceStore } from './useWorkspaceStore';
 import { Workspace } from './Workspace';
+
+function gridDims(count: number): { cols: number; rows: number } {
+  if (count <= 1) return { cols: 1, rows: 1 };
+  const cols = Math.ceil(Math.sqrt(count));
+  const rows = Math.ceil(count / cols);
+  return { cols, rows };
+}
 
 export function DragLab() {
   const {
@@ -20,6 +28,8 @@ export function DragLab() {
     resetAll,
   } = useWorkspaceStore();
 
+  const dims = useMemo(() => gridDims(workspaces.length), [workspaces.length]);
+
   return (
     <div className="dl-root">
       <div className="dl-header">
@@ -29,7 +39,7 @@ export function DragLab() {
           <button type="button" onClick={resetAll} className="dl-danger">Reset All</button>
         </div>
       </div>
-      <div className="dl-grid">
+      <div className="dl-grid" style={{ '--dl-cols': dims.cols, '--dl-rows': dims.rows } as React.CSSProperties}>
         {workspaces.map((ws) => (
           <Workspace
             key={ws.id}

@@ -13,9 +13,10 @@ interface CanvasRendererProps {
   onDrop: (pos: Point, item: LabItem) => void;
   onRemoveItem: (itemId: string) => void;
   dragItem: LabItem | null;
+  onDragEnd: () => void;
 }
 
-export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onRemoveItem, dragItem }: CanvasRendererProps) {
+export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onRemoveItem, dragItem, onDragEnd }: CanvasRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point | null>(null);
   const [feedback, setFeedback] = useState<DragFeedback | null>(null);
@@ -25,20 +26,22 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
   const canvasH = height * PX_PER_FT;
 
   const pxToFt = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>): Point => {
+    (clientX: number, clientY: number): Point => {
       const canvas = canvasRef.current!;
       const rect = canvas.getBoundingClientRect();
       return {
-        x: ((e.clientX - rect.left) / rect.width) * width,
-        y: ((e.clientY - rect.top) / rect.height) * height,
+        x: ((clientX - rect.left) / rect.width) * width,
+        y: ((clientY - rect.top) / rect.height) * height,
       };
     },
     [width, height],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const pos = pxToFt(e);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      const pos = pxToFt(e.clientX, e.clientY);
       setMousePos(pos);
       if (dragItem) {
         setFeedback(strategy.onDragOver(bounds, shape, pos, items, config));
@@ -47,20 +50,28 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
     [pxToFt, dragItem, strategy, bounds, shape, items, config],
   );
 
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
       if (!dragItem) return;
-      const pos = pxToFt(e);
+      const pos = pxToFt(e.clientX, e.clientY);
       onDrop(pos, dragItem);
       setFeedback(null);
+      setMousePos(null);
+      onDragEnd();
     },
-    [pxToFt, dragItem, onDrop],
+    [pxToFt, dragItem, onDrop, onDragEnd],
   );
+
+  const handleDragLeave = useCallback(() => {
+    setFeedback(null);
+    setMousePos(null);
+  }, []);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
-      const pos = pxToFt(e);
+      const pos = pxToFt(e.clientX, e.clientY);
       let nearest: LabItem | null = null;
       let nearestDist = Infinity;
       for (const item of items) {
@@ -122,9 +133,10 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       ref={canvasRef}
       width={canvasW}
       height={canvasH}
-      style={{ width: canvasW, height: canvasH, cursor: dragItem ? 'crosshair' : 'default' }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+      style={{ width: canvasW, height: canvasH }}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragLeave={handleDragLeave}
       onContextMenu={handleContextMenu}
     />
   );

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
 
@@ -8,27 +9,30 @@ interface ItemPaletteProps {
   genericRadius: number;
   onSetMode: (mode: 'generic' | 'cultivar') => void;
   onSetGenericRadius: (r: number) => void;
-  onPickItem: (item: LabItem) => void;
+  onDragStart: (item: LabItem) => void;
 }
 
-export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius, onPickItem }: ItemPaletteProps) {
+export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius, onDragStart }: ItemPaletteProps) {
   const cultivars = getAllCultivars();
 
-  const handleGenericClick = (color: string) => {
-    onPickItem({
+  const startGenericDrag = useCallback((e: React.DragEvent, color: string) => {
+    const item: LabItem = {
       id: crypto.randomUUID(),
       label: 'Item',
       radiusFt: genericRadius,
       color,
       x: 0,
       y: 0,
-    });
-  };
+    };
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', '');
+    onDragStart(item);
+  }, [genericRadius, onDragStart]);
 
-  const handleCultivarClick = (cultivarId: string) => {
+  const startCultivarDrag = useCallback((e: React.DragEvent, cultivarId: string) => {
     const c = cultivars.find((cv) => cv.id === cultivarId);
     if (!c) return;
-    onPickItem({
+    const item: LabItem = {
       id: crypto.randomUUID(),
       label: c.name,
       radiusFt: c.spacingFt / 2,
@@ -36,8 +40,11 @@ export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius
       x: 0,
       y: 0,
       cultivarId: c.id,
-    });
-  };
+    };
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', '');
+    onDragStart(item);
+  }, [cultivars, onDragStart]);
 
   return (
     <div className="dl-palette">
@@ -65,13 +72,13 @@ export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius
           </label>
           <div className="dl-palette-grid">
             {GENERIC_COLORS.map((color) => (
-              <button
+              <div
                 key={color}
-                type="button"
                 className="dl-palette-swatch"
                 style={{ background: color }}
-                onClick={() => handleGenericClick(color)}
-                title="Click to pick, then click canvas to place"
+                draggable
+                onDragStart={(e) => startGenericDrag(e, color)}
+                title="Drag onto canvas"
               />
             ))}
           </div>
@@ -81,16 +88,16 @@ export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius
       {mode === 'cultivar' && (
         <div className="dl-palette-list">
           {cultivars.slice(0, 30).map((c) => (
-            <button
+            <div
               key={c.id}
-              type="button"
               className="dl-palette-cultivar"
-              onClick={() => handleCultivarClick(c.id)}
+              draggable
+              onDragStart={(e) => startCultivarDrag(e, c.id)}
             >
               <span className="dl-cultivar-dot" style={{ background: c.color }} />
               <span className="dl-cultivar-name">{c.name}</span>
               <span className="dl-cultivar-spacing">{c.spacingFt}ft</span>
-            </button>
+            </div>
           ))}
         </div>
       )}

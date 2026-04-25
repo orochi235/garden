@@ -40,8 +40,12 @@ export function Workspace({
   const strategy = getStrategy(state.strategyName);
   const schema = strategy.configSchema();
 
-  const handlePickItem = useCallback((item: LabItem) => {
+  const handleDragStart = useCallback((item: LabItem) => {
     setDragItem(item);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDragItem(null);
   }, []);
 
   const handleDrop = useCallback(
@@ -89,10 +93,8 @@ export function Workspace({
             onDrop={handleDrop}
             onRemoveItem={onRemoveItem}
             dragItem={dragItem}
+            onDragEnd={handleDragEnd}
           />
-          {dragItem && (
-            <div className="dl-drag-hint">Click canvas to place &middot; Right-click items to remove</div>
-          )}
         </div>
 
         <div className="dl-controls">
@@ -194,7 +196,7 @@ export function Workspace({
             genericRadius={state.genericRadius}
             onSetMode={(mode) => onUpdate({ paletteMode: mode })}
             onSetGenericRadius={(r) => onUpdate({ genericRadius: r })}
-            onPickItem={handlePickItem}
+            onDragStart={handleDragStart}
           />
         </div>
       </div>
