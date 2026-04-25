@@ -53,9 +53,14 @@ function createHatch(ctx: CanvasRenderingContext2D, params: ResolvedParams): Can
   const oc = off.getContext('2d')!;
   oc.strokeStyle = color;
   oc.lineWidth = lineWidth;
+  // Draw three parallel lines so the pattern tiles seamlessly
   oc.beginPath();
-  oc.moveTo(0, size);
-  oc.lineTo(size, 0);
+  oc.moveTo(-1, size + 1);
+  oc.lineTo(size + 1, -1);
+  oc.moveTo(-1, 1);
+  oc.lineTo(1, -1);
+  oc.moveTo(size - 1, size + 1);
+  oc.lineTo(size + 1, size - 1);
   oc.stroke();
   return ctx.createPattern(off, 'repeat');
 }
@@ -70,11 +75,21 @@ function createCrosshatch(ctx: CanvasRenderingContext2D, params: ResolvedParams)
   const oc = off.getContext('2d')!;
   oc.strokeStyle = color;
   oc.lineWidth = lineWidth;
+  // Forward diagonal with seamless tiling
   oc.beginPath();
-  oc.moveTo(0, size);
-  oc.lineTo(size, 0);
-  oc.moveTo(0, 0);
-  oc.lineTo(size, size);
+  oc.moveTo(-1, size + 1);
+  oc.lineTo(size + 1, -1);
+  oc.moveTo(-1, 1);
+  oc.lineTo(1, -1);
+  oc.moveTo(size - 1, size + 1);
+  oc.lineTo(size + 1, size - 1);
+  // Backward diagonal with seamless tiling
+  oc.moveTo(-1, -1);
+  oc.lineTo(size + 1, size + 1);
+  oc.moveTo(size - 1, -1);
+  oc.lineTo(size + 1, 1);
+  oc.moveTo(-1, size - 1);
+  oc.lineTo(1, size + 1);
   oc.stroke();
   return ctx.createPattern(off, 'repeat');
 }
