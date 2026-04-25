@@ -235,8 +235,12 @@ export function LayerPropertiesPanel() {
   const updateGarden = useGardenStore((s) => s.updateGarden);
   const showSurfaces = useUiStore((s) => s.showSurfaces);
   const setShowSurfaces = useUiStore((s) => s.setShowSurfaces);
-  const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
-  const setShowPlantingSpacing = useUiStore((s) => s.setShowPlantingSpacing);
+  const showSpacingBorders = useUiStore((s) => s.showSpacingBorders);
+  const setShowSpacingBorders = useUiStore((s) => s.setShowSpacingBorders);
+  const showFootprintCircles = useUiStore((s) => s.showFootprintCircles);
+  const setShowFootprintCircles = useUiStore((s) => s.setShowFootprintCircles);
+  const showMeasurements = useUiStore((s) => s.showMeasurements);
+  const setShowMeasurements = useUiStore((s) => s.setShowMeasurements);
   const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const unit = garden.displayUnit;
 
@@ -418,10 +422,26 @@ export function LayerPropertiesPanel() {
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
-              checked={showPlantingSpacing}
-              onChange={(e) => setShowPlantingSpacing(e.target.checked)}
+              checked={showFootprintCircles}
+              onChange={(e) => setShowFootprintCircles(e.target.checked)}
             />
-            <span>Show spacing areas</span>
+            <span>Show footprint circles</span>
+          </label>
+          <label className={styles.surfaceToggle}>
+            <input
+              type="checkbox"
+              checked={showSpacingBorders}
+              onChange={(e) => setShowSpacingBorders(e.target.checked)}
+            />
+            <span>Show spacing borders</span>
+          </label>
+          <label className={styles.surfaceToggle}>
+            <input
+              type="checkbox"
+              checked={showMeasurements}
+              onChange={(e) => setShowMeasurements(e.target.checked)}
+            />
+            <span>Show measurements</span>
           </label>
         </div>
       </LayerSection>
