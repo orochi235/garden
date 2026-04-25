@@ -12,6 +12,7 @@ interface CultivarRaw {
   footprintFt?: number;
   spacingFt?: number;
   iconImage?: string;
+  iconBgColor?: string;
 }
 
 /** Resolved cultivar with all fields populated from species defaults. */
@@ -26,6 +27,7 @@ export interface Cultivar {
   footprintFt: number;
   spacingFt: number;
   iconImage: string | null;
+  iconBgColor: string | null;
 }
 
 function resolveCultivar(raw: CultivarRaw): Cultivar {
@@ -45,6 +47,7 @@ function resolveCultivar(raw: CultivarRaw): Cultivar {
     footprintFt: raw.footprintFt ?? species.footprintFt,
     spacingFt: raw.spacingFt ?? species.spacingFt,
     iconImage: raw.iconImage ?? species.iconImage,
+    iconBgColor: raw.iconBgColor ?? species.iconBgColor,
   };
 }
 

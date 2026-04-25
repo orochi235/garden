@@ -10,6 +10,7 @@ export interface Species {
   footprintFt: number;
   spacingFt: number;
   iconImage: string | null;
+  iconBgColor: string | null;
 }
 
 const species: Species[] = speciesData as Species[];
