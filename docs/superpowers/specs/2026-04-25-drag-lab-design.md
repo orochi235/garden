@@ -95,6 +95,7 @@ Each workspace tile contains:
 - **Strategy dropdown** — selects which `LayoutStrategy` to use. Switching strategies preserves items but reflows them through the new strategy.
 - **Config sliders/controls** — dynamically generated from `strategy.configSchema()`. Each strategy exposes its own set of controls.
 - **Container sliders** — width (ft), height (ft)
+- **Expand to fill** checkbox — when enabled, the plant area expands to fill the full container bounds (ignoring wall thickness / margin insets). Passed to the strategy as part of config so each strategy can decide how to use the extra space.
 
 ### Toolbar
 - **Close** — removes this workspace from the grid
