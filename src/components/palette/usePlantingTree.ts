@@ -50,7 +50,7 @@ export function buildPlantingTree(entries: PaletteEntry[]): PlantingTreeNode[] {
         speciesName,
         color: defaultEntry.color,
         defaultCultivarId: defaultEntry.id,
-        children: sorted.map((e) => ({ entry: e })),
+        children: sorted.filter((e) => e !== defaultEntry).map((e) => ({ entry: e })),
       });
     }
   }

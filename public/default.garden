@@ -255,75 +255,75 @@
       "icon": null
     },
     {
-      "id": "default-planting-cp-1",
+      "id": "default-planting-t-1",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "tomato.cherokee-purple",
       "x": 1,
       "y": 1,
       "label": "Tomato, Cherokee Purple",
       "icon": null
     },
     {
-      "id": "default-planting-cp-2",
+      "id": "default-planting-t-2",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "tomato.brandywine",
       "x": 3,
       "y": 1,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, Brandywine",
       "icon": null
     },
     {
-      "id": "default-planting-cp-3",
+      "id": "default-planting-t-3",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "tomato.black-krim",
       "x": 1,
       "y": 3,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, Black Krim",
       "icon": null
     },
     {
-      "id": "default-planting-cp-4",
+      "id": "default-planting-t-4",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "tomato.san-marzano",
       "x": 3,
       "y": 3,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, San Marzano",
       "icon": null
     },
     {
-      "id": "default-planting-cp-5",
+      "id": "default-planting-t-5",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "tomato.beefsteak",
       "x": 1,
       "y": 5,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, Beefsteak",
       "icon": null
     },
     {
-      "id": "default-planting-cp-6",
+      "id": "default-planting-t-6",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "tomato.roma",
       "x": 3,
       "y": 5,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, Roma",
       "icon": null
     },
     {
-      "id": "default-planting-cp-7",
+      "id": "default-planting-t-7",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "cherry-tomato",
       "x": 1,
       "y": 7,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, Cherry",
       "icon": null
     },
     {
-      "id": "default-planting-cp-8",
+      "id": "default-planting-t-8",
       "parentId": "default-bed-1",
-      "cultivarId": "cherokee-purple-tomato",
+      "cultivarId": "cherry-tomato.sun-gold",
       "x": 3,
       "y": 7,
-      "label": "Tomato, Cherokee Purple",
+      "label": "Tomato, Cherry, Sun Gold",
       "icon": null
     }
   ]

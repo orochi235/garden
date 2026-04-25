@@ -11,51 +11,43 @@ export interface WheelInput {
   deltaY: number;
   mouseX: number;
   mouseY: number;
-  ctrlKey?: boolean;
+  shiftKey?: boolean;
+  metaKey?: boolean;
 }
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 200;
 
 export function computeWheelAction(
-  mode: ViewMode,
+  _mode: ViewMode,
   state: WheelState,
   input: WheelInput,
 ): WheelState {
-  if (input.ctrlKey) {
-    const factor = input.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
-    const worldX = (input.mouseX - state.panX) / state.zoom;
-    const worldY = (input.mouseY - state.panY) / state.zoom;
+  // Shift+wheel scrolls horizontally
+  if (input.shiftKey) {
     return {
-      zoom: newZoom,
-      panX: input.mouseX - worldX * newZoom,
-      panY: input.mouseY - worldY * newZoom,
+      zoom: state.zoom,
+      panX: state.panX - input.deltaY,
+      panY: state.panY,
     };
   }
 
-  switch (mode) {
-    case 'pan':
-    case 'draw':
-    case 'select': {
-      return {
-        zoom: state.zoom,
-        panX: state.panX - input.deltaX,
-        panY: state.panY - input.deltaY,
-      };
-    }
-    case 'zoom': {
-      const factor = input.deltaY < 0 ? 1.1 : 0.9;
-      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
-
-      const worldX = (input.mouseX - state.panX) / state.zoom;
-      const worldY = (input.mouseY - state.panY) / state.zoom;
-
-      return {
-        zoom: newZoom,
-        panX: input.mouseX - worldX * newZoom,
-        panY: input.mouseY - worldY * newZoom,
-      };
-    }
+  // Cmd+wheel scrolls vertically
+  if (input.metaKey) {
+    return {
+      zoom: state.zoom,
+      panX: state.panX,
+      panY: state.panY - input.deltaY,
+    };
   }
+
+  const factor = input.deltaY < 0 ? 1.1 : 0.9;
+  const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
+  const worldX = (input.mouseX - state.panX) / state.zoom;
+  const worldY = (input.mouseY - state.panY) / state.zoom;
+  return {
+    zoom: newZoom,
+    panX: input.mouseX - worldX * newZoom,
+    panY: input.mouseY - worldY * newZoom,
+  };
 }

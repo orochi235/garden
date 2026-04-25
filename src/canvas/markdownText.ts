@@ -224,7 +224,8 @@ export function createMarkdownRenderer(
         const effSize = fontSize + run.sizeOffset;
         _ctx.font = buildFont(effSize, run.bold, run.italic);
         _ctx.fillStyle = run.italic && !run.bold ? 'rgba(255, 255, 255, 0.7)' : '#FFFFFF';
-        _ctx.fillText(run.text, x + run.x, lineY);
+        const lineOffset = (layout.width - line.width) / 2;
+        _ctx.fillText(run.text, x + lineOffset + run.x, lineY);
       }
       lineY += line.height;
     }

@@ -471,6 +471,69 @@ export function CanvasStack() {
     e.preventDefault();
   }, []);
 
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!e.metaKey) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { panX, panY, zoom } = useUiStore.getState();
+      const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, {
+        panX,
+        panY,
+        zoom,
+      });
+      const { garden } = useGardenStore.getState();
+
+      // Hit-test to find the object under the cursor
+      let hit =
+        hitTestPlantings(worldX, worldY, garden.plantings, garden.structures, garden.zones) ||
+        hitTestObjects(worldX, worldY, garden.structures, garden.zones, useUiStore.getState().activeLayer) ||
+        hitTestAllLayers(worldX, worldY, garden.structures, garden.zones);
+      if (!hit) return;
+
+      // Get the object's bounding box in world coords
+      let objX: number, objY: number, objW: number, objH: number;
+      if (hit.layer === 'plantings') {
+        const planting = garden.plantings.find((p) => p.id === hit!.id);
+        if (!planting) return;
+        const parent = garden.structures.find((s) => s.id === planting.parentId)
+          ?? garden.zones.find((z) => z.id === planting.parentId);
+        if (!parent) return;
+        // For plantings, zoom to the parent container
+        objX = parent.x;
+        objY = parent.y;
+        objW = parent.width;
+        objH = parent.height;
+      } else {
+        const obj = hit.layer === 'structures'
+          ? garden.structures.find((s) => s.id === hit!.id)
+          : garden.zones.find((z) => z.id === hit!.id);
+        if (!obj) return;
+        objX = obj.x;
+        objY = obj.y;
+        objW = obj.width;
+        objH = obj.height;
+      }
+
+      // Calculate zoom to fit the object with padding
+      const padding = 80; // screen pixels of padding on each side
+      const availW = rect.width - padding * 2;
+      const availH = rect.height - padding * 2;
+      const newZoom = Math.min(200, Math.max(10, Math.min(availW / objW, availH / objH)));
+
+      // Center the object
+      const centerWorldX = objX + objW / 2;
+      const centerWorldY = objY + objH / 2;
+      const newPanX = rect.width / 2 - centerWorldX * newZoom;
+      const newPanY = rect.height / 2 - centerWorldY * newZoom;
+
+      select(hit.id);
+      setZoom(newZoom);
+      setPan(newPanX, newPanY);
+    },
+    [select, setZoom, setPan],
+  );
+
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
@@ -486,7 +549,8 @@ export function CanvasStack() {
           deltaY: e.deltaY,
           mouseX: e.clientX - rect.left,
           mouseY: e.clientY - rect.top,
-          ctrlKey: e.ctrlKey || e.metaKey,
+          shiftKey: e.shiftKey,
+          metaKey: e.metaKey,
         },
       );
 
@@ -527,6 +591,7 @@ export function CanvasStack() {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       onWheel={handleWheel}
     >

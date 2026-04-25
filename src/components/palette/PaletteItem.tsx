@@ -14,7 +14,7 @@ const ICON_RADIUS = 28;
 
 function PlantIcon({ cultivarId, color }: { cultivarId: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
@@ -32,7 +32,7 @@ function PlantIcon({ cultivarId, color }: { cultivarId: string; color: string })
     ctx.translate(size / 2, size / 2);
     renderIcon(ctx, cultivarId, ICON_RADIUS, color);
     ctx.restore();
-  }, [cultivarId, color]);
+  }, [cultivarId, color, tick]);
 
   return <canvas ref={canvasRef} className={styles.plantIcon} width={64} height={64} />;
 }
@@ -84,7 +84,7 @@ const SMALL_ICON_RADIUS = 18;
 
 function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
@@ -102,7 +102,7 @@ function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: stri
     ctx.translate(size / 2, size / 2);
     renderIcon(ctx, cultivarId, SMALL_ICON_RADIUS, color);
     ctx.restore();
-  }, [cultivarId, color]);
+  }, [cultivarId, color, tick]);
 
   return <canvas ref={canvasRef} className={styles.rowPlantIcon} width={32} height={32} />;
 }

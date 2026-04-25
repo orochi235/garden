@@ -89,7 +89,7 @@
       <option value="legumes">Legumes</option>
       <option value="flowers">Flowers</option>
     </select>
-    <label style="font-size:12px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="showDefaults" onchange="render()"> Show defaults</label>
+    <label style="font-size:12px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="showDefaults" onchange="render()"> Show base varieties</label>
     <span class="stats" id="stats"></span>
     <div class="stats" id="fileStats" style="width:100%;margin-top:4px"></div>
   </div>
@@ -252,10 +252,14 @@
       const showDefaults = document.getElementById('showDefaults')?.checked;
       let items = cultivars.map(c => ({ raw: c, resolved: resolve(c) }));
       if (!showDefaults) {
-        // Hide cultivar rows that inherit everything from their species (no overrides)
+        // Hide base cultivars (variety=null) that have no overrides vs their species
         items = items.filter(x => {
-          const r = x.raw;
-          return r.variety || r.color || r.footprintFt != null || r.spacingFt != null || r.iconImage || r.iconBgColor;
+          if (x.raw.variety) return true;
+          const sp = speciesMap[x.raw.speciesId];
+          if (!sp) return true;
+          return x.raw.color || x.raw.footprintFt != null || x.raw.spacingFt != null ||
+            (x.raw.iconImage && x.raw.iconImage !== sp.iconImage) ||
+            (x.raw.iconBgColor && x.raw.iconBgColor !== sp.iconBgColor);
         });
       }
       if (categoryFilter) items = items.filter(x => x.resolved.category === categoryFilter);
