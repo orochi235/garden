@@ -22,8 +22,8 @@
     thead { position: sticky; top: 0; background: #1a1a2e; z-index: 1; }
     th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #333; color: #aaa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; user-select: none; }
     th:hover { color: #fff; }
-    th.sorted::after { content: ' \u25B2'; }
-    th.sorted.desc::after { content: ' \u25BC'; }
+    th.sorted::after { content: ' ▲'; }
+    th.sorted.desc::after { content: ' ▼'; }
     td { padding: 5px 6px; border-bottom: 1px solid #2a2a3a; }
     tr:hover td { background: #2a2a4a; }
     td input, td select { width: 100%; padding: 3px 5px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #e0e0e0; font-size: 13px; }
@@ -43,6 +43,17 @@
     .actions button.del:hover { background: #7c4a4a; }
     .actions button.revert { color: #888; }
     .actions button.revert:hover { background: #4a4a3a; color: #dda; }
+    .icon-image-cell { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .icon-image-drop { width: 36px; height: 36px; border: 2px dashed #444; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; flex-shrink: 0; position: relative; }
+    .icon-image-drop:hover, .icon-image-drop.dragover { border-color: #4a7c59; background: rgba(74,124,89,0.15); }
+    .icon-image-drop img { width: 100%; height: 100%; object-fit: contain; }
+    .icon-image-drop .placeholder { font-size: 16px; color: #555; line-height: 1; }
+    .icon-image-drop .clear-btn { position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: #7c4a4a; color: #fff; font-size: 9px; line-height: 14px; text-align: center; cursor: pointer; display: none; border: none; padding: 0; }
+    .icon-image-drop:hover .clear-btn { display: block; }
+    .cultivar-row .icon-image-drop { width: 28px; height: 28px; }
+    .cultivar-row .icon-image-drop.inherited { border-style: dotted; opacity: 0.5; }
+    #iconTooltip { position: fixed; pointer-events: none; z-index: 200; background: #2a2a4a; border: 1px solid #555; border-radius: 8px; padding: 4px; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+    #iconTooltip img { display: block; width: 170px; height: 170px; object-fit: contain; }
     .species-row td { background: #22223a; border-top: 2px solid #4a7c59; }
     .species-row td:first-child { font-weight: 600; color: #8cb8a0; }
     .species-row .actions button { font-size: 10px; }
@@ -76,13 +87,14 @@
     </select>
     <label style="font-size:12px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="showDefaults" onchange="render()"> Show defaults</label>
     <span class="stats" id="stats"></span>
+    <div class="stats" id="fileStats" style="width:100%;margin-top:4px"></div>
   </div>
   <table>
     <thead>
       <tr>
         <th onclick="sortBy('speciesId')">Species / ID</th>
         <th onclick="sortBy('category')">Category / Variety</th>
-        <th onclick="sortBy('icon')">Icon</th>
+        <th style="text-align:center">Image</th>
         <th onclick="sortBy('color')">Color</th>
         <th onclick="sortBy('footprintFt')">Footprint (ft)</th>
         <th onclick="sortBy('spacingFt')">Spacing (ft)</th>
@@ -91,6 +103,7 @@
     </thead>
     <tbody id="tbody"></tbody>
   </table>
+  <div id="iconTooltip"><img></div>
   <div class="toast" id="toast"></div>
   <div class="modal-overlay" id="exportModal">
     <div class="modal">
@@ -115,11 +128,6 @@
     </div>
   </div>
   <script>
-    const ICON_TYPES = [
-      'round-fruit','pepper','bell-pepper','eggplant','cucumber','melon',
-      'squash','leaf-rosette','carrot','radish','potato',
-      'herb-sprig','strawberry','pea-pod','bean'
-    ];
     const CATEGORIES = ['fruits','vegetables','root-vegetables','herbs','legumes','flowers'];
 
     let species = [];
@@ -151,14 +159,14 @@
 
     function resolve(c) {
       const sp = speciesMap[c.speciesId];
-      if (!sp) return { name: c.id, category: '?', color: '#888', footprintFt: 0, spacingFt: 0, icon: 'herb-sprig' };
+      if (!sp) return { name: c.id, category: '?', color: '#888', footprintFt: 0, spacingFt: 0, iconImage: null };
       return {
         name: c.variety ? `${sp.name}, ${c.variety}` : sp.name,
         category: sp.category,
         color: c.color ?? sp.color,
         footprintFt: c.footprintFt ?? sp.footprintFt,
         spacingFt: c.spacingFt ?? sp.spacingFt,
-        icon: c.icon ?? sp.icon,
+        iconImage: c.iconImage ?? sp.iconImage ?? null,
       };
     }
 
@@ -240,15 +248,53 @@
 
     function esc(s) { return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function computeFileStats() {
+      const speciesJson = JSON.stringify(species);
+      const cultivarsJson = JSON.stringify(cultivars);
+      const speciesSize = new Blob([speciesJson]).size;
+      const cultivarsSize = new Blob([cultivarsJson]).size;
+
+      // Count icons and their sizes (base64 data URIs)
+      const iconEntries = [];
+      for (const sp of species) {
+        if (sp.iconImage) iconEntries.push({ id: sp.id, type: 'species', size: sp.iconImage.length });
+      }
+      for (const c of cultivars) {
+        if (c.iconImage) iconEntries.push({ id: c.id, type: 'cultivar', size: c.iconImage.length });
+      }
+
+      const iconCount = iconEntries.length;
+      // base64 encoded size is ~4/3 of binary; the data URI prefix is ~22 chars
+      const totalIconBytes = iconEntries.reduce((sum, e) => sum + Math.floor((e.size - 22) * 3 / 4), 0);
+      const avgIconBytes = iconCount > 0 ? Math.round(totalIconBytes / iconCount) : 0;
+      const speciesWithout = species.filter(s => !s.iconImage).length;
+
+      const el = document.getElementById('fileStats');
+      el.innerHTML =
+        `species.json: <b>${formatBytes(speciesSize)}</b> · ` +
+        `cultivars.json: <b>${formatBytes(cultivarsSize)}</b> · ` +
+        `Total: <b>${formatBytes(speciesSize + cultivarsSize)}</b> · ` +
+        `Icons: <b>${iconCount}</b> embedded · ` +
+        `Avg icon: <b>${formatBytes(avgIconBytes)}</b>` +
+        (speciesWithout > 0 ? ` · <span style="color:#c88">${speciesWithout} species missing icons</span>` : '');
+    }
+
     function render() {
       const { speciesIds, groups } = getGrouped();
       const totalFiltered = speciesIds.reduce((n, sid) => n + groups[sid].length, 0);
       document.getElementById('stats').textContent = `${totalFiltered} of ${cultivars.length} cultivars · ${species.length} species`;
+      computeFileStats();
 
       // Update sort indicators
       document.querySelectorAll('th').forEach(th => th.classList.remove('sorted', 'desc'));
       const headers = document.querySelectorAll('th');
-      const fields = ['speciesId','category','icon','color','footprintFt','spacingFt'];
+      const fields = ['speciesId','category','color','footprintFt','spacingFt'];
       const idx = fields.indexOf(sortField);
       if (idx >= 0 && headers[idx]) {
         headers[idx].classList.add('sorted');
@@ -270,9 +316,11 @@
             <td><select onchange="updateSpeciesField('${esc(sp.id)}','category',this.value)">
               ${CATEGORIES.map(cat => `<option value="${cat}"${sp.category===cat?' selected':''}>${cat}</option>`).join('')}
             </select></td>
-            <td><select onchange="updateSpeciesField('${esc(sp.id)}','icon',this.value)">
-              ${ICON_TYPES.map(ic => `<option value="${ic}"${sp.icon===ic?' selected':''}>${ic}</option>`).join('')}
-            </select></td>
+            <td><div class="icon-image-cell">
+              <div class="icon-image-drop" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDropSpecies(event,'${esc(sp.id)}')" onclick="onClickImage(event,'${esc(sp.id)}','species')">
+                ${sp.iconImage ? `<img src="${sp.iconImage}"><button class="clear-btn" onclick="event.stopPropagation();clearSpeciesImage('${esc(sp.id)}')">&times;</button>` : '<span class="placeholder">+</span>'}
+              </div>
+            </div></td>
             <td><div class="color-cell">
               <div class="color-swatch" style="background:${sp.color}" onclick="this.nextElementSibling.click()"></div>
               <input type="color" class="color-input" value="${sp.color}" onchange="updateSpeciesField('${esc(sp.id)}','color',this.value);this.previousElementSibling.style.background=this.value">
@@ -294,16 +342,17 @@
           const hasColorOvr = isOverridden(c, 'color');
           const hasFootOvr = isOverridden(c, 'footprintFt');
           const hasSpaceOvr = isOverridden(c, 'spacingFt');
-          const hasIconOvr = isOverridden(c, 'icon');
-          const hasAnyOvr = hasColorOvr || hasFootOvr || hasSpaceOvr || hasIconOvr;
+          const hasImageOvr = isOverridden(c, 'iconImage');
+          const hasAnyOvr = hasColorOvr || hasFootOvr || hasSpaceOvr || hasImageOvr;
           html += `
           <tr class="cultivar-row" data-id="${esc(c.id)}">
             <td><input value="${esc(c.id)}" onchange="updateField('${esc(c.id)}','id',this.value)" style="color:#aaa;font-size:12px"></td>
             <td><input value="${esc(c.variety || '')}" onchange="updateField('${esc(c.id)}','variety',this.value||null)" placeholder="(base)"></td>
-            <td><select class="${hasIconOvr ? 'overridden' : 'inherited'}" onchange="updateField('${esc(c.id)}','icon',this.value)">
-              <option value=""${!hasIconOvr ? ' selected' : ''} class="inherited">inherit</option>
-              ${ICON_TYPES.map(ic => `<option value="${ic}"${c.icon===ic?' selected':''}>${ic}</option>`).join('')}
-            </select></td>
+            <td><div class="icon-image-cell">
+              <div class="icon-image-drop${isOverridden(c,'iconImage') ? '' : r.iconImage ? ' inherited' : ''}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDropCultivar(event,'${esc(c.id)}')" onclick="onClickImage(event,'${esc(c.id)}','cultivar')">
+                ${r.iconImage ? `<img src="${r.iconImage}">${isOverridden(c,'iconImage') ? `<button class="clear-btn" onclick="event.stopPropagation();clearCultivarImage('${esc(c.id)}')">&times;</button>` : ''}` : '<span class="placeholder">+</span>'}
+              </div>
+            </div></td>
             <td><div class="color-cell">
               <div class="color-swatch${hasColorOvr ? '' : ' inherited'}" style="background:${r.color}" onclick="this.nextElementSibling.click()"></div>
               <input type="color" class="color-input" value="${r.color}" onchange="updateField('${esc(c.id)}','color',this.value);this.previousElementSibling.style.background=this.value">
@@ -336,12 +385,6 @@
       if (!c) return;
       if (field === 'id') {
         c.id = value;
-      } else if (field === 'icon') {
-        if (value === '') {
-          delete c.icon;
-        } else {
-          c.icon = value;
-        }
       } else if (field === 'color') {
         const sp = speciesMap[c.speciesId];
         if (sp && value === sp.color) {
@@ -364,7 +407,7 @@
         c[field] = value;
       }
       save();
-      if (['speciesId', 'icon'].includes(field)) render();
+      if (field === 'speciesId') render();
     }
 
     function revertOverrides(id) {
@@ -373,7 +416,7 @@
       delete c.color;
       delete c.footprintFt;
       delete c.spacingFt;
-      delete c.icon;
+      delete c.iconImage;
       save();
       render();
       toast('Reverted overrides for ' + (resolve(c).name));
@@ -396,7 +439,7 @@
 
     function addSpecies() {
       const newId = 'new-species-' + Date.now();
-      species.push({ id: newId, name: 'New Species', taxonomicName: '', category: 'vegetables', icon: 'herb-sprig', color: '#888888', footprintFt: 0.5, spacingFt: 0.5 });
+      species.push({ id: newId, name: 'New Species', taxonomicName: '', category: 'vegetables', icon: 'herb-sprig', color: '#888888', footprintFt: 0.5, spacingFt: 0.5, iconImage: null });
       saveSpecies();
       // Also add a base cultivar for it
       cultivars.push({ id: newId, speciesId: newId, variety: null });
@@ -496,6 +539,114 @@
     function closeModal(id) {
       document.getElementById(id).classList.remove('show');
     }
+
+    function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+    function onDragLeave(e) { e.currentTarget.classList.remove('dragover'); }
+
+    function readImageFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) { reject('Not an image'); return; }
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function onDropSpecies(e, speciesId) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const dataUrl = await readImageFile(file);
+      updateSpeciesField(speciesId, 'iconImage', dataUrl);
+      toast('Updated icon image for ' + (speciesMap[speciesId]?.name || speciesId));
+    }
+
+    async function onDropCultivar(e, cultivarId) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const dataUrl = await readImageFile(file);
+      updateField(cultivarId, 'iconImage', dataUrl);
+      toast('Updated icon image for ' + cultivarId);
+      render();
+    }
+
+    function onClickImage(e, id, type) {
+      if (e.shiftKey) {
+        const img = e.currentTarget.querySelector('img');
+        if (img) { window.open(img.src, '_blank'); return; }
+      }
+      if (type === 'species') pickFileSpecies(id);
+      else pickFileCultivar(id);
+    }
+
+    function pickFileSpecies(speciesId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/png';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        const dataUrl = await readImageFile(file);
+        updateSpeciesField(speciesId, 'iconImage', dataUrl);
+        toast('Updated icon image for ' + (speciesMap[speciesId]?.name || speciesId));
+      };
+      input.click();
+    }
+
+    function pickFileCultivar(cultivarId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/png';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        const dataUrl = await readImageFile(file);
+        updateField(cultivarId, 'iconImage', dataUrl);
+        toast('Updated icon image for ' + cultivarId);
+        render();
+      };
+      input.click();
+    }
+
+    function clearSpeciesImage(speciesId) {
+      updateSpeciesField(speciesId, 'iconImage', null);
+      toast('Cleared icon image for ' + (speciesMap[speciesId]?.name || speciesId));
+    }
+
+    function clearCultivarImage(cultivarId) {
+      const c = cultivars.find(x => x.id === cultivarId);
+      if (!c) return;
+      delete c.iconImage;
+      save(); render();
+      toast('Cleared icon image override for ' + cultivarId);
+    }
+
+    const tooltip = document.getElementById('iconTooltip');
+    const tooltipImg = tooltip.querySelector('img');
+    document.addEventListener('mouseover', e => {
+      const drop = e.target.closest('.icon-image-drop');
+      if (!drop) return;
+      const img = drop.querySelector('img');
+      if (!img) return;
+      tooltipImg.src = img.src;
+      tooltip.style.display = 'block';
+    });
+    document.addEventListener('mousemove', e => {
+      if (tooltip.style.display !== 'block') return;
+      tooltip.style.left = (e.clientX + 16) + 'px';
+      tooltip.style.top = (e.clientY + 16) + 'px';
+    });
+    document.addEventListener('mouseout', e => {
+      const drop = e.target.closest('.icon-image-drop');
+      if (!drop) return;
+      if (!drop.contains(e.relatedTarget)) {
+        tooltip.style.display = 'none';
+      }
+    });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {

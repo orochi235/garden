@@ -11,6 +11,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
   showSpacing: boolean = false;
   labelMode: LabelMode | 'none' = 'none';
   labelFontSize = 13;
+  plantIconScale = 1;
   hideIds: string[] = [];
   overlayPlantings: Planting[] = [];
   overlaySnapped: boolean = false;
@@ -28,6 +29,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
       showSpacing: this.showSpacing,
       labelMode: this.labelMode,
       labelFontSize: this.labelFontSize,
+      plantIconScale: this.plantIconScale,
     });
     if (this.overlayPlantings.length > 0) {
       renderOverlayPlantings(ctx, this.overlayPlantings, this.zones, this.structures, {

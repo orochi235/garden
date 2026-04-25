@@ -24,6 +24,7 @@ export interface ZoneRenderOptions extends RenderOptions {
 export interface PlantingRenderOptions extends RenderOptions {
   selectedIds?: string[];
   showSpacing?: boolean;
+  plantIconScale?: number;
 }
 
 export interface OverlayRenderOptions {

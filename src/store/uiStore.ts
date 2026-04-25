@@ -39,6 +39,7 @@ interface UiStore {
   magentaHighlight: boolean;
   labelMode: LabelMode;
   labelFontSize: number;
+  plantIconScale: number;
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
@@ -50,6 +51,7 @@ interface UiStore {
   setMagentaHighlight: (show: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
   setLabelFontSize: (size: number) => void;
+  setPlantIconScale: (scale: number) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
   setThemeOverride: (period: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null) => void;
@@ -89,6 +91,7 @@ export const useUiStore = create<UiStore>((set) => ({
   magentaHighlight: false,
   labelMode: 'selection' as LabelMode,
   labelFontSize: 13,
+  plantIconScale: 1,
   layerFlashCounter: 0,
   viewMode: 'select',
   dragOverlay: null,
@@ -100,6 +103,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setMagentaHighlight: (show) => set({ magentaHighlight: show }),
   setLabelMode: (mode) => set({ labelMode: mode }),
   setLabelFontSize: (size) => set({ labelFontSize: size }),
+  setPlantIconScale: (scale) => set({ plantIconScale: scale }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
@@ -142,6 +146,7 @@ export const useUiStore = create<UiStore>((set) => ({
       magentaHighlight: false,
       labelMode: 'selection' as LabelMode,
       labelFontSize: 13,
+      plantIconScale: 1,
       layerFlashCounter: 0,
       viewMode: 'select',
       dragOverlay: null,

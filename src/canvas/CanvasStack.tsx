@@ -54,6 +54,7 @@ export function CanvasStack() {
   const showPlantingSpacing = useUiStore((s) => s.showPlantingSpacing);
   const labelMode = useUiStore((s) => s.labelMode);
   const labelFontSize = useUiStore((s) => s.labelFontSize);
+  const plantIconScale = useUiStore((s) => s.plantIconScale);
   const viewMode = useUiStore((s) => s.viewMode);
   const overlay = useUiStore((s) => s.dragOverlay);
 
@@ -199,6 +200,7 @@ export function CanvasStack() {
   plantingRenderer.current.showSpacing = showPlantingSpacing;
   plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
   plantingRenderer.current.labelFontSize = labelFontSize;
+  plantingRenderer.current.plantIconScale = plantIconScale;
   plantingRenderer.current.setView(view, width, height);
 
   plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
@@ -245,7 +247,7 @@ export function CanvasStack() {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, labelMode, labelFontSize, plantingRenderer.current.highlight, overlay],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showPlantingSpacing, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(

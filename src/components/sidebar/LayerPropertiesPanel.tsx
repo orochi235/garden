@@ -81,6 +81,8 @@ function DebugThemePanel() {
   const setLabelMode = useUiStore((s) => s.setLabelMode);
   const labelFontSize = useUiStore((s) => s.labelFontSize);
   const setLabelFontSize = useUiStore((s) => s.setLabelFontSize);
+  const plantIconScale = useUiStore((s) => s.plantIconScale);
+  const setPlantIconScale = useUiStore((s) => s.setPlantIconScale);
   const loadGarden = useGardenStore((s) => s.loadGarden);
 
   function handleResetGarden() {
@@ -187,6 +189,18 @@ function DebugThemePanel() {
           step={1}
           value={labelFontSize}
           onChange={(e) => setLabelFontSize(Number(e.target.value))}
+          className={styles.slider}
+        />
+      </label>
+      <label className={styles.sliderLabel}>
+        <span>Plant icon size: {Math.round(plantIconScale * 100)}%</span>
+        <input
+          type="range"
+          min={0.25}
+          max={3}
+          step={0.25}
+          value={plantIconScale}
+          onChange={(e) => setPlantIconScale(Number(e.target.value))}
           className={styles.slider}
         />
       </label>

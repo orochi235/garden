@@ -1,5 +1,4 @@
 import cultivarData from '../data/cultivars.json';
-import type { IconType } from './species';
 import { getSpecies } from './species';
 
 export type CultivarCategory = 'herbs' | 'vegetables' | 'fruits' | 'flowers' | 'root-vegetables' | 'legumes';
@@ -12,7 +11,7 @@ interface CultivarRaw {
   color?: string;
   footprintFt?: number;
   spacingFt?: number;
-  icon?: IconType;
+  iconImage?: string;
 }
 
 /** Resolved cultivar with all fields populated from species defaults. */
@@ -26,7 +25,7 @@ export interface Cultivar {
   color: string;
   footprintFt: number;
   spacingFt: number;
-  icon: IconType;
+  iconImage: string | null;
 }
 
 function resolveCultivar(raw: CultivarRaw): Cultivar {
@@ -45,7 +44,7 @@ function resolveCultivar(raw: CultivarRaw): Cultivar {
     color: raw.color ?? species.color,
     footprintFt: raw.footprintFt ?? species.footprintFt,
     spacingFt: raw.spacingFt ?? species.spacingFt,
-    icon: raw.icon ?? species.icon,
+    iconImage: raw.iconImage ?? species.iconImage,
   };
 }
 

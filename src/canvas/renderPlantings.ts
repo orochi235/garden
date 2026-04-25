@@ -45,6 +45,7 @@ export function renderPlantings(
     labelFontSize = 13,
     selectedIds = [],
     showSpacing = false,
+    plantIconScale = 1,
   } = opts;
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -61,15 +62,15 @@ export function renderPlantings(
 
   ctx.font = `${labelFontSize}px sans-serif`;
 
-  // Collect occupied rects from structures and zones
-  const occupied: RenderedRect[] = [];
+  // Collect occupied rects from structures and zones (used for label overlap culling)
+  const labelOccluders: RenderedRect[] = [];
   for (const s of structures) {
     const [sx2, sy2] = worldToScreen(s.x, s.y, view);
-    occupied.push({ x: sx2, y: sy2, w: s.width * view.zoom, h: s.height * view.zoom });
+    labelOccluders.push({ x: sx2, y: sy2, w: s.width * view.zoom, h: s.height * view.zoom });
   }
   for (const z of zones) {
     const [zx, zy] = worldToScreen(z.x, z.y, view);
-    occupied.push({ x: zx, y: zy, w: z.width * view.zoom, h: z.height * view.zoom });
+    labelOccluders.push({ x: zx, y: zy, w: z.width * view.zoom, h: z.height * view.zoom });
   }
 
   // Count plantings per parent to detect single-plant containers
@@ -96,8 +97,8 @@ export function renderPlantings(
     const worldY = parent.y + p.y;
     const [sx, sy] = worldToScreen(worldX, worldY, view);
     const radius = isSingleFill
-      ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom)
-      : Math.max(3, (footprint / 2) * view.zoom);
+      ? Math.max(3, (Math.min(parent.width, parent.height) / 2) * view.zoom * plantIconScale)
+      : Math.max(3, (footprint / 2) * view.zoom * plantIconScale);
 
     if (showSpacing) {
       const spacingHalf = (spacing / 2) * view.zoom;
@@ -136,8 +137,7 @@ export function renderPlantings(
       ctx.restore();
     }
 
-    // Track the plant's bounding box
-    occupied.push({ x: sx - radius, y: sy - radius, w: radius * 2, h: radius * 2 });
+    // Track the plant's bounding box (not used for label occlusion)
 
     const isSelected = selectedIds.includes(p.id);
     const showThisLabel = labelMode === 'all' || labelMode === 'active-layer'
@@ -154,32 +154,34 @@ export function renderPlantings(
       const { renderer: mdRenderer, width: labelW, height: labelH } =
         createMarkdownRenderer(ctx, mdText, labelFontSize);
 
+      const padX = 4;
+      const pillW = labelW + padX * 2;
       const labelY = sy + radius + 8;
       labelCandidates.push({
         text: mdText,
-        rect: { x: sx - labelW / 2, y: labelY, w: labelW, h: labelH },
+        rect: { x: sx - pillW / 2, y: labelY, w: pillW, h: labelH },
         selected: isSelected,
         renderText: (c, _text, tx, ty) => {
-          c.textAlign = 'center';
+          c.textAlign = 'left';
           mdRenderer(c, _text, tx - labelW / 2, ty);
         },
       });
     }
   }
 
-  // Second pass: render labels that don't overlap other objects
+  // Second pass: render labels that don't overlap structures, zones, or other labels
   for (const label of labelCandidates) {
     if (!label.selected) {
-      const overlaps = occupied.some((r) => rectsOverlap(label.rect, r));
+      const overlaps = labelOccluders.some((r) => rectsOverlap(label.rect, r));
       if (overlaps) continue;
     }
     renderLabel(ctx, label.text, label.rect.x + label.rect.w / 2, label.rect.y, {
       renderText: label.renderText,
-      width: label.rect.w,
+      width: label.rect.w - 8,
       height: label.rect.h,
     });
-    // Add label to occupied so later labels don't overlap it either
-    occupied.push(label.rect);
+    // Add label to occluders so later labels don't overlap it
+    labelOccluders.push(label.rect);
   }
 
 }

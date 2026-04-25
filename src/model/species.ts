@@ -1,20 +1,15 @@
 import type { CultivarCategory } from './cultivars';
 import speciesData from '../data/species.json';
 
-export type IconType =
-  | 'round-fruit' | 'pepper' | 'bell-pepper' | 'eggplant' | 'cucumber' | 'melon'
-  | 'squash' | 'leaf-rosette' | 'carrot' | 'radish' | 'potato'
-  | 'herb-sprig' | 'strawberry' | 'pea-pod' | 'bean';
-
 export interface Species {
   id: string;
   name: string;
   taxonomicName: string;
   category: CultivarCategory;
-  icon: IconType;
   color: string;
   footprintFt: number;
   spacingFt: number;
+  iconImage: string | null;
 }
 
 const species: Species[] = speciesData as Species[];

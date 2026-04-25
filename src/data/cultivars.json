@@ -1,43 +1,637 @@
 [
-  { "id": "tomato", "speciesId": "tomato", "variety": null },
-  { "id": "black-krim-tomato", "speciesId": "tomato", "variety": "Black Krim", "color": "#6B2D3A" },
-  { "id": "cherokee-purple-tomato", "speciesId": "tomato", "variety": "Cherokee Purple", "color": "#7A3050" },
-  { "id": "valencia-tomato", "speciesId": "tomato", "variety": "Valencia", "color": "#E08030" },
-  { "id": "chocolate-cherry-tomato", "speciesId": "tomato", "variety": "Chocolate Cherry", "color": "#8B4513", "footprintFt": 0.75, "spacingFt": 1.5 },
-  { "id": "san-marzano-tomato", "speciesId": "tomato", "variety": "San Marzano", "color": "#C43030" },
-  { "id": "bell-pepper", "speciesId": "pepper-sweet", "variety": "Bell" },
-  { "id": "jalapeno", "speciesId": "pepper-hot", "variety": "Jalapeño" },
-  { "id": "poblano", "speciesId": "pepper-hot", "variety": "Poblano", "footprintFt": 1, "color": "#2A5A20" },
-  { "id": "shishito", "speciesId": "pepper-hot", "variety": "Shishito", "color": "#5A9A30" },
-  { "id": "anaheim", "speciesId": "pepper-hot", "variety": "Anaheim", "footprintFt": 1, "color": "#4A8A28" },
-  { "id": "habanero", "speciesId": "pepper-hot", "variety": "Habanero", "color": "#E06010" },
-  { "id": "tomatillo", "speciesId": "tomatillo", "variety": null },
-  { "id": "ground-cherry", "speciesId": "ground-cherry", "variety": null },
-  { "id": "eggplant", "speciesId": "eggplant", "variety": "Purple" },
-  { "id": "cucumber", "speciesId": "cucumber", "variety": null },
-  { "id": "honeydew", "speciesId": "melon", "variety": "Honeydew" },
-  { "id": "watermelon", "speciesId": "watermelon", "variety": "Sugar Baby" },
-  { "id": "lettuce", "speciesId": "lettuce", "variety": null },
-  { "id": "kale", "speciesId": "kale", "variety": null },
-  { "id": "carrot", "speciesId": "carrot", "variety": null },
-  { "id": "radish", "speciesId": "radish", "variety": null },
-  { "id": "parsnip", "speciesId": "parsnip", "variety": null },
-  { "id": "basil", "speciesId": "basil", "variety": null },
-  { "id": "thai-basil", "speciesId": "basil", "variety": "Thai", "color": "#5A3A7A" },
-  { "id": "thyme", "speciesId": "thyme", "variety": null },
-  { "id": "chives", "speciesId": "chives", "variety": null },
-  { "id": "garlic-chives", "speciesId": "chives", "variety": "Garlic", "color": "#5A8A4A" },
-  { "id": "sage", "speciesId": "sage", "variety": null },
-  { "id": "rosemary", "speciesId": "rosemary", "variety": null },
-  { "id": "parsley", "speciesId": "parsley", "variety": null },
-  { "id": "cilantro", "speciesId": "cilantro", "variety": null },
-  { "id": "chervil", "speciesId": "chervil", "variety": null },
-  { "id": "dill", "speciesId": "dill", "variety": null },
-  { "id": "chocolate-mint", "speciesId": "mint", "variety": "Chocolate" },
-  { "id": "peas", "speciesId": "peas", "variety": null },
-  { "id": "green-beans", "speciesId": "green-beans", "variety": null },
-  { "id": "zucchini", "speciesId": "zucchini", "variety": null },
-  { "id": "summer-squash", "speciesId": "summer-squash", "variety": null },
-  { "id": "strawberry", "speciesId": "strawberry", "variety": null },
-  { "id": "potato", "speciesId": "potato", "variety": null }
+  {
+    "id": "tomato",
+    "speciesId": "tomato",
+    "variety": null
+  },
+  {
+    "id": "black-krim-tomato",
+    "speciesId": "tomato",
+    "variety": "Black Krim",
+    "color": "#6B2D3A"
+  },
+  {
+    "id": "cherokee-purple-tomato",
+    "speciesId": "tomato",
+    "variety": "Cherokee Purple",
+    "color": "#7A3050"
+  },
+  {
+    "id": "valencia-tomato",
+    "speciesId": "tomato",
+    "variety": "Valencia",
+    "color": "#E08030"
+  },
+  {
+    "id": "chocolate-cherry-tomato",
+    "speciesId": "tomato",
+    "variety": "Chocolate Cherry",
+    "color": "#8B4513",
+    "footprintFt": 0.75,
+    "spacingFt": 1.5
+  },
+  {
+    "id": "san-marzano-tomato",
+    "speciesId": "tomato",
+    "variety": "San Marzano",
+    "color": "#C43030"
+  },
+  {
+    "id": "bell-pepper",
+    "speciesId": "pepper-sweet",
+    "variety": "Bell"
+  },
+  {
+    "id": "jalapeno",
+    "speciesId": "pepper-hot",
+    "variety": "Jalapeño"
+  },
+  {
+    "id": "poblano",
+    "speciesId": "pepper-hot",
+    "variety": "Poblano",
+    "footprintFt": 1,
+    "color": "#2A5A20"
+  },
+  {
+    "id": "shishito",
+    "speciesId": "pepper-hot",
+    "variety": "Shishito",
+    "color": "#5A9A30"
+  },
+  {
+    "id": "anaheim",
+    "speciesId": "pepper-hot",
+    "variety": "Anaheim",
+    "footprintFt": 1,
+    "color": "#4A8A28"
+  },
+  {
+    "id": "habanero",
+    "speciesId": "pepper-hot",
+    "variety": "Habanero",
+    "color": "#E06010"
+  },
+  {
+    "id": "tomatillo",
+    "speciesId": "tomatillo",
+    "variety": null
+  },
+  {
+    "id": "ground-cherry",
+    "speciesId": "ground-cherry",
+    "variety": null
+  },
+  {
+    "id": "eggplant",
+    "speciesId": "eggplant",
+    "variety": "Purple"
+  },
+  {
+    "id": "cucumber",
+    "speciesId": "cucumber",
+    "variety": null
+  },
+  {
+    "id": "honeydew",
+    "speciesId": "melon",
+    "variety": "Honeydew"
+  },
+  {
+    "id": "watermelon",
+    "speciesId": "watermelon",
+    "variety": "Sugar Baby"
+  },
+  {
+    "id": "lettuce",
+    "speciesId": "lettuce",
+    "variety": null
+  },
+  {
+    "id": "kale",
+    "speciesId": "kale",
+    "variety": null
+  },
+  {
+    "id": "carrot",
+    "speciesId": "carrot",
+    "variety": null
+  },
+  {
+    "id": "radish",
+    "speciesId": "radish",
+    "variety": null
+  },
+  {
+    "id": "parsnip",
+    "speciesId": "parsnip",
+    "variety": null
+  },
+  {
+    "id": "basil",
+    "speciesId": "basil",
+    "variety": null
+  },
+  {
+    "id": "thai-basil",
+    "speciesId": "basil",
+    "variety": "Thai",
+    "color": "#5A3A7A"
+  },
+  {
+    "id": "thyme",
+    "speciesId": "thyme",
+    "variety": null
+  },
+  {
+    "id": "chives",
+    "speciesId": "chives",
+    "variety": null
+  },
+  {
+    "id": "garlic-chives",
+    "speciesId": "chives",
+    "variety": "Garlic",
+    "color": "#5A8A4A"
+  },
+  {
+    "id": "sage",
+    "speciesId": "sage",
+    "variety": null
+  },
+  {
+    "id": "rosemary",
+    "speciesId": "rosemary",
+    "variety": null
+  },
+  {
+    "id": "parsley",
+    "speciesId": "parsley",
+    "variety": null
+  },
+  {
+    "id": "cilantro",
+    "speciesId": "cilantro",
+    "variety": null
+  },
+  {
+    "id": "chervil",
+    "speciesId": "chervil",
+    "variety": null
+  },
+  {
+    "id": "dill",
+    "speciesId": "dill",
+    "variety": null
+  },
+  {
+    "id": "chocolate-mint",
+    "speciesId": "mint",
+    "variety": "Chocolate"
+  },
+  {
+    "id": "peas",
+    "speciesId": "peas",
+    "variety": null
+  },
+  {
+    "id": "green-beans",
+    "speciesId": "green-beans",
+    "variety": null
+  },
+  {
+    "id": "zucchini",
+    "speciesId": "zucchini",
+    "variety": null
+  },
+  {
+    "id": "summer-squash",
+    "speciesId": "summer-squash",
+    "variety": null
+  },
+  {
+    "id": "strawberry",
+    "speciesId": "strawberry",
+    "variety": null
+  },
+  {
+    "id": "potato",
+    "speciesId": "potato",
+    "variety": null
+  },
+  {
+    "id": "asparagus",
+    "speciesId": "asparagus",
+    "variety": null
+  },
+  {
+    "id": "corn",
+    "speciesId": "corn",
+    "variety": null
+  },
+  {
+    "id": "garlic",
+    "speciesId": "garlic",
+    "variety": null
+  },
+  {
+    "id": "onion",
+    "speciesId": "onion",
+    "variety": null
+  },
+  {
+    "id": "shallot",
+    "speciesId": "shallot",
+    "variety": null
+  },
+  {
+    "id": "mushroom",
+    "speciesId": "mushroom",
+    "variety": null
+  },
+  {
+    "id": "portobello",
+    "speciesId": "portobello",
+    "variety": null
+  },
+  {
+    "id": "romanesco",
+    "speciesId": "romanesco",
+    "variety": null
+  },
+  {
+    "id": "cauliflower",
+    "speciesId": "cauliflower",
+    "variety": null
+  },
+  {
+    "id": "artichoke",
+    "speciesId": "artichoke",
+    "variety": null
+  },
+  {
+    "id": "beet",
+    "speciesId": "beet",
+    "variety": null
+  },
+  {
+    "id": "turnip",
+    "speciesId": "turnip",
+    "variety": null
+  },
+  {
+    "id": "fennel-bulb",
+    "speciesId": "fennel-bulb",
+    "variety": null
+  },
+  {
+    "id": "edamame",
+    "speciesId": "edamame",
+    "variety": null
+  },
+  {
+    "id": "cherry-tomato",
+    "speciesId": "cherry-tomato",
+    "variety": null
+  },
+  {
+    "id": "leek",
+    "speciesId": "leek",
+    "variety": null
+  },
+  {
+    "id": "scallion",
+    "speciesId": "scallion",
+    "variety": null
+  },
+  {
+    "id": "sweet-potato",
+    "speciesId": "sweet-potato",
+    "variety": null
+  },
+  {
+    "id": "okra",
+    "speciesId": "okra",
+    "variety": null
+  },
+  {
+    "id": "pumpkin",
+    "speciesId": "pumpkin",
+    "variety": null
+  },
+  {
+    "id": "cabbage",
+    "speciesId": "cabbage",
+    "variety": null
+  },
+  {
+    "id": "ginger",
+    "speciesId": "ginger",
+    "variety": null
+  },
+  {
+    "id": "taro",
+    "speciesId": "taro",
+    "variety": null
+  },
+  {
+    "id": "roma-tomato",
+    "speciesId": "roma-tomato",
+    "variety": null
+  },
+  {
+    "id": "daikon",
+    "speciesId": "daikon",
+    "variety": null
+  },
+  {
+    "id": "tatsoi",
+    "speciesId": "tatsoi",
+    "variety": null
+  },
+  {
+    "id": "lacinato-kale",
+    "speciesId": "lacinato-kale",
+    "variety": null
+  },
+  {
+    "id": "kohlrabi",
+    "speciesId": "kohlrabi",
+    "variety": null
+  },
+  {
+    "id": "peach",
+    "speciesId": "peach",
+    "variety": null
+  },
+  {
+    "id": "red-cabbage",
+    "speciesId": "red-cabbage",
+    "variety": null
+  },
+  {
+    "id": "celery",
+    "speciesId": "celery",
+    "variety": null
+  },
+  {
+    "id": "butternut-squash",
+    "speciesId": "butternut-squash",
+    "variety": null
+  },
+  {
+    "id": "horseradish",
+    "speciesId": "horseradish",
+    "variety": null
+  },
+  {
+    "id": "kabocha",
+    "speciesId": "kabocha",
+    "variety": null
+  },
+  {
+    "id": "chard",
+    "speciesId": "chard",
+    "variety": null
+  },
+  {
+    "id": "oyster-mushroom",
+    "speciesId": "oyster-mushroom",
+    "variety": null
+  },
+  {
+    "id": "watercress",
+    "speciesId": "watercress",
+    "variety": null
+  },
+  {
+    "id": "morel",
+    "speciesId": "morel",
+    "variety": null
+  },
+  {
+    "id": "enoki",
+    "speciesId": "enoki",
+    "variety": null
+  },
+  {
+    "id": "bok-choy",
+    "speciesId": "bok-choy",
+    "variety": null
+  },
+  {
+    "id": "brussels-sprouts",
+    "speciesId": "brussels-sprouts",
+    "variety": null
+  },
+  {
+    "id": "arugula",
+    "speciesId": "arugula",
+    "variety": null
+  },
+  {
+    "id": "spinach",
+    "speciesId": "spinach",
+    "variety": null
+  },
+  {
+    "id": "wax-beans",
+    "speciesId": "wax-beans",
+    "variety": null
+  },
+  {
+    "id": "chili-pepper",
+    "speciesId": "chili-pepper",
+    "variety": null
+  },
+  {
+    "id": "radicchio",
+    "speciesId": "radicchio",
+    "variety": null
+  },
+  {
+    "id": "red-bell-pepper",
+    "speciesId": "red-bell-pepper",
+    "variety": null
+  },
+  {
+    "id": "orange-bell-pepper",
+    "speciesId": "orange-bell-pepper",
+    "variety": null
+  },
+  {
+    "id": "yellow-bell-pepper",
+    "speciesId": "yellow-bell-pepper",
+    "variety": null
+  },
+  {
+    "id": "bitter-melon",
+    "speciesId": "bitter-melon",
+    "variety": null
+  },
+  {
+    "id": "jicama",
+    "speciesId": "jicama",
+    "variety": null
+  },
+  {
+    "id": "romaine",
+    "speciesId": "romaine",
+    "variety": null
+  },
+  {
+    "id": "butter-lettuce",
+    "speciesId": "butter-lettuce",
+    "variety": null
+  },
+  {
+    "id": "cantaloupe",
+    "speciesId": "cantaloupe",
+    "variety": null
+  },
+  {
+    "id": "blueberry",
+    "speciesId": "blueberry",
+    "variety": null
+  },
+  {
+    "id": "delicata-squash",
+    "speciesId": "delicata-squash",
+    "variety": null
+  },
+  {
+    "id": "tarragon",
+    "speciesId": "tarragon",
+    "variety": null
+  },
+  {
+    "id": "bay-leaf",
+    "speciesId": "bay-leaf",
+    "variety": null
+  },
+  {
+    "id": "curry-leaf",
+    "speciesId": "curry-leaf",
+    "variety": null
+  },
+  {
+    "id": "lavender",
+    "speciesId": "lavender",
+    "variety": null
+  },
+  {
+    "id": "lemongrass",
+    "speciesId": "lemongrass",
+    "variety": null
+  },
+  {
+    "id": "sorrel",
+    "speciesId": "sorrel",
+    "variety": null
+  },
+  {
+    "id": "savory",
+    "speciesId": "savory",
+    "variety": null
+  },
+  {
+    "id": "oregano",
+    "speciesId": "oregano",
+    "variety": null
+  },
+  {
+    "id": "lemon-balm",
+    "speciesId": "lemon-balm",
+    "variety": null
+  },
+  {
+    "id": "lovage",
+    "speciesId": "lovage",
+    "variety": null
+  },
+  {
+    "id": "fennel",
+    "speciesId": "fennel",
+    "variety": null
+  },
+  {
+    "id": "shiso",
+    "speciesId": "shiso",
+    "variety": null
+  },
+  {
+    "id": "nettle",
+    "speciesId": "nettle",
+    "variety": null
+  },
+  {
+    "id": "comfrey",
+    "speciesId": "comfrey",
+    "variety": null
+  },
+  {
+    "id": "borage",
+    "speciesId": "borage",
+    "variety": null
+  },
+  {
+    "id": "stevia",
+    "speciesId": "stevia",
+    "variety": null
+  },
+  {
+    "id": "peppermint",
+    "speciesId": "peppermint",
+    "variety": null
+  },
+  {
+    "id": "lemon-verbena",
+    "speciesId": "lemon-verbena",
+    "variety": null
+  },
+  {
+    "id": "catnip",
+    "speciesId": "catnip",
+    "variety": null
+  },
+  {
+    "id": "mugwort",
+    "speciesId": "mugwort",
+    "variety": null
+  },
+  {
+    "id": "wormwood",
+    "speciesId": "wormwood",
+    "variety": null
+  },
+  {
+    "id": "perilla",
+    "speciesId": "perilla",
+    "variety": null
+  },
+  {
+    "id": "marjoram",
+    "speciesId": "marjoram",
+    "variety": null
+  },
+  {
+    "id": "melissa",
+    "speciesId": "melissa",
+    "variety": null
+  },
+  {
+    "id": "yarrow",
+    "speciesId": "yarrow",
+    "variety": null
+  },
+  {
+    "id": "patchouli",
+    "speciesId": "patchouli",
+    "variety": null
+  },
+  {
+    "id": "woodruff",
+    "speciesId": "woodruff",
+    "variety": null
+  }
 ]

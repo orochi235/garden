@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { renderIcon } from '../../canvas/plantRenderers';
-import { getCultivar } from '../../model/cultivars';
-import type { IconType } from '../../model/species';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/PaletteItem.module.css';
 import type { PaletteEntry } from './paletteData';
@@ -29,9 +27,7 @@ function PlantIcon({ cultivarId, color }: { cultivarId: string; color: string })
     ctx.clearRect(0, 0, size, size);
     ctx.save();
     ctx.translate(size / 2, size / 2);
-    const cultivar = getCultivar(cultivarId);
-    const iconType: IconType = cultivar?.icon ?? 'herb-sprig';
-    renderIcon(ctx, iconType, ICON_RADIUS, color);
+    renderIcon(ctx, cultivarId, ICON_RADIUS, color);
     ctx.restore();
   }, [cultivarId, color]);
 
@@ -98,9 +94,7 @@ function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: stri
     ctx.clearRect(0, 0, size, size);
     ctx.save();
     ctx.translate(size / 2, size / 2);
-    const cultivar = getCultivar(cultivarId);
-    const iconType: IconType = cultivar?.icon ?? 'herb-sprig';
-    renderIcon(ctx, iconType, SMALL_ICON_RADIUS, color);
+    renderIcon(ctx, cultivarId, SMALL_ICON_RADIUS, color);
     ctx.restore();
   }, [cultivarId, color]);
 

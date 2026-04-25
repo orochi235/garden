@@ -7,7 +7,6 @@ describe('species registry', () => {
     expect(all.length).toBeGreaterThanOrEqual(10);
     expect(all[0]).toHaveProperty('id');
     expect(all[0]).toHaveProperty('name');
-    expect(all[0]).toHaveProperty('icon');
     expect(all[0]).toHaveProperty('category');
   });
 
@@ -15,7 +14,6 @@ describe('species registry', () => {
     const tomato = getSpecies('tomato');
     expect(tomato).toBeDefined();
     expect(tomato!.name).toBe('Tomato');
-    expect(tomato!.icon).toBe('round-fruit');
   });
 
   it('getSpecies returns undefined for unknown id', () => {

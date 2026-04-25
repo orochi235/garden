@@ -36,7 +36,7 @@ export function MenuBar() {
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>
         <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>
-        <a href="docs/cultivars.html" target="_blank" rel="noreferrer">Cultivars</a>
+        <a href="docs/cultivars.html" target="_blank" rel="noreferrer">Flora</a>
         <a href="docs/themes.html" target="_blank" rel="noreferrer">Themes</a>
       </div>
       <div className={styles.menus}>
