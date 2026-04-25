@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { computeSlots } from '../model/arrangement';
-import type { Arrangement, ParentBounds } from '../model/arrangement';
+import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
-import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT } from '../model/types';
+import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
@@ -79,18 +79,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   function rearrangePlantings(
     plantings: Planting[],
     parentId: string,
-    parent: { x: number; y: number; width: number; height: number; shape?: string; arrangement: Arrangement | null },
+    parent: { x: number; y: number; width: number; height: number; shape?: string; arrangement: Arrangement | null; wallThicknessFt?: number },
   ): Planting[] {
     const arrangement = parent.arrangement;
     if (!arrangement || arrangement.type === 'free') return plantings;
 
-    const bounds: ParentBounds = {
-      x: parent.x,
-      y: parent.y,
-      width: parent.width,
-      height: parent.height,
-      shape: (parent.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
-    };
+    const bounds = getPlantableBounds(parent);
 
     const children = plantings.filter((p) => p.parentId === parentId);
     const others = plantings.filter((p) => p.parentId !== parentId);

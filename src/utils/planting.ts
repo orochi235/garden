@@ -1,5 +1,6 @@
 import { computeSlots, type Arrangement } from '../model/arrangement';
 import type { Planting } from '../model/types';
+import { getPlantableBounds } from '../model/types';
 import { snapToGrid } from './grid';
 
 /**
@@ -8,7 +9,7 @@ import { snapToGrid } from './grid';
  * Otherwise, use the raw drop position relative to the parent.
  */
 export function getPlantingPosition(
-  parent: { x: number; y: number; width: number; height: number; arrangement: Arrangement | null; shape?: string },
+  parent: { x: number; y: number; width: number; height: number; arrangement: Arrangement | null; shape?: string; wallThicknessFt?: number },
   existing: Planting[],
   worldX: number,
   worldY: number,
@@ -22,13 +23,7 @@ export function getPlantingPosition(
     };
   }
 
-  const bounds = {
-    x: parent.x,
-    y: parent.y,
-    width: parent.width,
-    height: parent.height,
-    shape: (parent.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
-  };
+  const bounds = getPlantableBounds(parent);
 
   const slots = computeSlots(arrangement, bounds);
   const occupiedSet = new Set(existing.map(p => `${p.x},${p.y}`));

@@ -1,4 +1,4 @@
-import type { Arrangement } from './arrangement';
+import type { Arrangement, ParentBounds } from './arrangement';
 import { defaultArrangement } from './arrangement';
 import { getCultivar } from './cultivars';
 
@@ -203,5 +203,18 @@ export function createPlanting(opts: {
     y: opts.y,
     label: cultivar?.name ?? opts.cultivarId,
     icon: null,
+  };
+}
+
+/** Return the inner plantable bounds of a structure, inset by wall thickness. */
+export function getPlantableBounds(s: { x: number; y: number; width: number; height: number; shape?: string; wallThicknessFt?: number }): ParentBounds {
+  const wall = s.wallThicknessFt ?? 0;
+  const inset = wall * 2;
+  return {
+    x: s.x + wall,
+    y: s.y + wall,
+    width: Math.max(0, s.width - inset),
+    height: Math.max(0, s.height - inset),
+    shape: (s.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
   };
 }

@@ -1,7 +1,7 @@
 import { computeSlots } from '../model/arrangement';
-import type { ParentBounds } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting } from '../model/types';
+import { getPlantableBounds } from '../model/types';
 
 /** Multiplier applied to planting footprint radius for attraction distance. */
 export const SNAP_RADIUS_MULTIPLIER = 2.0;
@@ -164,13 +164,7 @@ function findAvailableSlot(
     };
   }
 
-  const bounds: ParentBounds = {
-    x: container.x,
-    y: container.y,
-    width: container.width,
-    height: container.height,
-    shape: container.shape,
-  };
+  const bounds = getPlantableBounds(container);
 
   const slots = computeSlots(arrangement, bounds);
 
