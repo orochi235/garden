@@ -20,6 +20,21 @@ const icons: Record<ViewMode, JSX.Element> = {
       <path d="M3 1 L3 12 L6.5 8.5 L10.5 13 L12.5 11.5 L8.5 7 L13 6 Z" />
     </svg>
   ),
+  'select-area': (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 2h3M11 2h3M2 2v3M14 2v3" />
+      <path d="M2 11v3M14 11v3M2 14h3M11 14h3" />
+    </svg>
+  ),
   pan: (
     <svg
       width="16"
@@ -74,6 +89,7 @@ const icons: Record<ViewMode, JSX.Element> = {
 
 const tools: { mode: ViewMode; label: string }[] = [
   { mode: 'select', label: 'Select' },
+  { mode: 'select-area', label: 'Select Area' },
   { mode: 'draw', label: 'Draw' },
   { mode: 'pan', label: 'Pan' },
   { mode: 'zoom', label: 'Zoom' },

@@ -8,10 +8,10 @@ const ctx: ActionContext = { clipboard: { copy: () => {}, paste: () => {}, isEmp
 describe('cycleViewModeAction', () => {
   beforeEach(() => { useUiStore.getState().reset(); });
 
-  it('cycles from select to draw', () => {
+  it('cycles from select to select-area', () => {
     useUiStore.getState().setViewMode('select');
     cycleViewModeAction.execute(ctx);
-    expect(useUiStore.getState().viewMode).toBe('draw');
+    expect(useUiStore.getState().viewMode).toBe('select-area');
   });
 
   it('wraps from zoom back to select', () => {

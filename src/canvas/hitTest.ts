@@ -209,6 +209,82 @@ export function hitTestAllLayers(
   return null;
 }
 
+/** Axis-aligned bounding box in world coordinates. */
+export interface WorldRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function rectsOverlap(
+  ax: number, ay: number, aw: number, ah: number,
+  bx: number, by: number, bw: number, bh: number,
+): boolean {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function ellipseOverlapsRect(
+  ex: number, ey: number, ew: number, eh: number,
+  rx: number, ry: number, rw: number, rh: number,
+): boolean {
+  // Quick AABB rejection
+  if (!rectsOverlap(ex, ey, ew, eh, rx, ry, rw, rh)) return false;
+  // For non-tiny objects, AABB overlap is close enough
+  return true;
+}
+
+/**
+ * Find all objects whose bounds intersect a world-space rectangle.
+ * Returns IDs grouped by layer. Respects layer locks.
+ */
+export function hitTestArea(
+  rect: WorldRect,
+  structures: Structure[],
+  zones: Zone[],
+  plantings: Planting[],
+): HitResult[] {
+  const locked = useUiStore.getState().layerLocked;
+  const results: HitResult[] = [];
+
+  if (!locked.structures) {
+    for (const s of structures) {
+      const hit = s.shape === 'circle'
+        ? ellipseOverlapsRect(s.x, s.y, s.width, s.height, rect.x, rect.y, rect.width, rect.height)
+        : rectsOverlap(s.x, s.y, s.width, s.height, rect.x, rect.y, rect.width, rect.height);
+      if (hit) results.push({ id: s.id, layer: 'structures' });
+    }
+  }
+
+  if (!locked.zones) {
+    for (const z of zones) {
+      if (rectsOverlap(z.x, z.y, z.width, z.height, rect.x, rect.y, rect.width, rect.height)) {
+        results.push({ id: z.id, layer: 'zones' });
+      }
+    }
+  }
+
+  if (!locked.plantings) {
+    const parentMap = new Map<string, Structure | Zone>();
+    for (const z of zones) parentMap.set(z.id, z);
+    for (const s of structures) {
+      if (s.container) parentMap.set(s.id, s);
+    }
+    for (const p of plantings) {
+      const parent = parentMap.get(p.parentId);
+      if (!parent) continue;
+      const cx = parent.x + p.x;
+      const cy = parent.y + p.y;
+      if (cx >= rect.x && cx <= rect.x + rect.width &&
+          cy >= rect.y && cy <= rect.y + rect.height) {
+        results.push({ id: p.id, layer: 'plantings' });
+      }
+    }
+  }
+
+  return results;
+}
+
 /** Returns the CSS cursor for a given handle position. */
 export function handleCursor(handle: HandlePosition): string {
   const cursors: Record<HandlePosition, string> = {

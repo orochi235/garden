@@ -14,6 +14,7 @@ import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from './hooks/useLayerEffect';
 import { useMoveInteraction } from './hooks/useMoveInteraction';
 import { usePanInteraction } from './hooks/usePanInteraction';
+import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
 import { usePlotInteraction } from './hooks/usePlotInteraction';
 import { useResizeInteraction } from './hooks/useResizeInteraction';
 import { PlantingLayerRenderer } from './PlantingLayerRenderer';
@@ -114,6 +115,7 @@ export function CanvasStack() {
   const pan = usePanInteraction(setPan);
   const moveInteraction = useMoveInteraction(containerRef, invalidate);
   const resize = useResizeInteraction(containerRef);
+  const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
   const plot = usePlotInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
 
   useKeyboardActionDispatch({ clipboard });
@@ -122,13 +124,14 @@ export function CanvasStack() {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         plot.cancel();
+        areaSelect.cancel();
         moveInteraction.cancel();
         setActiveCursor(null);
       }
     }
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [plot, moveInteraction]);
+  }, [plot, areaSelect, moveInteraction]);
 
   // --- Layer rendering ---
   useLayerEffect(
@@ -286,6 +289,12 @@ export function CanvasStack() {
           return;
         }
 
+        if (currentViewMode === 'select-area') {
+          areaSelect.start(worldX, worldY, e.shiftKey);
+          setActiveCursor('crosshair');
+          return;
+        }
+
         if (currentViewMode === 'pan') {
           pan.start(e);
           setActiveCursor('grabbing');
@@ -420,12 +429,13 @@ export function CanvasStack() {
         setActiveCursor('grabbing');
       }
     },
-    [select, addToSelection, clearSelection, pan, moveInteraction, resize, plot],
+    [select, addToSelection, clearSelection, pan, moveInteraction, resize, plot, areaSelect],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (resize.move(e)) return;
+      if (areaSelect.move(e)) return;
       if (plot.move(e)) return;
       if (moveInteraction.move(e)) return;
       if (pan.move(e)) return;
@@ -449,12 +459,17 @@ export function CanvasStack() {
         setActiveCursor(hit ? 'pointer' : null);
       }
     },
-    [resize, plot, moveInteraction, pan],
+    [resize, areaSelect, plot, moveInteraction, pan],
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 0) {
+        if (areaSelect.isDragging.current) {
+          areaSelect.end();
+          setActiveCursor(null);
+          return;
+        }
         if (plot.isPlotting.current) {
           plot.end();
           setActiveCursor(null);
@@ -470,7 +485,7 @@ export function CanvasStack() {
         setActiveCursor(null);
       }
     },
-    [plot, resize, moveInteraction, pan],
+    [areaSelect, plot, resize, moveInteraction, pan],
   );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -586,7 +601,7 @@ export function CanvasStack() {
         background: groundColor,
         cursor:
           activeCursor ??
-          (viewMode === 'draw'
+          (viewMode === 'draw' || viewMode === 'select-area'
             ? 'crosshair'
             : viewMode === 'pan'
               ? 'grab'

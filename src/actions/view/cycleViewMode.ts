@@ -1,7 +1,7 @@
 import type { ActionDescriptor } from '../types';
 import { useUiStore, type ViewMode } from '../../store/uiStore';
 
-const MODES: ViewMode[] = ['select', 'draw', 'pan', 'zoom'];
+const MODES: ViewMode[] = ['select', 'select-area', 'draw', 'pan', 'zoom'];
 
 export const cycleViewModeAction: ActionDescriptor = {
   id: 'view.cycleViewMode',

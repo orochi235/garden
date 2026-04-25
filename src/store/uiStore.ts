@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Planting, Structure, Zone, LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 
-export type ViewMode = 'select' | 'pan' | 'zoom' | 'draw';
+export type ViewMode = 'select' | 'select-area' | 'pan' | 'zoom' | 'draw';
 export type LabelMode = 'all' | 'active-layer' | 'selection';
 
 export interface DragOverlay {
@@ -67,6 +67,7 @@ interface UiStore {
   setLayerLocked: (layer: LayerId, locked: boolean) => void;
   select: (id: string) => void;
   addToSelection: (id: string) => void;
+  setSelection: (ids: string[]) => void;
   clearSelection: () => void;
   setZoom: (zoom: number) => void;
   setPan: (x: number, y: number) => void;
@@ -137,6 +138,7 @@ export const useUiStore = create<UiStore>((set) => ({
     set((state) => ({
       selectedIds: state.selectedIds.includes(id) ? state.selectedIds : [...state.selectedIds, id],
     })),
+  setSelection: (ids) => set({ selectedIds: ids }),
   clearSelection: () => set({ selectedIds: [] }),
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),

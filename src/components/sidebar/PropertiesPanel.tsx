@@ -7,6 +7,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
+import { SelectionPanel } from './SelectionPanel';
 
 const FILL_TYPES: FillType[] = ['soil', 'sand', 'rocks', 'peat', 'potting-mix'];
 
@@ -44,6 +45,10 @@ export function PropertiesPanel() {
         </div>
       </div>
     );
+  }
+
+  if (selectedIds.length > 1) {
+    return <SelectionPanel />;
   }
 
   const selectedId = selectedIds[0];
