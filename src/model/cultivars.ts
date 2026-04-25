@@ -1,7 +1,7 @@
 import cultivarData from '../data/cultivars.json';
 import { getSpecies } from './species';
 
-export type CultivarCategory = 'herbs' | 'vegetables' | 'fruits' | 'flowers' | 'root-vegetables' | 'legumes';
+export type CultivarCategory = 'herbs' | 'vegetables' | 'greens' | 'fruits' | 'squash' | 'flowers' | 'root-vegetables' | 'legumes';
 
 /** Raw cultivar entry as stored in JSON — only overrides are present. */
 interface CultivarRaw {

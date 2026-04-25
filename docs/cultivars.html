@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cultivar Database Editor</title>
+  <title>Flora Database Editor</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
@@ -34,7 +34,7 @@
     .cultivar-row .color-swatch { border-radius: 50%; }
     .cultivar-row .color-swatch.inherited { width: 8px; height: 8px; margin: 5px; }
     .color-input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .num { width: 60px; text-align: right; }
+    .num { width: 60px; text-align: right; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
     .inherited { color: #666; font-style: italic; }
     .overridden { color: #e0e0e0; }
     .actions { display: flex; gap: 4px; }
@@ -43,8 +43,9 @@
     .actions button.del:hover { background: #7c4a4a; }
     .actions button.revert { color: #888; }
     .actions button.revert:hover { background: #4a4a3a; color: #dda; }
-    .icon-image-cell { display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .icon-image-drop { width: 36px; height: 36px; border: 2px dashed #444; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; flex-shrink: 0; position: relative; }
+    .icon-image-cell { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; }
+    .icon-image-drop { width: 36px; height: 36px; border: 2px solid #444; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; flex-shrink: 0; position: relative; }
+    .icon-image-drop.empty { border-style: dashed; }
     .icon-image-drop:hover, .icon-image-drop.dragover { border-color: #4a7c59; background: rgba(74,124,89,0.15); }
     .icon-image-drop img { width: 100%; height: 100%; object-fit: contain; }
     .icon-image-drop .placeholder { font-size: 16px; color: #555; line-height: 1; }
@@ -57,7 +58,7 @@
     .species-row td { background: #22223a; border-top: 2px solid #4a7c59; }
     .species-row td:first-child { font-weight: 600; color: #8cb8a0; }
     .species-row .actions button { font-size: 10px; }
-    .cultivar-row td:first-child { padding-left: 24px; }
+    .cultivar-row td:nth-child(3), .cultivar-row td:nth-child(4) { padding-left: 24px; }
     .toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 16px; border-radius: 6px; background: #4a7c59; color: #fff; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     .toast.show { opacity: 1; }
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
@@ -69,8 +70,9 @@
   </style>
 </head>
 <body>
-  <h1>Cultivar Database Editor</h1>
+  <h1>Flora Database Editor</h1>
   <div class="toolbar">
+    <button class="danger" onclick="deleteSelected()">Delete Selected</button>
     <button class="danger" onclick="resetData()">Reset</button>
     <button class="primary" onclick="addSpecies()">+ Add Species</button>
     <button onclick="showExport()">Export JSON</button>
@@ -80,6 +82,8 @@
       <option value="">All Categories</option>
       <option value="fruits">Fruits</option>
       <option value="vegetables">Vegetables</option>
+      <option value="greens">Greens</option>
+      <option value="squash">Squash</option>
       <option value="root-vegetables">Root Vegetables</option>
       <option value="herbs">Herbs</option>
       <option value="legumes">Legumes</option>
@@ -92,10 +96,12 @@
   <table>
     <thead>
       <tr>
-        <th onclick="sortBy('speciesId')">Species / ID</th>
-        <th onclick="sortBy('category')">Category / Variety</th>
+        <th style="width:30px;text-align:center"><input type="checkbox" onchange="toggleSelectAll(this.checked)" title="Select all"></th>
         <th style="text-align:center">Image</th>
+        <th onclick="sortBy('speciesId')">Species / Variety</th>
+        <th onclick="sortBy('category')">Category / ID</th>
         <th onclick="sortBy('color')">Color</th>
+        <th>Bg Color</th>
         <th onclick="sortBy('footprintFt')">Footprint (ft)</th>
         <th onclick="sortBy('spacingFt')">Spacing (ft)</th>
         <th></th>
@@ -105,6 +111,16 @@
   </table>
   <div id="iconTooltip"><img></div>
   <div class="toast" id="toast"></div>
+  <div class="modal-overlay" id="missingIconsModal">
+    <div class="modal">
+      <h2>Missing Icons</h2>
+      <pre id="missingIconsContent"></pre>
+      <div class="btn-row">
+        <button onclick="copyMissingIcons()">Copy to Clipboard</button>
+        <button onclick="closeModal('missingIconsModal')">Close</button>
+      </div>
+    </div>
+  </div>
   <div class="modal-overlay" id="exportModal">
     <div class="modal">
       <h2>Export JSON</h2>
@@ -128,7 +144,8 @@
     </div>
   </div>
   <script>
-    const CATEGORIES = ['fruits','vegetables','root-vegetables','herbs','legumes','flowers'];
+    const CATEGORIES = ['fruits','vegetables','greens','squash','root-vegetables','herbs','legumes','flowers'];
+    const CATEGORY_LABELS = { fruits: 'Fruits', vegetables: 'Vegetables', greens: 'Greens', squash: 'Squash', 'root-vegetables': 'Root Vegetables', herbs: 'Herbs', legumes: 'Legumes', flowers: 'Flowers' };
 
     let species = [];
     let speciesMap = {};
@@ -156,6 +173,11 @@
             .catch(() => { cultivars = []; render(); });
         }
       });
+
+    function cultivarSlug(c) {
+      const dotIdx = c.id.indexOf('.');
+      return dotIdx >= 0 ? c.id.slice(dotIdx + 1) : c.id;
+    }
 
     function resolve(c) {
       const sp = speciesMap[c.speciesId];
@@ -193,6 +215,32 @@
     function applyFilter(v) { textFilter = v.toLowerCase(); render(); }
     function applyCategoryFilter(v) { categoryFilter = v; render(); }
 
+    function toggleSelectAll(checked) {
+      document.querySelectorAll('[data-select]').forEach(cb => cb.checked = checked);
+    }
+
+    function deleteSelected() {
+      const checks = document.querySelectorAll('[data-select]:checked');
+      if (checks.length === 0) return;
+      const speciesIds = [];
+      const cultivarIds = [];
+      checks.forEach(cb => {
+        if (cb.dataset.select === 'species') speciesIds.push(cb.dataset.selectId);
+        else cultivarIds.push(cb.dataset.selectId);
+      });
+      const parts = [];
+      if (speciesIds.length) parts.push(speciesIds.length + ' species (and their cultivars)');
+      if (cultivarIds.length) parts.push(cultivarIds.length + ' cultivars');
+      if (!confirm('Delete ' + parts.join(' and ') + '?')) return;
+      // Delete species and their cultivars
+      const spSet = new Set(speciesIds);
+      species = species.filter(s => !spSet.has(s.id));
+      cultivars = cultivars.filter(c => !spSet.has(c.speciesId) && !cultivarIds.includes(c.id));
+      saveSpecies();
+      saveCultivars();
+      render();
+    }
+
     function sortBy(field) {
       if (sortField === field) { sortDesc = !sortDesc; }
       else { sortField = field; sortDesc = false; }
@@ -203,17 +251,32 @@
       // Group cultivars by species, filter, then sort species
       const showDefaults = document.getElementById('showDefaults')?.checked;
       let items = cultivars.map(c => ({ raw: c, resolved: resolve(c) }));
-      if (!showDefaults) items = items.filter(x => x.raw.variety);
+      if (!showDefaults) {
+        // Hide cultivar rows that inherit everything from their species (no overrides)
+        items = items.filter(x => {
+          const r = x.raw;
+          return r.variety || r.color || r.footprintFt != null || r.spacingFt != null || r.iconImage || r.iconBgColor;
+        });
+      }
       if (categoryFilter) items = items.filter(x => x.resolved.category === categoryFilter);
-      if (textFilter) items = items.filter(x =>
-        x.raw.id.toLowerCase().includes(textFilter) ||
-        x.resolved.name.toLowerCase().includes(textFilter) ||
-        x.raw.speciesId.toLowerCase().includes(textFilter) ||
-        (x.raw.variety || '').toLowerCase().includes(textFilter)
-      );
+      if (textFilter) {
+        items = items.filter(x =>
+          x.raw.id.toLowerCase().includes(textFilter) ||
+          x.resolved.name.toLowerCase().includes(textFilter) ||
+          x.raw.speciesId.toLowerCase().includes(textFilter) ||
+          (x.raw.variety || '').toLowerCase().includes(textFilter) ||
+          (speciesMap[x.raw.speciesId]?.name || '').toLowerCase().includes(textFilter) ||
+          (speciesMap[x.raw.speciesId]?.taxonomicName || '').toLowerCase().includes(textFilter)
+        );
+      }
 
-      // Group by speciesId
+      // Group by speciesId — ensure every species appears even with no cultivar rows
       const groups = {};
+      for (const s of species) {
+        if (categoryFilter && s.category !== categoryFilter) continue;
+        if (textFilter && !s.id.toLowerCase().includes(textFilter) && !s.name.toLowerCase().includes(textFilter) && !(s.taxonomicName || '').toLowerCase().includes(textFilter)) continue;
+        groups[s.id] = [];
+      }
       for (const item of items) {
         const sid = item.raw.speciesId;
         if (!groups[sid]) groups[sid] = [];
@@ -274,6 +337,8 @@
       const totalIconBytes = iconEntries.reduce((sum, e) => sum + Math.floor((e.size - 22) * 3 / 4), 0);
       const avgIconBytes = iconCount > 0 ? Math.round(totalIconBytes / iconCount) : 0;
       const speciesWithout = species.filter(s => !s.iconImage).length;
+      const varietiesWithout = cultivars.filter(c => c.variety && !c.iconImage).length;
+      const missingTotal = speciesWithout + varietiesWithout;
 
       const el = document.getElementById('fileStats');
       el.innerHTML =
@@ -282,7 +347,7 @@
         `Total: <b>${formatBytes(speciesSize + cultivarsSize)}</b> · ` +
         `Icons: <b>${iconCount}</b> embedded · ` +
         `Avg icon: <b>${formatBytes(avgIconBytes)}</b>` +
-        (speciesWithout > 0 ? ` · <span style="color:#c88">${speciesWithout} species missing icons</span>` : '');
+        (missingTotal > 0 ? ` · <span style="color:#c88;cursor:pointer;text-decoration:underline" onclick="showMissingIcons()">${speciesWithout} species, ${varietiesWithout} varieties missing icons</span>` : '');
     }
 
     function render() {
@@ -294,7 +359,7 @@
       // Update sort indicators
       document.querySelectorAll('th').forEach(th => th.classList.remove('sorted', 'desc'));
       const headers = document.querySelectorAll('th');
-      const fields = ['speciesId','category','color','footprintFt','spacingFt'];
+      const fields = [null, null, 'speciesId','category','color', null, 'footprintFt','spacingFt'];
       const idx = fields.indexOf(sortField);
       if (idx >= 0 && headers[idx]) {
         headers[idx].classList.add('sorted');
@@ -312,22 +377,24 @@
         if (sp) {
           html += `
           <tr class="species-row" data-species="${esc(sp.id)}">
-            <td><input value="${esc(sp.name)}" onchange="updateSpeciesField('${esc(sp.id)}','name',this.value)" style="font-weight:600;color:#8cb8a0"><span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic;margin-left:4px">${esc(sp.taxonomicName)}</span></td>
-            <td><select onchange="updateSpeciesField('${esc(sp.id)}','category',this.value)">
-              ${CATEGORIES.map(cat => `<option value="${cat}"${sp.category===cat?' selected':''}>${cat}</option>`).join('')}
-            </select></td>
+            <td style="text-align:center"><input type="checkbox" data-select="species" data-select-id="${esc(sp.id)}"></td>
             <td><div class="icon-image-cell">
-              <div class="icon-image-drop" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDropSpecies(event,'${esc(sp.id)}')" onclick="onClickImage(event,'${esc(sp.id)}','species')">
+              <div class="icon-image-drop${sp.iconImage ? '' : ' empty'}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDropSpecies(event,'${esc(sp.id)}')" onclick="onClickImage(event,'${esc(sp.id)}','species')">
                 ${sp.iconImage ? `<img src="${sp.iconImage}"><button class="clear-btn" onclick="event.stopPropagation();clearSpeciesImage('${esc(sp.id)}')">&times;</button>` : '<span class="placeholder">+</span>'}
               </div>
             </div></td>
+            <td><div style="display:flex;align-items:center;gap:6px"><input value="${esc(sp.name)}" onchange="updateSpeciesField('${esc(sp.id)}','name',this.value)" style="font-weight:600;color:#8cb8a0;flex:0 0 auto;width:auto"><span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic;white-space:nowrap">${esc(sp.taxonomicName)}</span></div></td>
+            <td><select onchange="updateSpeciesField('${esc(sp.id)}','category',this.value)">
+              ${CATEGORIES.map(cat => `<option value="${cat}"${sp.category===cat?' selected':''}>${CATEGORY_LABELS[cat]}</option>`).join('')}
+            </select></td>
             <td><div class="color-cell">
               <div class="color-swatch" style="background:${sp.color}" onclick="this.nextElementSibling.click()"></div>
               <input type="color" class="color-input" value="${sp.color}" onchange="updateSpeciesField('${esc(sp.id)}','color',this.value);this.previousElementSibling.style.background=this.value">
               <input value="${esc(sp.color)}" style="width:75px" onchange="updateSpeciesField('${esc(sp.id)}','color',this.value)">
             </div></td>
-            <td><input class="num" type="number" step="0.25" min="0" value="${sp.footprintFt}" onchange="updateSpeciesField('${esc(sp.id)}','footprintFt',+this.value)"></td>
-            <td><input class="num" type="number" step="0.25" min="0" value="${sp.spacingFt}" onchange="updateSpeciesField('${esc(sp.id)}','spacingFt',+this.value)"></td>
+            <td><div class="color-cell">${sp.iconBgColor ? `<div class="color-swatch" style="background:${sp.iconBgColor}"></div><span class="inherited" style="font-size:12px">${esc(sp.iconBgColor)}</span>` : '<span class="inherited">—</span>'}</div></td>
+            <td><input class="num" type="number" step="0.25" min="0" value="${sp.footprintFt.toFixed(2)}" onchange="updateSpeciesField('${esc(sp.id)}','footprintFt',+this.value)"></td>
+            <td><input class="num" type="number" step="0.25" min="0" value="${sp.spacingFt.toFixed(2)}" onchange="updateSpeciesField('${esc(sp.id)}','spacingFt',+this.value)"></td>
             <td class="actions">
               <button onclick="addCultivarToSpecies('${esc(sp.id)}')">+ var</button>
               <button class="del" onclick="deleteSpecies('${esc(sp.id)}')">del</button>
@@ -346,20 +413,22 @@
           const hasAnyOvr = hasColorOvr || hasFootOvr || hasSpaceOvr || hasImageOvr;
           html += `
           <tr class="cultivar-row" data-id="${esc(c.id)}">
-            <td><input value="${esc(c.id)}" onchange="updateField('${esc(c.id)}','id',this.value)" style="color:#aaa;font-size:12px"></td>
-            <td><input value="${esc(c.variety || '')}" onchange="updateField('${esc(c.id)}','variety',this.value||null)" placeholder="(base)"></td>
+            <td style="text-align:center"><input type="checkbox" data-select="cultivar" data-select-id="${esc(c.id)}"></td>
             <td><div class="icon-image-cell">
-              <div class="icon-image-drop${isOverridden(c,'iconImage') ? '' : r.iconImage ? ' inherited' : ''}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDropCultivar(event,'${esc(c.id)}')" onclick="onClickImage(event,'${esc(c.id)}','cultivar')">
-                ${r.iconImage ? `<img src="${r.iconImage}">${isOverridden(c,'iconImage') ? `<button class="clear-btn" onclick="event.stopPropagation();clearCultivarImage('${esc(c.id)}')">&times;</button>` : ''}` : '<span class="placeholder">+</span>'}
+              <div class="icon-image-drop${isOverridden(c,'iconImage') ? '' : ' empty'}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDropCultivar(event,'${esc(c.id)}')" onclick="onClickImage(event,'${esc(c.id)}','cultivar')">
+                ${isOverridden(c,'iconImage') ? `<img src="${c.iconImage}"><button class="clear-btn" onclick="event.stopPropagation();clearCultivarImage('${esc(c.id)}')">&times;</button>` : '<span class="placeholder">+</span>'}
               </div>
             </div></td>
+            <td><input value="${esc(c.variety || '')}" onchange="updateField('${esc(c.id)}','variety',this.value||null)" placeholder="(base)"></td>
+            <td><input value="${esc(cultivarSlug(c))}" onchange="updateField('${esc(c.id)}','id',this.value)" style="color:#aaa;font-size:12px"></td>
             <td><div class="color-cell">
               <div class="color-swatch${hasColorOvr ? '' : ' inherited'}" style="background:${r.color}" onclick="this.nextElementSibling.click()"></div>
               <input type="color" class="color-input" value="${r.color}" onchange="updateField('${esc(c.id)}','color',this.value);this.previousElementSibling.style.background=this.value">
               <input class="${hasColorOvr ? 'overridden' : 'inherited'}" value="${esc(r.color)}" style="width:75px" onchange="updateField('${esc(c.id)}','color',this.value)" placeholder="inherit">
             </div></td>
-            <td><input class="num ${hasFootOvr ? 'overridden' : 'inherited'}" type="number" step="0.25" min="0" value="${r.footprintFt}" onchange="updateField('${esc(c.id)}','footprintFt',this.value===''?null:+this.value)" placeholder="inherit"></td>
-            <td><input class="num ${hasSpaceOvr ? 'overridden' : 'inherited'}" type="number" step="0.25" min="0" value="${r.spacingFt}" onchange="updateField('${esc(c.id)}','spacingFt',this.value===''?null:+this.value)" placeholder="inherit"></td>
+            <td><div class="color-cell">${r.iconBgColor ? `<div class="color-swatch${isOverridden(c,'iconBgColor') ? '' : ' inherited'}" style="background:${r.iconBgColor}"></div><span class="inherited" style="font-size:12px">${esc(r.iconBgColor)}</span>` : '<span class="inherited">—</span>'}</div></td>
+            <td><input class="num ${hasFootOvr ? 'overridden' : 'inherited'}" type="number" step="0.25" min="0" value="${r.footprintFt.toFixed(2)}" onchange="updateField('${esc(c.id)}','footprintFt',this.value===''?null:+this.value)" placeholder="inherit"></td>
+            <td><input class="num ${hasSpaceOvr ? 'overridden' : 'inherited'}" type="number" step="0.25" min="0" value="${r.spacingFt.toFixed(2)}" onchange="updateField('${esc(c.id)}','spacingFt',this.value===''?null:+this.value)" placeholder="inherit"></td>
             <td class="actions">
               <button onclick="duplicateRow('${esc(c.id)}')">dup</button>
               ${hasAnyOvr ? `<button class="revert" onclick="revertOverrides('${esc(c.id)}')" title="Clear overrides, inherit from species">revert</button>` : ''}
@@ -384,7 +453,7 @@
       const c = cultivars.find(x => x.id === id);
       if (!c) return;
       if (field === 'id') {
-        c.id = value;
+        c.id = c.variety ? c.speciesId + '.' + value : value;
       } else if (field === 'color') {
         const sp = speciesMap[c.speciesId];
         if (sp && value === sp.color) {
@@ -431,7 +500,7 @@
     }
 
     function addCultivarToSpecies(speciesId) {
-      const newId = speciesId + '-var-' + Date.now();
+      const newId = speciesId + '.new-var-' + Date.now();
       cultivars.push({ id: newId, speciesId, variety: 'New Variety' });
       save(); render();
       toast('Added variety to ' + (speciesMap[speciesId]?.name || speciesId));
@@ -460,7 +529,7 @@
     function duplicateRow(id) {
       const c = cultivars.find(x => x.id === id);
       if (!c) return;
-      const dup = { ...c, id: c.id + '-copy' };
+      const dup = { ...c, id: c.variety ? c.speciesId + '.' + cultivarSlug(c) + '-copy' : c.id + '-copy' };
       cultivars.push(dup);
       save(); render();
       toast('Duplicated ' + resolve(c).name);
@@ -472,6 +541,27 @@
       cultivars = cultivars.filter(x => x.id !== id);
       save(); render();
       toast('Deleted ' + resolve(c).name);
+    }
+
+    function showMissingIcons() {
+      const lines = [];
+      for (const sp of species) {
+        if (!sp.iconImage) lines.push(sp.name);
+      }
+      for (const c of cultivars) {
+        if (c.variety && !c.iconImage) {
+          const sp = speciesMap[c.speciesId];
+          lines.push(sp ? sp.name + ', ' + c.variety : c.variety);
+        }
+      }
+      document.getElementById('missingIconsContent').textContent = lines.join('\n');
+      document.getElementById('missingIconsModal').classList.add('show');
+    }
+
+    function copyMissingIcons() {
+      const text = document.getElementById('missingIconsContent').textContent;
+      navigator.clipboard.writeText(text);
+      toast('Copied to clipboard');
     }
 
     function showExport() {

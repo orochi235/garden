@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { renderIcon } from '../../canvas/plantRenderers';
+import { useEffect, useRef, useState } from 'react';
+import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/PaletteItem.module.css';
 import type { PaletteEntry } from './paletteData';
@@ -14,6 +14,9 @@ const ICON_RADIUS = 28;
 
 function PlantIcon({ cultivarId, color }: { cultivarId: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -81,6 +84,9 @@ const SMALL_ICON_RADIUS = 18;
 
 function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -151,7 +157,9 @@ export function PlantingChildRow({ entry, onDragBegin }: ChildRowProps) {
       className={`${styles.row} ${styles.rowChild}`}
       onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
     >
-      <div className={styles.rowColorDot} style={{ backgroundColor: entry.color }} />
+      <div className={styles.rowIconCol}>
+        <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
+      </div>
       <span className={styles.rowLabel}>{entry.varietyLabel ?? entry.name}</span>
     </div>
   );

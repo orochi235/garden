@@ -3,7 +3,7 @@ import type { CultivarCategory } from './cultivars';
 import { getCultivar, getAllCultivars } from './cultivars';
 
 const VALID_CATEGORIES: CultivarCategory[] = [
-  'herbs', 'vegetables', 'fruits', 'flowers', 'root-vegetables', 'legumes',
+  'herbs', 'vegetables', 'greens', 'fruits', 'squash', 'flowers', 'root-vegetables', 'legumes',
 ];
 
 describe('cultivar registry', () => {
@@ -65,16 +65,28 @@ describe('cultivar registry', () => {
   });
 
   it('cultivar overrides species color', () => {
-    const bk = getCultivar('black-krim-tomato');
+    const bk = getCultivar('tomato.black-krim');
     expect(bk).toBeDefined();
     expect(bk!.color).toBe('#6B2D3A');
     expect(bk!.name).toBe('Tomato, Black Krim');
   });
 
   it('cultivar name is composed from species name and variety', () => {
-    const thai = getCultivar('thai-basil');
+    const thai = getCultivar('basil.thai');
     expect(thai).toBeDefined();
     expect(thai!.name).toBe('Basil, Thai');
     expect(thai!.variety).toBe('Thai');
+  });
+
+  it('cultivar id uses species.variety format', () => {
+    const all = getAllCultivars();
+    for (const c of all) {
+      if (c.variety) {
+        expect(c.id).toMatch(/^.+\..+$/);
+        expect(c.id.startsWith(c.speciesId + '.')).toBe(true);
+      } else {
+        expect(c.id).toBe(c.speciesId);
+      }
+    }
   });
 });

@@ -15,6 +15,13 @@ export type PlantShape = 'square' | 'circle';
 
 const imageCache = new Map<string, HTMLImageElement>();
 const pendingLoads = new Set<string>();
+const loadCallbacks = new Set<() => void>();
+
+/** Register a callback to be notified when any icon image finishes loading. */
+export function onIconLoad(cb: () => void): () => void {
+  loadCallbacks.add(cb);
+  return () => loadCallbacks.delete(cb);
+}
 
 function getImage(dataUri: string): HTMLImageElement | null {
   const cached = imageCache.get(dataUri);
@@ -27,6 +34,7 @@ function getImage(dataUri: string): HTMLImageElement | null {
   img.onload = () => {
     imageCache.set(dataUri, img);
     pendingLoads.delete(dataUri);
+    for (const cb of loadCallbacks) cb();
   };
   img.onerror = () => {
     pendingLoads.delete(dataUri);

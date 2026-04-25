@@ -1,0 +1,197 @@
+[
+  {
+    "id": "mushroom",
+    "speciesId": "mushroom",
+    "variety": null
+  },
+  {
+    "id": "portobello",
+    "speciesId": "portobello",
+    "variety": null
+  },
+  {
+    "id": "romanesco",
+    "speciesId": "romanesco",
+    "variety": null
+  },
+  {
+    "id": "tatsoi",
+    "speciesId": "tatsoi",
+    "variety": null
+  },
+  {
+    "id": "peach",
+    "speciesId": "peach",
+    "variety": null
+  },
+  {
+    "id": "oyster-mushroom",
+    "speciesId": "oyster-mushroom",
+    "variety": null
+  },
+  {
+    "id": "morel",
+    "speciesId": "morel",
+    "variety": null
+  },
+  {
+    "id": "enoki",
+    "speciesId": "enoki",
+    "variety": null
+  },
+  {
+    "id": "bitter-melon",
+    "speciesId": "bitter-melon",
+    "variety": null
+  },
+  {
+    "id": "jicama",
+    "speciesId": "jicama",
+    "variety": null
+  },
+  {
+    "id": "blueberry",
+    "speciesId": "blueberry",
+    "variety": null
+  },
+  {
+    "id": "bay-leaf",
+    "speciesId": "bay-leaf",
+    "variety": null
+  },
+  {
+    "id": "curry-leaf",
+    "speciesId": "curry-leaf",
+    "variety": null
+  },
+  {
+    "id": "lovage",
+    "speciesId": "lovage",
+    "variety": null
+  },
+  {
+    "id": "shiso",
+    "speciesId": "shiso",
+    "variety": null
+  },
+  {
+    "id": "nettle",
+    "speciesId": "nettle",
+    "variety": null
+  },
+  {
+    "id": "borage",
+    "speciesId": "borage",
+    "variety": null
+  },
+  {
+    "id": "stevia",
+    "speciesId": "stevia",
+    "variety": null
+  },
+  {
+    "id": "lemon-verbena",
+    "speciesId": "lemon-verbena",
+    "variety": null
+  },
+  {
+    "id": "mugwort",
+    "speciesId": "mugwort",
+    "variety": null
+  },
+  {
+    "id": "wormwood",
+    "speciesId": "wormwood",
+    "variety": null
+  },
+  {
+    "id": "melissa",
+    "speciesId": "melissa",
+    "variety": null
+  },
+  {
+    "id": "yarrow",
+    "speciesId": "yarrow",
+    "variety": null
+  },
+  {
+    "id": "patchouli",
+    "speciesId": "patchouli",
+    "variety": null
+  },
+  {
+    "id": "woodruff",
+    "speciesId": "woodruff",
+    "variety": null
+  },
+  {
+    "id": "ginger",
+    "speciesId": "ginger",
+    "variety": null
+  },
+  {
+    "id": "comfrey",
+    "speciesId": "comfrey",
+    "variety": null
+  },
+  {
+    "id": "watercress",
+    "speciesId": "watercress",
+    "variety": null
+  },
+  {
+    "id": "radicchio",
+    "speciesId": "radicchio",
+    "variety": null
+  },
+  {
+    "id": "lemon-balm",
+    "speciesId": "lemon-balm",
+    "variety": null
+  },
+  {
+    "id": "catnip",
+    "speciesId": "catnip",
+    "variety": null
+  },
+  {
+    "id": "perilla",
+    "speciesId": "perilla",
+    "variety": null
+  },
+  {
+    "id": "taro",
+    "speciesId": "taro",
+    "variety": null
+  },
+  {
+    "id": "sorrel",
+    "speciesId": "sorrel",
+    "variety": null
+  },
+  {
+    "id": "savory",
+    "speciesId": "savory",
+    "variety": null
+  },
+  {
+    "id": "parsnip",
+    "speciesId": "parsnip",
+    "variety": null
+  },
+  {
+    "id": "chervil",
+    "speciesId": "chervil",
+    "variety": null
+  },
+  {
+    "id": "horseradish",
+    "speciesId": "horseradish",
+    "variety": null
+  },
+  {
+    "id": "kabocha",
+    "speciesId": "kabocha",
+    "variety": null
+  }
+]
