@@ -62,16 +62,8 @@ export function renderPlantings(
 
   ctx.font = `${labelFontSize}px sans-serif`;
 
-  // Collect occupied rects from structures and zones (used for label overlap culling)
+  // Collect label occluders — only used to prevent plant labels from overlapping each other
   const labelOccluders: RenderedRect[] = [];
-  for (const s of structures) {
-    const [sx2, sy2] = worldToScreen(s.x, s.y, view);
-    labelOccluders.push({ x: sx2, y: sy2, w: s.width * view.zoom, h: s.height * view.zoom });
-  }
-  for (const z of zones) {
-    const [zx, zy] = worldToScreen(z.x, z.y, view);
-    labelOccluders.push({ x: zx, y: zy, w: z.width * view.zoom, h: z.height * view.zoom });
-  }
 
   // Count plantings per parent to detect single-plant containers
   const childCount = new Map<string, number>();
