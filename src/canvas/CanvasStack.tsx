@@ -7,7 +7,7 @@ import type { Planting, Structure, Zone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { screenToWorld } from '../utils/grid';
-import { handleCursor, hitTestAllLayers, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
+import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
 import { useAutoCenter } from './hooks/useAutoCenter';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { useClipboard } from './hooks/useClipboard';
@@ -459,10 +459,7 @@ export function CanvasStack() {
           zoom,
         });
         const { garden } = useGardenStore.getState();
-        const hit =
-          hitTestPlantings(worldX, worldY, garden.plantings, garden.structures, garden.zones) ||
-          hitTestObjects(worldX, worldY, garden.structures, garden.zones, currentActiveLayer) ||
-          hitTestAllLayers(worldX, worldY, garden.structures, garden.zones);
+        const hit = hitTestCascade(worldX, worldY, garden.plantings, garden.structures, garden.zones, currentActiveLayer);
         setActiveCursor(hit ? 'pointer' : null);
       }
     },
@@ -513,10 +510,7 @@ export function CanvasStack() {
       const { garden } = useGardenStore.getState();
 
       // Hit-test to find the object under the cursor
-      let hit =
-        hitTestPlantings(worldX, worldY, garden.plantings, garden.structures, garden.zones) ||
-        hitTestObjects(worldX, worldY, garden.structures, garden.zones, useUiStore.getState().activeLayer) ||
-        hitTestAllLayers(worldX, worldY, garden.structures, garden.zones);
+      let hit = hitTestCascade(worldX, worldY, garden.plantings, garden.structures, garden.zones, useUiStore.getState().activeLayer);
       if (!hit) return;
 
       // Get the object's bounding box in world coords

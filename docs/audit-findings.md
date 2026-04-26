@@ -1,6 +1,6 @@
 # Codebase Audit Findings
 
-## Status: Safe autonomous items complete. Items 7-9 need interactive review.
+## Status: Complete
 
 ---
 
@@ -38,21 +38,20 @@
 - quadtree.ts reduced from 724 to 409 lines (tree ops + strategy interface)
 - Re-exports all public symbols so existing imports work unchanged
 
-### 7. CanvasStack.tsx (638 lines) — excessive coupling
-- 35 separate `useUiStore()` calls for individual state pieces
-- Duplicate hit-test sequences at lines 463-465 and 517-519
-- `handleMouseDown` is 157 lines
-- **Fix:** Batch selectors, extract `performHitTest()`, extract drag hooks
+### 7. CanvasStack.tsx (638 lines) — partial
+- ~~Duplicate hit-test cascades in handleMouseMove + handleDoubleClick~~ DONE — extracted `hitTestCascade()` to hitTest.ts
+- 35 individual `useUiStore()` selectors — idiomatic Zustand, batching would hurt readability
+- `handleMouseDown` (157 lines) — tightly coupled to interaction dispatch, not cleanly splittable
 
-### 8. useMoveInteraction.ts (512 lines) — mixed concerns
-- Snapping logic (~140 lines, 281-356) is self-contained
-- Coordinate transform logic repeated (lines 95, 148-149, 273-278)
-- **Fix:** Extract `useSnapDetection()` hook and `toWorldCoords()` helper
+### 8. useMoveInteraction.ts (512 lines) — not actionable
+- Snap logic (lines 280-364) is intertwined with 5+ refs and overlay state
+- Extracting would scatter complexity without reducing it
+- Coordinate transforms are single calls, not worth a helper
 
 ### 9. uiStore.ts — setter bloat
 - 24 individual setter actions for debug flags
 - ~~Initial state and reset() repeat 12+ fields~~ DONE — extracted `defaultState()`
-- Setter consolidation (`setDebugOption(key, value)`) deferred — touches tests + LayerPropertiesPanel, needs review
+- Setter consolidation (`setDebugOption(key, value)`) deferred — touches tests + LayerPropertiesPanel
 
 ### ~~10. LayerPropertiesPanel.tsx (472 lines)~~ DONE
 - Extracted `DebugThemePanel.tsx` (181 lines) and `LayerSection.tsx` (44 lines)

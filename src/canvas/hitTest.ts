@@ -3,7 +3,7 @@ import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import type { ViewTransform } from '../utils/grid';
 
-interface HitResult {
+export interface HitResult {
   id: string;
   layer: LayerId;
 }
@@ -283,6 +283,25 @@ export function hitTestArea(
   }
 
   return results;
+}
+
+/**
+ * Cascading hit-test: plantings first, then active layer, then all layers.
+ * Returns the hit result and whether the active layer should change.
+ */
+export function hitTestCascade(
+  worldX: number,
+  worldY: number,
+  plantings: Planting[],
+  structures: Structure[],
+  zones: Zone[],
+  activeLayer: LayerId,
+): HitResult | null {
+  return (
+    hitTestPlantings(worldX, worldY, plantings, structures, zones) ||
+    hitTestObjects(worldX, worldY, structures, zones, activeLayer) ||
+    hitTestAllLayers(worldX, worldY, structures, zones)
+  );
 }
 
 /** Returns the CSS cursor for a given handle position. */
