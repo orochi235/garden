@@ -19,7 +19,6 @@ function createDefaultWorkspace(): WorkspaceState {
     containerShape: 'rectangle',
     items: [],
     paletteMode: 'generic',
-    genericRadius: 0.25,
     expandToFill: false,
   };
 }

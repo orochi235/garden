@@ -1,8 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { LabItem, Point, Rect, ContainerShape, LayoutStrategy, DragFeedback } from './types';
-
-const PX_PER_FT = 160;
-const DISPLAY_PX_PER_FT = 80;
+import { PX_PER_FT, DISPLAY_PX_PER_FT } from './constants';
 
 interface CanvasRendererProps {
   width: number;

@@ -16,7 +16,10 @@ export const freeFormStrategy: LayoutStrategy = {
   },
 
   onDragOver(_bounds: Rect, _shape: ContainerShape, _pos: Point, _items: LabItem[], _config: Record<string, unknown>): DragFeedback | null {
-    return null;
+    return {
+      hide: 'preview' as const,
+      render() {},
+    };
   },
 
   onDrop(_bounds: Rect, _shape: ContainerShape, pos: Point, item: LabItem, _items: LabItem[], _config: Record<string, unknown>): DropResult {

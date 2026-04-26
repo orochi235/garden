@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
-
-const PX_PER_FT = 160;
+import { PX_PER_FT } from './constants';
 
 /** Create an offscreen canvas drag image sized to the item's actual canvas size. */
 function setCircleDragImage(e: React.DragEvent, radiusFt: number, color: string): void {

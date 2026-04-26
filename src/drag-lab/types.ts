@@ -64,7 +64,6 @@ export interface WorkspaceState {
   containerShape: ContainerShape;
   items: LabItem[];
   paletteMode: 'generic' | 'cultivar';
-  genericRadius: number;
   expandToFill: boolean;
 }
 

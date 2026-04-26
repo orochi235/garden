@@ -5,31 +5,13 @@ import { getStrategy, strategyNames } from './strategies';
 import { CanvasRenderer } from './CanvasRenderer';
 import { ItemPalette } from './ItemPalette';
 import {
-  QUADTREE_LAYER_IDS,
   QUADTREE_LAYER_LABELS,
   QUADTREE_LAYER_CSS,
   LAYER_DEFAULT_OFF,
   LAYER_ALWAYS_ON,
-  type QuadtreeLayerId,
+  LAYER_CONFIG_KEY,
+  getLayerOrder,
 } from './strategies/quadtree';
-
-// --- Layer config key mapping (must match quadtree.ts LAYER_CONFIG_KEY) ---
-const LAYER_CONFIG_KEY: Record<QuadtreeLayerId, string> = {
-  microgrid: 'showMicrogrid',
-  footprint: 'showFootprint',
-  cellBorders: 'showCellBorders',
-  occupied: 'showOccupied',
-  violations: 'showViolations',
-  violationZone: 'showViolationZone',
-  cellCounts: 'showCellCounts',
-  objects: 'showObjects',
-};
-
-function getLayerOrder(config: Record<string, unknown>): QuadtreeLayerId[] {
-  const stored = config.layerOrder as QuadtreeLayerId[] | undefined;
-  if (Array.isArray(stored) && stored.length === QUADTREE_LAYER_IDS.length) return stored;
-  return [...QUADTREE_LAYER_IDS];
-}
 
 function QuadtreeLegend({ state, onSetConfig }: {
   state: WorkspaceState;
@@ -123,7 +105,6 @@ function QuadtreeLegend({ state, onSetConfig }: {
       {([
         ['depthScaledBorders', 'Depth-scaled borders'],
         ['opaqueBorders', 'Opaque borders'],
-        ['tiledPatterns', 'Tiled patterns'],
       ] as const).map(([key, label]) => (
         <label key={key} className="dl-legend-item">
           <input
@@ -342,7 +323,7 @@ export function Workspace({
             <label key={field.key} className="dl-control-row">
               <span>
                 {field.label}
-                {field.type === 'slider' && `: ${(state.config[field.key] as number)?.toFixed(2) ?? field.default}`}
+                {field.type === 'slider' && `: ${(state.config[field.key] as number)?.toFixed(field.step != null && field.step % 1 === 0 ? 0 : 2) ?? field.default}`}
               </span>
               {field.type === 'slider' && (
                 <input
