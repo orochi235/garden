@@ -1,4 +1,4 @@
-import type { LabItem, LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult } from '../types';
+import type { LabItem, LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult, QuadNode } from '../types';
 import { renderLayers, layerEnabled as isLayerEnabled, type LayerData } from './quadtreeRenderer';
 
 // Re-export renderer symbols so existing imports from './strategies/quadtree' still work.
@@ -12,16 +12,6 @@ export {
   LAYER_ALWAYS_ON,
   getLayerOrder,
 } from './quadtreeRenderer';
-
-export interface QuadNode {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  depth: number;
-  children: QuadNode[] | null;
-  occupantId: string | null;
-}
 
 function makeNode(x: number, y: number, w: number, h: number, depth: number): QuadNode {
   return { x, y, w, h, depth, children: null, occupantId: null };
@@ -316,7 +306,6 @@ export const quadtreeStrategy: LayoutStrategy = {
       bounds, tree, items, occupied, violations, cellCounts, footprint, maxDepth: effectiveDepth,
       depthScaledBorders: config.depthScaledBorders !== false,
       opaqueBorders: config.opaqueBorders !== false,
-      tiledPatterns: true,
     };
 
     renderLayers(ctx, data, config);

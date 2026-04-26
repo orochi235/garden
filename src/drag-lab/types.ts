@@ -55,6 +55,16 @@ export interface LayoutStrategy {
   configSchema(): ConfigField[];
 }
 
+export interface QuadNode {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  depth: number;
+  children: QuadNode[] | null;
+  occupantId: string | null;
+}
+
 export interface WorkspaceState {
   id: string;
   strategyName: string;

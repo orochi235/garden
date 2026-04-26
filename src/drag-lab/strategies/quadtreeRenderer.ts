@@ -1,9 +1,8 @@
 // Layer-based rendering for the quadtree strategy.
 // Separated from quadtree.ts to keep tree operations and rendering distinct.
 
-import type { LabItem, Rect } from '../types';
+import type { LabItem, Rect, QuadNode } from '../types';
 import { PX_PER_FT } from '../constants';
-import type { QuadNode } from './quadtree';
 
 /** Ordered layer IDs — this is the default render order (bottom to top). */
 export const QUADTREE_LAYER_IDS = [
@@ -76,7 +75,8 @@ export function getLayerOrder(config: Record<string, unknown>): QuadtreeLayerId[
 /** Render parallel hatch lines inside a rect.
  *  @param rotation 0–1 representing a full turn (default 1/8 = 45deg)
  *  @param tileGlobal when true (default), lines align to global origin for seamless tiling */
-function renderHatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, rotation = 1 / 8, tileGlobal = true): void {
+/** Render parallel hatch lines inside a rect, aligned to the global origin for seamless tiling. */
+function renderHatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, rotation = 1 / 8): void {
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
@@ -88,53 +88,37 @@ function renderHatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   const sin = Math.sin(angle);
   const step = 0.1;
 
-  if (tileGlobal) {
-    const cx0 = x, cx1 = x + w, cy0 = y, cy1 = y + h;
-    const normProj = [
-      cx0 * cos + cy0 * sin,
-      cx1 * cos + cy0 * sin,
-      cx0 * cos + cy1 * sin,
-      cx1 * cos + cy1 * sin,
-    ];
-    const lineProj = [
-      -sin * cx0 + cos * cy0,
-      -sin * cx1 + cos * cy0,
-      -sin * cx0 + cos * cy1,
-      -sin * cx1 + cos * cy1,
-    ];
-    const iMin = Math.floor(Math.min(...normProj) / step);
-    const iMax = Math.ceil(Math.max(...normProj) / step);
-    const sweep = Math.max(...lineProj.map(Math.abs)) + step;
-    for (let i = iMin; i <= iMax; i++) {
-      const d = i * step;
-      const px = cos * d;
-      const py = sin * d;
-      ctx.beginPath();
-      ctx.moveTo(px - sin * sweep, py + cos * sweep);
-      ctx.lineTo(px + sin * sweep, py - cos * sweep);
-      ctx.stroke();
-    }
-  } else {
-    const sweep = Math.sqrt(w * w + h * h);
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    const count = Math.ceil(sweep / step);
-    for (let i = -count; i <= count; i++) {
-      const d = i * step;
-      const px = cx + cos * d;
-      const py = cy + sin * d;
-      ctx.beginPath();
-      ctx.moveTo(px - sin * sweep, py + cos * sweep);
-      ctx.lineTo(px + sin * sweep, py - cos * sweep);
-      ctx.stroke();
-    }
+  const cx0 = x, cx1 = x + w, cy0 = y, cy1 = y + h;
+  const normProj = [
+    cx0 * cos + cy0 * sin,
+    cx1 * cos + cy0 * sin,
+    cx0 * cos + cy1 * sin,
+    cx1 * cos + cy1 * sin,
+  ];
+  const lineProj = [
+    -sin * cx0 + cos * cy0,
+    -sin * cx1 + cos * cy0,
+    -sin * cx0 + cos * cy1,
+    -sin * cx1 + cos * cy1,
+  ];
+  const iMin = Math.floor(Math.min(...normProj) / step);
+  const iMax = Math.ceil(Math.max(...normProj) / step);
+  const sweep = Math.max(...lineProj.map(Math.abs)) + step;
+  for (let i = iMin; i <= iMax; i++) {
+    const d = i * step;
+    const px = cos * d;
+    const py = sin * d;
+    ctx.beginPath();
+    ctx.moveTo(px - sin * sweep, py + cos * sweep);
+    ctx.lineTo(px + sin * sweep, py - cos * sweep);
+    ctx.stroke();
   }
   ctx.restore();
 }
 
-function renderCrosshatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, rotation = 1 / 8, tileGlobal = true): void {
-  renderHatch(ctx, x, y, w, h, color, rotation, tileGlobal);
-  renderHatch(ctx, x, y, w, h, color, rotation + 0.25, tileGlobal);
+function renderCrosshatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, rotation = 1 / 8): void {
+  renderHatch(ctx, x, y, w, h, color, rotation);
+  renderHatch(ctx, x, y, w, h, color, rotation + 0.25);
 }
 
 /** Stroke a rect inset so the border is drawn entirely inside the cell. */
@@ -157,7 +141,6 @@ export interface LayerData {
   maxDepth: number;
   depthScaledBorders: boolean;
   opaqueBorders: boolean;
-  tiledPatterns: boolean;
 }
 
 function borderWidthFt(depth: number, data: LayerData): number {
@@ -187,7 +170,7 @@ function renderOccupiedNode(ctx: CanvasRenderingContext2D, node: QuadNode, data:
   }
   const key = `${node.x},${node.y}`;
   if (data.occupied.has(key) && !data.violations.has(key)) {
-    renderHatch(ctx, node.x, node.y, node.w, node.h, 'rgba(255,255,255,0.4)', 1 / 8, data.tiledPatterns);
+    renderHatch(ctx, node.x, node.y, node.w, node.h, 'rgba(255,255,255,0.4)');
   }
 }
 
@@ -215,7 +198,7 @@ function renderViolationsLayer(ctx: CanvasRenderingContext2D, data: LayerData): 
   const cellH = data.bounds.height / divisions;
   for (const key of data.violations) {
     const [xStr, yStr] = key.split(',');
-    renderCrosshatch(ctx, Number(xStr), Number(yStr), cellW, cellH, 'rgba(224,80,80,0.5)', 1 / 8, data.tiledPatterns);
+    renderCrosshatch(ctx, Number(xStr), Number(yStr), cellW, cellH, 'rgba(224,80,80,0.5)');
   }
 }
 
