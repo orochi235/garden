@@ -25,14 +25,14 @@ export function ellipsePath(cx: number, cy: number, rx: number, ry: number): Sha
   return closedPath(
     { x: cx + rx, y: cy },
     [
-      // Top-right arc
-      cubicTo(cx + rx, cy - ky, cx + kx, cy - ry, cx, cy - ry),
-      // Top-left arc
-      cubicTo(cx - kx, cy - ry, cx - rx, cy - ky, cx - rx, cy),
+      // Bottom-right arc (clockwise in screen space, Y-down)
+      cubicTo(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry),
       // Bottom-left arc
-      cubicTo(cx - rx, cy + ky, cx - kx, cy + ry, cx, cy + ry),
-      // Bottom-right arc
-      cubicTo(cx + kx, cy + ry, cx + rx, cy + ky, cx + rx, cy),
+      cubicTo(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy),
+      // Top-left arc
+      cubicTo(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry),
+      // Top-right arc
+      cubicTo(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy),
     ],
   );
 }
