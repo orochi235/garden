@@ -1,9 +1,142 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { LabItem, Point, ContainerShape } from './types';
 import type { WorkspaceState, SavedState } from './types';
 import { getStrategy, strategyNames } from './strategies';
 import { CanvasRenderer } from './CanvasRenderer';
 import { ItemPalette } from './ItemPalette';
+import {
+  QUADTREE_LAYER_IDS,
+  QUADTREE_LAYER_LABELS,
+  QUADTREE_LAYER_CSS,
+  LAYER_DEFAULT_OFF,
+  LAYER_ALWAYS_ON,
+  type QuadtreeLayerId,
+} from './strategies/quadtree';
+
+// --- Layer config key mapping (must match quadtree.ts LAYER_CONFIG_KEY) ---
+const LAYER_CONFIG_KEY: Record<QuadtreeLayerId, string> = {
+  microgrid: 'showMicrogrid',
+  footprint: 'showFootprint',
+  cellBorders: 'showCellBorders',
+  occupied: 'showOccupied',
+  violations: 'showViolations',
+  violationZone: 'showViolationZone',
+  cellCounts: 'showCellCounts',
+  objects: 'showObjects',
+};
+
+function getLayerOrder(config: Record<string, unknown>): QuadtreeLayerId[] {
+  const stored = config.layerOrder as QuadtreeLayerId[] | undefined;
+  if (Array.isArray(stored) && stored.length === QUADTREE_LAYER_IDS.length) return stored;
+  return [...QUADTREE_LAYER_IDS];
+}
+
+function QuadtreeLegend({ state, onSetConfig }: {
+  state: WorkspaceState;
+  onSetConfig: (key: string, value: unknown) => void;
+}) {
+  const rawOrder = getLayerOrder(state.config);
+  // Display reversed: top of list = top of visual stack (last to render)
+  const displayOrder = [...rawOrder].reverse();
+  const dragIdx = useRef<number | null>(null);
+  const [dropIdx, setDropIdx] = useState<number | null>(null);
+
+  const handleDragStart = (i: number) => (e: React.DragEvent) => {
+    dragIdx.current = i;
+    e.dataTransfer.effectAllowed = 'move';
+    // Minimal drag image
+    const el = e.currentTarget as HTMLElement;
+    e.dataTransfer.setDragImage(el, 0, 0);
+  };
+
+  const handleDragOver = (i: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropIdx(i);
+  };
+
+  const handleDrop = (i: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const from = dragIdx.current;
+    if (from === null || from === i) { setDropIdx(null); return; }
+    const next = [...displayOrder];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+    // Reverse back to render order (index 0 = bottom = first to render)
+    onSetConfig('layerOrder', [...next].reverse());
+    dragIdx.current = null;
+    setDropIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    dragIdx.current = null;
+    setDropIdx(null);
+  };
+
+  return (
+    <div className="dl-legend">
+      <div className="dl-controls-divider" />
+      <div className="dl-legend-section-label">Render layers — top draws last</div>
+      {displayOrder.map((layer, i) => (
+        <div
+          key={layer}
+          className={`dl-legend-item dl-legend-draggable${dropIdx === i ? ' dl-legend-drop-target' : ''}`}
+          draggable
+          onDragStart={handleDragStart(i)}
+          onDragOver={handleDragOver(i)}
+          onDrop={handleDrop(i)}
+          onDragEnd={handleDragEnd}
+        >
+          <span className="dl-legend-handle" title="Drag to reorder">&#x2261;</span>
+          {LAYER_ALWAYS_ON.has(layer) ? (
+            <span className="dl-legend-checkbox-spacer" />
+          ) : (
+            <input
+              type="checkbox"
+              checked={LAYER_DEFAULT_OFF.has(layer) ? state.config[LAYER_CONFIG_KEY[layer]] === true : state.config[LAYER_CONFIG_KEY[layer]] !== false}
+              onChange={(e) => onSetConfig(LAYER_CONFIG_KEY[layer], e.target.checked)}
+            />
+          )}
+          <span className={`dl-legend-swatch ${QUADTREE_LAYER_CSS[layer]}`} />
+          <span>{QUADTREE_LAYER_LABELS[layer]}</span>
+        </div>
+      ))}
+      <div className="dl-controls-divider" />
+      <div className="dl-legend-section-label">Drag overlays</div>
+      {([
+        ['showTarget', 'dl-legend-target', 'Drop target'],
+        ['showSplits', 'dl-legend-split', 'Will split'],
+        ['showPutative', 'dl-legend-putative', 'Possible cells'],
+      ] as const).map(([key, cls, label]) => (
+        <label key={key} className="dl-legend-item">
+          <input
+            type="checkbox"
+            checked={state.config[key] !== false}
+            onChange={(e) => onSetConfig(key, e.target.checked)}
+          />
+          <span className={`dl-legend-swatch ${cls}`} />
+          <span>{label}</span>
+        </label>
+      ))}
+      <div className="dl-controls-divider" />
+      <div className="dl-legend-section-label">Render options</div>
+      {([
+        ['depthScaledBorders', 'Depth-scaled borders'],
+        ['opaqueBorders', 'Opaque borders'],
+        ['tiledPatterns', 'Tiled patterns'],
+      ] as const).map(([key, label]) => (
+        <label key={key} className="dl-legend-item">
+          <input
+            type="checkbox"
+            checked={state.config[key] !== false}
+            onChange={(e) => onSetConfig(key, e.target.checked)}
+          />
+          <span>{label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
 
 interface WorkspaceProps {
   state: WorkspaceState;
@@ -20,6 +153,8 @@ interface WorkspaceProps {
   onClone: () => void;
   onReset: () => void;
   onClose: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
 export function Workspace({
@@ -37,6 +172,8 @@ export function Workspace({
   onClone,
   onReset,
   onClose,
+  onUndo,
+  onRedo,
 }: WorkspaceProps) {
   const [dragItem, setDragItem] = useState<LabItem | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -75,10 +212,23 @@ export function Workspace({
     if (name) onSave(name);
   };
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 'z' && !e.shiftKey) { e.preventDefault(); onUndo(); }
+      if (mod && e.key === 'z' && e.shiftKey) { e.preventDefault(); onRedo(); }
+      if (mod && e.key === 'y') { e.preventDefault(); onRedo(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onUndo, onRedo]);
+
   return (
     <div className="dl-workspace">
       <div className="dl-toolbar">
         <span className="dl-toolbar-title">{state.strategyName}</span>
+        <button type="button" onClick={onUndo} title="Undo (Ctrl+Z)">Undo</button>
+        <button type="button" onClick={onRedo} title="Redo (Ctrl+Shift+Z)">Redo</button>
         <input
           type="range"
           min={0.5}
@@ -233,27 +383,7 @@ export function Workspace({
           />
 
           {state.strategyName === 'Quadtree' && (
-            <div className="dl-legend">
-              <div className="dl-controls-divider" />
-              {([
-                ['showOccupied', 'dl-legend-occupied', 'Occupied'],
-                ['showViolations', 'dl-legend-violation', 'Violation'],
-                ['showTarget', 'dl-legend-target', 'Drop target'],
-                ['showSplits', 'dl-legend-split', 'Will split'],
-                ['showPutative', 'dl-legend-putative', 'Possible cells'],
-                ['showFootprint', 'dl-legend-footprint', 'Footprint'],
-              ] as const).map(([key, cls, label]) => (
-                <label key={key} className="dl-legend-item">
-                  <input
-                    type="checkbox"
-                    checked={state.config[key] !== false}
-                    onChange={(e) => onSetConfig(key, e.target.checked)}
-                  />
-                  <span className={`dl-legend-swatch ${cls}`} />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </div>
+            <QuadtreeLegend state={state} onSetConfig={onSetConfig} />
           )}
         </div>
       </div>

@@ -28,6 +28,7 @@ export interface RenderOptions {
 export interface StructureRenderOptions extends RenderOptions {
   showSurfaces?: boolean;
   showPlantableArea?: boolean;
+  debugOverlappingLabels?: boolean;
 }
 
 export interface ZoneRenderOptions extends RenderOptions {

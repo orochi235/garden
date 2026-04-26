@@ -7,6 +7,7 @@ export class StructureLayerRenderer extends LayerRenderer {
   structures: Structure[] = [];
   showSurfaces = false;
   showPlantableArea = false;
+  debugOverlappingLabels = false;
   labelMode: LabelMode | 'none' = 'none';
   labelFontSize = 13;
   hideIds: string[] = [];
@@ -24,6 +25,7 @@ export class StructureLayerRenderer extends LayerRenderer {
       highlightOpacity: this.highlight,
       showSurfaces: this.showSurfaces,
       showPlantableArea: this.showPlantableArea,
+      debugOverlappingLabels: this.debugOverlappingLabels,
       labelMode: this.labelMode,
       labelFontSize: this.labelFontSize,
     });

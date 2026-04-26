@@ -77,6 +77,8 @@ function DebugThemePanel() {
   const setThemeOverride = useUiStore((s) => s.setThemeOverride);
   const magentaHighlight = useUiStore((s) => s.magentaHighlight);
   const setMagentaHighlight = useUiStore((s) => s.setMagentaHighlight);
+  const debugOverlappingLabels = useUiStore((s) => s.debugOverlappingLabels);
+  const setDebugOverlappingLabels = useUiStore((s) => s.setDebugOverlappingLabels);
   const labelMode = useUiStore((s) => s.labelMode);
   const setLabelMode = useUiStore((s) => s.setLabelMode);
   const labelFontSize = useUiStore((s) => s.labelFontSize);
@@ -178,6 +180,14 @@ function DebugThemePanel() {
           onChange={(e) => setMagentaHighlight(e.target.checked)}
         />
         <span>Magenta highlight</span>
+      </label>
+      <label className={styles.surfaceToggle}>
+        <input
+          type="checkbox"
+          checked={debugOverlappingLabels}
+          onChange={(e) => setDebugOverlappingLabels(e.target.checked)}
+        />
+        <span>Show overlapping labels</span>
       </label>
       <hr className={styles.themeDivider} />
       <label className={styles.sliderLabel}>

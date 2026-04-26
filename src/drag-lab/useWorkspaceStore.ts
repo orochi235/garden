@@ -48,9 +48,18 @@ function persistSaves(saves: SavedState[]): void {
   localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
 }
 
+const MAX_UNDO = 50;
+
+interface UndoStack {
+  past: LabItem[][];
+  future: LabItem[][];
+}
+
 interface WorkspaceStore {
   workspaces: WorkspaceState[];
   saves: SavedState[];
+  /** Per-workspace undo stacks (session only, not persisted). */
+  undoStacks: Record<string, UndoStack>;
   addWorkspace: () => void;
   cloneWorkspace: (id: string) => void;
   removeWorkspace: (id: string) => void;
@@ -65,11 +74,26 @@ interface WorkspaceStore {
   loadState: (workspaceId: string, save: SavedState) => void;
   resetWorkspace: (id: string) => void;
   resetAll: () => void;
+  undo: (id: string) => void;
+  redo: (id: string) => void;
+  canUndo: (id: string) => boolean;
+  canRedo: (id: string) => boolean;
 }
 
-export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
+function getStack(stacks: Record<string, UndoStack>, id: string): UndoStack {
+  return stacks[id] ?? { past: [], future: [] };
+}
+
+function pushSnapshot(stacks: Record<string, UndoStack>, id: string, items: LabItem[]): Record<string, UndoStack> {
+  const stack = getStack(stacks, id);
+  const past = [...stack.past, items].slice(-MAX_UNDO);
+  return { ...stacks, [id]: { past, future: [] } };
+}
+
+export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   workspaces: loadWorkspaces(),
   saves: loadSaves(),
+  undoStacks: {},
 
   addWorkspace: () =>
     set((s) => {
@@ -114,29 +138,38 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   setConfig: (id, key, value) =>
     set((s) => {
+      const current = s.workspaces.find((w) => w.id === id);
+      // Snapshot on layer reorder
+      const undoStacks = key === 'layerOrder' && current
+        ? pushSnapshot(s.undoStacks, id, current.items)
+        : s.undoStacks;
       const workspaces = s.workspaces.map((w) =>
         w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w,
       );
       saveWorkspaces(workspaces);
-      return { workspaces };
+      return { workspaces, undoStacks };
     }),
 
   addItem: (id, item) =>
     set((s) => {
+      const current = s.workspaces.find((w) => w.id === id);
+      const undoStacks = current ? pushSnapshot(s.undoStacks, id, current.items) : s.undoStacks;
       const workspaces = s.workspaces.map((w) =>
         w.id === id ? { ...w, items: [...w.items, item] } : w,
       );
       saveWorkspaces(workspaces);
-      return { workspaces };
+      return { workspaces, undoStacks };
     }),
 
   removeItem: (workspaceId, itemId) =>
     set((s) => {
+      const current = s.workspaces.find((w) => w.id === workspaceId);
+      const undoStacks = current ? pushSnapshot(s.undoStacks, workspaceId, current.items) : s.undoStacks;
       const workspaces = s.workspaces.map((w) =>
         w.id === workspaceId ? { ...w, items: w.items.filter((i) => i.id !== itemId) } : w,
       );
       saveWorkspaces(workspaces);
-      return { workspaces };
+      return { workspaces, undoStacks };
     }),
 
   setContainerSize: (id, width, height) =>
@@ -193,6 +226,58 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   resetAll: () => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(SAVES_KEY);
-    set({ workspaces: [createDefaultWorkspace()], saves: [] });
+    set({ workspaces: [createDefaultWorkspace()], saves: [], undoStacks: {} });
+  },
+
+  undo: (id) =>
+    set((s) => {
+      const stack = getStack(s.undoStacks, id);
+      if (stack.past.length === 0) return s;
+      const current = s.workspaces.find((w) => w.id === id);
+      if (!current) return s;
+      const prev = stack.past[stack.past.length - 1];
+      const undoStacks = {
+        ...s.undoStacks,
+        [id]: {
+          past: stack.past.slice(0, -1),
+          future: [current.items, ...stack.future],
+        },
+      };
+      const workspaces = s.workspaces.map((w) =>
+        w.id === id ? { ...w, items: prev } : w,
+      );
+      saveWorkspaces(workspaces);
+      return { workspaces, undoStacks };
+    }),
+
+  redo: (id) =>
+    set((s) => {
+      const stack = getStack(s.undoStacks, id);
+      if (stack.future.length === 0) return s;
+      const current = s.workspaces.find((w) => w.id === id);
+      if (!current) return s;
+      const next = stack.future[0];
+      const undoStacks = {
+        ...s.undoStacks,
+        [id]: {
+          past: [...stack.past, current.items],
+          future: stack.future.slice(1),
+        },
+      };
+      const workspaces = s.workspaces.map((w) =>
+        w.id === id ? { ...w, items: next } : w,
+      );
+      saveWorkspaces(workspaces);
+      return { workspaces, undoStacks };
+    }),
+
+  canUndo: (id) => {
+    const stack = getStack(get().undoStacks, id);
+    return stack.past.length > 0;
+  },
+
+  canRedo: (id) => {
+    const stack = getStack(get().undoStacks, id);
+    return stack.future.length > 0;
   },
 }));

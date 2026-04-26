@@ -84,7 +84,7 @@ function renderDecorations(
   sx: number, sy: number, sw: number, sh: number,
   opts: StructureRenderOptions,
 ): void {
-  const { highlightOpacity = 0, showSurfaces = false, labelMode = 'none', labelFontSize = 13 } = opts;
+  const { highlightOpacity = 0, showSurfaces = false } = opts;
 
   if (highlightOpacity > 0) {
     ctx.save();
@@ -109,10 +109,6 @@ function renderDecorations(
       x: sx, y: sy, w: sw, h: sh,
       shape: s.shape === 'circle' ? 'circle' : 'rectangle',
     });
-  }
-
-  if (labelMode !== 'none' && labelMode !== 'selection' && s.label) {
-    renderLabel(ctx, s.label, sx + sw / 2, sy + sh + 4, { fontSize: labelFontSize });
   }
 }
 
@@ -238,11 +234,67 @@ export function renderStructures(
   }
   renderQueue.sort((a, b) => a.order - b.order);
 
+  // Pass 1: render bodies (fill, stroke, patterns, highlights, surfaces)
   for (const item of renderQueue) {
     if (item.type === 'single') {
       renderSingle(ctx, item.structure, opts);
     } else {
       renderGroup(ctx, item.members, opts);
+    }
+  }
+
+  // Pass 2: render labels on top of all bodies
+  const { view, labelMode = 'none', labelFontSize = 13, debugOverlappingLabels = false } = opts;
+  if (labelMode !== 'none' && labelMode !== 'selection') {
+    // Measure all labels first to detect overlaps
+    const padX = 4;
+    const padY = 1;
+    ctx.save();
+    ctx.font = `${labelFontSize}px sans-serif`;
+
+    interface LabelEntry { label: string; x: number; y: number; w: number; h: number }
+    const entries: LabelEntry[] = [];
+
+    for (const item of renderQueue) {
+      const members = item.type === 'single' ? [item.structure] : item.members;
+      for (const s of members) {
+        if (!s.label) continue;
+        const [sx, sy] = worldToScreen(s.x, s.y, view);
+        const sw = s.width * view.zoom;
+        const sh = s.height * view.zoom;
+        const cx = sx + sw / 2;
+        const ly = sy + sh + 4;
+        const tw = ctx.measureText(s.label).width + padX * 2;
+        const th = labelFontSize + padY * 2;
+        entries.push({ label: s.label, x: cx - tw / 2, y: ly - padY, w: tw, h: th });
+      }
+    }
+    ctx.restore();
+
+    // Mark which labels overlap an earlier (higher-priority) label
+    const hidden = new Set<number>();
+    for (let i = 0; i < entries.length; i++) {
+      if (hidden.has(i)) continue;
+      const a = entries[i];
+      for (let j = i + 1; j < entries.length; j++) {
+        if (hidden.has(j)) continue;
+        const b = entries[j];
+        if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
+          hidden.add(j);
+        }
+      }
+    }
+
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const isHidden = hidden.has(i);
+      if (isHidden && !debugOverlappingLabels) continue;
+      if (isHidden) {
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+      }
+      renderLabel(ctx, e.label, e.x + e.w / 2, e.y + padY, { fontSize: labelFontSize });
+      if (isHidden) ctx.restore();
     }
   }
 }

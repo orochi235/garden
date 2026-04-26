@@ -267,6 +267,56 @@
   flex-shrink: 0;
 }
 
+.dl-legend-section-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b6050;
+  margin-top: 2px;
+  margin-bottom: 1px;
+}
+
+.dl-legend-draggable {
+  cursor: grab;
+  border-radius: 3px;
+  padding: 1px 2px;
+  transition: background 0.1s;
+}
+
+.dl-legend-draggable:active { cursor: grabbing; }
+
+.dl-legend-drop-target {
+  background: rgba(127,176,105,0.15);
+  outline: 1px dashed rgba(127,176,105,0.5);
+}
+
+.dl-legend-handle {
+  cursor: grab;
+  color: #6b6050;
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.dl-legend-microgrid {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 4px,
+      rgba(180,180,180,0.3) 4px,
+      rgba(180,180,180,0.3) 5px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 4px,
+      rgba(180,180,180,0.3) 4px,
+      rgba(180,180,180,0.3) 5px
+    );
+}
+
 .dl-legend-occupied {
   background: repeating-linear-gradient(
     -45deg,
@@ -296,6 +346,19 @@
   border: 1px solid rgba(224,123,155,0.4);
 }
 
+.dl-legend-borders {
+  background: transparent;
+  border-left: 3px solid rgb(127,176,105);
+  border-right: 1px solid rgb(127,176,105);
+  border-top: 2px solid rgb(127,176,105);
+  border-bottom: 1px solid rgb(127,176,105);
+}
+
+.dl-legend-violation-zone {
+  background: transparent;
+  border: 2px solid rgb(224,80,80);
+}
+
 .dl-legend-target {
   background: rgba(127,176,105,0.2);
   border: 2px solid rgba(127,176,105,0.6);
@@ -312,4 +375,29 @@
 .dl-legend-footprint {
   background: rgba(180,140,255,0.5);
   border: 1px solid rgba(180,140,255,0.8);
+}
+
+.dl-legend-cell-counts {
+  background: #2a2018;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 9px;
+  font-weight: bold;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.dl-legend-cell-counts::after {
+  content: '2';
+}
+
+.dl-legend-objects {
+  background: radial-gradient(circle, #7fb069 40%, transparent 60%);
+}
+
+.dl-legend-checkbox-spacer {
+  width: 13px;
+  flex-shrink: 0;
 }

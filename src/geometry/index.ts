@@ -11,6 +11,9 @@ export {
   shapeArea,
   shapeBounds,
   pointInShape,
+  isHole,
+  minkowskiSum,
+  triangulate,
 } from './ops';
 export type { PathSink } from './canvas';
 export { traceShapePath, tracePolyline } from './canvas';

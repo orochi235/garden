@@ -1,7 +1,8 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { LabItem, Point, Rect, ContainerShape, LayoutStrategy, DragFeedback } from './types';
 
-const PX_PER_FT = 80;
+const PX_PER_FT = 160;
+const DISPLAY_PX_PER_FT = 80;
 
 interface CanvasRendererProps {
   width: number;
@@ -222,7 +223,7 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       ref={canvasRef}
       width={canvasW}
       height={canvasH}
-      style={{ width: canvasW, height: canvasH, cursor, touchAction: 'none' }}
+      style={{ width: width * DISPLAY_PX_PER_FT, height: height * DISPLAY_PX_PER_FT, cursor, touchAction: 'none' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

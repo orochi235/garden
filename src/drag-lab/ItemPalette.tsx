@@ -2,6 +2,30 @@ import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
 
+const PX_PER_FT = 160;
+
+/** Create an offscreen canvas drag image sized to the item's actual canvas size. */
+function setCircleDragImage(e: React.DragEvent, radiusFt: number, color: string): void {
+  const diamPx = Math.round(radiusFt * 2 * PX_PER_FT);
+  const size = Math.max(diamPx, 4);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.position = 'fixed';
+  canvas.style.left = '-9999px';
+  const ctx = canvas.getContext('2d')!;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  document.body.appendChild(canvas);
+  e.dataTransfer.setDragImage(canvas, size / 2, size / 2);
+  requestAnimationFrame(() => canvas.remove());
+}
+
 const GENERIC_ITEMS: { color: string; radiusFt: number }[] = [
   { color: '#e07b9b', radiusFt: 0.15 },
   { color: '#5ba4cf', radiusFt: 0.25 },
@@ -31,6 +55,7 @@ export function ItemPalette({ mode, onSetMode, onDragStart }: ItemPaletteProps) 
     };
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('text/plain', '');
+    setCircleDragImage(e, gi.radiusFt, gi.color);
     onDragStart(item);
   }, [onDragStart]);
 
@@ -48,6 +73,7 @@ export function ItemPalette({ mode, onSetMode, onDragStart }: ItemPaletteProps) 
     };
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('text/plain', '');
+    setCircleDragImage(e, c.spacingFt / 2, c.color);
     onDragStart(item);
   }, [cultivars, onDragStart]);
 

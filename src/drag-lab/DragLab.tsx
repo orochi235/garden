@@ -27,6 +27,8 @@ export function DragLab() {
     cloneWorkspace,
     resetWorkspace,
     resetAll,
+    undo,
+    redo,
   } = useWorkspaceStore();
 
   const dims = useMemo(() => gridDims(workspaces.length), [workspaces.length]);
@@ -58,6 +60,8 @@ export function DragLab() {
             onClone={() => cloneWorkspace(ws.id)}
             onReset={() => resetWorkspace(ws.id)}
             onClose={() => removeWorkspace(ws.id)}
+            onUndo={() => undo(ws.id)}
+            onRedo={() => redo(ws.id)}
           />
         ))}
       </div>

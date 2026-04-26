@@ -7,6 +7,9 @@ import {
   areaD,
   getBoundsD,
   pointInPolygonD,
+  minkowskiSumD,
+  triangulateD,
+  TriangulateResult,
   FillRule,
   JoinType,
   EndType,
@@ -119,4 +122,36 @@ export function shapeBounds(shape: ShapePath): { x: number; y: number; width: nu
 export function pointInShape(px: number, py: number, shape: ShapePath): boolean {
   const result = pointInPolygonD({ x: px, y: py }, toPathD(shape), PRECISION);
   return result !== PointInPolygonResult.IsOutside;
+}
+
+/** Check if a shape is a hole (negative area = counter-clockwise winding). */
+export function isHole(shape: ShapePath): boolean {
+  return areaD(toPathDRaw(shape)) < 0;
+}
+
+/**
+ * Minkowski sum: "inflate" a shape by sweeping a pattern around its boundary.
+ * Pattern is typically a small shape (e.g., a circle approximation for clearance zones).
+ */
+export function minkowskiSum(shape: ShapePath, pattern: ShapePath): ShapePath[] {
+  const result = minkowskiSumD(
+    toPathD(pattern),
+    toPathD(shape),
+    true,
+  );
+  return fromPathsD(result);
+}
+
+/**
+ * Triangulate a shape into triangles.
+ * Returns an array of 3-point ShapePaths (triangles).
+ * Throws if triangulation fails.
+ */
+export function triangulate(shape: ShapePath): ShapePath[] {
+  const paths = toPathsD([shape]);
+  const { result, solution } = triangulateD(paths, PRECISION);
+  if (result !== TriangulateResult.success) {
+    throw new Error(`Triangulation failed: ${TriangulateResult[result]}`);
+  }
+  return fromPathsD(solution);
 }

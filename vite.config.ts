@@ -20,6 +20,7 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         'drag-lab': path.resolve(__dirname, 'drag-lab.html'),
+        'geometry-demos': path.resolve(__dirname, 'geometry-demos.html'),
       },
     },
   },

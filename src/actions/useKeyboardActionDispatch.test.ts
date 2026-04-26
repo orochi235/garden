@@ -70,6 +70,39 @@ describe('useKeyboardActionDispatch', () => {
     document.body.removeChild(input);
   });
 
+  it('does not intercept OS shortcuts when canvas is focused', () => {
+    setup();
+
+    const osShortcuts: KeyboardEventInit[] = [
+      { key: 'Tab', metaKey: true },        // Cmd+Tab (app switcher)
+      { key: 'Tab', metaKey: true, shiftKey: true }, // Cmd+Shift+Tab
+      { key: 'q', metaKey: true },           // Cmd+Q (quit)
+      { key: 'w', metaKey: true },           // Cmd+W (close window)
+      { key: 'h', metaKey: true },           // Cmd+H (hide)
+      { key: 'm', metaKey: true },           // Cmd+M (minimize)
+      { key: ' ', metaKey: true },           // Cmd+Space (Spotlight)
+      { key: 'Tab', altKey: true },          // Alt+Tab
+      { key: 'F4', altKey: true },           // Alt+F4 (close, Windows)
+      { key: 'l', metaKey: true },           // Cmd+L (address bar)
+      { key: 't', metaKey: true },           // Cmd+T (new tab)
+      { key: 'n', metaKey: true },           // Cmd+N (new window)
+      { key: 'r', metaKey: true },           // Cmd+R (reload)
+    ];
+
+    for (const opts of osShortcuts) {
+      const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...opts });
+      const prevented = !window.dispatchEvent(event);
+      const label = [
+        opts.metaKey && 'Cmd',
+        opts.ctrlKey && 'Ctrl',
+        opts.altKey && 'Alt',
+        opts.shiftKey && 'Shift',
+        opts.key,
+      ].filter(Boolean).join('+');
+      expect(prevented, `${label} should not be intercepted`).toBe(false);
+    }
+  });
+
   it('auto-checkpoints non-transient actions', () => {
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
