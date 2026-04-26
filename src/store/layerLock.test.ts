@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useGardenStore } from './gardenStore';
+import { blankGarden, useGardenStore } from './gardenStore';
 import { useUiStore } from './uiStore';
 
 describe('layerLocked enforcement', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
   });
 

@@ -26,6 +26,8 @@ export interface LabItem {
 
 export interface DragFeedback {
   render(ctx: CanvasRenderingContext2D, bounds: Rect): void;
+  /** Which circle to hide: 'ghost' (cursor-following) or 'preview' (strategy placement). Default: 'ghost'. */
+  hide?: 'ghost' | 'preview';
 }
 
 export interface DropResult {

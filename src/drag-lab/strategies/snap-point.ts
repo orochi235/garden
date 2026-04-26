@@ -47,12 +47,16 @@ export const snapPointStrategy: LayoutStrategy = {
     const pattern = (config.pattern as PatternType) ?? 'grid';
     const gridSpacing = (config.gridSpacing as number) ?? 0.5;
     const points = generatePoints(bounds, pattern, gridSpacing);
-    for (const p of points) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 0.05, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(91,164,207,0.5)';
-      ctx.fill();
-    }
+    const overlay = !!config.overlayGuides;
+    const renderPoints = () => {
+      for (const p of points) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 0.05, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(91,164,207,0.5)';
+        ctx.fill();
+      }
+    };
+    if (!overlay) renderPoints();
     for (const item of items) {
       ctx.beginPath();
       ctx.arc(item.x, item.y, item.radiusFt, 0, Math.PI * 2);
@@ -62,6 +66,7 @@ export const snapPointStrategy: LayoutStrategy = {
       ctx.lineWidth = 0.02;
       ctx.stroke();
     }
+    if (overlay) renderPoints();
   },
 
   onDragOver(bounds, _shape, pos, _items, config): DragFeedback | null {

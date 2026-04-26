@@ -45,18 +45,48 @@ function cellRect(bounds: Rect, cols: number, rows: number, gapFt: number, col: 
 }
 
 export const subgridStrategy: LayoutStrategy = {
-  name: 'Subgrid',
+  name: 'Tile grid',
 
   render(ctx, bounds, _shape, items, config) {
     const { cols, rows, gapFt } = getGridDims(config);
-    for (let c = 0; c < cols; c++) {
-      for (let r = 0; r < rows; r++) {
-        const cell = cellRect(bounds, cols, rows, gapFt, c, r);
-        ctx.strokeStyle = 'rgba(127,176,105,0.3)';
-        ctx.lineWidth = 0.02;
-        ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
-      }
+    const overlay = !!config.overlayGuides;
+
+    const occupiedCells = new Set<string>();
+    for (const item of items) {
+      const { col, row } = posToCell(bounds, cols, rows, gapFt, item);
+      occupiedCells.add(`${col},${row}`);
     }
+
+    const renderGrid = () => {
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          const cell = cellRect(bounds, cols, rows, gapFt, c, r);
+          ctx.strokeStyle = 'rgba(127,176,105,0.3)';
+          ctx.lineWidth = 0.02;
+          ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
+
+          if (occupiedCells.has(`${c},${r}`)) {
+            // Hatch occupied cells
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(cell.x, cell.y, cell.width, cell.height);
+            ctx.clip();
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 0.02;
+            const step = 0.1;
+            const total = cell.width + cell.height;
+            for (let d = step; d < total; d += step) {
+              ctx.beginPath();
+              ctx.moveTo(cell.x + d, cell.y);
+              ctx.lineTo(cell.x, cell.y + d);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+        }
+      }
+    };
+    if (!overlay) renderGrid();
     for (const item of items) {
       ctx.beginPath();
       ctx.arc(item.x, item.y, item.radiusFt, 0, Math.PI * 2);
@@ -66,6 +96,7 @@ export const subgridStrategy: LayoutStrategy = {
       ctx.lineWidth = 0.02;
       ctx.stroke();
     }
+    if (overlay) renderGrid();
   },
 
   onDragOver(bounds, _shape, pos, items, config): DragFeedback | null {
@@ -107,14 +138,13 @@ export const subgridStrategy: LayoutStrategy = {
   },
 
   defaultConfig() {
-    return { cols: 4, rows: 4, gapFt: 0.05 };
+    return { cols: 4, rows: 4, gapFt: 0 };
   },
 
   configSchema(): ConfigField[] {
     return [
       { key: 'cols', label: 'Columns', type: 'slider' as const, min: 1, max: 12, step: 1, default: 4 },
       { key: 'rows', label: 'Rows', type: 'slider' as const, min: 1, max: 12, step: 1, default: 4 },
-      { key: 'gapFt', label: 'Cell Gap (ft)', type: 'slider' as const, min: 0, max: 0.5, step: 0.01, default: 0.05 },
     ];
   },
 };

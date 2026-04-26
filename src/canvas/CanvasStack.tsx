@@ -17,6 +17,7 @@ import { usePanInteraction } from './hooks/usePanInteraction';
 import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
 import { usePlotInteraction } from './hooks/usePlotInteraction';
 import { useResizeInteraction } from './hooks/useResizeInteraction';
+import { onIconLoad } from './plantRenderers';
 import { PlantingLayerRenderer } from './PlantingLayerRenderer';
 import { renderBlueprint } from './renderBlueprint';
 import { renderGrid } from './renderGrid';
@@ -72,6 +73,10 @@ export function CanvasStack() {
 
   const [, forceRender] = useState(0);
   const invalidate = useCallback(() => forceRender((n) => n + 1), []);
+
+  // Re-render planting layer when async icon images finish loading
+  const [iconTick, setIconTick] = useState(0);
+  useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
 
   useEffect(() => {
     structureRenderer.current.onInvalidate(invalidate);
@@ -256,7 +261,7 @@ export function CanvasStack() {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showSpacingBorders, showFootprintCircles, showMeasurements, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showSpacingBorders, showFootprintCircles, showMeasurements, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(

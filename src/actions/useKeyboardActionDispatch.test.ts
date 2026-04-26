@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useGardenStore } from '../store/gardenStore';
+import { blankGarden, useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { useKeyboardActionDispatch } from './useKeyboardActionDispatch';
 
@@ -13,6 +13,7 @@ describe('useKeyboardActionDispatch', () => {
 
   beforeEach(() => {
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
     vi.clearAllMocks();
   });

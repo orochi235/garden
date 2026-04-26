@@ -52,6 +52,7 @@ interface WorkspaceStore {
   workspaces: WorkspaceState[];
   saves: SavedState[];
   addWorkspace: () => void;
+  cloneWorkspace: (id: string) => void;
   removeWorkspace: (id: string) => void;
   updateWorkspace: (id: string, patch: Partial<WorkspaceState>) => void;
   setStrategy: (id: string, strategyName: string) => void;
@@ -73,6 +74,16 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   addWorkspace: () =>
     set((s) => {
       const workspaces = [...s.workspaces, createDefaultWorkspace()];
+      saveWorkspaces(workspaces);
+      return { workspaces };
+    }),
+
+  cloneWorkspace: (id) =>
+    set((s) => {
+      const source = s.workspaces.find((w) => w.id === id);
+      if (!source) return s;
+      const clone: WorkspaceState = { ...source, id: generateId(), items: source.items.map((i) => ({ ...i, id: generateId() })) };
+      const workspaces = [...s.workspaces, clone];
       saveWorkspaces(workspaces);
       return { workspaces };
     }),
@@ -167,8 +178,14 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   resetWorkspace: (id) =>
     set((s) => {
-      const fresh = createDefaultWorkspace();
-      const workspaces = s.workspaces.map((w) => (w.id === id ? { ...fresh, id } : w));
+      const current = s.workspaces.find((w) => w.id === id);
+      const strategy = current ? getStrategy(current.strategyName) : getStrategy('Free-form');
+      const strategyName = current?.strategyName ?? 'Free-form';
+      const workspaces = s.workspaces.map((w) =>
+        w.id === id
+          ? { ...createDefaultWorkspace(), id, strategyName, config: strategy.defaultConfig() }
+          : w,
+      );
       saveWorkspaces(workspaces);
       return { workspaces };
     }),

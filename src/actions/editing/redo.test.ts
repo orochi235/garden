@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useGardenStore } from '../../store/gardenStore';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { redoAction } from './redo';
 import type { ActionContext } from '../types';
@@ -9,6 +9,7 @@ const ctx: ActionContext = { clipboard: { copy: () => {}, paste: () => {}, isEmp
 describe('redoAction', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
   });
 

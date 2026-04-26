@@ -29,6 +29,7 @@ export interface Structure {
   label: string;
   zIndex: number;
   parentId: string | null;
+  groupId: string | null;
   snapToGrid: boolean;
   surface: boolean;
   container: boolean;
@@ -147,6 +148,7 @@ export function createStructure(opts: {
   width: number;
   height: number;
   shape?: StructureShape;
+  groupId?: string;
 }): Structure {
   return {
     id: generateId(),
@@ -161,6 +163,7 @@ export function createStructure(opts: {
     label: opts.type,
     zIndex: 0,
     parentId: null,
+    groupId: opts.groupId ?? null,
     snapToGrid: true,
     surface: SURFACE_TYPES.has(opts.type),
     container: CONTAINER_TYPES.has(opts.type),

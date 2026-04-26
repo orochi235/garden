@@ -4,7 +4,8 @@ import { createStructure } from '../model/types';
 import { structuresCollide } from './collision';
 
 function makeStructure(overrides: Partial<Structure> & { type: string; x: number; y: number; width: number; height: number }): Structure {
-  return { ...createStructure(overrides), ...overrides };
+  const { groupId, ...createOpts } = overrides;
+  return { ...createStructure({ ...createOpts, groupId: groupId ?? undefined }), ...overrides };
 }
 
 describe('structuresCollide', () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useGardenStore } from '../../store/gardenStore';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { rotateCwAction } from './rotate';
 import type { ActionContext } from '../types';
@@ -10,6 +10,7 @@ describe('rotate actions', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
   });
 

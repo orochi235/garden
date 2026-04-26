@@ -2,32 +2,37 @@ import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
 
-const GENERIC_COLORS = ['#e07b9b', '#5ba4cf', '#f2c94c', '#7fb069', '#d4734a', '#a89070'];
+const GENERIC_ITEMS: { color: string; radiusFt: number }[] = [
+  { color: '#e07b9b', radiusFt: 0.15 },
+  { color: '#5ba4cf', radiusFt: 0.25 },
+  { color: '#f2c94c', radiusFt: 0.4 },
+  { color: '#7fb069', radiusFt: 0.55 },
+  { color: '#d4734a', radiusFt: 0.75 },
+  { color: '#a89070', radiusFt: 1.0 },
+];
 
 interface ItemPaletteProps {
   mode: 'generic' | 'cultivar';
-  genericRadius: number;
   onSetMode: (mode: 'generic' | 'cultivar') => void;
-  onSetGenericRadius: (r: number) => void;
   onDragStart: (item: LabItem) => void;
 }
 
-export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius, onDragStart }: ItemPaletteProps) {
+export function ItemPalette({ mode, onSetMode, onDragStart }: ItemPaletteProps) {
   const cultivars = getAllCultivars();
 
-  const startGenericDrag = useCallback((e: React.DragEvent, color: string) => {
+  const startGenericDrag = useCallback((e: React.DragEvent, gi: typeof GENERIC_ITEMS[number]) => {
     const item: LabItem = {
       id: crypto.randomUUID(),
       label: 'Item',
-      radiusFt: genericRadius,
-      color,
+      radiusFt: gi.radiusFt,
+      color: gi.color,
       x: 0,
       y: 0,
     };
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('text/plain', '');
     onDragStart(item);
-  }, [genericRadius, onDragStart]);
+  }, [onDragStart]);
 
   const startCultivarDrag = useCallback((e: React.DragEvent, cultivarId: string) => {
     const c = cultivars.find((cv) => cv.id === cultivarId);
@@ -58,31 +63,25 @@ export function ItemPalette({ mode, genericRadius, onSetMode, onSetGenericRadius
       </div>
 
       {mode === 'generic' && (
-        <>
-          <label className="dl-slider-row">
-            <span>Radius: {genericRadius.toFixed(2)} ft</span>
-            <input
-              type="range"
-              min={0.1}
-              max={1}
-              step={0.05}
-              value={genericRadius}
-              onChange={(e) => onSetGenericRadius(Number(e.target.value))}
-            />
-          </label>
-          <div className="dl-palette-grid">
-            {GENERIC_COLORS.map((color) => (
+        <div className="dl-palette-circles">
+          {GENERIC_ITEMS.map((gi) => {
+            const sizePx = Math.max(16, gi.radiusFt * 2 * 40);
+            return (
               <div
-                key={color}
-                className="dl-palette-swatch"
-                style={{ background: color }}
+                key={gi.color}
+                className="dl-palette-circle"
+                style={{
+                  background: gi.color,
+                  width: sizePx,
+                  height: sizePx,
+                }}
                 draggable
-                onDragStart={(e) => startGenericDrag(e, color)}
-                title="Drag onto canvas"
+                onDragStart={(e) => startGenericDrag(e, gi)}
+                title={`${gi.radiusFt} ft radius`}
               />
-            ))}
-          </div>
-        </>
+            );
+          })}
+        </div>
       )}
 
       {mode === 'cultivar' && (

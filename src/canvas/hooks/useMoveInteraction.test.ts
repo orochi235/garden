@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useGardenStore } from '../../store/gardenStore';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { useMoveInteraction } from './useMoveInteraction';
 
@@ -16,6 +16,7 @@ function mouseEvent(clientX: number, clientY: number, altKey = false): React.Mou
 describe('useMoveInteraction', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
   });
 

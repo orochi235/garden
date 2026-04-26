@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useGardenStore } from './gardenStore';
+import { blankGarden, useGardenStore } from './gardenStore';
 
 describe('gardenStore', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
   });
 
   it('initializes with a default garden', () => {

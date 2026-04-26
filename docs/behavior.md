@@ -41,6 +41,14 @@ Running list of intended application behaviors.
 - The scale widget snaps to the grid
 - While the canvas is being panned or zoomed, fade the scale widget out; fade it back in 0.5s after movement stops
 
+## Structure Groups
+
+- Structures can share a `groupId` to be rendered as a single compound shape
+- Grouped structures are filled as one shape with only the outer boundary stroked — no internal borders at overlapping edges
+- Groups are nondestructive: each structure retains its own position, size, and identity
+- Currently visual-only — no UI for creating/managing groups yet
+- Future (Tier 2): groups should unify selection, movement, and act as a single logical entity
+
 ## Collision
 
 - Structures in the same layer cannot overlap; moves and placements that would cause a collision are rejected

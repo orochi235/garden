@@ -24,6 +24,7 @@ export function DragLab() {
     setContainerShape,
     saveState,
     loadState,
+    cloneWorkspace,
     resetWorkspace,
     resetAll,
   } = useWorkspaceStore();
@@ -54,6 +55,7 @@ export function DragLab() {
             onSetContainerShape={(shape) => setContainerShape(ws.id, shape)}
             onSave={(name) => saveState(ws.id, name)}
             onLoad={(save) => loadState(ws.id, save)}
+            onClone={() => cloneWorkspace(ws.id)}
             onReset={() => resetWorkspace(ws.id)}
             onClose={() => removeWorkspace(ws.id)}
           />

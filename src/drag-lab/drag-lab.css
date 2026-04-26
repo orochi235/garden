@@ -34,9 +34,10 @@
   flex: 1;
   display: grid;
   grid-template-columns: repeat(var(--dl-cols, 1), 1fr);
-  grid-template-rows: repeat(var(--dl-rows, 1), 1fr);
+  grid-template-rows: repeat(var(--dl-rows, 1), minmax(400px, 1fr));
   gap: 12px;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .dl-workspace {
@@ -63,6 +64,10 @@
   font-weight: 600;
   margin-right: auto;
   color: #7fb069;
+}
+
+.dl-zoom-slider {
+  width: 60px;
 }
 
 .dl-workspace-body {
@@ -174,19 +179,19 @@
   margin-bottom: 6px;
 }
 
-.dl-palette-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+.dl-palette-circles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
 }
 
-.dl-palette-swatch {
-  width: 100%;
-  aspect-ratio: 1;
+.dl-palette-circle {
   border-radius: 50%;
   border: 2px solid #4a3c2e;
-  min-height: 24px;
   cursor: grab;
+  flex-shrink: 0;
 }
 
 .dl-palette-list {
@@ -239,4 +244,72 @@
 .dl-slider-row input[type="range"] {
   width: 100%;
   accent-color: #7fb069;
+}
+
+.dl-legend {
+  font-size: 10px;
+  color: #8a7d6b;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dl-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dl-legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.dl-legend-occupied {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.4) 2px,
+    rgba(255,255,255,0.4) 3px
+  );
+  border: 1px solid rgba(127,176,105,0.3);
+}
+
+.dl-legend-violation {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 2px,
+    rgba(224,80,80,0.5) 2px,
+    rgba(224,80,80,0.5) 3px
+  ),
+  repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(224,80,80,0.5) 2px,
+    rgba(224,80,80,0.5) 3px
+  );
+  border: 1px solid rgba(224,123,155,0.4);
+}
+
+.dl-legend-target {
+  background: rgba(127,176,105,0.2);
+  border: 2px solid rgba(127,176,105,0.6);
+}
+
+.dl-legend-split {
+  border: 2px solid rgba(0,220,240,0.7);
+}
+
+.dl-legend-putative {
+  border: 1px solid rgba(180,180,180,0.5);
+}
+
+.dl-legend-footprint {
+  background: rgba(180,140,255,0.5);
+  border: 1px solid rgba(180,140,255,0.8);
 }

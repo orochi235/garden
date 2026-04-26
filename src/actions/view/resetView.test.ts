@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useGardenStore } from '@/store/gardenStore';
+import { blankGarden, useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
 import { resetViewAction } from './resetView';
 import type { ActionContext } from '../types';
@@ -11,6 +11,7 @@ describe('resetViewAction', () => {
 
   beforeEach(() => {
     useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
 
     // Create a fake canvas container so the action can find it

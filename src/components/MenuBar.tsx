@@ -38,6 +38,7 @@ export function MenuBar() {
         <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>
         <a href="docs/cultivars.html" target="_blank" rel="noreferrer">Flora</a>
         <a href="docs/themes.html" target="_blank" rel="noreferrer">Themes</a>
+        <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
       </div>
       <div className={styles.menus}>
         <span onClick={handleNew}>New</span>

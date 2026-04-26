@@ -66,7 +66,8 @@ export const slotBasedStrategy: LayoutStrategy = {
   render(ctx, bounds, shape, items, config) {
     const arrangement = buildArrangement(config);
     const slots = computeSlots(arrangement, toBounds(bounds, shape));
-    renderSlots(ctx, slots, items);
+    const overlay = !!config.overlayGuides;
+    if (!overlay) renderSlots(ctx, slots, items);
     for (const item of items) {
       ctx.beginPath();
       ctx.arc(item.x, item.y, item.radiusFt, 0, Math.PI * 2);
@@ -76,6 +77,7 @@ export const slotBasedStrategy: LayoutStrategy = {
       ctx.lineWidth = 0.02;
       ctx.stroke();
     }
+    if (overlay) renderSlots(ctx, slots, items);
   },
 
   onDragOver(bounds, shape, pos, items, config): DragFeedback | null {

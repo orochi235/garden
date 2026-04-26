@@ -3,7 +3,7 @@ import { computeSlots } from '../model/arrangement';
 import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
-import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, getPlantableBounds } from '../model/types';
+import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
@@ -47,6 +47,21 @@ interface GardenStore {
 }
 
 function defaultGarden(): Garden {
+  const garden = createGarden({ name: 'My Garden', widthFt: 20, heightFt: 20 });
+  const pathGroupId = generateId();
+  garden.structures = [
+    createStructure({ type: 'path', x: 8.5, y: 0, width: 3, height: 20, groupId: pathGroupId }),
+    createStructure({ type: 'path', x: 0, y: 8, width: 20, height: 3, groupId: pathGroupId }),
+    createStructure({ type: 'raised-bed', x: 4.5, y: 0, width: 4, height: 8 }),
+    createStructure({ type: 'raised-bed', x: 11.5, y: 0, width: 4, height: 8 }),
+    createStructure({ type: 'raised-bed', x: 4.5, y: 11, width: 4, height: 8 }),
+    createStructure({ type: 'raised-bed', x: 11.5, y: 11, width: 4, height: 8 }),
+  ];
+  return garden;
+}
+
+/** Empty garden for tests. */
+export function blankGarden(): Garden {
   return createGarden({ name: 'My Garden', widthFt: 20, heightFt: 20 });
 }
 
@@ -179,10 +194,13 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     loadGarden: (garden) => {
       clearHistory();
-      // Backfill wallThicknessFt for saves predating the field
+      // Backfill fields for saves predating them
       for (const s of garden.structures) {
         if (s.wallThicknessFt == null) {
           s.wallThicknessFt = DEFAULT_WALL_THICKNESS_FT[s.type] ?? 0;
+        }
+        if (s.groupId === undefined) {
+          s.groupId = null;
         }
       }
       set({ garden });

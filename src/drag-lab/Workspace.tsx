@@ -17,6 +17,7 @@ interface WorkspaceProps {
   onSetContainerShape: (shape: ContainerShape) => void;
   onSave: (name: string) => void;
   onLoad: (save: SavedState) => void;
+  onClone: () => void;
   onReset: () => void;
   onClose: () => void;
 }
@@ -33,10 +34,12 @@ export function Workspace({
   onSetContainerShape,
   onSave,
   onLoad,
+  onClone,
   onReset,
   onClose,
 }: WorkspaceProps) {
   const [dragItem, setDragItem] = useState<LabItem | null>(null);
+  const [zoom, setZoom] = useState(1);
   const strategy = getStrategy(state.strategyName);
   const schema = strategy.configSchema();
 
@@ -76,6 +79,16 @@ export function Workspace({
     <div className="dl-workspace">
       <div className="dl-toolbar">
         <span className="dl-toolbar-title">{state.strategyName}</span>
+        <input
+          type="range"
+          min={0.5}
+          max={3}
+          step={0.1}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          title={`Zoom: ${Math.round(zoom * 100)}%`}
+          className="dl-zoom-slider"
+        />
         <button type="button" onClick={handleSave} title="Save state">Save</button>
         <select
           onChange={(e) => { if (e.target.value) onLoad(saves[Number(e.target.value)]); }}
@@ -86,25 +99,28 @@ export function Workspace({
             <option key={s.timestamp} value={i}>{s.name}</option>
           ))}
         </select>
+        <button type="button" onClick={onClone} title="Clone workspace">Clone</button>
         <button type="button" onClick={onReset} title="Reset to defaults">Reset</button>
         <button type="button" onClick={onClose} title="Close workspace">X</button>
       </div>
 
       <div className="dl-workspace-body">
         <div className="dl-canvas-area">
-          <CanvasRenderer
-            width={state.containerWidth}
-            height={state.containerHeight}
-            shape={state.containerShape}
-            items={state.items}
-            strategy={strategy}
-            config={state.config}
-            onDrop={handleDrop}
-            onPickUpItem={handlePickUpItem}
-            dragItem={dragItem}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          />
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+            <CanvasRenderer
+              width={state.containerWidth}
+              height={state.containerHeight}
+              shape={state.containerShape}
+              items={state.items}
+              strategy={strategy}
+              config={state.config}
+              onDrop={handleDrop}
+              onPickUpItem={handlePickUpItem}
+              dragItem={dragItem}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
+          </div>
         </div>
 
         <div className="dl-controls">
@@ -135,6 +151,15 @@ export function Workspace({
               onChange={(e) => onUpdate({ expandToFill: e.target.checked })}
             />
             <span>Expand to fill</span>
+          </label>
+
+          <label className="dl-control-row dl-checkbox-row">
+            <input
+              type="checkbox"
+              checked={!!state.config.overlayGuides}
+              onChange={(e) => onSetConfig('overlayGuides', e.target.checked)}
+            />
+            <span>Overlay guides</span>
           </label>
 
           <label className="dl-control-row">
@@ -203,11 +228,33 @@ export function Workspace({
 
           <ItemPalette
             mode={state.paletteMode}
-            genericRadius={state.genericRadius}
             onSetMode={(mode) => onUpdate({ paletteMode: mode })}
-            onSetGenericRadius={(r) => onUpdate({ genericRadius: r })}
             onDragStart={handleDragStart}
           />
+
+          {state.strategyName === 'Quadtree' && (
+            <div className="dl-legend">
+              <div className="dl-controls-divider" />
+              {([
+                ['showOccupied', 'dl-legend-occupied', 'Occupied'],
+                ['showViolations', 'dl-legend-violation', 'Violation'],
+                ['showTarget', 'dl-legend-target', 'Drop target'],
+                ['showSplits', 'dl-legend-split', 'Will split'],
+                ['showPutative', 'dl-legend-putative', 'Possible cells'],
+                ['showFootprint', 'dl-legend-footprint', 'Footprint'],
+              ] as const).map(([key, cls, label]) => (
+                <label key={key} className="dl-legend-item">
+                  <input
+                    type="checkbox"
+                    checked={state.config[key] !== false}
+                    onChange={(e) => onSetConfig(key, e.target.checked)}
+                  />
+                  <span className={`dl-legend-swatch ${cls}`} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -3,12 +3,14 @@ import { freeFormStrategy } from './free-form';
 import { slotBasedStrategy } from './slot-based';
 import { subgridStrategy } from './subgrid';
 import { snapPointStrategy } from './snap-point';
+import { quadtreeStrategy } from './quadtree';
 
 export const strategies: Record<string, LayoutStrategy> = {
   'Free-form': freeFormStrategy,
   'Slot-based': slotBasedStrategy,
-  'Subgrid': subgridStrategy,
+  'Tile grid': subgridStrategy,
   'Snap-point': snapPointStrategy,
+  'Quadtree': quadtreeStrategy,
 };
 
 export const strategyNames = Object.keys(strategies);
