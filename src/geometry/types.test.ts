@@ -3,7 +3,6 @@ import {
   lineTo,
   cubicTo,
   closedPath,
-  type ShapePath,
   type LineSeg,
   type CubicSeg,
 } from './types';

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { traceShapePath, tracePolyline } from './canvas';
-import { rectPath, ellipsePath } from './shapes';
-import { closedPath, cubicTo, lineTo } from './types';
+import { rectPath } from './shapes';
+import { closedPath, cubicTo } from './types';
 
 /** Minimal recorder that captures canvas method calls. */
 function mockCtx() {

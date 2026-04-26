@@ -14,7 +14,7 @@ import {
   type PathD,
   type PathsD,
 } from 'clipper2-ts';
-import type { ShapePath, Point2D } from './types';
+import type { ShapePath } from './types';
 import { polygonPath } from './shapes';
 import { flattenPath } from './flatten';
 
@@ -52,7 +52,7 @@ function fromPathsD(paths: PathsD): ShapePath[] {
 
 /** Union multiple shapes into one or more result shapes. */
 export function shapeUnion(shapes: ShapePath[]): ShapePath[] {
-  return fromPathsD(unionD(toPathsD(shapes), FillRule.NonZero, PRECISION));
+  return fromPathsD(unionD(toPathsD(shapes), [], FillRule.NonZero, PRECISION));
 }
 
 /** Subtract clip shapes from a subject shape. */
