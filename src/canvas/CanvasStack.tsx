@@ -10,6 +10,7 @@ import { screenToWorld } from '../utils/grid';
 import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
 import { useAutoCenter } from './hooks/useAutoCenter';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
+import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from './hooks/useLayerEffect';
 import { useMoveInteraction } from './hooks/useMoveInteraction';
@@ -58,6 +59,7 @@ export function CanvasStack() {
   const showSpacingBorders = useUiStore((s) => s.showSpacingBorders);
   const showFootprintCircles = useUiStore((s) => s.showFootprintCircles);
   const showMeasurements = useUiStore((s) => s.showMeasurements);
+  const showContainerOverlays = useUiStore((s) => s.showContainerOverlays);
   const labelMode = useUiStore((s) => s.labelMode);
   const labelFontSize = useUiStore((s) => s.labelFontSize);
   const plantIconScale = useUiStore((s) => s.plantIconScale);
@@ -193,8 +195,10 @@ export function CanvasStack() {
   // Sync renderer state
   structureRenderer.current.structures = garden.structures;
   structureRenderer.current.opacity = layerOpacity.structures;
-  structureRenderer.current.showSurfaces = showSurfaces;
-  structureRenderer.current.showPlantableArea = showPlantableArea;
+  structureRenderer.current.renderLayerVisibility = {
+    'structure-surfaces': showSurfaces,
+    'structure-plantable-area': showPlantableArea,
+  };
   structureRenderer.current.debugOverlappingLabels = debugOverlappingLabels;
   structureRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'structures' ? 'none' : labelMode;
   structureRenderer.current.labelFontSize = labelFontSize;
@@ -214,6 +218,7 @@ export function CanvasStack() {
   plantingRenderer.current.showSpacingBorders = showSpacingBorders;
   plantingRenderer.current.showFootprintCircles = showFootprintCircles;
   plantingRenderer.current.showMeasurements = showMeasurements;
+  plantingRenderer.current.showContainerOverlays = showContainerOverlays;
   plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
   plantingRenderer.current.labelFontSize = labelFontSize;
   plantingRenderer.current.plantIconScale = plantIconScale;
@@ -263,7 +268,7 @@ export function CanvasStack() {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showSpacingBorders, showFootprintCircles, showMeasurements, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showSpacingBorders, showFootprintCircles, showMeasurements, showContainerOverlays, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(
@@ -559,6 +564,13 @@ export function CanvasStack() {
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
+
+      // Alt+scroll cycles layers
+      if (e.altKey) {
+        cycleLayer(e.deltaY > 0 ? -1 : 1);
+        return;
+      }
+
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
