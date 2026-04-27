@@ -238,7 +238,7 @@ export function Workspace({
 
       <div className="dl-workspace-body">
         <div className="dl-canvas-area">
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}>
             <CanvasRenderer
               width={state.containerWidth}
               height={state.containerHeight}
