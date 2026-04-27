@@ -34,13 +34,9 @@ interface UiStore {
   plottingTool: PlottingTool | null;
   themeOverride: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
-  showSurfaces: boolean;
-  showSpacingBorders: boolean;
-  showFootprintCircles: boolean;
-  showMeasurements: boolean;
-  showPlantableArea: boolean;
+  renderLayerVisibility: Record<string, boolean>;
+  renderLayerOrder: Record<string, string[]>;
   debugOverlappingLabels: boolean;
-  magentaHighlight: boolean;
   labelMode: LabelMode;
   labelFontSize: number;
   plantIconScale: number;
@@ -50,13 +46,9 @@ interface UiStore {
   setDragOverlay: (overlay: DragOverlay) => void;
   clearDragOverlay: () => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
-  setShowSurfaces: (show: boolean) => void;
-  setShowSpacingBorders: (show: boolean) => void;
-  setShowFootprintCircles: (show: boolean) => void;
-  setShowMeasurements: (show: boolean) => void;
-  setShowPlantableArea: (show: boolean) => void;
+  setRenderLayerVisible: (layerId: string, visible: boolean) => void;
+  setRenderLayerOrder: (renderer: string, order: string[]) => void;
   setDebugOverlappingLabels: (show: boolean) => void;
-  setMagentaHighlight: (show: boolean) => void;
   setLabelMode: (mode: LabelMode) => void;
   setLabelFontSize: (size: number) => void;
   setPlantIconScale: (scale: number) => void;
@@ -96,13 +88,13 @@ function defaultState() {
     plottingTool: null as PlottingTool | null,
     themeOverride: 'live' as UiStore['themeOverride'],
     layerSelectorHovered: false,
-    showSurfaces: false,
-    showSpacingBorders: true,
-    showFootprintCircles: true,
-    showMeasurements: false,
-    showPlantableArea: false,
+    renderLayerVisibility: {
+      'structure-surfaces': false,
+      'structure-plantable-area': false,
+      'planting-measurements': false,
+    } as Record<string, boolean>,
+    renderLayerOrder: {} as Record<string, string[]>,
     debugOverlappingLabels: false,
-    magentaHighlight: false,
     labelMode: 'selection' as LabelMode,
     labelFontSize: 13,
     plantIconScale: 1,
@@ -117,13 +109,15 @@ export const useUiStore = create<UiStore>((set) => ({
   setDragOverlay: (overlay) => set({ dragOverlay: overlay }),
   clearDragOverlay: () => set({ dragOverlay: null }),
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
-  setShowSurfaces: (show) => set({ showSurfaces: show }),
-  setShowSpacingBorders: (show) => set({ showSpacingBorders: show }),
-  setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),
-  setShowMeasurements: (show) => set({ showMeasurements: show }),
-  setShowPlantableArea: (show) => set({ showPlantableArea: show }),
+  setRenderLayerVisible: (layerId, visible) =>
+    set((state) => ({
+      renderLayerVisibility: { ...state.renderLayerVisibility, [layerId]: visible },
+    })),
+  setRenderLayerOrder: (renderer, order) =>
+    set((state) => ({
+      renderLayerOrder: { ...state.renderLayerOrder, [renderer]: order },
+    })),
   setDebugOverlappingLabels: (show) => set({ debugOverlappingLabels: show }),
-  setMagentaHighlight: (show) => set({ magentaHighlight: show }),
   setLabelMode: (mode) => set({ labelMode: mode }),
   setLabelFontSize: (size) => set({ labelFontSize: size }),
   setPlantIconScale: (scale) => set({ plantIconScale: scale }),

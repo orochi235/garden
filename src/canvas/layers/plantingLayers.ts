@@ -59,6 +59,7 @@ export function buildPlantingLayerData(
   labelFontSize: number,
   selectedIds: string[],
   plantIconScale: number,
+  showFootprintCircles: boolean = true,
 ): PlantingLayerData {
   // Build parent lookup map from zones and container structures
   const parentMap = new Map<string, PlantingParent>();
@@ -98,6 +99,7 @@ export function buildPlantingLayerData(
     zones,
     selectedIds,
     plantIconScale,
+    showFootprintCircles,
     labelOccluders: [],
   };
 }
@@ -216,7 +218,7 @@ export const PLANTING_LAYERS: RenderLayer<PlantingLayerData>[] = [
     label: 'Planting Icons',
     alwaysOn: true,
     draw(ctx, data) {
-      const { plantingsByParent, parentMap, childCount, view, plantIconScale } = data;
+      const { plantingsByParent, parentMap, childCount, view, plantIconScale, showFootprintCircles } = data;
 
       for (const [parentId, group] of plantingsByParent) {
         const parent = parentMap.get(parentId);
@@ -240,7 +242,7 @@ export const PLANTING_LAYERS: RenderLayer<PlantingLayerData>[] = [
 
           ctx.save();
           ctx.translate(sx, sy);
-          renderPlant(ctx, p.cultivarId, radius, color);
+          renderPlant(ctx, p.cultivarId, radius, color, showFootprintCircles ? undefined : 'transparent');
           ctx.restore();
         }
 

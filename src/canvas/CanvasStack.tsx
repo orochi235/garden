@@ -53,13 +53,9 @@ export function CanvasStack() {
   const clearSelection = useUiStore((s) => s.clearSelection);
   const activeLayer = useUiStore((s) => s.activeLayer);
   const layerSelectorHovered = useUiStore((s) => s.layerSelectorHovered);
-  const showSurfaces = useUiStore((s) => s.showSurfaces);
-  const showPlantableArea = useUiStore((s) => s.showPlantableArea);
+  const renderLayerVisibility = useUiStore((s) => s.renderLayerVisibility);
+  const renderLayerOrder = useUiStore((s) => s.renderLayerOrder);
   const debugOverlappingLabels = useUiStore((s) => s.debugOverlappingLabels);
-  const showSpacingBorders = useUiStore((s) => s.showSpacingBorders);
-  const showFootprintCircles = useUiStore((s) => s.showFootprintCircles);
-  const showMeasurements = useUiStore((s) => s.showMeasurements);
-  const showContainerOverlays = useUiStore((s) => s.showContainerOverlays);
   const labelMode = useUiStore((s) => s.labelMode);
   const labelFontSize = useUiStore((s) => s.labelFontSize);
   const plantIconScale = useUiStore((s) => s.plantIconScale);
@@ -199,10 +195,8 @@ export function CanvasStack() {
   // Sync renderer state
   structureRenderer.current.structures = garden.structures;
   structureRenderer.current.opacity = layerOpacity.structures;
-  structureRenderer.current.renderLayerVisibility = {
-    'structure-surfaces': showSurfaces,
-    'structure-plantable-area': showPlantableArea,
-  };
+  structureRenderer.current.renderLayerVisibility = renderLayerVisibility;
+  structureRenderer.current.renderLayerOrder = renderLayerOrder['structures'];
   structureRenderer.current.debugOverlappingLabels = debugOverlappingLabels;
   structureRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'structures' ? 'none' : labelMode;
   structureRenderer.current.labelFontSize = labelFontSize;
@@ -210,6 +204,8 @@ export function CanvasStack() {
 
   zoneRenderer.current.zones = garden.zones;
   zoneRenderer.current.opacity = layerOpacity.zones;
+  zoneRenderer.current.renderLayerVisibility = renderLayerVisibility;
+  zoneRenderer.current.renderLayerOrder = renderLayerOrder['zones'];
   zoneRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'zones' ? 'none' : labelMode;
   zoneRenderer.current.labelFontSize = labelFontSize;
   zoneRenderer.current.setView(view, width, height);
@@ -219,11 +215,8 @@ export function CanvasStack() {
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
-  plantingRenderer.current.renderLayerVisibility = {
-    'planting-spacing': showSpacingBorders,
-    'container-overlays': showContainerOverlays,
-    'planting-measurements': showMeasurements,
-  };
+  plantingRenderer.current.renderLayerVisibility = renderLayerVisibility;
+  plantingRenderer.current.renderLayerOrder = renderLayerOrder['plantings'];
   plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
   plantingRenderer.current.labelFontSize = labelFontSize;
   plantingRenderer.current.plantIconScale = plantIconScale;
@@ -233,6 +226,8 @@ export function CanvasStack() {
   systemRenderer.current.structures = garden.structures;
   systemRenderer.current.zones = garden.zones;
   systemRenderer.current.plantings = garden.plantings;
+  systemRenderer.current.renderLayerVisibility = renderLayerVisibility;
+  systemRenderer.current.renderLayerOrder = renderLayerOrder['system'];
   systemRenderer.current.setView(view, width, height);
 
   plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
@@ -265,7 +260,7 @@ export function CanvasStack() {
     structureCanvasRef, width, height, dpr,
     layerVisibility.structures,
     (ctx) => structureRenderer.current.render(ctx),
-    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, showSurfaces, showPlantableArea, debugOverlappingLabels, labelMode, labelFontSize, structureRenderer.current.highlight, overlay],
+    [garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, renderLayerVisibility, renderLayerOrder, debugOverlappingLabels, labelMode, labelFontSize, structureRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
@@ -279,7 +274,7 @@ export function CanvasStack() {
     plantingCanvasRef, width, height, dpr,
     layerVisibility.plantings,
     (ctx) => plantingRenderer.current.render(ctx),
-    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, showSpacingBorders, showFootprintCircles, showMeasurements, showContainerOverlays, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(

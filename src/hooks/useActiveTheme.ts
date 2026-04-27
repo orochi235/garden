@@ -24,8 +24,6 @@ interface CycleState {
   transitionDuration: string;
 }
 
-const MAGENTA_HOVER = 'rgba(255, 0, 255, 0.25)';
-
 interface GeoPosition {
   lat: number;
   lng: number;
@@ -68,7 +66,6 @@ function useLiveTheme(enabled: boolean) {
 
 export function useActiveTheme(): CycleState {
   const themeOverride = useUiStore((s) => s.themeOverride);
-  const magentaHighlight = useUiStore((s) => s.magentaHighlight);
   const [cycleIndex, setCycleIndex] = useState(0);
   const [layerFlip, setLayerFlip] = useState(false);
   const prevThemeRef = useRef<TimeTheme | null>(null);
@@ -101,10 +98,6 @@ export function useActiveTheme(): CycleState {
     theme = getTheme(themeOverride);
   } else {
     theme = getCurrentTheme();
-  }
-
-  if (magentaHighlight) {
-    theme = { ...theme, listHover: MAGENTA_HOVER };
   }
 
   return {

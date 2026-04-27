@@ -54,6 +54,7 @@ export interface PlantingLayerData extends EntityLayerData {
   zones: Zone[];
   selectedIds: string[];
   plantIconScale: number;
+  showFootprintCircles: boolean;
   labelOccluders: RenderedRect[];
 }
 

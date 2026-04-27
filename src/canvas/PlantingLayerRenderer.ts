@@ -28,6 +28,7 @@ export class PlantingLayerRenderer extends LayerRenderer {
       visiblePlantings, this.zones, this.structures,
       this.view, this.width, this.height, this.highlight,
       this.labelMode, this.labelFontSize, this.selectedIds, this.plantIconScale,
+      this.renderLayerVisibility['planting-footprint-circles'] ?? true,
     );
 
     runLayers(ctx, PLANTING_LAYERS, data, this.renderLayerVisibility, this.renderLayerOrder);

@@ -72,10 +72,10 @@ describe('uiStore', () => {
     expect(useUiStore.getState().layerSelectorHovered).toBe(false);
   });
 
-  it('manages showSurfaces', () => {
-    expect(useUiStore.getState().showSurfaces).toBe(false);
-    useUiStore.getState().setShowSurfaces(true);
-    expect(useUiStore.getState().showSurfaces).toBe(true);
+  it('manages renderLayerVisibility', () => {
+    expect(useUiStore.getState().renderLayerVisibility['structure-surfaces']).toBe(false);
+    useUiStore.getState().setRenderLayerVisible('structure-surfaces', true);
+    expect(useUiStore.getState().renderLayerVisibility['structure-surfaces']).toBe(true);
   });
 
   it('prevents hiding the active layer', () => {
@@ -90,12 +90,12 @@ describe('uiStore', () => {
     expect(useUiStore.getState().layerVisibility.zones).toBe(false);
   });
 
-  it('resets layerSelectorHovered and showSurfaces', () => {
+  it('resets layerSelectorHovered and renderLayerVisibility', () => {
     useUiStore.getState().setLayerSelectorHovered(true);
-    useUiStore.getState().setShowSurfaces(true);
+    useUiStore.getState().setRenderLayerVisible('structure-surfaces', true);
     useUiStore.getState().reset();
     expect(useUiStore.getState().layerSelectorHovered).toBe(false);
-    expect(useUiStore.getState().showSurfaces).toBe(false);
+    expect(useUiStore.getState().renderLayerVisibility['structure-surfaces']).toBe(false);
   });
 
   describe('layerFlashCounter', () => {
@@ -134,48 +134,33 @@ describe('uiStore', () => {
     });
   });
 
-  describe('plant rendering toggles', () => {
-    it('showSpacingBorders starts as true', () => {
-      expect(useUiStore.getState().showSpacingBorders).toBe(true);
+  describe('renderLayerVisibility', () => {
+    it('structure-surfaces starts as false', () => {
+      expect(useUiStore.getState().renderLayerVisibility['structure-surfaces']).toBe(false);
     });
 
-    it('showFootprintCircles starts as true', () => {
-      expect(useUiStore.getState().showFootprintCircles).toBe(true);
+    it('planting-measurements starts as false', () => {
+      expect(useUiStore.getState().renderLayerVisibility['planting-measurements']).toBe(false);
     });
 
-    it('showMeasurements starts as false', () => {
-      expect(useUiStore.getState().showMeasurements).toBe(false);
+    it('defaults-true layers are undefined (consumers use ?? true)', () => {
+      expect(useUiStore.getState().renderLayerVisibility['planting-spacing']).toBeUndefined();
+      expect(useUiStore.getState().renderLayerVisibility['planting-footprint-circles']).toBeUndefined();
     });
 
-    it('toggles showSpacingBorders on and off', () => {
-      useUiStore.getState().setShowSpacingBorders(false);
-      expect(useUiStore.getState().showSpacingBorders).toBe(false);
-      useUiStore.getState().setShowSpacingBorders(true);
-      expect(useUiStore.getState().showSpacingBorders).toBe(true);
-    });
-
-    it('toggles showFootprintCircles on and off', () => {
-      useUiStore.getState().setShowFootprintCircles(false);
-      expect(useUiStore.getState().showFootprintCircles).toBe(false);
-      useUiStore.getState().setShowFootprintCircles(true);
-      expect(useUiStore.getState().showFootprintCircles).toBe(true);
-    });
-
-    it('toggles showMeasurements on and off', () => {
-      useUiStore.getState().setShowMeasurements(true);
-      expect(useUiStore.getState().showMeasurements).toBe(true);
-      useUiStore.getState().setShowMeasurements(false);
-      expect(useUiStore.getState().showMeasurements).toBe(false);
+    it('toggles a layer on and off', () => {
+      useUiStore.getState().setRenderLayerVisible('planting-spacing', false);
+      expect(useUiStore.getState().renderLayerVisibility['planting-spacing']).toBe(false);
+      useUiStore.getState().setRenderLayerVisible('planting-spacing', true);
+      expect(useUiStore.getState().renderLayerVisibility['planting-spacing']).toBe(true);
     });
 
     it('resets all to defaults on store reset', () => {
-      useUiStore.getState().setShowSpacingBorders(false);
-      useUiStore.getState().setShowFootprintCircles(false);
-      useUiStore.getState().setShowMeasurements(true);
+      useUiStore.getState().setRenderLayerVisible('planting-spacing', false);
+      useUiStore.getState().setRenderLayerVisible('planting-measurements', true);
       useUiStore.getState().reset();
-      expect(useUiStore.getState().showSpacingBorders).toBe(true);
-      expect(useUiStore.getState().showFootprintCircles).toBe(true);
-      expect(useUiStore.getState().showMeasurements).toBe(false);
+      expect(useUiStore.getState().renderLayerVisibility['planting-spacing']).toBeUndefined();
+      expect(useUiStore.getState().renderLayerVisibility['planting-measurements']).toBe(false);
     });
   });
 

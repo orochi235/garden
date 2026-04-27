@@ -27,16 +27,8 @@ const GROUND_COLORS = [
 export function LayerPropertiesPanel() {
   const garden = useGardenStore((s) => s.garden);
   const updateGarden = useGardenStore((s) => s.updateGarden);
-  const showSurfaces = useUiStore((s) => s.showSurfaces);
-  const setShowSurfaces = useUiStore((s) => s.setShowSurfaces);
-  const showSpacingBorders = useUiStore((s) => s.showSpacingBorders);
-  const setShowSpacingBorders = useUiStore((s) => s.setShowSpacingBorders);
-  const showFootprintCircles = useUiStore((s) => s.showFootprintCircles);
-  const setShowFootprintCircles = useUiStore((s) => s.setShowFootprintCircles);
-  const showMeasurements = useUiStore((s) => s.showMeasurements);
-  const setShowMeasurements = useUiStore((s) => s.setShowMeasurements);
-  const showPlantableArea = useUiStore((s) => s.showPlantableArea);
-  const setShowPlantableArea = useUiStore((s) => s.setShowPlantableArea);
+  const renderLayerVisibility = useUiStore((s) => s.renderLayerVisibility);
+  const setRenderLayerVisible = useUiStore((s) => s.setRenderLayerVisible);
   const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const unit = garden.displayUnit;
 
@@ -187,12 +179,12 @@ export function LayerPropertiesPanel() {
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
-              checked={showSurfaces}
-              onChange={(e) => setShowSurfaces(e.target.checked)}
+              checked={renderLayerVisibility['structure-surfaces'] ?? false}
+              onChange={(e) => setRenderLayerVisible('structure-surfaces', e.target.checked)}
             />
             <svg className={styles.surfaceSwatch} width="14" height="14" viewBox="0 0 14 14">
-              <rect width="14" height="14" rx="2" fill={showSurfaces ? '#A0926B' : '#3a3a3a'} />
-              {showSurfaces && (
+              <rect width="14" height="14" rx="2" fill={renderLayerVisibility['structure-surfaces'] ? '#A0926B' : '#3a3a3a'} />
+              {renderLayerVisibility['structure-surfaces'] && (
                 <g stroke="goldenrod" strokeWidth="1.2">
                   <line x1="0" y1="5" x2="5" y2="0" />
                   <line x1="0" y1="10" x2="10" y2="0" />
@@ -207,8 +199,8 @@ export function LayerPropertiesPanel() {
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
-              checked={showPlantableArea}
-              onChange={(e) => setShowPlantableArea(e.target.checked)}
+              checked={renderLayerVisibility['structure-plantable-area'] ?? false}
+              onChange={(e) => setRenderLayerVisible('structure-plantable-area', e.target.checked)}
             />
             <span>Show plantable area</span>
           </label>
@@ -226,24 +218,24 @@ export function LayerPropertiesPanel() {
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
-              checked={showFootprintCircles}
-              onChange={(e) => setShowFootprintCircles(e.target.checked)}
+              checked={renderLayerVisibility['planting-footprint-circles'] ?? true}
+              onChange={(e) => setRenderLayerVisible('planting-footprint-circles', e.target.checked)}
             />
             <span>Show footprint circles</span>
           </label>
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
-              checked={showSpacingBorders}
-              onChange={(e) => setShowSpacingBorders(e.target.checked)}
+              checked={renderLayerVisibility['planting-spacing'] ?? true}
+              onChange={(e) => setRenderLayerVisible('planting-spacing', e.target.checked)}
             />
             <span>Show spacing borders</span>
           </label>
           <label className={styles.surfaceToggle}>
             <input
               type="checkbox"
-              checked={showMeasurements}
-              onChange={(e) => setShowMeasurements(e.target.checked)}
+              checked={renderLayerVisibility['planting-measurements'] ?? false}
+              onChange={(e) => setRenderLayerVisible('planting-measurements', e.target.checked)}
             />
             <span>Show measurements</span>
           </label>

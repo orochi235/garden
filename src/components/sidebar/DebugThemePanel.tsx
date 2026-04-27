@@ -15,8 +15,6 @@ const LABEL_MODES: { value: LabelMode; label: string }[] = [
 export function DebugThemePanel() {
   const themeOverride = useUiStore((s) => s.themeOverride);
   const setThemeOverride = useUiStore((s) => s.setThemeOverride);
-  const magentaHighlight = useUiStore((s) => s.magentaHighlight);
-  const setMagentaHighlight = useUiStore((s) => s.setMagentaHighlight);
   const debugOverlappingLabels = useUiStore((s) => s.debugOverlappingLabels);
   const setDebugOverlappingLabels = useUiStore((s) => s.setDebugOverlappingLabels);
   const labelMode = useUiStore((s) => s.labelMode);
@@ -113,14 +111,6 @@ export function DebugThemePanel() {
         ))}
       </div>
       <hr className={styles.themeDivider} />
-      <label className={styles.surfaceToggle}>
-        <input
-          type="checkbox"
-          checked={magentaHighlight}
-          onChange={(e) => setMagentaHighlight(e.target.checked)}
-        />
-        <span>Magenta highlight</span>
-      </label>
       <label className={styles.surfaceToggle}>
         <input
           type="checkbox"
