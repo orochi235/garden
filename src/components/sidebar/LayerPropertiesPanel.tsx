@@ -6,6 +6,7 @@ import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
 import { DebugThemePanel } from './DebugThemePanel';
 import { LayerSection } from './LayerSection';
+import { RenderLayersPanel } from './RenderLayersPanel';
 
 const DISPLAY_UNITS: DisplayUnit[] = ['ft', 'in', 'm', 'cm'];
 
@@ -242,6 +243,7 @@ export function LayerPropertiesPanel() {
         </div>
       </LayerSection>
 
+      <RenderLayersPanel />
       <DebugThemePanel />
     </div>
   );
