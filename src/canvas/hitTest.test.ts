@@ -120,7 +120,7 @@ describe('hitTestObjects', () => {
       surface: false,
       container: true,
       fill: 'soil',
-      arrangement: { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, direction: 0, marginFt: 0.25 },
+      arrangement: { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, marginFt: 0.25 },
       wallThicknessFt: 1 / 12,
     },
   ];

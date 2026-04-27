@@ -10,6 +10,7 @@ export const resetViewAction: ActionDescriptor = {
   scope: 'canvas',
   targets: ['none'],
   transient: true,
+  allowDefault: true,
   execute: () => {
     const el = document.querySelector('[data-canvas-container]');
     if (!el) return;

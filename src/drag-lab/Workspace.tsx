@@ -230,6 +230,7 @@ export function Workspace({
             <option key={s.timestamp} value={i}>{s.name}</option>
           ))}
         </select>
+        <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100%">⌂</button>
         <button type="button" onClick={onClone} title="Clone workspace">Clone</button>
         <button type="button" onClick={onReset} title="Reset to defaults">Reset</button>
         <button type="button" onClick={onClose} title="Close workspace">X</button>
@@ -320,7 +321,14 @@ export function Workspace({
           <div className="dl-controls-divider" />
 
           {schema.map((field) => (
-            <label key={field.key} className="dl-control-row">
+            <label key={field.key} className={`dl-control-row${field.type === 'checkbox' ? ' dl-checkbox-row' : ''}`}>
+              {field.type === 'checkbox' && (
+                <input
+                  type="checkbox"
+                  checked={(state.config[field.key] as boolean) ?? field.default}
+                  onChange={(e) => onSetConfig(field.key, e.target.checked)}
+                />
+              )}
               <span>
                 {field.label}
                 {field.type === 'slider' && `: ${(state.config[field.key] as number)?.toFixed(field.step != null && field.step % 1 === 0 ? 0 : 2) ?? field.default}`}
@@ -344,13 +352,6 @@ export function Workspace({
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
-              )}
-              {field.type === 'checkbox' && (
-                <input
-                  type="checkbox"
-                  checked={(state.config[field.key] as boolean) ?? field.default}
-                  onChange={(e) => onSetConfig(field.key, e.target.checked)}
-                />
               )}
             </label>
           ))}

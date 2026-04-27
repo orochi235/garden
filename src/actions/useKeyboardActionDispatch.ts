@@ -12,7 +12,7 @@ export function useKeyboardActionDispatch(ctx: ActionContext) {
       const action = resolveAction(e, activePath, allActions, ctx);
       if (!action) return;
 
-      e.preventDefault();
+      if (!action.allowDefault) e.preventDefault();
 
       if (!action.transient) {
         useGardenStore.getState().checkpoint();

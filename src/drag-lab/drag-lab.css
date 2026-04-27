@@ -121,6 +121,12 @@
   margin-bottom: 6px;
 }
 
+.dl-checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
 .dl-control-row span {
   color: #8a7d6b;
   font-size: 10px;

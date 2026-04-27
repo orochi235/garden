@@ -253,7 +253,7 @@ function renderCellCountsLayer(ctx: CanvasRenderingContext2D, data: LayerData): 
   const fontSize = Math.min(cellW, cellH) * 0.6;
 
   ctx.save();
-  ctx.font = `${fontSize}px system-ui, sans-serif`;
+  ctx.font = `bold ${fontSize}px "DIN Alternate", "Highway Gothic", "Arial Narrow", "Overpass", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 

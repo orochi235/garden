@@ -16,8 +16,6 @@ export interface RowsConfig {
   spacingFt: number;
   /** Space between items within a row (ft) */
   itemSpacingFt: number;
-  /** Row direction: 0 = horizontal rows, 90 = vertical columns */
-  direction: 0 | 90;
   /** Inset from container edge (ft) */
   marginFt: number;
 }
@@ -106,23 +104,15 @@ function isInsideBounds(px: number, py: number, bounds: ParentBounds, margin: nu
 function computeRows(config: RowsConfig, bounds: ParentBounds): Slot[] {
   const slots: Slot[] = [];
   const m = config.marginFt;
-  const vertical = config.direction === 90;
 
-  const primaryStart = vertical ? bounds.x + m : bounds.y + m;
-  const primaryEnd = vertical ? bounds.x + bounds.width - m : bounds.y + bounds.height - m;
-  const secondaryStart = vertical ? bounds.y + m : bounds.x + m;
-  const secondaryEnd = vertical ? bounds.y + bounds.height - m : bounds.x + bounds.width - m;
-
-  for (let p = primaryStart + config.spacingFt / 2; p <= primaryEnd; p += config.spacingFt) {
+  for (let y = bounds.y + m + config.spacingFt / 2; y <= bounds.y + bounds.height - m; y += config.spacingFt) {
     for (
-      let s = secondaryStart + config.itemSpacingFt / 2;
-      s <= secondaryEnd;
-      s += config.itemSpacingFt
+      let x = bounds.x + m + config.itemSpacingFt / 2;
+      x <= bounds.x + bounds.width - m;
+      x += config.itemSpacingFt
     ) {
-      const px = vertical ? p : s;
-      const py = vertical ? s : p;
-      if (isInsideBounds(px, py, bounds, m)) {
-        slots.push({ x: px, y: py });
+      if (isInsideBounds(x, y, bounds, m)) {
+        slots.push({ x, y });
       }
     }
   }
@@ -178,7 +168,7 @@ function computeRing(config: RingConfig, bounds: ParentBounds): Slot[] {
 export function defaultArrangement(type: ArrangementType): Arrangement {
   switch (type) {
     case 'rows':
-      return { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, direction: 0, marginFt: 0.25 };
+      return { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, marginFt: 0.25 };
     case 'grid':
       return { type: 'grid', spacingXFt: 0.5, spacingYFt: 0.5, marginFt: 0.25 };
     case 'ring':

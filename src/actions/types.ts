@@ -25,6 +25,8 @@ export interface ActionDescriptor {
   scope: string;
   targets: ActionTarget['kind'][];
   transient?: boolean;
+  /** When true, do not call preventDefault — allows the browser's native handling to fire too. */
+  allowDefault?: boolean;
   execute: (ctx: ActionContext) => void;
   isValidTarget?: (target: ActionTarget, ctx: ActionContext) => boolean;
   canExecute?: (ctx: ActionContext) => boolean;

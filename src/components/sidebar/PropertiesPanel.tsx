@@ -65,8 +65,15 @@ export function PropertiesPanel() {
       <div className={f.panel}>
         <div className={f.title}>Planting</div>
         <div className={f.grid}>
-          <span className={f.label}>Name</span>
-          <span className={`${f.readOnly} ${f.span12}`}>{cultivar?.name ?? planting.cultivarId}</span>
+          <span className={f.label}>Species</span>
+          <div className={f.span12}>
+            <span className={f.readOnly}>{cultivar?.name ?? planting.cultivarId}</span>
+            {cultivar?.taxonomicName && (
+              <div className={f.readOnly} style={{ fontStyle: 'italic', fontSize: '0.9em', opacity: 0.7 }}>
+                {cultivar.taxonomicName}
+              </div>
+            )}
+          </div>
 
           {cultivar?.variety && (
             <>
@@ -74,11 +81,6 @@ export function PropertiesPanel() {
               <span className={`${f.readOnly} ${f.span12}`}>{cultivar.variety}</span>
             </>
           )}
-
-          <span className={f.label}>Species</span>
-          <span className={`${f.readOnly} ${f.span12}`} style={{ fontStyle: 'italic' }}>
-            {cultivar?.taxonomicName ?? ''}
-          </span>
 
           <span className={f.label}>Label</span>
           <input

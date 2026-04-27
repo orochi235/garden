@@ -87,6 +87,7 @@ describe('useKeyboardActionDispatch', () => {
       { key: 't', metaKey: true },           // Cmd+T (new tab)
       { key: 'n', metaKey: true },           // Cmd+N (new window)
       { key: 'r', metaKey: true },           // Cmd+R (reload)
+      { key: '0', metaKey: true },           // Cmd+0 (reset zoom)
     ];
 
     for (const opts of osShortcuts) {

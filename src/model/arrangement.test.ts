@@ -40,7 +40,7 @@ describe('computeSlots', () => {
     });
 
     it('respects margin', () => {
-      const arr = { type: 'rows' as const, spacingFt: 1, itemSpacingFt: 1, direction: 0 as const, marginFt: 1 };
+      const arr = { type: 'rows' as const, spacingFt: 1, itemSpacingFt: 1, marginFt: 1 };
       const slots = computeSlots(arr, rectBounds);
       for (const s of slots) {
         expect(s.x).toBeGreaterThanOrEqual(1);

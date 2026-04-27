@@ -137,7 +137,7 @@ describe('gardenStore', () => {
       addPlanting({ parentId: zoneId, x: 0, y: 0, cultivarId: 'basil' });
 
       commitZoneUpdate(zoneId, {
-        arrangement: { type: 'rows', spacingFt: 0.75, itemSpacingFt: 0.75, direction: 0, marginFt: 0.25 },
+        arrangement: { type: 'rows', spacingFt: 0.75, itemSpacingFt: 0.75, marginFt: 0.25 },
       });
 
       const plantings = useGardenStore.getState().garden.plantings;
