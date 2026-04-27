@@ -22,7 +22,7 @@ import { onIconLoad } from './plantRenderers';
 import { PlantingLayerRenderer } from './PlantingLayerRenderer';
 import { renderBlueprint } from './renderBlueprint';
 import { renderGrid } from './renderGrid';
-import { renderSelection } from './renderSelection';
+import { SystemLayerRenderer } from './SystemLayerRenderer';
 import { StructureLayerRenderer } from './StructureLayerRenderer';
 import { useCanvasSize } from './useCanvasSize';
 import { computeWheelAction } from './wheelHandler';
@@ -73,6 +73,8 @@ export function CanvasStack() {
   if (!structureRenderer.current) structureRenderer.current = new StructureLayerRenderer();
   if (!zoneRenderer.current) zoneRenderer.current = new ZoneLayerRenderer();
   if (!plantingRenderer.current) plantingRenderer.current = new PlantingLayerRenderer();
+  const systemRenderer = useRef<SystemLayerRenderer>(null!);
+  if (!systemRenderer.current) systemRenderer.current = new SystemLayerRenderer();
 
   const [, forceRender] = useState(0);
   const invalidate = useCallback(() => forceRender((n) => n + 1), []);
@@ -85,10 +87,12 @@ export function CanvasStack() {
     structureRenderer.current.onInvalidate(invalidate);
     zoneRenderer.current.onInvalidate(invalidate);
     plantingRenderer.current.onInvalidate(invalidate);
+    systemRenderer.current.onInvalidate(invalidate);
     return () => {
       structureRenderer.current.dispose();
       zoneRenderer.current.dispose();
       plantingRenderer.current.dispose();
+      systemRenderer.current.dispose();
     };
   }, [invalidate]);
 
@@ -225,6 +229,12 @@ export function CanvasStack() {
   plantingRenderer.current.plantIconScale = plantIconScale;
   plantingRenderer.current.setView(view, width, height);
 
+  systemRenderer.current.selectedIds = selectedIds;
+  systemRenderer.current.structures = garden.structures;
+  systemRenderer.current.zones = garden.zones;
+  systemRenderer.current.plantings = garden.plantings;
+  systemRenderer.current.setView(view, width, height);
+
   plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
   structureRenderer.current.hideIds = overlay?.layer === 'structures' ? overlay.hideIds : [];
   zoneRenderer.current.hideIds = overlay?.layer === 'zones' ? overlay.hideIds : [];
@@ -274,12 +284,9 @@ export function CanvasStack() {
 
   useLayerEffect(
     selectionCanvasRef,
-    width,
-    height,
-    dpr,
+    width, height, dpr,
     true,
-    (ctx) =>
-      renderSelection(ctx, selectedIds, garden.structures, garden.zones, view, width, height, garden.plantings),
+    (ctx) => systemRenderer.current.render(ctx),
     [selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY],
   );
 
