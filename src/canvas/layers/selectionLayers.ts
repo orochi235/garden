@@ -1,5 +1,4 @@
 import { getCultivar } from '../../model/cultivars';
-import type { Planting, Structure, Zone } from '../../model/types';
 import { worldToScreen } from '../../utils/grid';
 import { renderLabel } from '../renderLabel';
 import type { RenderLayer } from '../renderLayer';
@@ -11,7 +10,7 @@ export const SELECTION_LAYERS: RenderLayer<SystemLayerData>[] = [
     label: 'Selection Boxes',
     alwaysOn: true,
     draw(ctx, data) {
-      const { selectedIds, structures, zones, plantings, view, canvasWidth, canvasHeight } = data;
+      const { selectedIds, structures, zones, plantings, view } = data;
       if (selectedIds.length === 0) return;
 
       // Build parent lookup for resolving planting world positions

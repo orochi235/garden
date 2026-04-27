@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ZONE_LAYERS } from './zoneLayers';
 import type { ZoneLayerData } from '../layerData';
 import type { Zone } from '../../model/types';
