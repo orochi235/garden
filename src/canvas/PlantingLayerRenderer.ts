@@ -1,40 +1,37 @@
 import type { Planting, Structure, Zone } from '../model/types';
 import type { LabelMode } from '../store/uiStore';
 import { LayerRenderer } from './LayerRenderer';
-import { renderOverlayPlantings, renderPlantings } from './renderPlantings';
+import { buildPlantingLayerData, PLANTING_LAYERS } from './layers/plantingLayers';
+import { runLayers } from './renderLayer';
+import { renderOverlayPlantings } from './renderPlantings';
 
 export class PlantingLayerRenderer extends LayerRenderer {
   plantings: Planting[] = [];
   zones: Zone[] = [];
   structures: Structure[] = [];
   selectedIds: string[] = [];
-  showSpacingBorders: boolean = true;
-  showFootprintCircles: boolean = true;
-  showMeasurements: boolean = false;
   labelMode: LabelMode | 'none' = 'none';
   labelFontSize = 13;
   plantIconScale = 1;
   hideIds: string[] = [];
   overlayPlantings: Planting[] = [];
   overlaySnapped: boolean = false;
+  renderLayerVisibility: Record<string, boolean> = {};
+  renderLayerOrder?: string[];
 
   protected draw(ctx: CanvasRenderingContext2D): void {
     const visiblePlantings = this.hideIds.length > 0
       ? this.plantings.filter((p) => !this.hideIds.includes(p.id))
       : this.plantings;
-    renderPlantings(ctx, visiblePlantings, this.zones, this.structures, {
-      view: this.view,
-      canvasWidth: this.width,
-      canvasHeight: this.height,
-      highlightOpacity: this.highlight,
-      selectedIds: this.selectedIds,
-      showSpacingBorders: this.showSpacingBorders,
-      showFootprintCircles: this.showFootprintCircles,
-      showMeasurements: this.showMeasurements,
-      labelMode: this.labelMode,
-      labelFontSize: this.labelFontSize,
-      plantIconScale: this.plantIconScale,
-    });
+
+    const data = buildPlantingLayerData(
+      visiblePlantings, this.zones, this.structures,
+      this.view, this.width, this.height, this.highlight,
+      this.labelMode, this.labelFontSize, this.selectedIds, this.plantIconScale,
+    );
+
+    runLayers(ctx, PLANTING_LAYERS, data, this.renderLayerVisibility, this.renderLayerOrder);
+
     if (this.overlayPlantings.length > 0) {
       renderOverlayPlantings(ctx, this.overlayPlantings, this.zones, this.structures, {
         view: this.view,

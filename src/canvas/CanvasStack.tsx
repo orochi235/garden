@@ -215,10 +215,11 @@ export function CanvasStack() {
   plantingRenderer.current.structures = garden.structures;
   plantingRenderer.current.opacity = layerOpacity.plantings;
   plantingRenderer.current.selectedIds = selectedIds;
-  plantingRenderer.current.showSpacingBorders = showSpacingBorders;
-  plantingRenderer.current.showFootprintCircles = showFootprintCircles;
-  plantingRenderer.current.showMeasurements = showMeasurements;
-  plantingRenderer.current.showContainerOverlays = showContainerOverlays;
+  plantingRenderer.current.renderLayerVisibility = {
+    'planting-spacing': showSpacingBorders,
+    'container-overlays': showContainerOverlays,
+    'planting-measurements': showMeasurements,
+  };
   plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
   plantingRenderer.current.labelFontSize = labelFontSize;
   plantingRenderer.current.plantIconScale = plantIconScale;
