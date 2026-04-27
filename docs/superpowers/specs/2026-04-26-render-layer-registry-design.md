@@ -135,7 +135,9 @@ for (const id of order) {
 
 Old individual flags (`showSpacingBorders`, `showFootprintCircles`, `showSurfaces`, `showPlantableArea`, `showMeasurements`, `showContainerOverlays`) are removed. UI that reads those reads `renderLayerVisibility[layerId]` instead.
 
-Debug flags (`debugOverlappingLabels`, `magentaHighlight`) remain in uiStore unchanged. They are diagnostic tools, not render layers — `debugOverlappingLabels` is passed through StructureLayerData and consumed by the label layer's draw function; `magentaHighlight` affects theme color selection, not rendering.
+The `debugOverlappingLabels` flag remains in uiStore unchanged — it is a diagnostic tool, not a render layer. It is passed through StructureLayerData and consumed by the label layer's draw function.
+
+`magentaHighlight` is removed from uiStore entirely (dead feature).
 
 ### What Doesn't Change
 
