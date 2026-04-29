@@ -8,11 +8,10 @@ export function ModeSwitcher() {
   const { theme } = useActiveTheme();
 
   return (
-    <div className={styles.switcher} role="tablist" aria-label="App mode">
+    <div className={styles.switcher} role="group" aria-label="App mode">
       <button
         type="button"
-        role="tab"
-        aria-selected={appMode === 'garden'}
+        aria-pressed={appMode === 'garden'}
         className={`${styles.tab} ${appMode === 'garden' ? styles.active : ''}`}
         style={{ background: appMode === 'garden' ? theme.listHover : 'transparent' }}
         onClick={() => setAppMode('garden')}
@@ -21,8 +20,7 @@ export function ModeSwitcher() {
       </button>
       <button
         type="button"
-        role="tab"
-        aria-selected={appMode === 'seed-starting'}
+        aria-pressed={appMode === 'seed-starting'}
         className={`${styles.tab} ${appMode === 'seed-starting' ? styles.active : ''}`}
         style={{ background: appMode === 'seed-starting' ? theme.listHover : 'transparent' }}
         onClick={() => setAppMode('seed-starting')}
