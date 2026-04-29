@@ -134,10 +134,13 @@ function drawDragSpreadAffordances(
     drawPlantingMarker(ctx, cx, cy, markerLen, markerW, 'right', isHover ? hoverFill : baseFill, baseStroke);
   }
 
-  // Diagonal corner marker (fills the entire grid). Larger than row/col markers.
+  // Diagonal corner marker (fills the entire grid). Points toward the grid center.
   {
     const cx = ox - gutter / 2;
     const cy = oy - gutter / 2;
+    const gridCx = ox + (tray.cols * p) / 2;
+    const gridCy = oy + (tray.rows * p) / 2;
+    const angle = Math.atan2(-(gridCx - cx), gridCy - cy);
     const isHover = hover?.kind === 'all';
     drawPlantingMarker(
       ctx,
@@ -145,7 +148,7 @@ function drawDragSpreadAffordances(
       cy,
       markerLen * 1.45,
       markerW * 1.35,
-      'down-right',
+      angle,
       isHover ? hoverFill : baseFill,
       baseStroke,
     );
@@ -162,14 +165,14 @@ function drawPlantingMarker(
   cy: number,
   length: number,
   width: number,
-  dir: 'down' | 'right' | 'down-right',
+  dir: 'down' | 'right' | number,
   fill: string,
   stroke: string,
 ) {
   ctx.save();
   ctx.translate(cx, cy);
   if (dir === 'right') ctx.rotate(-Math.PI / 2);
-  else if (dir === 'down-right') ctx.rotate(-Math.PI / 4);
+  else if (typeof dir === 'number') ctx.rotate(dir);
 
   const plateW = width * 2.6;
   const top = -length / 2;
