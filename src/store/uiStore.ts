@@ -72,6 +72,14 @@ interface UiStore {
     | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
     | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean }
     | null;
+  /** Multi-seedling move preview: ghosted icons in their resolved target cells. */
+  seedMovePreview: {
+    trayId: string;
+    cells: Array<{ row: number; col: number; cultivarId: string; bumped: boolean }>;
+    feasible: boolean;
+  } | null;
+  /** Seedlings hidden from normal rendering while a drag is in progress. */
+  hiddenSeedlingIds: string[];
   /** Whether to highlight seedlings with warnings (goldenrod ring + hover tooltip). */
   showSeedlingWarnings: boolean;
   /** Almanac panel filters that constrain which seedables show in the palette. */
@@ -83,6 +91,8 @@ interface UiStore {
   setSeedStartingPan: (x: number, y: number) => void;
   setSeedDragCultivarId: (id: string | null) => void;
   setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
+  setSeedMovePreview: (preview: UiStore['seedMovePreview']) => void;
+  setHiddenSeedlingIds: (ids: string[]) => void;
   setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
   resetAlmanacFilters: () => void;
   setDragOverlay: (overlay: DragOverlay) => void;
@@ -154,6 +164,8 @@ function defaultState() {
     seedStartingPanY: 0,
     seedDragCultivarId: null as string | null,
     seedFillPreview: null as UiStore['seedFillPreview'],
+    seedMovePreview: null as UiStore['seedMovePreview'],
+    hiddenSeedlingIds: [] as string[],
     showSeedlingWarnings: true,
     almanacFilters: {
       cellSizes: [],
@@ -213,6 +225,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
   setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
   setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
+  setSeedMovePreview: (preview) => set({ seedMovePreview: preview }),
+  setHiddenSeedlingIds: (ids) => set({ hiddenSeedlingIds: ids }),
   setAlmanacFilters: (patch) =>
     set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),
   resetAlmanacFilters: () =>

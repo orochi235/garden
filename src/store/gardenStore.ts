@@ -52,6 +52,10 @@ interface GardenStore {
     toRow: number,
     toCol: number,
   ) => void;
+  moveSeedlingGroup: (
+    trayId: string,
+    moves: Array<{ seedlingId: string; toRow: number; toCol: number }>,
+  ) => void;
   fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
@@ -429,6 +433,53 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         seedStarting: {
           ...seedStarting,
           trays: seedStarting.trays.map((t) => (t.id === trayId ? updated : t)),
+          seedlings,
+        },
+      });
+    },
+
+    moveSeedlingGroup: (trayId, moves) => {
+      if (moves.length === 0) return;
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray) return;
+      const movingIds = new Set(moves.map((m) => m.seedlingId));
+      const seedlingById = new Map(seedStarting.seedlings.map((s) => [s.id, s]));
+      // Skip the no-op case where every move keeps its seedling in place.
+      let anyChange = false;
+      for (const m of moves) {
+        const s = seedlingById.get(m.seedlingId);
+        if (!s) continue;
+        if (s.row !== m.toRow || s.col !== m.toCol) {
+          anyChange = true;
+          break;
+        }
+      }
+      if (!anyChange) return;
+      // Start from a tray where every moving seedling's old slot is cleared.
+      const slots = tray.slots.slice();
+      for (const m of moves) {
+        const s = seedlingById.get(m.seedlingId);
+        if (!s || s.row == null || s.col == null) continue;
+        const idx = s.row * tray.cols + s.col;
+        if (slots[idx]?.seedlingId === m.seedlingId) {
+          slots[idx] = { state: 'empty', seedlingId: null };
+        }
+      }
+      // Then place each move into its target.
+      for (const m of moves) {
+        slots[m.toRow * tray.cols + m.toCol] = { state: 'sown', seedlingId: m.seedlingId };
+      }
+      const updatedTray = { ...tray, slots };
+      const seedlings = seedStarting.seedlings.map((s) => {
+        if (!movingIds.has(s.id)) return s;
+        const m = moves.find((mm) => mm.seedlingId === s.id)!;
+        return { ...s, trayId, row: m.toRow, col: m.toCol };
+      });
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings,
         },
       });

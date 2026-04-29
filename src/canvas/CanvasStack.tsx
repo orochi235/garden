@@ -11,6 +11,7 @@ import { screenToWorld } from '../utils/grid';
 import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
 import { hitTestCell } from './seedStartingHitTest';
 import { getSeedlingWarnings } from '../model/seedlingWarnings';
+import { resolveGroupMoves } from '../model/seedlingMoveResolver';
 import { useAutoCenter } from './hooks/useAutoCenter';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { cycleLayer } from '../actions/layers/cycleLayer';
@@ -78,6 +79,8 @@ export function CanvasStack() {
   const showSeedlingWarnings = useUiStore((s) => s.showSeedlingWarnings);
   const showTrayGrid = useUiStore((s) => s.renderLayerVisibility['tray-grid'] ?? true);
   const seedFillPreview = useUiStore((s) => s.seedFillPreview);
+  const seedMovePreview = useUiStore((s) => s.seedMovePreview);
+  const hiddenSeedlingIds = useUiStore((s) => s.hiddenSeedlingIds);
   const seedDragCultivarId = useUiStore((s) => s.seedDragCultivarId);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
@@ -390,12 +393,17 @@ export function CanvasStack() {
           fillPreviewRow: previewMatch?.scope === 'cell' ? previewMatch.row : undefined,
           fillPreviewCol: previewMatch?.scope === 'cell' ? previewMatch.col : undefined,
           fillPreviewReplace: previewMatch?.replace ?? false,
+          hiddenSeedlingIds,
+          movePreview:
+            seedMovePreview && seedMovePreview.trayId === tray.id
+              ? { cells: seedMovePreview.cells, feasible: seedMovePreview.feasible }
+              : null,
         });
         return;
       }
       plantingRenderer.current.render(ctx);
     },
-    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, showSeedlingWarnings, seedFillPreview, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, showSeedlingWarnings, seedFillPreview, seedMovePreview, hiddenSeedlingIds, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(
@@ -406,7 +414,7 @@ export function CanvasStack() {
     [appMode, selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY],
   );
 
-  // --- Seedling drag (in-tray move, drag-out to remove) ---
+  // --- Seedling drag (in-tray move; multi-select moves group; drag-out removes) ---
   const beginSeedlingDrag = useCallback((e: React.MouseEvent): boolean => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return false;
@@ -425,13 +433,26 @@ export function CanvasStack() {
     if (!cell) return false;
     const slot = tray.slots[cell.row * tray.cols + cell.col];
     if (slot.state !== 'sown' || !slot.seedlingId) return false;
-    const seedling = g.seedStarting.seedlings.find((s) => s.id === slot.seedlingId);
-    if (!seedling) return false;
-    const cultivar = getCultivar(seedling.cultivarId);
+    const anchorSeedling = g.seedStarting.seedlings.find((s) => s.id === slot.seedlingId);
+    if (!anchorSeedling) return false;
+    const anchorCultivar = getCultivar(anchorSeedling.cultivarId);
+
+    // Decide whether this is a single-seedling drag or a group drag.
+    // Group drag fires when the grabbed seedling is part of the current selection AND
+    // the selection has multiple members; otherwise a single-item drag (which does not
+    // disturb the existing selection).
+    const isAnchorSelected = ui.selectedIds.includes(anchorSeedling.id);
+    const groupIds =
+      isAnchorSelected && ui.selectedIds.length > 1 ? ui.selectedIds.slice() : [anchorSeedling.id];
+    const groupSeedlings = groupIds
+      .map((id) => g.seedStarting.seedlings.find((s) => s.id === id))
+      .filter((s): s is NonNullable<typeof s> => !!s && s.trayId === tray.id && s.row != null && s.col != null);
+    if (groupSeedlings.length === 0) return false;
+    const isGroup = groupSeedlings.length > 1;
 
     const trayId = tray.id;
-    const fromRow = cell.row;
-    const fromCol = cell.col;
+    const anchorFromRow = anchorSeedling.row!;
+    const anchorFromCol = anchorSeedling.col!;
     const cellPx = tray.cellPitchIn * pxPerInch;
     const radius = (cellPx * 0.85) / 2;
     let activated = false;
@@ -443,7 +464,8 @@ export function CanvasStack() {
       if (ghost) return ghost;
       ghost = createDragGhost({
         sizeCss: Math.max(16, radius * 2),
-        paint: (ctx) => renderPlant(ctx, seedling!.cultivarId, radius, cultivar?.color ?? '#888'),
+        paint: (ctx) =>
+          renderPlant(ctx, anchorSeedling!.cultivarId, radius, anchorCultivar?.color ?? '#888'),
       });
       unsubIcon = onIconLoad(() => ghost?.repaint());
       return ghost;
@@ -455,19 +477,50 @@ export function CanvasStack() {
       const sx = clientX - r.left;
       const sy = clientY - r.top;
       const hit = hitTestCell(tray!, { pxPerInch, originX, originY }, sx, sy);
-      if (hit && (hit.row !== fromRow || hit.col !== fromCol)) {
-        useUiStore.getState().setSeedFillPreview({
+      if (!hit) {
+        useUiStore.getState().setSeedFillPreview(null);
+        useUiStore.getState().setSeedMovePreview(null);
+        ghost?.setHidden(false);
+        return;
+      }
+      if (isGroup) {
+        const dr = hit.row - anchorFromRow;
+        const dc = hit.col - anchorFromCol;
+        const pending = groupSeedlings.map((s) => ({
+          seedlingId: s.id,
+          cultivarId: s.cultivarId,
+          fromRow: s.row!,
+          fromCol: s.col!,
+          toRow: s.row! + dr,
+          toCol: s.col! + dc,
+        }));
+        const result = resolveGroupMoves(tray!, pending);
+        useUiStore.getState().setSeedMovePreview({
           trayId,
-          cultivarId: seedling!.cultivarId,
-          scope: 'cell',
-          row: hit.row,
-          col: hit.col,
-          replace: true,
+          feasible: result.feasible,
+          cells: result.moves.map((m) => ({
+            row: m.finalRow,
+            col: m.finalCol,
+            cultivarId: m.cultivarId,
+            bumped: m.bumped,
+          })),
         });
         ghost?.setHidden(true);
       } else {
-        useUiStore.getState().setSeedFillPreview(null);
-        ghost?.setHidden(false);
+        if (hit.row !== anchorFromRow || hit.col !== anchorFromCol) {
+          useUiStore.getState().setSeedFillPreview({
+            trayId,
+            cultivarId: anchorSeedling!.cultivarId,
+            scope: 'cell',
+            row: hit.row,
+            col: hit.col,
+            replace: true,
+          });
+          ghost?.setHidden(true);
+        } else {
+          useUiStore.getState().setSeedFillPreview(null);
+          ghost?.setHidden(false);
+        }
       }
     }
 
@@ -478,6 +531,8 @@ export function CanvasStack() {
         if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
         activated = true;
         ensureGhost();
+        // Hide every dragged seedling so the canvas shows movement, not stale copies.
+        useUiStore.getState().setHiddenSeedlingIds(groupSeedlings.map((s) => s.id));
       }
       ghost?.move(ev.clientX, ev.clientY);
       updatePreview(ev.clientX, ev.clientY);
@@ -489,6 +544,8 @@ export function CanvasStack() {
       unsubIcon?.();
       ghost?.destroy();
       useUiStore.getState().setSeedFillPreview(null);
+      useUiStore.getState().setSeedMovePreview(null);
+      useUiStore.getState().setHiddenSeedlingIds([]);
     }
 
     function onUp(ev: PointerEvent) {
@@ -497,13 +554,13 @@ export function CanvasStack() {
         // Click without drag → select / toggle / replace selection
         const ui2 = useUiStore.getState();
         if (ev.shiftKey || ev.metaKey) {
-          if (ui2.selectedIds.includes(seedling!.id)) {
-            ui2.setSelection(ui2.selectedIds.filter((id) => id !== seedling!.id));
+          if (ui2.selectedIds.includes(anchorSeedling!.id)) {
+            ui2.setSelection(ui2.selectedIds.filter((id) => id !== anchorSeedling!.id));
           } else {
-            ui2.addToSelection(seedling!.id);
+            ui2.addToSelection(anchorSeedling!.id);
           }
         } else {
-          ui2.select(seedling!.id);
+          ui2.select(anchorSeedling!.id);
         }
         return;
       }
@@ -512,12 +569,39 @@ export function CanvasStack() {
       const sx = ev.clientX - r.left;
       const sy = ev.clientY - r.top;
       const hit = hitTestCell(tray!, { pxPerInch, originX, originY }, sx, sy);
-      if (!hit) {
-        useGardenStore.getState().clearCell(trayId, fromRow, fromCol);
+      if (isGroup) {
+        if (!hit) return; // dropping a group outside the tray is a no-op
+        const dr = hit.row - anchorFromRow;
+        const dc = hit.col - anchorFromCol;
+        if (dr === 0 && dc === 0) return;
+        const pending = groupSeedlings.map((s) => ({
+          seedlingId: s.id,
+          cultivarId: s.cultivarId,
+          fromRow: s.row!,
+          fromCol: s.col!,
+          toRow: s.row! + dr,
+          toCol: s.col! + dc,
+        }));
+        const result = resolveGroupMoves(tray!, pending);
+        if (!result.feasible) return;
+        useGardenStore.getState().moveSeedlingGroup(
+          trayId,
+          result.moves.map((m) => ({
+            seedlingId: m.seedlingId,
+            toRow: m.finalRow,
+            toCol: m.finalCol,
+          })),
+        );
         return;
       }
-      if (hit.row === fromRow && hit.col === fromCol) return;
-      useGardenStore.getState().moveSeedling(trayId, fromRow, fromCol, hit.row, hit.col);
+      if (!hit) {
+        useGardenStore.getState().clearCell(trayId, anchorFromRow, anchorFromCol);
+        return;
+      }
+      if (hit.row === anchorFromRow && hit.col === anchorFromCol) return;
+      useGardenStore
+        .getState()
+        .moveSeedling(trayId, anchorFromRow, anchorFromCol, hit.row, hit.col);
     }
 
     document.addEventListener('pointermove', onMove);
