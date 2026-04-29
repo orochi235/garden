@@ -110,8 +110,8 @@ function drawDragSpreadAffordances(
   hover: DragSpreadAffordanceHover,
 ) {
   const gutter = p * DRAG_SPREAD_GUTTER_RATIO;
-  const markerLen = Math.min(gutter * 0.8, p * 0.55);
-  const markerW = Math.max(2, p * 0.18);
+  const markerLen = Math.min(gutter * 0.45, p * 0.3);
+  const markerW = Math.max(1.5, p * 0.1);
   const baseFill = '#d4a55a';
   const baseStroke = '#1a1a1a';
   const hoverFill = '#ffd27a';
