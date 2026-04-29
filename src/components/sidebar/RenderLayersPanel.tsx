@@ -23,7 +23,7 @@ const GROUPS: LayerGroup[] = [
 const FOOTPRINT_CIRCLES_ID = 'planting-footprint-circles';
 
 const SEED_STARTING_LAYERS: { id: string; label: string; defaultVisible: boolean }[] = [
-  { id: 'tray-grid', label: 'Tray cell grid', defaultVisible: true },
+  { id: 'tray-grid', label: 'Cell snap points', defaultVisible: true },
   { id: 'seedling-labels', label: 'Seedling labels', defaultVisible: false },
 ];
 

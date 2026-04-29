@@ -54,25 +54,21 @@ export function renderTrayBase(
   ctx.strokeRect(originX, originY, w, h);
 
   if (showGrid) {
+    // Snap points: small dots at each cell center (matches drag-lab snap-point style)
     const p = tray.cellPitchIn * pxPerInch;
     const off = trayInteriorOffsetIn(tray);
     const ox = originX + off.x * pxPerInch;
     const oy = originY + off.y * pxPerInch;
-    const gridW = tray.cols * p;
-    const gridH = tray.rows * p;
-    for (let c = 0; c <= tray.cols; c++) {
-      const x = ox + c * p;
-      ctx.beginPath();
-      ctx.moveTo(x, oy);
-      ctx.lineTo(x, oy + gridH);
-      ctx.stroke();
-    }
-    for (let r = 0; r <= tray.rows; r++) {
-      const y = oy + r * p;
-      ctx.beginPath();
-      ctx.moveTo(ox, y);
-      ctx.lineTo(ox + gridW, y);
-      ctx.stroke();
+    const dotRadius = Math.max(1.5, p * 0.06);
+    ctx.fillStyle = 'rgba(91,164,207,0.5)';
+    for (let r = 0; r < tray.rows; r++) {
+      for (let c = 0; c < tray.cols; c++) {
+        const cx = ox + c * p + p / 2;
+        const cy = oy + r * p + p / 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 }
