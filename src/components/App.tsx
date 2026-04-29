@@ -475,15 +475,14 @@ export function App() {
     function handleMouseMove(e: MouseEvent) {
       if (!dragging.current) return;
       const dx = e.clientX - dragStartX.current;
-      const newWidth = Math.min(
-        MAX_PANEL,
-        Math.max(
-          MIN_PANEL,
-          dragging.current === 'left' ? dragStartWidth.current + dx : dragStartWidth.current - dx,
-        ),
-      );
-      if (dragging.current === 'left') setLeftWidth(newWidth);
-      else setRightWidth(newWidth);
+      const raw = dragging.current === 'left' ? dragStartWidth.current + dx : dragStartWidth.current - dx;
+      if (dragging.current === 'left') {
+        setLeftWidth(Math.min(MAX_PANEL, Math.max(MIN_PANEL, raw)));
+      } else {
+        // Right sidebar can collapse fully: snap to 0 below MIN_PANEL/2.
+        const snapped = raw < MIN_PANEL / 2 ? 0 : Math.min(MAX_PANEL, Math.max(MIN_PANEL, raw));
+        setRightWidth(snapped);
+      }
     }
 
     function handleMouseUp() {
