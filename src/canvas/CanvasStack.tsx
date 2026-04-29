@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayerSelector } from '../components/LayerSelector';
 import { ReturnToGarden } from '../components/ReturnToGarden';
+import { SeedWarningsToggle } from '../components/SeedWarningsToggle';
 import { ScaleIndicator } from '../components/ScaleIndicator';
 import { ViewToolbar } from '../components/ViewToolbar';
 import type { Planting, Structure, Zone } from '../model/types';
@@ -73,6 +74,7 @@ export function CanvasStack() {
   const seedStartingPanX = useUiStore((s) => s.seedStartingPanX);
   const seedStartingPanY = useUiStore((s) => s.seedStartingPanY);
   const showSeedlingLabels = useUiStore((s) => s.renderLayerVisibility['seedling-labels'] ?? false);
+  const showSeedlingWarnings = useUiStore((s) => s.showSeedlingWarnings);
   const showTrayGrid = useUiStore((s) => s.renderLayerVisibility['tray-grid'] ?? true);
   const seedFillPreview = useUiStore((s) => s.seedFillPreview);
   const seedDragCultivarId = useUiStore((s) => s.seedDragCultivarId);
@@ -376,6 +378,7 @@ export function CanvasStack() {
         const previewMatch = seedFillPreview && seedFillPreview.trayId === tray.id ? seedFillPreview : null;
         renderSeedlings(ctx, tray, garden.seedStarting.seedlings, pxPerInch, originX, originY, {
           showLabel: showSeedlingLabels,
+          showWarnings: showSeedlingWarnings,
           fillPreviewCultivarId: previewMatch?.cultivarId ?? null,
           fillPreviewScope: previewMatch?.scope,
           fillPreviewIndex:
@@ -390,7 +393,7 @@ export function CanvasStack() {
       }
       plantingRenderer.current.render(ctx);
     },
-    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, seedFillPreview, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, showSeedlingWarnings, seedFillPreview, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(
@@ -692,7 +695,7 @@ export function CanvasStack() {
 
       // Seed-starting: tooltip when hovering a seedling with warnings
       const uiState = useUiStore.getState();
-      if (uiState.appMode === 'seed-starting') {
+      if (uiState.appMode === 'seed-starting' && uiState.showSeedlingWarnings) {
         const rect = containerRef.current?.getBoundingClientRect();
         const { garden } = useGardenStore.getState();
         const tray = garden.seedStarting.trays.find((t) => t.id === uiState.currentTrayId);
@@ -960,6 +963,7 @@ export function CanvasStack() {
           {seedlingTooltip.message}
         </div>
       )}
+      {appMode === 'seed-starting' && <SeedWarningsToggle />}
       <ReturnToGarden canvasWidth={width} canvasHeight={height} />
       <ScaleIndicator canvasHeight={height} />
       <ViewToolbar />

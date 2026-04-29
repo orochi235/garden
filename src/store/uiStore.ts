@@ -72,8 +72,11 @@ interface UiStore {
     | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
     | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean }
     | null;
+  /** Whether to highlight seedlings with warnings (goldenrod ring + hover tooltip). */
+  showSeedlingWarnings: boolean;
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
+  setShowSeedlingWarnings: (show: boolean) => void;
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
   setSeedStartingZoom: (zoom: number) => void;
@@ -151,6 +154,7 @@ function defaultState() {
     seedStartingPanY: 0,
     seedDragCultivarId: null as string | null,
     seedFillPreview: null as UiStore['seedFillPreview'],
+    showSeedlingWarnings: true,
     almanacFilters: {
       cellSizes: [],
       seasons: [],
@@ -203,6 +207,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
   setAppMode: (mode) => set({ appMode: mode }),
+  setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
   setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
   setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),

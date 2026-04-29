@@ -33,6 +33,7 @@ export function renderSeedlings(
   originY: number,
   options: {
     showLabel: boolean;
+    showWarnings?: boolean;
     fillPreviewCultivarId?: string | null;
     fillPreviewScope?: 'all' | 'row' | 'col' | 'cell';
     fillPreviewIndex?: number;
@@ -58,7 +59,7 @@ export function renderSeedlings(
     renderPlant(ctx, seedling.cultivarId, radius, cultivar.color);
     ctx.restore();
 
-    if (hasSeedlingWarnings(seedling, tray)) {
+    if (options.showWarnings !== false && hasSeedlingWarnings(seedling, tray)) {
       ctx.save();
       ctx.strokeStyle = SEEDLING_WARNING_COLOR;
       ctx.lineWidth = Math.max(1.5, p * 0.06);
