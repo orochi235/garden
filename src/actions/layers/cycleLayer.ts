@@ -23,7 +23,7 @@ export const cycleLayerDownAction: ActionDescriptor = {
   scope: 'canvas',
   targets: ['none'],
   transient: true,
-  execute: () => cycleLayer(-1),
+  execute: () => cycleLayer(1),
 };
 
 export const cycleLayerUpAction: ActionDescriptor = {
@@ -33,7 +33,7 @@ export const cycleLayerUpAction: ActionDescriptor = {
   scope: 'canvas',
   targets: ['none'],
   transient: true,
-  execute: () => cycleLayer(1),
+  execute: () => cycleLayer(-1),
 };
 
 export { cycleLayer };

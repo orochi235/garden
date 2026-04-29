@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { computeSlots } from '../model/arrangement';
 import type { Arrangement } from '../model/arrangement';
+import { createSeedling, emptySeedStartingState, getCell, setCell } from '../model/seedStarting';
+import type { Seedling, Tray } from '../model/seedStarting';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
@@ -38,6 +40,11 @@ interface GardenStore {
   updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
+  addTray: (tray: Tray) => void;
+  removeTray: (trayId: string) => void;
+  sowCell: (trayId: string, row: number, col: number, cultivarId: string) => void;
+  clearCell: (trayId: string, row: number, col: number) => void;
+  fillTray: (trayId: string, cultivarId: string) => void;
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -127,6 +134,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           s.groupId = null;
         }
       }
+      if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
       set({ garden });
     },
 
@@ -281,6 +289,85 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     removePlanting: (id) => {
       if (isLocked('plantings')) return;
       commitPatch({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
+    },
+
+    // --- Seed Starting ---
+
+    addTray: (tray) => {
+      const { seedStarting } = get().garden;
+      commitPatch({
+        seedStarting: { ...seedStarting, trays: [...seedStarting.trays, tray] },
+      });
+    },
+
+    removeTray: (trayId) => {
+      const { seedStarting } = get().garden;
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.filter((t) => t.id !== trayId),
+          seedlings: seedStarting.seedlings.filter((s) => s.trayId !== trayId),
+        },
+      });
+    },
+
+    sowCell: (trayId, row, col, cultivarId) => {
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray) return;
+      const slot = getCell(tray, row, col);
+      if (!slot || slot.state !== 'empty') return;
+      const seedling = createSeedling({ cultivarId, trayId, row, col });
+      const updatedTray = setCell(tray, row, col, { state: 'sown', seedlingId: seedling.id });
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+          seedlings: [...seedStarting.seedlings, seedling],
+        },
+      });
+    },
+
+    fillTray: (trayId, cultivarId) => {
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray) return;
+      let updatedTray = tray;
+      const newSeedlings: Seedling[] = [];
+      for (let r = 0; r < tray.rows; r++) {
+        for (let c = 0; c < tray.cols; c++) {
+          const slot = updatedTray.slots[r * tray.cols + c];
+          if (slot.state !== 'empty') continue;
+          const seedling = createSeedling({ cultivarId, trayId, row: r, col: c });
+          newSeedlings.push(seedling);
+          updatedTray = setCell(updatedTray, r, c, { state: 'sown', seedlingId: seedling.id });
+        }
+      }
+      if (newSeedlings.length === 0) return;
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+          seedlings: [...seedStarting.seedlings, ...newSeedlings],
+        },
+      });
+    },
+
+    clearCell: (trayId, row, col) => {
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray) return;
+      const slot = getCell(tray, row, col);
+      if (!slot || slot.state === 'empty') return;
+      const seedlingId = slot.seedlingId;
+      const updatedTray = setCell(tray, row, col, { state: 'empty', seedlingId: null });
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+          seedlings: seedStarting.seedlings.filter((s) => s.id !== seedlingId),
+        },
+      });
     },
 
     // --- History ---

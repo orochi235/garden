@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Canvas Rendering Pipeline</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 32px; }
+  h1 { text-align: center; margin-bottom: 8px; font-size: 22px; color: #fff; }
+  .subtitle { text-align: center; margin-bottom: 32px; font-size: 13px; color: #888; }
+
+  .container { display: flex; gap: 40px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+
+  /* Layer stack */
+  .stack { display: flex; flex-direction: column; gap: 0; }
+  .stack-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+
+  .layer {
+    position: relative;
+    width: 280px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    transition: transform 0.2s;
+  }
+  .layer:hover { transform: translateX(4px); }
+  .layer-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .layer-desc { font-size: 11px; color: #999; line-height: 1.4; }
+  .layer-tag { position: absolute; top: 8px; right: 10px; font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #333; color: #aaa; }
+
+  .layer-6 { background: rgba(91,164,207,0.1); border-color: #5BA4CF; }
+  .layer-5 { background: rgba(74,124,89,0.1); border-color: #4A7C59; }
+  .layer-4 { background: rgba(74,124,89,0.08); border-color: #3d6b4a; }
+  .layer-3 { background: rgba(139,105,20,0.1); border-color: #8B6914; }
+  .layer-2 { background: rgba(100,100,140,0.1); border-color: #6464aa; }
+  .layer-1 { background: rgba(200,200,200,0.05); border-color: #555; }
+
+  .arrow { text-align: center; color: #555; font-size: 18px; margin: 2px 0; }
+
+  /* Detail panels */
+  .details { display: flex; flex-direction: column; gap: 16px; max-width: 420px; }
+  .detail-card {
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.02);
+  }
+  .detail-card h3 { font-size: 13px; margin-bottom: 8px; color: #ccc; border-bottom: 1px solid #333; padding-bottom: 6px; }
+  .detail-card ol, .detail-card ul { padding-left: 18px; font-size: 12px; line-height: 1.8; color: #bbb; }
+  .detail-card li code { background: #2a2a3e; padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #e8c86a; }
+
+  .legend { margin-top: 24px; padding: 12px 16px; border: 1px solid #333; border-radius: 6px; font-size: 11px; }
+  .legend-title { font-weight: 600; margin-bottom: 6px; color: #aaa; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #555; }
+
+  .orchestration { margin-top: 24px; padding: 14px 18px; border: 1px solid #444; border-radius: 8px; background: rgba(255,255,255,0.02); max-width: 740px; margin-left: auto; margin-right: auto; }
+  .orchestration h3 { font-size: 13px; margin-bottom: 10px; color: #ccc; }
+  .orchestration p { font-size: 12px; color: #999; line-height: 1.7; }
+  .orchestration code { background: #2a2a3e; padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #e8c86a; }
+</style>
+</head>
+<body>
+<h1>CanvasStack Rendering Pipeline</h1>
+<p class="subtitle">6 stacked &lt;canvas&gt; elements composited via CSS (bottom to top) &mdash; each rendered independently via useLayerEffect</p>
+
+<div class="container">
+  <!-- Layer stack visualization -->
+  <div>
+    <div class="stack-title">Layer Stack (top &rarr; bottom)</div>
+    <div class="stack">
+      <div class="layer layer-6">
+        <div class="layer-name">6. Selection</div>
+        <div class="layer-desc">Dashed outlines, resize handles, labels for selected objects</div>
+        <div class="layer-tag">always visible</div>
+      </div>
+      <div class="layer layer-5">
+        <div class="layer-name">5. Plantings</div>
+        <div class="layer-desc">Plant icons (PNG/fallback circle), spacing borders, footprint circles, labels, overlays</div>
+        <div class="layer-tag">togglable + opacity</div>
+      </div>
+      <div class="layer layer-4">
+        <div class="layer-name">4. Zones</div>
+        <div class="layer-desc">Colored rectangles with dashed border, pattern overlays, labels</div>
+        <div class="layer-tag">togglable + opacity</div>
+      </div>
+      <div class="layer layer-3">
+        <div class="layer-name">3. Structures</div>
+        <div class="layer-desc">Raised beds, pots, planters, surfaces &mdash; with wall fills and patterns</div>
+        <div class="layer-tag">togglable + opacity</div>
+      </div>
+      <div class="layer layer-2">
+        <div class="layer-name">2. Blueprint</div>
+        <div class="layer-desc">User-uploaded reference image positioned in world space</div>
+        <div class="layer-tag">togglable + opacity</div>
+      </div>
+      <div class="layer layer-1">
+        <div class="layer-name">1. Grid</div>
+        <div class="layer-desc">Infinite grid lines + garden plot border (mix-blend-mode: multiply)</div>
+        <div class="layer-tag">always visible</div>
+      </div>
+      <div style="margin-top: 8px; padding: 10px 16px; border: 1px dashed #555; border-radius: 6px; background: rgba(139,105,20,0.05);">
+        <div class="layer-name" style="font-size: 12px; color: #8B6914;">0. Ground (CSS background)</div>
+        <div class="layer-desc">Solid color from garden.groundColor applied to container div</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-layer render steps -->
+  <div class="details">
+    <div class="detail-card">
+      <h3>Structure Layer Steps</h3>
+      <ol>
+        <li>Clear canvas</li>
+        <li>Apply layer <code>globalAlpha</code> (opacity)</li>
+        <li>Filter out hidden IDs (drag overlay)</li>
+        <li>For each structure: world&rarr;screen transform</li>
+        <li>Draw fill (rect or ellipse based on <code>shape</code>/<code>type</code>)</li>
+        <li>Draw inner wall fill (raised-bed/pot types)</li>
+        <li>Render pattern overlay (<code>chunks</code>, <code>hatch</code>)</li>
+        <li>Draw highlight ring if <code>highlight > 0</code></li>
+        <li>Render label below object</li>
+        <li>Draw overlay structures (drag preview, reduced alpha)</li>
+      </ol>
+    </div>
+
+    <div class="detail-card">
+      <h3>Planting Layer Steps</h3>
+      <ol>
+        <li>Clear canvas</li>
+        <li>Apply layer <code>globalAlpha</code></li>
+        <li>Build parent lookup (zones + container structures)</li>
+        <li>Group plantings by parent container</li>
+        <li><strong>Per container group:</strong> clip to inner wall bounds</li>
+        <li>Draw spacing border (dashed rect/circle)</li>
+        <li>Draw highlight ring from overlay config</li>
+        <li>Render plant icon (<code>renderPlant</code>: PNG image or fallback circle)</li>
+        <li>Draw measurement labels if enabled</li>
+        <li>Draw hover highlight ring if <code>highlight > 0</code></li>
+        <li>Restore clip, collect label candidates</li>
+        <li><strong>Second pass:</strong> render non-overlapping labels (occlusion test)</li>
+        <li>Redraw container inner borders on top</li>
+        <li>Draw overlay plantings (drag preview)</li>
+      </ol>
+    </div>
+
+    <div class="detail-card">
+      <h3>Zone Layer Steps</h3>
+      <ol>
+        <li>Clear canvas</li>
+        <li>Apply layer <code>globalAlpha</code></li>
+        <li>Sort zones by <code>zIndex</code></li>
+        <li>For each zone: fill rect with <code>zone.color</code></li>
+        <li>Draw dashed green border</li>
+        <li>Render pattern overlay if configured</li>
+        <li>Draw highlight ring if <code>highlight > 0</code></li>
+        <li>Render label below zone</li>
+        <li>Draw overlay zones (drag preview)</li>
+      </ol>
+    </div>
+
+    <div class="detail-card">
+      <h3>Selection Layer Steps</h3>
+      <ol>
+        <li>Clear canvas</li>
+        <li>Render selected plantings as dashed circles</li>
+        <li>Render selected structures/zones with blue dashed outline</li>
+        <li>Draw 8 resize handles on bounding box</li>
+        <li>Render label below selected object</li>
+      </ol>
+    </div>
+
+    <div class="legend">
+      <div class="legend-title">Key Architecture Concepts</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: #5BA4CF;"></div> LayerRenderer base class manages highlight animation (flash/hover)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: #e8c86a;"></div> useLayerEffect hook handles DPR scaling + visibility gating</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: #4A7C59;"></div> Drag overlays render ghost objects with reduced opacity per layer</div>
+      <div class="legend-item"><div class="legend-swatch" style="background: #8B6914;"></div> Plant icons are async-loaded PNGs; iconTick forces re-render on load</div>
+    </div>
+  </div>
+</div>
+
+<div class="orchestration">
+  <h3>Orchestration: CanvasStack.tsx</h3>
+  <p>
+    <code>CanvasStack</code> owns 6 <code>&lt;canvas&gt;</code> refs stacked absolutely. Each is driven by a <code>useLayerEffect</code> call that:
+    (1) sizes the canvas to <code>width * dpr</code>, (2) scales the context by <code>dpr</code>, (3) calls the render function only if visible.
+    Layers 3-5 use persistent <code>LayerRenderer</code> instances that hold animation state (flash/hover highlight).
+    The renderers call <code>onInvalidate</code> to trigger a React re-render when animating.
+    State flows from Zustand stores (<code>useGardenStore</code>, <code>useUiStore</code>) &rarr; renderer properties &rarr; <code>useLayerEffect</code> deps &rarr; redraw.
+  </p>
+</div>
+
+</body>
+</html>

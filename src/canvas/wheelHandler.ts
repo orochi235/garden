@@ -18,10 +18,13 @@ export interface WheelInput {
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 200;
 
+export interface ZoomBounds { min: number; max: number; }
+
 export function computeWheelAction(
   _mode: ViewMode,
   state: WheelState,
   input: WheelInput,
+  bounds: ZoomBounds = { min: MIN_ZOOM, max: MAX_ZOOM },
 ): WheelState {
   // Shift+wheel scrolls horizontally
   if (input.shiftKey) {
@@ -42,7 +45,7 @@ export function computeWheelAction(
   }
 
   const factor = input.deltaY < 0 ? 1.1 : 0.9;
-  const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
+  const newZoom = Math.min(bounds.max, Math.max(bounds.min, state.zoom * factor));
   const worldX = (input.mouseX - state.panX) / state.zoom;
   const worldY = (input.mouseY - state.panY) / state.zoom;
   return {

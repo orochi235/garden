@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGarden, createPlanting, createStructure, createZone } from './types';
+import { emptySeedStartingState } from './seedStarting';
 
 describe('factory functions', () => {
   it('createGarden returns valid defaults', () => {
@@ -87,5 +88,12 @@ describe('factory functions', () => {
   it('createZone accepts a custom color', () => {
     const z = createZone({ x: 0, y: 0, width: 3, height: 3, color: 'transparent' });
     expect(z.color).toBe('transparent');
+  });
+});
+
+describe('createGarden', () => {
+  it('initializes seedStarting state', () => {
+    const g = createGarden({ name: 't', widthFt: 1, heightFt: 1 });
+    expect(g.seedStarting).toEqual(emptySeedStartingState());
   });
 });

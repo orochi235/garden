@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { emptySeedStartingState } from '../model/seedStarting';
 import { createGarden } from '../model/types';
 import { deserializeGarden, serializeGarden } from './file';
 
@@ -25,5 +26,13 @@ describe('deserializeGarden', () => {
   });
   it('throws on missing required fields', () => {
     expect(() => deserializeGarden(JSON.stringify({ name: 'test' }))).toThrow();
+  });
+  it('backfills seedStarting when missing from legacy save', () => {
+    const garden = createGarden({ name: 'Legacy', widthFt: 20, heightFt: 15 });
+    const json = serializeGarden(garden);
+    const parsed = JSON.parse(json);
+    delete parsed.seedStarting;
+    const result = deserializeGarden(JSON.stringify(parsed));
+    expect(result.seedStarting).toEqual(emptySeedStartingState());
   });
 });

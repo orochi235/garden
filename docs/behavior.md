@@ -76,3 +76,14 @@ Running list of intended application behaviors.
 ## Sidebar
 
 - Right-hand panel section titles have less space to the left of the toggle slider and a bit more to the right
+
+## Seed Starting
+
+- The app has two modes — Garden and Seed Starting — switched via tabs in the top bar
+- Seed Starting mode displays one tray at a time; the active tray is selected via a switcher in the top bar
+- Trays are created from a catalog of presets or via the Custom Tray dialog
+- Cells are sown by dragging a startable cultivar from the sidebar onto a cell
+- Shift-dropping a cultivar on a tray fills all empty cells with that cultivar
+- Seed-starting state (trays and seedlings) is saved alongside the garden in the same file under `seedStarting`
+- Cultivars are listed in the seed-starting palette only when their resolved `seedStarting.startable` is `true`
+- The render-layers panel in seed-starting mode exposes `tray-grid` and `seedling-labels` toggles

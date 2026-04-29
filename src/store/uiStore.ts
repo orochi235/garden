@@ -1,9 +1,23 @@
 import { create } from 'zustand';
 import type { Planting, Structure, Zone, LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
+import type { Season } from '../model/species';
+import type { CellSize } from '../model/seedStarting';
+
+export interface AlmanacFilters {
+  /** When non-empty, only seedables with one of these cell sizes are shown. */
+  cellSizes: CellSize[];
+  /** When non-empty, only seedables with one of these seasons are shown. */
+  seasons: Season[];
+  /** When set, only seedables whose USDA zone range covers this zone are shown. */
+  usdaZone: number | null;
+  /** ISO date string (YYYY-MM-DD). Filters by intended planting / sow window. Null = ignore. */
+  lastFrostDate: string | null;
+}
 
 export type ViewMode = 'select' | 'select-area' | 'pan' | 'zoom' | 'draw';
 export type LabelMode = 'all' | 'active-layer' | 'selection';
+export type AppMode = 'garden' | 'seed-starting';
 
 export interface DragOverlay {
   layer: 'plantings' | 'structures' | 'zones';
@@ -43,6 +57,23 @@ interface UiStore {
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
+  appMode: AppMode;
+  currentTrayId: string | null;
+  /** Per-mode view state for the seed-starting canvas (pixels per inch). */
+  seedStartingZoom: number;
+  seedStartingPanX: number;
+  seedStartingPanY: number;
+  /** Transient ghost preview shown while dragging a cultivar over a tray with shift held. */
+  seedFillPreview: { trayId: string; cultivarId: string } | null;
+  /** Almanac panel filters that constrain which seedables show in the palette. */
+  almanacFilters: AlmanacFilters;
+  setAppMode: (mode: AppMode) => void;
+  setCurrentTrayId: (id: string | null) => void;
+  setSeedStartingZoom: (zoom: number) => void;
+  setSeedStartingPan: (x: number, y: number) => void;
+  setSeedFillPreview: (preview: { trayId: string; cultivarId: string } | null) => void;
+  setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
+  resetAlmanacFilters: () => void;
   setDragOverlay: (overlay: DragOverlay) => void;
   clearDragOverlay: () => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
@@ -70,6 +101,8 @@ interface UiStore {
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 200;
+const SEED_MIN_ZOOM = 5;
+const SEED_MAX_ZOOM = 100;
 
 function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
@@ -92,6 +125,8 @@ function defaultState() {
       'structure-surfaces': false,
       'structure-plantable-area': false,
       'planting-measurements': false,
+      'seedling-labels': false,
+      'tray-grid': true,
     } as Record<string, boolean>,
     renderLayerOrder: {} as Record<string, string[]>,
     debugOverlappingLabels: false,
@@ -101,6 +136,18 @@ function defaultState() {
     layerFlashCounter: 0,
     viewMode: 'select' as ViewMode,
     dragOverlay: null as DragOverlay | null,
+    appMode: 'garden' as AppMode,
+    currentTrayId: null as string | null,
+    seedStartingZoom: 30,
+    seedStartingPanX: 0,
+    seedStartingPanY: 0,
+    seedFillPreview: null as { trayId: string; cultivarId: string } | null,
+    almanacFilters: {
+      cellSizes: [],
+      seasons: [],
+      usdaZone: null,
+      lastFrostDate: null,
+    } as AlmanacFilters,
   };
 }
 
@@ -146,5 +193,16 @@ export const useUiStore = create<UiStore>((set) => ({
   clearSelection: () => set({ selectedIds: [] }),
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
+  setAppMode: (mode) => set({ appMode: mode }),
+  setCurrentTrayId: (id) => set({ currentTrayId: id }),
+  setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
+  setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
+  setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
+  setAlmanacFilters: (patch) =>
+    set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),
+  resetAlmanacFilters: () =>
+    set({
+      almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
+    }),
   reset: () => set(defaultState()),
 }));

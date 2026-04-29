@@ -10,8 +10,8 @@ function makeItem(overrides: Partial<LabItem> = {}): LabItem {
 }
 
 describe('subgridStrategy', () => {
-  it('has name "Subgrid"', () => {
-    expect(subgridStrategy.name).toBe('Subgrid');
+  it('has name "Tile grid"', () => {
+    expect(subgridStrategy.name).toBe('Tile grid');
   });
 
   it('snaps item to cell center on drop', () => {

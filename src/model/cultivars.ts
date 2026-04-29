@@ -1,4 +1,5 @@
 import cultivarData from '../data/cultivars.json';
+import { resolveSeedStarting, type SeedStartingFields } from './floraSeedStarting';
 import { getSpecies } from './species';
 
 export type CultivarCategory = 'herbs' | 'vegetables' | 'greens' | 'fruits' | 'squash' | 'flowers' | 'root-vegetables' | 'legumes';
@@ -13,6 +14,7 @@ interface CultivarRaw {
   spacingFt?: number;
   iconImage?: string;
   iconBgColor?: string;
+  seedStarting?: Partial<SeedStartingFields>;
 }
 
 /** Resolved cultivar with all fields populated from species defaults. */
@@ -28,6 +30,7 @@ export interface Cultivar {
   spacingFt: number;
   iconImage: string | null;
   iconBgColor: string | null;
+  seedStarting: SeedStartingFields;
 }
 
 function resolveCultivar(raw: CultivarRaw): Cultivar {
@@ -48,6 +51,7 @@ function resolveCultivar(raw: CultivarRaw): Cultivar {
     spacingFt: raw.spacingFt ?? species.spacingFt,
     iconImage: raw.iconImage ?? species.iconImage,
     iconBgColor: raw.iconBgColor ?? species.iconBgColor,
+    seedStarting: resolveSeedStarting(species.seedStarting, raw.seedStarting),
   };
 }
 

@@ -20,6 +20,8 @@ export interface PlantingGroupNode {
   color: string;
   /** Cultivar ID to use for the parent row icon. */
   defaultCultivarId: string;
+  /** Default palette entry, used when dragging from the parent row. */
+  defaultEntry: PaletteEntry;
   children: PlantingChildNode[];
 }
 
@@ -50,6 +52,7 @@ export function buildPlantingTree(entries: PaletteEntry[]): PlantingTreeNode[] {
         speciesName,
         color: defaultEntry.color,
         defaultCultivarId: defaultEntry.id,
+        defaultEntry,
         children: sorted.filter((e) => e !== defaultEntry).map((e) => ({ entry: e })),
       });
     }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { emptySeedStartingState } from '../model/seedStarting';
 import { blankGarden, useGardenStore } from './gardenStore';
 
 describe('gardenStore', () => {
@@ -192,9 +193,76 @@ describe('gardenStore', () => {
       structures: [],
       zones: [],
       plantings: [],
+      seedStarting: emptySeedStartingState(),
     };
     loadGarden(data);
     expect(useGardenStore.getState().garden.name).toBe('Loaded');
     expect(useGardenStore.getState().garden.gridCellSizeFt).toBe(0.5);
+  });
+
+  it('loadGarden backfills seedStarting when missing', () => {
+    const legacy = { ...blankGarden() } as any;
+    delete legacy.seedStarting;
+    useGardenStore.getState().loadGarden(legacy);
+    expect(useGardenStore.getState().garden.seedStarting).toEqual(emptySeedStartingState());
+  });
+});
+
+import { instantiatePreset } from '../model/trayCatalog';
+
+describe('seed-starting actions', () => {
+  beforeEach(() => useGardenStore.getState().reset());
+
+  it('addTray appends a tray and sets currentTrayId', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(1);
+  });
+
+  it('removeTray removes the tray and orphan seedlings', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().removeTray(tray.id);
+    expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(0);
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+
+  it('sowCell creates a seedling and marks slot sown', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 1, 2, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots[1 * t.cols + 2].state).toBe('sown');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(1);
+  });
+
+  it('fillTray fills all empty cells with seedlings', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillTray(tray.id, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(36);
+  });
+
+  it('fillTray only fills empty cells when one is already sown', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().fillTray(tray.id, 'basil-genovese');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(36);
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
+  });
+
+  it('clearCell removes the seedling and resets slot', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().clearCell(tray.id, 0, 0);
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots[0].state).toBe('empty');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
   });
 });

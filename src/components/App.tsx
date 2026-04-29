@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasStack } from '../canvas/CanvasStack';
+import { hitTestCell } from '../canvas/seedStartingHitTest';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { createPlanting, createStructure, createZone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
+import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { autosave } from '../utils/file';
 import { screenToWorld, snapToGrid } from '../utils/grid';
 import { getPlantingPosition } from '../utils/planting';
@@ -12,6 +14,7 @@ import { FpsMeter } from './FpsMeter';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
+import { SeedStartingPalette } from './palette/SeedStartingPalette';
 import { StatusBar } from './StatusBar';
 import { Sidebar } from './sidebar/Sidebar';
 
@@ -22,6 +25,7 @@ const DEFAULT_PANEL = 240;
 export function App() {
   const garden = useGardenStore((s) => s.garden);
   const loadGarden = useGardenStore((s) => s.loadGarden);
+  const appMode = useUiStore((s) => s.appMode);
   const { theme, prevTheme, layerFlip, transitionDuration } = useActiveTheme();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
   const [rightWidth, setRightWidth] = useState(DEFAULT_PANEL);
@@ -34,7 +38,11 @@ export function App() {
     fetch(`${import.meta.env.BASE_URL}default.garden`)
       .then((r) => r.json())
       .then((g) => loadGarden(g))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('mode') === 'seed-starting') enterSeedStarting();
+      });
   }, [loadGarden]);
 
   useEffect(() => {
@@ -272,6 +280,139 @@ export function App() {
     [],
   );
 
+  const handleSeedDragBegin = useCallback(
+    (entry: PaletteEntry, e: React.PointerEvent) => {
+      if (entry.category !== 'plantings') return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const target = e.currentTarget as HTMLElement;
+      target.setPointerCapture(e.pointerId);
+      const THRESHOLD = 4;
+      let dragging = false;
+
+      function currentViewport(rect: DOMRect) {
+        const ui = useUiStore.getState();
+        const garden = useGardenStore.getState().garden;
+        const tray = garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
+        if (!tray) return null;
+        const trayPxW = tray.widthIn * ui.seedStartingZoom;
+        const trayPxH = tray.heightIn * ui.seedStartingZoom;
+        return {
+          tray,
+          pxPerInch: ui.seedStartingZoom,
+          originX: (rect.width - trayPxW) / 2 + ui.seedStartingPanX,
+          originY: (rect.height - trayPxH) / 2 + ui.seedStartingPanY,
+        };
+      }
+
+      function viewport() {
+        const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
+        const rect = el?.getBoundingClientRect();
+        if (!rect) return null;
+        const vp = currentViewport(rect);
+        if (!vp) return null;
+        return { rect, vp };
+      }
+
+      let ghost: HTMLDivElement | null = null;
+      function ensureGhost() {
+        if (ghost) return ghost;
+        const el = document.createElement('div');
+        el.style.cssText = [
+          'position:fixed', 'pointer-events:none', 'z-index:9999',
+          'width:24px', 'height:24px', 'border-radius:50%',
+          `background:${entry.color ?? '#888'}`,
+          'box-shadow:0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,0.4)',
+          'transform:translate(-50%,-50%)',
+          'opacity:0.85',
+        ].join(';');
+        document.body.appendChild(el);
+        ghost = el;
+        return el;
+      }
+      function moveGhost(x: number, y: number) {
+        const g = ensureGhost();
+        g.style.left = `${x}px`;
+        g.style.top = `${y}px`;
+      }
+      function clearGhost() {
+        if (ghost) ghost.remove();
+        ghost = null;
+      }
+
+      let lastClientX = startX;
+      let lastClientY = startY;
+      let shiftHeld = false;
+
+      function updateFillPreview() {
+        const setPreview = useUiStore.getState().setSeedFillPreview;
+        if (!dragging || !shiftHeld) {
+          setPreview(null);
+          return;
+        }
+        const v = viewport();
+        if (!v) {
+          setPreview(null);
+          return;
+        }
+        const sx = lastClientX - v.rect.left;
+        const sy = lastClientY - v.rect.top;
+        const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
+        setPreview(hit ? { trayId: v.vp.tray.id, cultivarId: entry.id } : null);
+      }
+
+      function onMove(ev: PointerEvent) {
+        lastClientX = ev.clientX;
+        lastClientY = ev.clientY;
+        shiftHeld = ev.shiftKey;
+        if (!dragging) {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
+          dragging = true;
+          (target as HTMLElement & { __dragged?: boolean }).__dragged = true;
+        }
+        moveGhost(ev.clientX, ev.clientY);
+        updateFillPreview();
+      }
+
+      function onKey(ev: KeyboardEvent) {
+        if (ev.key !== 'Shift') return;
+        shiftHeld = ev.type === 'keydown';
+        updateFillPreview();
+      }
+
+      function onUp(ev: PointerEvent) {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('keydown', onKey);
+        document.removeEventListener('keyup', onKey);
+        target.releasePointerCapture(ev.pointerId);
+        clearGhost();
+        useUiStore.getState().setSeedFillPreview(null);
+        if (!dragging) return;
+
+        const v = viewport();
+        if (!v) return;
+        if (ev.shiftKey) {
+          useGardenStore.getState().fillTray(v.vp.tray.id, entry.id);
+          return;
+        }
+        const sx = ev.clientX - v.rect.left;
+        const sy = ev.clientY - v.rect.top;
+        const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
+        if (!hit) return;
+        useGardenStore.getState().sowCell(v.vp.tray.id, hit.row, hit.col, entry.id);
+      }
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('keydown', onKey);
+      document.addEventListener('keyup', onKey);
+    },
+    [],
+  );
+
   const handleResizeStart = useCallback(
     (side: 'left' | 'right', e: React.MouseEvent) => {
       e.preventDefault();
@@ -341,7 +482,11 @@ export function App() {
         <MenuBar />
       </div>
       <div className={styles.palette}>
-        <ObjectPalette onDragBegin={handlePaletteDragBegin} />
+        {appMode === 'seed-starting' ? (
+          <SeedStartingPalette onDragBegin={handleSeedDragBegin} />
+        ) : (
+          <ObjectPalette onDragBegin={handlePaletteDragBegin} />
+        )}
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.leftHandle}`}

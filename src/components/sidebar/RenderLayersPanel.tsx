@@ -22,9 +22,32 @@ const GROUPS: LayerGroup[] = [
 // Also include the footprint circles pseudo-layer
 const FOOTPRINT_CIRCLES_ID = 'planting-footprint-circles';
 
+const SEED_STARTING_LAYERS: { id: string; label: string; defaultVisible: boolean }[] = [
+  { id: 'tray-grid', label: 'Cell snap points', defaultVisible: true },
+  { id: 'seedling-labels', label: 'Seedling labels', defaultVisible: false },
+];
+
 export function RenderLayersPanel() {
   const visibility = useUiStore((s) => s.renderLayerVisibility);
   const setVisible = useUiStore((s) => s.setRenderLayerVisible);
+  const appMode = useUiStore((s) => s.appMode);
+
+  if (appMode === 'seed-starting') {
+    return (
+      <LayerSection title="Render Layers" defaultOpen={false}>
+        {SEED_STARTING_LAYERS.map((layer) => (
+          <label key={layer.id} className={styles.surfaceToggle}>
+            <input
+              type="checkbox"
+              checked={visibility[layer.id] ?? layer.defaultVisible}
+              onChange={(e) => setVisible(layer.id, e.target.checked)}
+            />
+            <span>{layer.label}</span>
+          </label>
+        ))}
+      </LayerSection>
+    );
+  }
 
   return (
     <LayerSection title="Render Layers" defaultOpen={false}>
