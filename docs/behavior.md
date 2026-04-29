@@ -96,3 +96,4 @@ Running list of intended application behaviors.
 - Cultivars are listed in the seed-starting palette only when their resolved `seedStarting.startable` is `true`
 - The render-layers panel in seed-starting mode exposes `tray-grid` and `seedling-labels` toggles
 - Seedlings with warnings (e.g., placed in a tray whose cell size doesn't match the cultivar's preferred size) are highlighted with a goldenrod outline ring around the icon
+- Existing seedlings can be dragged within the tray: dropping on an empty cell moves the seedling, dropping on an occupied cell swaps the two, and dropping outside the tray removes the seedling

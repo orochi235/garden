@@ -45,6 +45,13 @@ interface GardenStore {
   removeTray: (trayId: string) => void;
   sowCell: (trayId: string, row: number, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   clearCell: (trayId: string, row: number, col: number) => void;
+  moveSeedling: (
+    trayId: string,
+    fromRow: number,
+    fromCol: number,
+    toRow: number,
+    toCol: number,
+  ) => void;
   fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
@@ -397,6 +404,34 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const tray = seedStarting.trays.find((t) => t.id === trayId);
       if (!tray || col < 0 || col >= tray.cols) return;
       fillCells(trayId, cultivarId, opts?.replace ?? false, (_r, c) => c === col);
+    },
+
+    moveSeedling: (trayId, fromRow, fromCol, toRow, toCol) => {
+      if (fromRow === toRow && fromCol === toCol) return;
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray) return;
+      const fromSlot = getCell(tray, fromRow, fromCol);
+      const toSlot = getCell(tray, toRow, toCol);
+      if (!fromSlot || !toSlot) return;
+      if (fromSlot.state !== 'sown' || !fromSlot.seedlingId) return;
+      let updated = setCell(tray, toRow, toCol, { ...fromSlot });
+      updated = setCell(updated, fromRow, fromCol, { ...toSlot });
+      const movedIds = new Set<string>();
+      if (fromSlot.seedlingId) movedIds.add(fromSlot.seedlingId);
+      if (toSlot.seedlingId) movedIds.add(toSlot.seedlingId);
+      const seedlings = seedStarting.seedlings.map((s) => {
+        if (s.id === fromSlot.seedlingId) return { ...s, row: toRow, col: toCol };
+        if (s.id === toSlot.seedlingId) return { ...s, row: fromRow, col: fromCol };
+        return s;
+      });
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.map((t) => (t.id === trayId ? updated : t)),
+          seedlings,
+        },
+      });
     },
 
     clearCell: (trayId, row, col) => {

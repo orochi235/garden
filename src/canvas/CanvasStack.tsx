@@ -20,7 +20,9 @@ import { usePanInteraction } from './hooks/usePanInteraction';
 import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
 import { usePlotInteraction } from './hooks/usePlotInteraction';
 import { useResizeInteraction } from './hooks/useResizeInteraction';
-import { onIconLoad } from './plantRenderers';
+import { onIconLoad, renderPlant } from './plantRenderers';
+import { getCultivar } from '../model/cultivars';
+import { createDragGhost } from '../utils/dragGhost';
 import { PlantingLayerRenderer } from './PlantingLayerRenderer';
 import { renderBlueprint } from './renderBlueprint';
 import { renderGrid } from './renderGrid';
@@ -399,11 +401,121 @@ export function CanvasStack() {
     [appMode, selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY],
   );
 
+  // --- Seedling drag (in-tray move, drag-out to remove) ---
+  const beginSeedlingDrag = useCallback((e: React.MouseEvent): boolean => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return false;
+    const ui = useUiStore.getState();
+    const { garden: g } = useGardenStore.getState();
+    const tray = g.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
+    if (!tray) return false;
+    const pxPerInch = ui.seedStartingZoom;
+    const trayPxW = tray.widthIn * pxPerInch;
+    const trayPxH = tray.heightIn * pxPerInch;
+    const originX = (rect.width - trayPxW) / 2 + ui.seedStartingPanX;
+    const originY = (rect.height - trayPxH) / 2 + ui.seedStartingPanY;
+    const sx0 = e.clientX - rect.left;
+    const sy0 = e.clientY - rect.top;
+    const cell = hitTestCell(tray, { pxPerInch, originX, originY }, sx0, sy0);
+    if (!cell) return false;
+    const slot = tray.slots[cell.row * tray.cols + cell.col];
+    if (slot.state !== 'sown' || !slot.seedlingId) return false;
+    const seedling = g.seedStarting.seedlings.find((s) => s.id === slot.seedlingId);
+    if (!seedling) return false;
+    const cultivar = getCultivar(seedling.cultivarId);
+
+    const trayId = tray.id;
+    const fromRow = cell.row;
+    const fromCol = cell.col;
+    const cellPx = tray.cellPitchIn * pxPerInch;
+    const radius = (cellPx * 0.85) / 2;
+    let activated = false;
+    let ghost: ReturnType<typeof createDragGhost> | null = null;
+    let unsubIcon: (() => void) | null = null;
+    const THRESHOLD = 4;
+
+    function ensureGhost() {
+      if (ghost) return ghost;
+      ghost = createDragGhost({
+        sizeCss: Math.max(16, radius * 2),
+        paint: (ctx) => renderPlant(ctx, seedling!.cultivarId, radius, cultivar?.color ?? '#888'),
+      });
+      unsubIcon = onIconLoad(() => ghost?.repaint());
+      return ghost;
+    }
+
+    function updatePreview(clientX: number, clientY: number) {
+      const r = containerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const sx = clientX - r.left;
+      const sy = clientY - r.top;
+      const hit = hitTestCell(tray!, { pxPerInch, originX, originY }, sx, sy);
+      if (hit && (hit.row !== fromRow || hit.col !== fromCol)) {
+        useUiStore.getState().setSeedFillPreview({
+          trayId,
+          cultivarId: seedling!.cultivarId,
+          scope: 'cell',
+          row: hit.row,
+          col: hit.col,
+          replace: true,
+        });
+        ghost?.setHidden(true);
+      } else {
+        useUiStore.getState().setSeedFillPreview(null);
+        ghost?.setHidden(false);
+      }
+    }
+
+    function onMove(ev: PointerEvent) {
+      if (!activated) {
+        const dx = ev.clientX - e.clientX;
+        const dy = ev.clientY - e.clientY;
+        if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
+        activated = true;
+        ensureGhost();
+      }
+      ghost?.move(ev.clientX, ev.clientY);
+      updatePreview(ev.clientX, ev.clientY);
+    }
+
+    function cleanup() {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      unsubIcon?.();
+      ghost?.destroy();
+      useUiStore.getState().setSeedFillPreview(null);
+    }
+
+    function onUp(ev: PointerEvent) {
+      cleanup();
+      if (!activated) return;
+      const r = containerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const sx = ev.clientX - r.left;
+      const sy = ev.clientY - r.top;
+      const hit = hitTestCell(tray!, { pxPerInch, originX, originY }, sx, sy);
+      if (!hit) {
+        useGardenStore.getState().clearCell(trayId, fromRow, fromCol);
+        return;
+      }
+      if (hit.row === fromRow && hit.col === fromCol) return;
+      useGardenStore.getState().moveSeedling(trayId, fromRow, fromCol, hit.row, hit.col);
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    e.preventDefault();
+    return true;
+  }, []);
+
   // --- Event dispatch ---
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       const isSeed = useUiStore.getState().appMode === 'seed-starting';
       if (isSeed) {
+        if (e.button === 0 && useUiStore.getState().viewMode !== 'pan') {
+          if (beginSeedlingDrag(e)) return;
+        }
         // Seed mode: only support pan (left-drag in pan view-mode, or right-button)
         if (e.button === 2 || useUiStore.getState().viewMode === 'pan') {
           pan.start(e);
