@@ -192,6 +192,7 @@ describe('gardenStore', () => {
       structures: [],
       zones: [],
       plantings: [],
+      seedStarting: { trays: [], seedlings: [] },
     };
     loadGarden(data);
     expect(useGardenStore.getState().garden.name).toBe('Loaded');

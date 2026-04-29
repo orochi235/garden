@@ -1,6 +1,8 @@
 import type { Arrangement, ParentBounds } from './arrangement';
 import { defaultArrangement } from './arrangement';
 import { getCultivar } from './cultivars';
+import type { SeedStartingState } from './seedStarting';
+import { emptySeedStartingState } from './seedStarting';
 
 export type DisplayUnit = 'ft' | 'in' | 'm' | 'cm';
 
@@ -87,6 +89,7 @@ export interface Garden {
   structures: Structure[];
   zones: Zone[];
   plantings: Planting[];
+  seedStarting: SeedStartingState;
 }
 
 let _idCounter = 0;
@@ -108,6 +111,7 @@ export function createGarden(opts: { name: string; widthFt: number; heightFt: nu
     structures: [],
     zones: [],
     plantings: [],
+    seedStarting: emptySeedStartingState(),
   };
 }
 
