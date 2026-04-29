@@ -207,3 +207,43 @@ describe('gardenStore', () => {
     expect(useGardenStore.getState().garden.seedStarting).toEqual(emptySeedStartingState());
   });
 });
+
+import { instantiatePreset } from '../model/trayCatalog';
+
+describe('seed-starting actions', () => {
+  beforeEach(() => useGardenStore.getState().reset());
+
+  it('addTray appends a tray and sets currentTrayId', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(1);
+  });
+
+  it('removeTray removes the tray and orphan seedlings', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().removeTray(tray.id);
+    expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(0);
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+
+  it('sowCell creates a seedling and marks slot sown', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 1, 2, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots[1 * t.cols + 2].state).toBe('sown');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(1);
+  });
+
+  it('clearCell removes the seedling and resets slot', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().clearCell(tray.id, 0, 0);
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots[0].state).toBe('empty');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+});
