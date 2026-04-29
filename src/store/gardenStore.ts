@@ -303,6 +303,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const { seedStarting } = get().garden;
       commitPatch({
         seedStarting: {
+          ...seedStarting,
           trays: seedStarting.trays.filter((t) => t.id !== trayId),
           seedlings: seedStarting.seedlings.filter((s) => s.trayId !== trayId),
         },
@@ -319,6 +320,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const updatedTray = setCell(tray, row, col, { state: 'sown', seedlingId: seedling.id });
       commitPatch({
         seedStarting: {
+          ...seedStarting,
           trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings: [...seedStarting.seedlings, seedling],
         },
@@ -335,6 +337,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const updatedTray = setCell(tray, row, col, { state: 'empty', seedlingId: null });
       commitPatch({
         seedStarting: {
+          ...seedStarting,
           trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings: seedStarting.seedlings.filter((s) => s.id !== seedlingId),
         },
