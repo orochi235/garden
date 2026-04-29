@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { computeSlots } from '../model/arrangement';
 import type { Arrangement } from '../model/arrangement';
 import { createSeedling, emptySeedStartingState, getCell, setCell } from '../model/seedStarting';
-import type { Tray } from '../model/seedStarting';
+import type { Seedling, Tray } from '../model/seedStarting';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
@@ -44,6 +44,7 @@ interface GardenStore {
   removeTray: (trayId: string) => void;
   sowCell: (trayId: string, row: number, col: number, cultivarId: string) => void;
   clearCell: (trayId: string, row: number, col: number) => void;
+  fillTray: (trayId: string, cultivarId: string) => void;
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -323,6 +324,31 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           ...seedStarting,
           trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings: [...seedStarting.seedlings, seedling],
+        },
+      });
+    },
+
+    fillTray: (trayId, cultivarId) => {
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray) return;
+      let updatedTray = tray;
+      const newSeedlings: Seedling[] = [];
+      for (let r = 0; r < tray.rows; r++) {
+        for (let c = 0; c < tray.cols; c++) {
+          const slot = updatedTray.slots[r * tray.cols + c];
+          if (slot.state !== 'empty') continue;
+          const seedling = createSeedling({ cultivarId, trayId, row: r, col: c });
+          newSeedlings.push(seedling);
+          updatedTray = setCell(updatedTray, r, c, { state: 'sown', seedlingId: seedling.id });
+        }
+      }
+      if (newSeedlings.length === 0) return;
+      commitPatch({
+        seedStarting: {
+          ...seedStarting,
+          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+          seedlings: [...seedStarting.seedlings, ...newSeedlings],
         },
       });
     },

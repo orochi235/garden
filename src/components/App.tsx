@@ -326,6 +326,10 @@ export function App() {
 
         const v = viewport();
         if (!v) return;
+        if (ev.shiftKey) {
+          useGardenStore.getState().fillTray(v.vp.tray.id, entry.id);
+          return;
+        }
         const sx = ev.clientX - v.rect.left;
         const sy = ev.clientY - v.rect.top;
         const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);

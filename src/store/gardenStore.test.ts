@@ -237,6 +237,25 @@ describe('seed-starting actions', () => {
     expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(1);
   });
 
+  it('fillTray fills all empty cells with seedlings', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillTray(tray.id, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(36);
+  });
+
+  it('fillTray only fills empty cells when one is already sown', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().fillTray(tray.id, 'basil-genovese');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(36);
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
+  });
+
   it('clearCell removes the seedling and resets slot', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
