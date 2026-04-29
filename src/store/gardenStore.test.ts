@@ -256,6 +256,97 @@ describe('seed-starting actions', () => {
     expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
   });
 
+  it('fillRow only fills cells in the specified row', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillRow(tray.id, 1, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    for (let r = 0; r < t.rows; r++) {
+      for (let c = 0; c < t.cols; c++) {
+        const expected = r === 1 ? 'sown' : 'empty';
+        expect(t.slots[r * t.cols + c].state).toBe(expected);
+      }
+    }
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.cols);
+  });
+
+  it('fillRow skips already-sown cells', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().fillRow(tray.id, 0, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots.slice(0, t.cols).every((s) => s.state === 'sown')).toBe(true);
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.cols);
+  });
+
+  it('fillRow ignores out-of-bounds row', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillRow(tray.id, 99, 'basil-genovese');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+
+  it('fillColumn only fills cells in the specified column', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillColumn(tray.id, 2, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    for (let r = 0; r < t.rows; r++) {
+      for (let c = 0; c < t.cols; c++) {
+        const expected = c === 2 ? 'sown' : 'empty';
+        expect(t.slots[r * t.cols + c].state).toBe(expected);
+      }
+    }
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.rows);
+  });
+
+  it('fillColumn ignores out-of-bounds column', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillColumn(tray.id, 99, 'basil-genovese');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+
+  it('moveSeedling moves a seedling into an empty cell', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+    useGardenStore.getState().moveSeedling(tray.id, 0, 0, 1, 2);
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots[0 * t.cols + 0].state).toBe('empty');
+    const dest = t.slots[1 * t.cols + 2];
+    expect(dest.state).toBe('sown');
+    expect(dest.seedlingId).toBe(sId);
+    const seedling = useGardenStore.getState().garden.seedStarting.seedlings[0];
+    expect(seedling.row).toBe(1);
+    expect(seedling.col).toBe(2);
+  });
+
+  it('moveSeedling swaps two occupied cells', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().sowCell(tray.id, 1, 1, 'basil-genovese');
+    const before = useGardenStore.getState().garden.seedStarting.trays[0];
+    const idA = before.slots[0 * before.cols + 0].seedlingId;
+    const idB = before.slots[1 * before.cols + 1].seedlingId;
+    useGardenStore.getState().moveSeedling(tray.id, 0, 0, 1, 1);
+    const after = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(after.slots[0 * after.cols + 0].seedlingId).toBe(idB);
+    expect(after.slots[1 * after.cols + 1].seedlingId).toBe(idA);
+  });
+
+  it('moveSeedling is a no-op when source is empty', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().moveSeedling(tray.id, 0, 0, 1, 1);
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots[0].state).toBe('empty');
+    expect(t.slots[t.cols + 1].state).toBe('empty');
+  });
+
   it('clearCell removes the seedling and resets slot', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);

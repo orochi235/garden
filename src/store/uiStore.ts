@@ -63,15 +63,26 @@ interface UiStore {
   seedStartingZoom: number;
   seedStartingPanX: number;
   seedStartingPanY: number;
-  /** Transient ghost preview shown while dragging a cultivar over a tray with shift held. */
-  seedFillPreview: { trayId: string; cultivarId: string } | null;
+  /** Cultivar being dragged from the seed palette; null when no drag in progress. */
+  seedDragCultivarId: string | null;
+  /** Transient ghost preview shown while dragging a cultivar over a fill target. */
+  seedFillPreview:
+    | { trayId: string; cultivarId: string; scope: 'all'; replace?: boolean }
+    | { trayId: string; cultivarId: string; scope: 'row'; index: number; replace?: boolean }
+    | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
+    | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean }
+    | null;
+  /** Whether to highlight seedlings with warnings (goldenrod ring + hover tooltip). */
+  showSeedlingWarnings: boolean;
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
+  setShowSeedlingWarnings: (show: boolean) => void;
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
   setSeedStartingZoom: (zoom: number) => void;
   setSeedStartingPan: (x: number, y: number) => void;
-  setSeedFillPreview: (preview: { trayId: string; cultivarId: string } | null) => void;
+  setSeedDragCultivarId: (id: string | null) => void;
+  setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
   setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
   resetAlmanacFilters: () => void;
   setDragOverlay: (overlay: DragOverlay) => void;
@@ -141,7 +152,9 @@ function defaultState() {
     seedStartingZoom: 30,
     seedStartingPanX: 0,
     seedStartingPanY: 0,
-    seedFillPreview: null as { trayId: string; cultivarId: string } | null,
+    seedDragCultivarId: null as string | null,
+    seedFillPreview: null as UiStore['seedFillPreview'],
+    showSeedlingWarnings: true,
     almanacFilters: {
       cellSizes: [],
       seasons: [],
@@ -194,9 +207,11 @@ export const useUiStore = create<UiStore>((set) => ({
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
   setAppMode: (mode) => set({ appMode: mode }),
+  setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
   setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
   setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
+  setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
   setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
   setAlmanacFilters: (patch) =>
     set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),

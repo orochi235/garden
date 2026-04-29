@@ -48,6 +48,9 @@ export const CELL_PITCH_IN: Record<CellSize, number> = {
   large: 2.0,
 };
 
+/** Fixed padding between the outer tray edge and the cell grid, on every side. */
+export const TRAY_PADDING_IN = 0.35;
+
 function emptySlot(): TraySlot {
   return { state: 'empty', seedlingId: null };
 }
@@ -63,7 +66,14 @@ export function createTray(opts: {
   /** Outer tray height in inches. Defaults to rows * cellPitchIn. */
   heightIn?: number;
 }): Tray {
-  const pitch = opts.cellPitchIn ?? CELL_PITCH_IN[opts.cellSize];
+  const nominalPitch = opts.cellPitchIn ?? CELL_PITCH_IN[opts.cellSize];
+  const widthIn = opts.widthIn ?? opts.cols * nominalPitch + 2 * TRAY_PADDING_IN;
+  const heightIn = opts.heightIn ?? opts.rows * nominalPitch + 2 * TRAY_PADDING_IN;
+  // Subdivide the interior (after fixed padding) evenly; cells stay square via min().
+  const pitch = Math.min(
+    (widthIn - 2 * TRAY_PADDING_IN) / opts.cols,
+    (heightIn - 2 * TRAY_PADDING_IN) / opts.rows,
+  );
   const slots = Array.from({ length: opts.rows * opts.cols }, emptySlot);
   return {
     id: generateId(),
@@ -72,8 +82,8 @@ export function createTray(opts: {
     cols: opts.cols,
     cellSize: opts.cellSize,
     cellPitchIn: pitch,
-    widthIn: opts.widthIn ?? opts.cols * pitch,
-    heightIn: opts.heightIn ?? opts.rows * pitch,
+    widthIn,
+    heightIn,
     slots,
   };
 }

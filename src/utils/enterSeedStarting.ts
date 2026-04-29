@@ -14,10 +14,13 @@ export function enterSeedStarting() {
     } else {
       const tray = instantiatePreset('1020-72');
       if (tray) {
-        useGardenStore.getState().addTray(tray);
+        useGardenStore.getState().addTraySilent(tray);
         ui.setCurrentTrayId(tray.id);
       }
     }
+  }
+  if (ui.activeLayer !== 'plantings' && ui.activeLayer !== 'zones') {
+    ui.setActiveLayer('plantings');
   }
   ui.setAppMode('seed-starting');
 }
