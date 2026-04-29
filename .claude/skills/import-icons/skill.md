@@ -215,7 +215,23 @@ console.log('Cultivar matches: ' + cultivarMatches);
 "
 ```
 
-### 8. Generate distribution icons
+### 8. Optimize embedded icons
+
+The base64 PNGs just embedded into `species.json` / `cultivars.json` are at full
+source resolution (~683×683, RGB). The app only renders icons at small sizes,
+so leaving them at source resolution bloats the JS bundle dramatically (90+ MB
+chunk). Run the project optimizer to downsample and quantize the embedded
+images in place — source files in `icons/` are untouched.
+
+```bash
+node scripts/optimize-embedded-icons.mjs
+```
+
+The script resizes each embedded PNG to 128×128 and quantizes to a 128-color
+palette. Typical reduction: ~90 MB of icon data → ~1 MB. Re-run this any time
+new icons are embedded.
+
+### 9. Generate distribution icons
 
 Resize each final icon to `OUTPUT_SIZE x OUTPUT_SIZE` and save to `icons/dist/`:
 
