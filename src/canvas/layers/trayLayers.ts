@@ -68,15 +68,17 @@ export function renderTrayBase(
     const wellRadius = p * 0.4;
     const dotRadius = Math.max(1.5, p * 0.06);
 
-    // Well rings: subtle rim showing the physical well opening
-    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-    ctx.lineWidth = 1;
+    // Wells: slightly darker disc with a rim, suggesting the physical well opening
     for (let r = 0; r < tray.rows; r++) {
       for (let c = 0; c < tray.cols; c++) {
         const cx = ox + c * p + p / 2;
         const cy = oy + r * p + p / 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
         ctx.beginPath();
         ctx.arc(cx, cy, wellRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
     }
