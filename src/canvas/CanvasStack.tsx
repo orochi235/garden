@@ -380,6 +380,7 @@ export function CanvasStack() {
         renderSeedlings(ctx, tray, garden.seedStarting.seedlings, pxPerInch, originX, originY, {
           showLabel: showSeedlingLabels,
           showWarnings: showSeedlingWarnings,
+          selectedIds,
           fillPreviewCultivarId: previewMatch?.cultivarId ?? null,
           fillPreviewScope: previewMatch?.scope,
           fillPreviewIndex:
@@ -492,7 +493,20 @@ export function CanvasStack() {
 
     function onUp(ev: PointerEvent) {
       cleanup();
-      if (!activated) return;
+      if (!activated) {
+        // Click without drag → select / toggle / replace selection
+        const ui2 = useUiStore.getState();
+        if (ev.shiftKey || ev.metaKey) {
+          if (ui2.selectedIds.includes(seedling!.id)) {
+            ui2.setSelection(ui2.selectedIds.filter((id) => id !== seedling!.id));
+          } else {
+            ui2.addToSelection(seedling!.id);
+          }
+        } else {
+          ui2.select(seedling!.id);
+        }
+        return;
+      }
       const r = containerRef.current?.getBoundingClientRect();
       if (!r) return;
       const sx = ev.clientX - r.left;
@@ -519,6 +533,8 @@ export function CanvasStack() {
       if (isSeed) {
         if (e.button === 0 && useUiStore.getState().viewMode !== 'pan') {
           if (beginSeedlingDrag(e)) return;
+          // Click on empty cell or background → clear selection (unless modifier held)
+          if (!e.shiftKey && !e.metaKey) clearSelection();
         }
         // Seed mode: only support pan (left-drag in pan view-mode, or right-button)
         if (e.button === 2 || useUiStore.getState().viewMode === 'pan') {

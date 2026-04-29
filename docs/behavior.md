@@ -97,3 +97,4 @@ Running list of intended application behaviors.
 - The render-layers panel in seed-starting mode exposes `tray-grid` and `seedling-labels` toggles
 - Seedlings with warnings (e.g., placed in a tray whose cell size doesn't match the cultivar's preferred size) are highlighted with a goldenrod outline ring around the icon
 - Existing seedlings can be dragged within the tray: dropping on an empty cell moves the seedling, dropping on an occupied cell swaps the two, and dropping outside the tray removes the seedling
+- Clicking a seedling selects it; shift- or cmd-clicking another seedling adds/removes it from the selection (multiselect). Clicking an empty cell or the background clears the selection. Selected seedlings render with a dashed blue ring

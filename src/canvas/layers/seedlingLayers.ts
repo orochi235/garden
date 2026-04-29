@@ -44,6 +44,7 @@ export function renderSeedlings(
   options: {
     showLabel: boolean;
     showWarnings?: boolean;
+    selectedIds?: string[];
     fillPreviewCultivarId?: string | null;
     fillPreviewScope?: 'all' | 'row' | 'col' | 'cell';
     fillPreviewIndex?: number;
@@ -71,6 +72,18 @@ export function renderSeedlings(
 
     if (options.showWarnings !== false && hasSeedlingWarnings(seedling, tray)) {
       strokeWarningRing(ctx, cx, cy, radius, p);
+    }
+
+    if (options.selectedIds?.includes(seedling.id)) {
+      ctx.save();
+      ctx.strokeStyle = '#5BA4CF';
+      ctx.lineWidth = Math.max(1.5, p * 0.05);
+      ctx.setLineDash([Math.max(3, p * 0.15), Math.max(2, p * 0.08)]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + Math.max(2.5, p * 0.09), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     }
 
     if (options.showLabel) {
