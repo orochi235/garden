@@ -164,6 +164,22 @@ describe('uiStore', () => {
     });
   });
 
+  describe('appMode', () => {
+    it('defaults to garden and can switch', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().appMode).toBe('garden');
+      useUiStore.getState().setAppMode('seed-starting');
+      expect(useUiStore.getState().appMode).toBe('seed-starting');
+    });
+
+    it('currentTrayId starts null and can be set', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().currentTrayId).toBeNull();
+      useUiStore.getState().setCurrentTrayId('tray-1');
+      expect(useUiStore.getState().currentTrayId).toBe('tray-1');
+    });
+  });
+
   describe('dragOverlay', () => {
     it('starts as null', () => {
       expect(useUiStore.getState().dragOverlay).toBeNull();

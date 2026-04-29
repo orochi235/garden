@@ -4,6 +4,7 @@ import type { TimePeriod } from '../utils/timeTheme';
 
 export type ViewMode = 'select' | 'select-area' | 'pan' | 'zoom' | 'draw';
 export type LabelMode = 'all' | 'active-layer' | 'selection';
+export type AppMode = 'garden' | 'seed-starting';
 
 export interface DragOverlay {
   layer: 'plantings' | 'structures' | 'zones';
@@ -43,6 +44,16 @@ interface UiStore {
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
+  appMode: AppMode;
+  currentTrayId: string | null;
+  /** Per-mode view state for the seed-starting canvas (pixels per inch). */
+  seedStartingZoom: number;
+  seedStartingPanX: number;
+  seedStartingPanY: number;
+  setAppMode: (mode: AppMode) => void;
+  setCurrentTrayId: (id: string | null) => void;
+  setSeedStartingZoom: (zoom: number) => void;
+  setSeedStartingPan: (x: number, y: number) => void;
   setDragOverlay: (overlay: DragOverlay) => void;
   clearDragOverlay: () => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
@@ -70,6 +81,8 @@ interface UiStore {
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 200;
+const SEED_MIN_ZOOM = 5;
+const SEED_MAX_ZOOM = 100;
 
 function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
@@ -101,6 +114,11 @@ function defaultState() {
     layerFlashCounter: 0,
     viewMode: 'select' as ViewMode,
     dragOverlay: null as DragOverlay | null,
+    appMode: 'garden' as AppMode,
+    currentTrayId: null as string | null,
+    seedStartingZoom: 30,
+    seedStartingPanX: 0,
+    seedStartingPanY: 0,
   };
 }
 
@@ -146,5 +164,9 @@ export const useUiStore = create<UiStore>((set) => ({
   clearSelection: () => set({ selectedIds: [] }),
   setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
+  setAppMode: (mode) => set({ appMode: mode }),
+  setCurrentTrayId: (id) => set({ currentTrayId: id }),
+  setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
+  setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
   reset: () => set(defaultState()),
 }));
