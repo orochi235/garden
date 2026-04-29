@@ -112,3 +112,28 @@
   background: rgba(255, 255, 255, 0.06);
   padding-bottom: 4px;
 }
+
+/* Tray preset buttons in seed-starting palette */
+.trayButton {
+  display: block;
+  width: calc(100% - 8px);
+  margin: 2px 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trayButton:hover {
+  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+}
+.emptyMessage {
+  padding: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}

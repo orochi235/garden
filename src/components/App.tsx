@@ -12,6 +12,7 @@ import { FpsMeter } from './FpsMeter';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
+import { SeedStartingPalette } from './palette/SeedStartingPalette';
 import { StatusBar } from './StatusBar';
 import { Sidebar } from './sidebar/Sidebar';
 
@@ -22,6 +23,7 @@ const DEFAULT_PANEL = 240;
 export function App() {
   const garden = useGardenStore((s) => s.garden);
   const loadGarden = useGardenStore((s) => s.loadGarden);
+  const appMode = useUiStore((s) => s.appMode);
   const { theme, prevTheme, layerFlip, transitionDuration } = useActiveTheme();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
   const [rightWidth, setRightWidth] = useState(DEFAULT_PANEL);
@@ -341,7 +343,12 @@ export function App() {
         <MenuBar />
       </div>
       <div className={styles.palette}>
-        <ObjectPalette onDragBegin={handlePaletteDragBegin} />
+        {appMode === 'seed-starting' ? (
+          // TODO(Task 15): wire seed-starting drag/drop onto trays
+          <SeedStartingPalette onDragBegin={() => {}} />
+        ) : (
+          <ObjectPalette onDragBegin={handlePaletteDragBegin} />
+        )}
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.leftHandle}`}
