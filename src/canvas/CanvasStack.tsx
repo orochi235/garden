@@ -274,9 +274,22 @@ export function CanvasStack() {
 
   useLayerEffect(
     zoneCanvasRef, width, height, dpr,
-    appMode === 'garden' && layerVisibility.zones,
-    (ctx) => zoneRenderer.current.render(ctx),
-    [appMode, garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, labelMode, labelFontSize, zoneRenderer.current.highlight, overlay],
+    appMode === 'garden' ? layerVisibility.zones : appMode === 'seed-starting',
+    (ctx) => {
+      if (appMode === 'seed-starting') {
+        const tray = garden.seedStarting.trays.find((t) => t.id === currentTrayId);
+        if (!tray) return;
+        const pxPerInch = seedStartingZoom;
+        const trayPxW = tray.widthIn * pxPerInch;
+        const trayPxH = tray.heightIn * pxPerInch;
+        const originX = (width - trayPxW) / 2 + seedStartingPanX;
+        const originY = (height - trayPxH) / 2 + seedStartingPanY;
+        renderTrayBase(ctx, tray, pxPerInch, originX, originY, { showGrid: showTrayGrid });
+        return;
+      }
+      zoneRenderer.current.render(ctx);
+    },
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showTrayGrid, garden.seedStarting, garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, labelMode, labelFontSize, zoneRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
@@ -302,7 +315,6 @@ export function CanvasStack() {
         const trayPxH = tray.heightIn * pxPerInch;
         const originX = (width - trayPxW) / 2 + seedStartingPanX;
         const originY = (height - trayPxH) / 2 + seedStartingPanY;
-        renderTrayBase(ctx, tray, pxPerInch, originX, originY, { showGrid: showTrayGrid });
         renderSeedlings(ctx, tray, garden.seedStarting.seedlings, pxPerInch, originX, originY, {
           showLabel: showSeedlingLabels,
         });
@@ -310,7 +322,7 @@ export function CanvasStack() {
       }
       plantingRenderer.current.render(ctx);
     },
-    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, showTrayGrid, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(
