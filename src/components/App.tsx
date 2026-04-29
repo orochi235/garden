@@ -309,6 +309,32 @@ export function App() {
         return { rect, vp };
       }
 
+      let ghost: HTMLDivElement | null = null;
+      function ensureGhost() {
+        if (ghost) return ghost;
+        const el = document.createElement('div');
+        el.style.cssText = [
+          'position:fixed', 'pointer-events:none', 'z-index:9999',
+          'width:24px', 'height:24px', 'border-radius:50%',
+          `background:${entry.color ?? '#888'}`,
+          'box-shadow:0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,0.4)',
+          'transform:translate(-50%,-50%)',
+          'opacity:0.85',
+        ].join(';');
+        document.body.appendChild(el);
+        ghost = el;
+        return el;
+      }
+      function moveGhost(x: number, y: number) {
+        const g = ensureGhost();
+        g.style.left = `${x}px`;
+        g.style.top = `${y}px`;
+      }
+      function clearGhost() {
+        if (ghost) ghost.remove();
+        ghost = null;
+      }
+
       function onMove(ev: PointerEvent) {
         if (!dragging) {
           const dx = ev.clientX - startX;
@@ -316,12 +342,14 @@ export function App() {
           if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
           dragging = true;
         }
+        moveGhost(ev.clientX, ev.clientY);
       }
 
       function onUp(ev: PointerEvent) {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         target.releasePointerCapture(ev.pointerId);
+        clearGhost();
         if (!dragging) return;
 
         const v = viewport();
