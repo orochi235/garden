@@ -9,7 +9,8 @@ describe('trayCatalog', () => {
   });
 
   it('getTrayPreset returns by id', () => {
-    expect(getTrayPreset('1020-36')?.rows).toBe(6);
+    expect(getTrayPreset('1020-36')?.rows).toBe(4);
+    expect(getTrayPreset('1020-36')?.cols).toBe(9);
     expect(getTrayPreset('nonexistent')).toBeUndefined();
   });
 

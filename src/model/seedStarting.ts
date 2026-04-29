@@ -58,6 +58,10 @@ export function createTray(opts: {
   cellSize: CellSize;
   label: string;
   cellPitchIn?: number;
+  /** Outer tray width in inches. Defaults to cols * cellPitchIn. */
+  widthIn?: number;
+  /** Outer tray height in inches. Defaults to rows * cellPitchIn. */
+  heightIn?: number;
 }): Tray {
   const pitch = opts.cellPitchIn ?? CELL_PITCH_IN[opts.cellSize];
   const slots = Array.from({ length: opts.rows * opts.cols }, emptySlot);
@@ -68,9 +72,17 @@ export function createTray(opts: {
     cols: opts.cols,
     cellSize: opts.cellSize,
     cellPitchIn: pitch,
-    widthIn: opts.cols * pitch,
-    heightIn: opts.rows * pitch,
+    widthIn: opts.widthIn ?? opts.cols * pitch,
+    heightIn: opts.heightIn ?? opts.rows * pitch,
     slots,
+  };
+}
+
+/** Inches of slack between the outer tray edge and the cell grid on each side. */
+export function trayInteriorOffsetIn(tray: Tray): { x: number; y: number } {
+  return {
+    x: Math.max(0, (tray.widthIn - tray.cols * tray.cellPitchIn) / 2),
+    y: Math.max(0, (tray.heightIn - tray.rows * tray.cellPitchIn) / 2),
   };
 }
 

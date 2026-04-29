@@ -1,4 +1,5 @@
 import type { Seedling, Tray } from '../../model/seedStarting';
+import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { getCultivar } from '../../model/cultivars';
 
 export interface SownCellEntry {
@@ -31,11 +32,14 @@ export function renderSeedlings(
   options: { showLabel: boolean },
 ) {
   const p = tray.cellPitchIn * pxPerInch;
+  const off = trayInteriorOffsetIn(tray);
+  const ox = originX + off.x * pxPerInch;
+  const oy = originY + off.y * pxPerInch;
   for (const { row, col, seedling } of collectSownCells(tray, seedlings)) {
     const cultivar = getCultivar(seedling.cultivarId);
     if (!cultivar) continue;
-    const cx = originX + col * p + p / 2;
-    const cy = originY + row * p + p / 2;
+    const cx = ox + col * p + p / 2;
+    const cy = oy + row * p + p / 2;
     const radius = (p * 0.7) / 2;
 
     // Background swatch

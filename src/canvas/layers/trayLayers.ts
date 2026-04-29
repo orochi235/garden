@@ -1,4 +1,5 @@
 import type { Tray } from '../../model/seedStarting';
+import { trayInteriorOffsetIn } from '../../model/seedStarting';
 
 export interface CellRect {
   row: number;
@@ -13,13 +14,14 @@ export interface CellRect {
 export function computeCellRectsIn(tray: Tray): CellRect[] {
   const out: CellRect[] = [];
   const p = tray.cellPitchIn;
+  const off = trayInteriorOffsetIn(tray);
   for (let r = 0; r < tray.rows; r++) {
     for (let c = 0; c < tray.cols; c++) {
       out.push({
         row: r,
         col: c,
-        xIn: c * p,
-        yIn: r * p,
+        xIn: off.x + c * p,
+        yIn: off.y + r * p,
         widthIn: p,
         heightIn: p,
       });
@@ -48,25 +50,29 @@ export function renderTrayBase(
   ctx.strokeStyle = '#1a1410';
   ctx.lineWidth = 1;
 
+  // Always draw the outer tray rim
+  ctx.strokeRect(originX, originY, w, h);
+
   if (showGrid) {
-    // Cell grid (includes outline at c=0/c=cols and r=0/r=rows)
     const p = tray.cellPitchIn * pxPerInch;
+    const off = trayInteriorOffsetIn(tray);
+    const ox = originX + off.x * pxPerInch;
+    const oy = originY + off.y * pxPerInch;
+    const gridW = tray.cols * p;
+    const gridH = tray.rows * p;
     for (let c = 0; c <= tray.cols; c++) {
-      const x = originX + c * p;
+      const x = ox + c * p;
       ctx.beginPath();
-      ctx.moveTo(x, originY);
-      ctx.lineTo(x, originY + h);
+      ctx.moveTo(x, oy);
+      ctx.lineTo(x, oy + gridH);
       ctx.stroke();
     }
     for (let r = 0; r <= tray.rows; r++) {
-      const y = originY + r * p;
+      const y = oy + r * p;
       ctx.beginPath();
-      ctx.moveTo(originX, y);
-      ctx.lineTo(originX + w, y);
+      ctx.moveTo(ox, y);
+      ctx.lineTo(ox + gridW, y);
       ctx.stroke();
     }
-  } else {
-    // Tray outline only
-    ctx.strokeRect(originX, originY, w, h);
   }
 }

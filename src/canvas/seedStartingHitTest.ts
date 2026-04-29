@@ -1,4 +1,5 @@
 import type { Tray } from '../model/seedStarting';
+import { trayInteriorOffsetIn } from '../model/seedStarting';
 
 export interface SeedStartingViewport {
   pxPerInch: number;
@@ -17,8 +18,9 @@ export function hitTestCell(
   screenX: number,
   screenY: number,
 ): CellHit | null {
-  const localX = screenX - viewport.originX;
-  const localY = screenY - viewport.originY;
+  const off = trayInteriorOffsetIn(tray);
+  const localX = screenX - viewport.originX - off.x * viewport.pxPerInch;
+  const localY = screenY - viewport.originY - off.y * viewport.pxPerInch;
   if (localX < 0 || localY < 0) return null;
   const totalW = tray.cols * tray.cellPitchIn * viewport.pxPerInch;
   const totalH = tray.rows * tray.cellPitchIn * viewport.pxPerInch;
