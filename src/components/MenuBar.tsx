@@ -45,6 +45,7 @@ export function MenuBar() {
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       )}
       {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}
+      <div className={styles.spacer} />
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>
         <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>

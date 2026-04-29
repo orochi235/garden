@@ -1,7 +1,7 @@
 .layout {
   display: grid;
   grid-template-rows: var(--menu-height) 1fr var(--status-height);
-  grid-template-columns: auto 4px 1fr 4px auto;
+  grid-template-columns: auto 6px 1fr 6px auto;
   grid-template-areas:
     "menu     menu     menu    menu    sidebar"
     "palette  lhandle  canvas  rhandle sidebar"
@@ -51,15 +51,35 @@
 }
 
 .resizeHandle {
-  z-index: 1;
+  z-index: 4;
   background: var(--color-bg);
   cursor: col-resize;
   transition: background 0.15s;
+  position: relative;
+}
+
+.resizeHandle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 36px;
+  border-radius: 1px;
+  background: var(--color-panel-border);
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s;
 }
 
 .resizeHandle:hover,
 .resizeHandleActive {
   background: var(--color-leaf);
+}
+
+.resizeHandle:hover::before {
+  opacity: 1;
+  background: var(--color-bg);
 }
 
 .leftHandle {

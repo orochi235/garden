@@ -12,7 +12,6 @@ import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { autosave } from '../utils/file';
 import { screenToWorld, snapToGrid } from '../utils/grid';
 import { getPlantingPosition } from '../utils/planting';
-import { FpsMeter } from './FpsMeter';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
@@ -34,6 +33,32 @@ export function App() {
   const dragging = useRef<'left' | 'right' | null>(null);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
+  const savedRightWidth = useRef(DEFAULT_PANEL);
+  const prevAppMode = useRef(appMode);
+
+  useEffect(() => {
+    if (prevAppMode.current === appMode) return;
+    if (appMode === 'seed-starting') {
+      if (rightWidth > 0) savedRightWidth.current = rightWidth;
+      setRightWidth(0);
+    } else {
+      setRightWidth(savedRightWidth.current || DEFAULT_PANEL);
+    }
+    prevAppMode.current = appMode;
+  }, [appMode, rightWidth]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (appMode === 'seed-starting') {
+      url.searchParams.set('mode', 'seed-starting');
+    } else {
+      url.searchParams.delete('mode');
+    }
+    const next = url.pathname + (url.search ? url.search : '') + url.hash;
+    if (next !== window.location.pathname + window.location.search + window.location.hash) {
+      window.history.replaceState(null, '', next);
+    }
+  }, [appMode]);
 
   useEffect(() => {
     // TODO: re-enable autosave loading once blank-canvas bug is fixed
@@ -481,6 +506,7 @@ export function App() {
       } else {
         // Right sidebar can collapse fully: snap to 0 below MIN_PANEL/2.
         const snapped = raw < MIN_PANEL / 2 ? 0 : Math.min(MAX_PANEL, Math.max(MIN_PANEL, raw));
+        if (snapped > 0) savedRightWidth.current = snapped;
         setRightWidth(snapped);
       }
     }
@@ -506,7 +532,8 @@ export function App() {
     <div
       className={styles.layout}
       style={{
-        gridTemplateColumns: `${leftWidth}px 4px 1fr 4px ${rightWidth}px`,
+        gridTemplateColumns: `${leftWidth}px 6px 1fr 6px ${rightWidth}px`,
+        ['--left-panel-width' as string]: `${leftWidth + 6}px`,
       }}
     >
       <div
@@ -552,7 +579,6 @@ export function App() {
       <div className={styles.status}>
         <StatusBar />
       </div>
-      <FpsMeter />
     </div>
   );
 }

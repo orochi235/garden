@@ -55,7 +55,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  color: #ffffff;
+  mix-blend-mode: difference;
   /* transition set by parent */
   padding: 8px 4px 4px;
 }

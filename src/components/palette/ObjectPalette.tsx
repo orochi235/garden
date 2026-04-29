@@ -52,7 +52,7 @@ export function ObjectPalette({ onDragBegin }: Props) {
               <div key={cat.id} className={styles.category}>
                 <div
                   className={styles.categoryLabel}
-                  style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}
+                  style={{ transition: `color ${dur} ease` }}
                 >
                   {cat.label}
                 </div>

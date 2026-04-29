@@ -1,0 +1,42 @@
+.root {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(20, 22, 26, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  z-index: 5;
+  max-width: 220px;
+}
+
+.item {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #d8dce0;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}

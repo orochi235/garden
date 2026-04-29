@@ -15,18 +15,20 @@ export function ModeSwitcher() {
         aria-pressed={appMode === 'garden'}
         className={`${styles.tab} ${appMode === 'garden' ? styles.active : ''}`}
         style={{ background: appMode === 'garden' ? theme.listHover : 'transparent' }}
+        data-label="Garden"
         onClick={() => setAppMode('garden')}
       >
-        Garden
+        <span>Garden</span>
       </button>
       <button
         type="button"
         aria-pressed={appMode === 'seed-starting'}
         className={`${styles.tab} ${appMode === 'seed-starting' ? styles.active : ''}`}
         style={{ background: appMode === 'seed-starting' ? theme.listHover : 'transparent' }}
+        data-label="Seed Starting"
         onClick={enterSeedStarting}
       >
-        Seed Starting
+        <span>Seed Starting</span>
       </button>
     </div>
   );

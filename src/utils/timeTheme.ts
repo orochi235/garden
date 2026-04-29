@@ -159,7 +159,32 @@ const twilight: TimeTheme = {
   listHover: 'rgba(192, 168, 208, 0.12)',
 };
 
-const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight };
+const basement: TimeTheme = {
+  paletteBackground: `
+    linear-gradient(to top,
+      #2A1B0E 0%, #6B4A28 4%, #5C3E22 9%, #44321E 15%,
+      #3A2A28 22%, #34302E 30%, #3A3D40 40%, #404852 50%,
+      #444C56 60%, #485058 70%, #6E8090 80%, #A8C0D0 90%, #ECF4F8 100%
+    ),
+    radial-gradient(ellipse 60% 4% at 10% 72%, rgba(255, 255, 245, 0.85) 0%, rgba(235, 245, 225, 0.55) 20%, rgba(200, 220, 200, 0.25) 50%, transparent 85%),
+    linear-gradient(to top,
+      transparent 0%,
+      transparent calc(40% - 62px),
+      rgba(0, 0, 0, 0.95) 40%,
+      transparent calc(40% + 62px),
+      transparent 100%
+    ),
+    radial-gradient(ellipse 35% 14% at 22% 100%, rgba(225, 240, 225, 0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 14% at 78% 100%, rgba(225, 240, 225, 0.28) 0%, transparent 65%),
+    linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 22%)`,
+  searchOverlay: 'rgba(30, 31, 30, 0.9)',
+  menuBarBg: 'transparent',
+  menuBarTitle: '#1A2230',
+  menuBarText: '#2A3340',
+  listHover: 'rgba(20, 30, 40, 0.22)',
+};
+
+const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight, basement };
 
 export type TimePeriod = keyof typeof themes;
 

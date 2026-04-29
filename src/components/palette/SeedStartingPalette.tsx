@@ -118,7 +118,7 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
         <div className={styles.category}>
           <div
             className={styles.categoryLabel}
-            style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}
+            style={{ transition: `color ${dur} ease` }}
           >
             Trays
           </div>
@@ -148,7 +148,7 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
           <div key={category} className={styles.category}>
             <div
               className={styles.categoryLabel}
-              style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}
+              style={{ transition: `color ${dur} ease` }}
             >
               {CATEGORY_LABELS[category]}
             </div>

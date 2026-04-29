@@ -2,7 +2,6 @@
   display: inline-flex;
   border-radius: 6px;
   overflow: hidden;
-  margin: 0 12px;
 }
 .tab {
   padding: 4px 12px;
@@ -12,6 +11,19 @@
   font: inherit;
   color: inherit;
   transition: background 120ms ease;
+  display: inline-grid;
+  place-items: center;
+}
+/* Reserve width for the bold (active) variant so the tabs don't shift on toggle. */
+.tab::before {
+  content: attr(data-label);
+  grid-area: 1 / 1;
+  font-weight: 600;
+  visibility: hidden;
+  height: 0;
+}
+.tab > span {
+  grid-area: 1 / 1;
 }
 .tab:hover { opacity: 0.85; }
 .active { font-weight: 600; }

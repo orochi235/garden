@@ -66,6 +66,7 @@ function useLiveTheme(enabled: boolean) {
 
 export function useActiveTheme(): CycleState {
   const themeOverride = useUiStore((s) => s.themeOverride);
+  const appMode = useUiStore((s) => s.appMode);
   const [cycleIndex, setCycleIndex] = useState(0);
   const [layerFlip, setLayerFlip] = useState(false);
   const prevThemeRef = useRef<TimeTheme | null>(null);
@@ -90,7 +91,9 @@ export function useActiveTheme(): CycleState {
   }, [themeOverride, isCycling, interval]);
 
   let theme: TimeTheme;
-  if (themeOverride === 'live') {
+  if (appMode === 'seed-starting') {
+    theme = getTheme('basement');
+  } else if (themeOverride === 'live') {
     theme = liveTheme;
   } else if (isCycling) {
     theme = getTheme(ALL_PERIODS[cycleIndex]);
