@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasStack } from '../canvas/CanvasStack';
+import { hitTestCell } from '../canvas/seedStartingHitTest';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { createPlanting, createStructure, createZone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
@@ -274,6 +275,70 @@ export function App() {
     [],
   );
 
+  const handleSeedDragBegin = useCallback(
+    (entry: PaletteEntry, e: React.PointerEvent) => {
+      if (entry.category !== 'plantings') return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const target = e.currentTarget as HTMLElement;
+      target.setPointerCapture(e.pointerId);
+      const THRESHOLD = 4;
+      let dragging = false;
+
+      function currentViewport(rect: DOMRect) {
+        const ui = useUiStore.getState();
+        const garden = useGardenStore.getState().garden;
+        const tray = garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
+        if (!tray) return null;
+        const trayPxW = tray.widthIn * ui.seedStartingZoom;
+        const trayPxH = tray.heightIn * ui.seedStartingZoom;
+        return {
+          tray,
+          pxPerInch: ui.seedStartingZoom,
+          originX: (rect.width - trayPxW) / 2 + ui.seedStartingPanX,
+          originY: (rect.height - trayPxH) / 2 + ui.seedStartingPanY,
+        };
+      }
+
+      function viewport() {
+        const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
+        const rect = el?.getBoundingClientRect();
+        if (!rect) return null;
+        const vp = currentViewport(rect);
+        if (!vp) return null;
+        return { rect, vp };
+      }
+
+      function onMove(ev: PointerEvent) {
+        if (!dragging) {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
+          dragging = true;
+        }
+      }
+
+      function onUp(ev: PointerEvent) {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        target.releasePointerCapture(ev.pointerId);
+        if (!dragging) return;
+
+        const v = viewport();
+        if (!v) return;
+        const sx = ev.clientX - v.rect.left;
+        const sy = ev.clientY - v.rect.top;
+        const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
+        if (!hit) return;
+        useGardenStore.getState().sowCell(v.vp.tray.id, hit.row, hit.col, entry.id);
+      }
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    },
+    [],
+  );
+
   const handleResizeStart = useCallback(
     (side: 'left' | 'right', e: React.MouseEvent) => {
       e.preventDefault();
@@ -344,8 +409,7 @@ export function App() {
       </div>
       <div className={styles.palette}>
         {appMode === 'seed-starting' ? (
-          // TODO(Task 15): wire seed-starting drag/drop onto trays
-          <SeedStartingPalette onDragBegin={() => {}} />
+          <SeedStartingPalette onDragBegin={handleSeedDragBegin} />
         ) : (
           <ObjectPalette onDragBegin={handlePaletteDragBegin} />
         )}
