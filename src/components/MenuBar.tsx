@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
 import { downloadGarden, openGardenFile } from '../utils/file';
+import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { ModeSwitcher } from './ModeSwitcher';
 import { TraySwitcher } from './TraySwitcher';
 
@@ -12,6 +14,7 @@ export function MenuBar() {
   const reset = useGardenStore((s) => s.reset);
   const appMode = useUiStore((s) => s.appMode);
   const { theme, transitionDuration: dur } = useActiveTheme();
+  const [builderOpen, setBuilderOpen] = useState(false);
 
   async function handleOpen() {
     try {
@@ -39,9 +42,9 @@ export function MenuBar() {
       </div>
       <ModeSwitcher />
       {appMode === 'seed-starting' && (
-        // TODO(Task 10): wire CustomTrayBuilder
-        <TraySwitcher onOpenCustomBuilder={() => {}} />
+        <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       )}
+      {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>
         <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>
