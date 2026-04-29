@@ -64,7 +64,7 @@ export function renderSeedlings(
       ctx.strokeStyle = SEEDLING_WARNING_COLOR;
       ctx.lineWidth = Math.max(1, p * 0.035);
       ctx.beginPath();
-      ctx.arc(cx, cy, radius + Math.max(3, p * 0.12), 0, Math.PI * 2);
+      ctx.arc(cx, cy, radius + Math.max(1.5, p * 0.05), 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
