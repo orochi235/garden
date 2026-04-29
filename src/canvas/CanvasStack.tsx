@@ -33,6 +33,7 @@ import { SystemLayerRenderer } from './SystemLayerRenderer';
 import { StructureLayerRenderer } from './StructureLayerRenderer';
 import { useCanvasSize } from './useCanvasSize';
 import { computeWheelAction } from './wheelHandler';
+import { getActiveViewport } from './viewport';
 import { ZoneLayerRenderer } from './ZoneLayerRenderer';
 
 export function CanvasStack() {
@@ -863,23 +864,17 @@ export function CanvasStack() {
 
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const currentState = useUiStore.getState();
-      const isSeed = currentState.appMode === 'seed-starting';
 
-      // Alt+scroll cycles layers (garden mode only)
-      if (e.altKey && !isSeed) {
+      // Alt+scroll cycles layers (works in both modes; cycleLayer adapts to active mode)
+      if (e.altKey) {
         cycleLayer(e.deltaY > 0 ? -1 : 1);
         return;
       }
 
-      const stateZoom = isSeed ? currentState.seedStartingZoom : currentState.zoom;
-      const statePanX = isSeed ? currentState.seedStartingPanX : currentState.panX;
-      const statePanY = isSeed ? currentState.seedStartingPanY : currentState.panY;
-      const bounds = isSeed ? { min: 5, max: 100 } : { min: 10, max: 200 };
-
+      const vp = getActiveViewport();
       const result = computeWheelAction(
-        currentState.viewMode,
-        { zoom: stateZoom, panX: statePanX, panY: statePanY },
+        useUiStore.getState().viewMode,
+        { zoom: vp.zoom, panX: vp.panX, panY: vp.panY },
         {
           deltaX: e.deltaX,
           deltaY: e.deltaY,
@@ -888,18 +883,12 @@ export function CanvasStack() {
           shiftKey: e.shiftKey,
           metaKey: e.metaKey,
         },
-        bounds,
+        vp.bounds,
       );
-
-      if (isSeed) {
-        setSeedStartingZoom(result.zoom);
-        setSeedStartingPan(result.panX, result.panY);
-      } else {
-        setZoom(result.zoom);
-        setPan(result.panX, result.panY);
-      }
+      vp.setZoom(result.zoom);
+      vp.setPan(result.panX, result.panY);
     },
-    [setZoom, setPan, setSeedStartingZoom, setSeedStartingPan],
+    [],
   );
 
   const canvasStyle = {
