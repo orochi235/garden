@@ -92,6 +92,8 @@ export function CanvasStack() {
     { x: number; y: number; message: string } | null
   >(null);
 
+  const autoFittedTrayRef = useRef<string | null>(null);
+
   // Re-render planting layer when async icon images finish loading
   const [iconTick, setIconTick] = useState(0);
   useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
@@ -139,6 +141,24 @@ export function CanvasStack() {
   const clipboard = useClipboard();
   const setSeedStartingPan = useUiStore((s) => s.setSeedStartingPan);
   const setSeedStartingZoom = useUiStore((s) => s.setSeedStartingZoom);
+
+  // Auto-fit the active tray when entering seed-starting mode or switching trays.
+  useEffect(() => {
+    if (appMode !== 'seed-starting') {
+      autoFittedTrayRef.current = null;
+      return;
+    }
+    const tray = garden.seedStarting.trays.find((t) => t.id === currentTrayId);
+    if (!tray || width === 0 || height === 0) return;
+    if (autoFittedTrayRef.current === tray.id) return;
+    autoFittedTrayRef.current = tray.id;
+    const padding = 40;
+    const availW = Math.max(1, width - padding * 2);
+    const availH = Math.max(1, height - padding * 2);
+    const fitZoom = Math.min(100, Math.max(5, Math.min(availW / tray.widthIn, availH / tray.heightIn)));
+    setSeedStartingZoom(fitZoom);
+    setSeedStartingPan(0, 0);
+  }, [appMode, currentTrayId, width, height, garden.seedStarting.trays, setSeedStartingZoom, setSeedStartingPan]);
   const pan = usePanInteraction(setPan, {
     getPan: () => {
       const s = useUiStore.getState();
