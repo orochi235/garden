@@ -1,4 +1,5 @@
 import type { CultivarCategory } from './cultivars';
+import type { SeedStartingFields } from './floraSeedStarting';
 import speciesData from '../data/species.json';
 
 export interface Species {
@@ -11,6 +12,7 @@ export interface Species {
   spacingFt: number;
   iconImage: string | null;
   iconBgColor: string | null;
+  seedStarting?: Partial<SeedStartingFields>;
 }
 
 const species: Species[] = speciesData as Species[];
