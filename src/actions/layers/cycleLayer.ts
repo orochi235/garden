@@ -2,15 +2,17 @@ import type { ActionDescriptor } from '../types';
 import type { LayerId } from '../../model/types';
 import { useUiStore } from '../../store/uiStore';
 
-const LAYERS: LayerId[] = ['ground', 'blueprint', 'structures', 'zones', 'plantings'];
+const ALL_LAYERS: LayerId[] = ['ground', 'blueprint', 'structures', 'zones', 'plantings'];
+const SEED_STARTING_LAYERS: LayerId[] = ['zones', 'plantings'];
 
 function cycleLayer(dir: 1 | -1): void {
-  const { activeLayer, layerVisibility } = useUiStore.getState();
-  const idx = LAYERS.indexOf(activeLayer);
-  for (let step = 1; step < LAYERS.length; step++) {
-    const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
-    if (layerVisibility[LAYERS[next]]) {
-      useUiStore.getState().setActiveLayer(LAYERS[next], true);
+  const { activeLayer, layerVisibility, appMode } = useUiStore.getState();
+  const layers = appMode === 'seed-starting' ? SEED_STARTING_LAYERS : ALL_LAYERS;
+  const idx = layers.indexOf(activeLayer);
+  for (let step = 1; step < layers.length; step++) {
+    const next = (idx + dir * step + layers.length) % layers.length;
+    if (layerVisibility[layers[next]]) {
+      useUiStore.getState().setActiveLayer(layers[next], true);
       return;
     }
   }

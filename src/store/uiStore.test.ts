@@ -233,8 +233,8 @@ describe('uiStore', () => {
     it('seedFillPreview defaults to null and can be set/cleared', () => {
       useUiStore.getState().reset();
       expect(useUiStore.getState().seedFillPreview).toBeNull();
-      useUiStore.getState().setSeedFillPreview({ trayId: 't1', cultivarId: 'tomato' });
-      expect(useUiStore.getState().seedFillPreview).toEqual({ trayId: 't1', cultivarId: 'tomato' });
+      useUiStore.getState().setSeedFillPreview({ trayId: 't1', cultivarId: 'tomato', scope: 'all' });
+      expect(useUiStore.getState().seedFillPreview).toEqual({ trayId: 't1', cultivarId: 'tomato', scope: 'all' });
       useUiStore.getState().setSeedFillPreview(null);
       expect(useUiStore.getState().seedFillPreview).toBeNull();
     });
@@ -242,7 +242,7 @@ describe('uiStore', () => {
     it('seed-starting state resets', () => {
       useUiStore.getState().setSeedStartingZoom(50);
       useUiStore.getState().setSeedStartingPan(5, 5);
-      useUiStore.getState().setSeedFillPreview({ trayId: 't', cultivarId: 'c' });
+      useUiStore.getState().setSeedFillPreview({ trayId: 't', cultivarId: 'c', scope: 'all' });
       useUiStore.getState().reset();
       expect(useUiStore.getState().seedStartingZoom).toBe(30);
       expect(useUiStore.getState().seedStartingPanX).toBe(0);

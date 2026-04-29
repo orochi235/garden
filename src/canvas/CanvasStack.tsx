@@ -8,6 +8,8 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { screenToWorld } from '../utils/grid';
 import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
+import { hitTestCell } from './seedStartingHitTest';
+import { getSeedlingWarnings } from '../model/seedlingWarnings';
 import { useAutoCenter } from './hooks/useAutoCenter';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { cycleLayer } from '../actions/layers/cycleLayer';
@@ -71,6 +73,7 @@ export function CanvasStack() {
   const showSeedlingLabels = useUiStore((s) => s.renderLayerVisibility['seedling-labels'] ?? false);
   const showTrayGrid = useUiStore((s) => s.renderLayerVisibility['tray-grid'] ?? true);
   const seedFillPreview = useUiStore((s) => s.seedFillPreview);
+  const seedDragCultivarId = useUiStore((s) => s.seedDragCultivarId);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
   const structureRenderer = useRef<StructureLayerRenderer>(null!);
@@ -84,6 +87,10 @@ export function CanvasStack() {
 
   const [, forceRender] = useState(0);
   const invalidate = useCallback(() => forceRender((n) => n + 1), []);
+
+  const [seedlingTooltip, setSeedlingTooltip] = useState<
+    { x: number; y: number; message: string } | null
+  >(null);
 
   // Re-render planting layer when async icon images finish loading
   const [iconTick, setIconTick] = useState(0);
@@ -298,12 +305,27 @@ export function CanvasStack() {
         const trayPxH = tray.heightIn * pxPerInch;
         const originX = (width - trayPxW) / 2 + seedStartingPanX;
         const originY = (height - trayPxH) / 2 + seedStartingPanY;
-        renderTrayBase(ctx, tray, pxPerInch, originX, originY, { showGrid: showTrayGrid });
+        const showDragSpreadAffordances = seedDragCultivarId != null;
+        const dragSpreadAffordanceHover =
+          seedFillPreview && seedFillPreview.trayId === tray.id
+            ? seedFillPreview.scope === 'all'
+              ? { kind: 'all' as const }
+              : seedFillPreview.scope === 'row'
+                ? { kind: 'row' as const, row: seedFillPreview.index }
+                : seedFillPreview.scope === 'col'
+                  ? { kind: 'col' as const, col: seedFillPreview.index }
+                  : null
+            : null;
+        renderTrayBase(ctx, tray, pxPerInch, originX, originY, {
+          showGrid: showTrayGrid,
+          showDragSpreadAffordances,
+          dragSpreadAffordanceHover,
+        });
         return;
       }
       zoneRenderer.current.render(ctx);
     },
-    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showTrayGrid, garden.seedStarting, garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, labelMode, labelFontSize, zoneRenderer.current.highlight, overlay],
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showTrayGrid, seedDragCultivarId, seedFillPreview, garden.seedStarting, garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, labelMode, labelFontSize, zoneRenderer.current.highlight, overlay],
   );
 
   useLayerEffect(
@@ -329,11 +351,18 @@ export function CanvasStack() {
         const trayPxH = tray.heightIn * pxPerInch;
         const originX = (width - trayPxW) / 2 + seedStartingPanX;
         const originY = (height - trayPxH) / 2 + seedStartingPanY;
-        const fillPreviewCultivarId =
-          seedFillPreview && seedFillPreview.trayId === tray.id ? seedFillPreview.cultivarId : null;
+        const previewMatch = seedFillPreview && seedFillPreview.trayId === tray.id ? seedFillPreview : null;
         renderSeedlings(ctx, tray, garden.seedStarting.seedlings, pxPerInch, originX, originY, {
           showLabel: showSeedlingLabels,
-          fillPreviewCultivarId,
+          fillPreviewCultivarId: previewMatch?.cultivarId ?? null,
+          fillPreviewScope: previewMatch?.scope,
+          fillPreviewIndex:
+            previewMatch?.scope === 'row' || previewMatch?.scope === 'col'
+              ? previewMatch.index
+              : undefined,
+          fillPreviewRow: previewMatch?.scope === 'cell' ? previewMatch.row : undefined,
+          fillPreviewCol: previewMatch?.scope === 'cell' ? previewMatch.col : undefined,
+          fillPreviewReplace: previewMatch?.replace ?? false,
         });
         return;
       }
@@ -529,6 +558,46 @@ export function CanvasStack() {
       if (moveInteraction.move(e)) return;
       if (pan.move(e)) return;
 
+      // Seed-starting: tooltip when hovering a seedling with warnings
+      const uiState = useUiStore.getState();
+      if (uiState.appMode === 'seed-starting') {
+        const rect = containerRef.current?.getBoundingClientRect();
+        const { garden } = useGardenStore.getState();
+        const tray = garden.seedStarting.trays.find((t) => t.id === uiState.currentTrayId);
+        if (rect && tray) {
+          const pxPerInch = uiState.seedStartingZoom;
+          const trayPxW = tray.widthIn * pxPerInch;
+          const trayPxH = tray.heightIn * pxPerInch;
+          const originX = (rect.width - trayPxW) / 2 + uiState.seedStartingPanX;
+          const originY = (rect.height - trayPxH) / 2 + uiState.seedStartingPanY;
+          const sx = e.clientX - rect.left;
+          const sy = e.clientY - rect.top;
+          const cell = hitTestCell(tray, { pxPerInch, originX, originY }, sx, sy);
+          let next: { x: number; y: number; message: string } | null = null;
+          if (cell) {
+            const slot = tray.slots[cell.row * tray.cols + cell.col];
+            if (slot.state === 'sown' && slot.seedlingId) {
+              const seedling = garden.seedStarting.seedlings.find((s) => s.id === slot.seedlingId);
+              if (seedling) {
+                const warnings = getSeedlingWarnings(seedling, tray);
+                if (warnings.length > 0) {
+                  next = { x: sx, y: sy, message: warnings.map((w) => w.message).join(' ') };
+                }
+              }
+            }
+          }
+          setSeedlingTooltip((prev) => {
+            if (!next) return prev ? null : prev;
+            if (prev && prev.x === next.x && prev.y === next.y && prev.message === next.message) return prev;
+            return next;
+          });
+        } else {
+          setSeedlingTooltip((prev) => (prev ? null : prev));
+        }
+        return;
+      }
+      setSeedlingTooltip((prev) => (prev ? null : prev));
+
       // Hover hit-test for cursor in select mode
       const { viewMode: currentViewMode, activeLayer: currentActiveLayer } = useUiStore.getState();
       if (currentViewMode === 'select') {
@@ -715,7 +784,7 @@ export function CanvasStack() {
         width: '100%',
         height: '100%',
         position: 'relative',
-        background: groundColor,
+        background: appMode === 'seed-starting' ? '#d8c8a4' : groundColor,
         cursor:
           activeCursor ??
           (viewMode === 'draw' || viewMode === 'select-area'
@@ -739,6 +808,26 @@ export function CanvasStack() {
       <canvas ref={zoneCanvasRef} style={canvasStyle} />
       <canvas ref={plantingCanvasRef} style={canvasStyle} />
       <canvas ref={selectionCanvasRef} style={canvasStyle} />
+      {seedlingTooltip && (
+        <div
+          style={{
+            position: 'absolute',
+            left: seedlingTooltip.x + 12,
+            top: seedlingTooltip.y + 12,
+            background: 'rgba(40, 32, 18, 0.95)',
+            color: '#fff',
+            padding: '4px 8px',
+            borderRadius: 4,
+            fontSize: 12,
+            border: '1px solid #daa520',
+            pointerEvents: 'none',
+            zIndex: 10,
+            maxWidth: 240,
+          }}
+        >
+          {seedlingTooltip.message}
+        </div>
+      )}
       <ReturnToGarden canvasWidth={width} canvasHeight={height} />
       <ScaleIndicator canvasHeight={height} />
       <ViewToolbar />

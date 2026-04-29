@@ -41,10 +41,13 @@ interface GardenStore {
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
   addTray: (tray: Tray) => void;
+  addTraySilent: (tray: Tray) => void;
   removeTray: (trayId: string) => void;
-  sowCell: (trayId: string, row: number, col: number, cultivarId: string) => void;
+  sowCell: (trayId: string, row: number, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   clearCell: (trayId: string, row: number, col: number) => void;
-  fillTray: (trayId: string, cultivarId: string) => void;
+  fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
+  fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
+  fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -88,6 +91,45 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   function commitPatch(updates: Partial<Garden>) {
     pushHistory(get().garden);
     patch(updates);
+  }
+
+  /** Fill a selection of cells with seedlings. When replace=true, sown cells are overwritten. */
+  function fillCells(
+    trayId: string,
+    cultivarId: string,
+    replace: boolean,
+    selector: (row: number, col: number) => boolean,
+  ) {
+    const { seedStarting } = get().garden;
+    const tray = seedStarting.trays.find((t) => t.id === trayId);
+    if (!tray) return;
+    let updatedTray = tray;
+    const newSeedlings: Seedling[] = [];
+    const removedIds = new Set<string>();
+    for (let r = 0; r < tray.rows; r++) {
+      for (let c = 0; c < tray.cols; c++) {
+        if (!selector(r, c)) continue;
+        const slot = updatedTray.slots[r * tray.cols + c];
+        if (slot.state === 'sown') {
+          if (!replace) continue;
+          if (slot.seedlingId) removedIds.add(slot.seedlingId);
+        }
+        const seedling = createSeedling({ cultivarId, trayId, row: r, col: c });
+        newSeedlings.push(seedling);
+        updatedTray = setCell(updatedTray, r, c, { state: 'sown', seedlingId: seedling.id });
+      }
+    }
+    if (newSeedlings.length === 0) return;
+    const remainingSeedlings = removedIds.size
+      ? seedStarting.seedlings.filter((s) => !removedIds.has(s.id))
+      : seedStarting.seedlings;
+    commitPatch({
+      seedStarting: {
+        ...seedStarting,
+        trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+        seedlings: [...remainingSeedlings, ...newSeedlings],
+      },
+    });
   }
 
   /** Map over a collection, replacing the item with matching id. */
@@ -300,6 +342,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       });
     },
 
+    /** Add a tray without creating an undo entry — used when bootstrapping seed-starting mode. */
+    addTraySilent: (tray) => {
+      const { seedStarting } = get().garden;
+      patch({ seedStarting: { ...seedStarting, trays: [...seedStarting.trays, tray] } });
+    },
+
     removeTray: (trayId) => {
       const { seedStarting } = get().garden;
       commitPatch({
@@ -311,46 +359,44 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       });
     },
 
-    sowCell: (trayId, row, col, cultivarId) => {
+    sowCell: (trayId, row, col, cultivarId, opts) => {
       const { seedStarting } = get().garden;
       const tray = seedStarting.trays.find((t) => t.id === trayId);
       if (!tray) return;
       const slot = getCell(tray, row, col);
-      if (!slot || slot.state !== 'empty') return;
+      if (!slot) return;
+      if (slot.state === 'sown' && !opts?.replace) return;
+      const replacedId = slot.state === 'sown' ? slot.seedlingId : null;
       const seedling = createSeedling({ cultivarId, trayId, row, col });
       const updatedTray = setCell(tray, row, col, { state: 'sown', seedlingId: seedling.id });
+      const filteredSeedlings = replacedId
+        ? seedStarting.seedlings.filter((s) => s.id !== replacedId)
+        : seedStarting.seedlings;
       commitPatch({
         seedStarting: {
           ...seedStarting,
           trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-          seedlings: [...seedStarting.seedlings, seedling],
+          seedlings: [...filteredSeedlings, seedling],
         },
       });
     },
 
-    fillTray: (trayId, cultivarId) => {
+    fillTray: (trayId, cultivarId, opts) => {
+      fillCells(trayId, cultivarId, opts?.replace ?? false, () => true);
+    },
+
+    fillRow: (trayId, row, cultivarId, opts) => {
       const { seedStarting } = get().garden;
       const tray = seedStarting.trays.find((t) => t.id === trayId);
-      if (!tray) return;
-      let updatedTray = tray;
-      const newSeedlings: Seedling[] = [];
-      for (let r = 0; r < tray.rows; r++) {
-        for (let c = 0; c < tray.cols; c++) {
-          const slot = updatedTray.slots[r * tray.cols + c];
-          if (slot.state !== 'empty') continue;
-          const seedling = createSeedling({ cultivarId, trayId, row: r, col: c });
-          newSeedlings.push(seedling);
-          updatedTray = setCell(updatedTray, r, c, { state: 'sown', seedlingId: seedling.id });
-        }
-      }
-      if (newSeedlings.length === 0) return;
-      commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-          seedlings: [...seedStarting.seedlings, ...newSeedlings],
-        },
-      });
+      if (!tray || row < 0 || row >= tray.rows) return;
+      fillCells(trayId, cultivarId, opts?.replace ?? false, (r, _c) => r === row);
+    },
+
+    fillColumn: (trayId, col, cultivarId, opts) => {
+      const { seedStarting } = get().garden;
+      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      if (!tray || col < 0 || col >= tray.cols) return;
+      fillCells(trayId, cultivarId, opts?.replace ?? false, (_r, c) => c === col);
     },
 
     clearCell: (trayId, row, col) => {

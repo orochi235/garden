@@ -13,7 +13,7 @@ interface LayerDef {
   stroke: string;
 }
 
-const LAYERS: LayerDef[] = [
+const ALL_LAYERS: LayerDef[] = [
   {
     id: 'plantings',
     label: 'Plantings',
@@ -85,8 +85,8 @@ interface TileState {
   z: number;
 }
 
-function computeLayout(activeIdx: number): TileState[] {
-  const n = LAYERS.length;
+function computeLayout(activeIdx: number, layers: LayerDef[]): TileState[] {
+  const n = layers.length;
   const centerY = 55;
   const camRad = (CAMERA_ANGLE_DEG * Math.PI) / 180;
   const gapRad = (PLATE_GAP_DEG * Math.PI) / 180;
@@ -149,7 +149,7 @@ function interpolateLayouts(from: TileState[], to: TileState[], t: number): Tile
   }));
 }
 
-function renderSvgContent(tileStates: TileState[], activeIdx: number, hiddenIndices: Set<number> = new Set()): string {
+function renderSvgContent(tileStates: TileState[], activeIdx: number, layers: LayerDef[], hiddenIndices: Set<number> = new Set()): string {
   const labelSpace = 58;
   const svgW = HALF_W * 2 + labelSpace + 10;
   const cx = labelSpace + HALF_W;
@@ -177,7 +177,7 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number, hiddenIndi
   let content = '';
 
   // Shadow filters
-  for (let i = 0; i < LAYERS.length; i++) {
+  for (let i = 0; i < layers.length; i++) {
     const t = tileStates[i];
     const sDir = t.dir <= 0 ? -1 : 1;
     const angleFactor = Math.max(0.3, 1 - Math.sin(t.viewAngle) * 0.5);
@@ -187,13 +187,13 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number, hiddenIndi
   }
 
   // Clip paths (no clipping in tight preset by default)
-  for (let i = 0; i < LAYERS.length; i++) {
+  for (let i = 0; i < layers.length; i++) {
     if (i === activeIdx) continue;
     defs += `<clipPath id="clip${i}"><rect x="-200" y="-200" width="800" height="1000"/></clipPath>`;
   }
 
   for (const t of sorted) {
-    const layer = LAYERS[t.index];
+    const layer = layers[t.index];
     const isActive = t.index === activeIdx;
     const isHidden = hiddenIndices.has(t.index);
     const tiltY = t.tilt;
@@ -250,31 +250,43 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number, hiddenIndi
     <defs>${defs}</defs>${content}</svg>`;
 }
 
+const SEED_STARTING_LAYER_IDS: LayerId[] = ['plantings', 'zones'];
+
 export function LayerSelector() {
   const activeLayer = useUiStore((s) => s.activeLayer);
   const setActiveLayer = useUiStore((s) => s.setActiveLayer);
   const layerVisibility = useUiStore((s) => s.layerVisibility);
+  const appMode = useUiStore((s) => s.appMode);
   const [svgHtml, setSvgHtml] = useState('');
   const animRef = useRef<number | null>(null);
   const layoutRef = useRef<TileState[] | null>(null);
 
+  const layers = useMemo(
+    () =>
+      appMode === 'seed-starting'
+        ? ALL_LAYERS.filter((l) => SEED_STARTING_LAYER_IDS.includes(l.id))
+        : ALL_LAYERS,
+    [appMode],
+  );
+
   const hiddenIndices = useMemo(() => {
     const set = new Set<number>();
-    for (let i = 0; i < LAYERS.length; i++) {
-      if (!layerVisibility[LAYERS[i].id]) set.add(i);
+    for (let i = 0; i < layers.length; i++) {
+      if (!layerVisibility[layers[i].id]) set.add(i);
     }
     return set;
-  }, [layerVisibility]);
+  }, [layerVisibility, layers]);
 
   const renderWidget = useCallback((tiles: TileState[], idx: number) => {
-    setSvgHtml(renderSvgContent(tiles, idx, hiddenIndices));
+    setSvgHtml(renderSvgContent(tiles, idx, layers, hiddenIndices));
     layoutRef.current = tiles;
-  }, [hiddenIndices]);
+  }, [hiddenIndices, layers]);
 
   // Initial render and animate on activeLayer change
   useEffect(() => {
-    const newIdx = LAYERS.findIndex((l) => l.id === activeLayer);
-    const newLayout = computeLayout(newIdx);
+    const rawIdx = layers.findIndex((l) => l.id === activeLayer);
+    const newIdx = rawIdx === -1 ? 0 : rawIdx;
+    const newLayout = computeLayout(newIdx, layers);
 
     if (!layoutRef.current) {
       renderWidget(newLayout, newIdx);
@@ -302,15 +314,15 @@ export function LayerSelector() {
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [activeLayer, renderWidget, hiddenIndices]);
+  }, [activeLayer, renderWidget, hiddenIndices, layers]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       const tile = (e.target as Element).closest('.tile');
       if (!tile) return;
       const idx = parseInt(tile.getAttribute('data-idx') ?? '', 10);
-      if (!Number.isNaN(idx) && idx >= 0 && idx < LAYERS.length) {
-        const layerId = LAYERS[idx].id;
+      if (!Number.isNaN(idx) && idx >= 0 && idx < layers.length) {
+        const layerId = layers[idx].id;
         const { layerVisibility: vis, setLayerVisible } = useUiStore.getState();
         if (!vis[layerId]) {
           setLayerVisible(layerId, true);
@@ -318,7 +330,7 @@ export function LayerSelector() {
         setActiveLayer(layerId, true);
       }
     },
-    [setActiveLayer],
+    [setActiveLayer, layers],
   );
 
   const lastWheelTime = useRef(0);
@@ -330,18 +342,18 @@ export function LayerSelector() {
       if (now - lastWheelTime.current < 300) return;
       lastWheelTime.current = now;
       const { layerVisibility: vis } = useUiStore.getState();
-      const idx = LAYERS.findIndex((l) => l.id === activeLayer);
+      const idx = layers.findIndex((l) => l.id === activeLayer);
       const dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
       if (dir === 0) return;
-      for (let step = 1; step < LAYERS.length; step++) {
-        const next = (idx + dir * step + LAYERS.length) % LAYERS.length;
-        if (vis[LAYERS[next].id]) {
-          setActiveLayer(LAYERS[next].id, true);
+      for (let step = 1; step < layers.length; step++) {
+        const next = (idx + dir * step + layers.length) % layers.length;
+        if (vis[layers[next].id]) {
+          setActiveLayer(layers[next].id, true);
           return;
         }
       }
     },
-    [activeLayer, setActiveLayer],
+    [activeLayer, setActiveLayer, layers],
   );
 
   const setLayerSelectorHovered = useUiStore((s) => s.setLayerSelectorHovered);

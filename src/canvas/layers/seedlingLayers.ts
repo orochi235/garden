@@ -1,6 +1,7 @@
 import type { Seedling, Tray } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { getCultivar } from '../../model/cultivars';
+import { hasSeedlingWarnings, SEEDLING_WARNING_COLOR } from '../../model/seedlingWarnings';
 import { renderPlant } from '../plantRenderers';
 
 export interface SownCellEntry {
@@ -30,35 +31,20 @@ export function renderSeedlings(
   pxPerInch: number,
   originX: number,
   originY: number,
-  options: { showLabel: boolean; fillPreviewCultivarId?: string | null },
+  options: {
+    showLabel: boolean;
+    fillPreviewCultivarId?: string | null;
+    fillPreviewScope?: 'all' | 'row' | 'col' | 'cell';
+    fillPreviewIndex?: number;
+    fillPreviewRow?: number;
+    fillPreviewCol?: number;
+    fillPreviewReplace?: boolean;
+  },
 ) {
   const p = tray.cellPitchIn * pxPerInch;
   const off = trayInteriorOffsetIn(tray);
   const ox = originX + off.x * pxPerInch;
   const oy = originY + off.y * pxPerInch;
-
-  // Putative fill preview: ghost seedlings in every empty cell.
-  if (options.fillPreviewCultivarId) {
-    const cultivar = getCultivar(options.fillPreviewCultivarId);
-    if (cultivar) {
-      const radius = (p * 0.85) / 2;
-      ctx.save();
-      ctx.globalAlpha = 0.4;
-      for (let r = 0; r < tray.rows; r++) {
-        for (let c = 0; c < tray.cols; c++) {
-          const slot = tray.slots[r * tray.cols + c];
-          if (slot.state === 'sown') continue;
-          const cx = ox + c * p + p / 2;
-          const cy = oy + r * p + p / 2;
-          ctx.save();
-          ctx.translate(cx, cy);
-          renderPlant(ctx, cultivar.id, radius, cultivar.color);
-          ctx.restore();
-        }
-      }
-      ctx.restore();
-    }
-  }
 
   for (const { row, col, seedling } of collectSownCells(tray, seedlings)) {
     const cultivar = getCultivar(seedling.cultivarId);
@@ -72,6 +58,16 @@ export function renderSeedlings(
     renderPlant(ctx, seedling.cultivarId, radius, cultivar.color);
     ctx.restore();
 
+    if (hasSeedlingWarnings(seedling, tray)) {
+      ctx.save();
+      ctx.strokeStyle = SEEDLING_WARNING_COLOR;
+      ctx.lineWidth = Math.max(1.5, p * 0.06);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + ctx.lineWidth * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (options.showLabel) {
       ctx.fillStyle = '#fff';
       ctx.strokeStyle = 'rgba(0,0,0,0.6)';
@@ -82,6 +78,36 @@ export function renderSeedlings(
       const label = seedling.labelOverride ?? cultivar.name.slice(0, 4);
       ctx.strokeText(label, cx, cy);
       ctx.fillText(label, cx, cy);
+    }
+  }
+
+  // Putative fill preview: rendered after sown seedlings so replacements visually cover existing.
+  if (options.fillPreviewCultivarId) {
+    const cultivar = getCultivar(options.fillPreviewCultivarId);
+    if (cultivar) {
+      const radius = (p * 0.85) / 2;
+      const scope = options.fillPreviewScope ?? 'all';
+      const idx = options.fillPreviewIndex ?? 0;
+      const cellR = options.fillPreviewRow ?? 0;
+      const cellC = options.fillPreviewCol ?? 0;
+      ctx.save();
+      ctx.globalAlpha = options.fillPreviewReplace ? 0.7 : 0.4;
+      for (let r = 0; r < tray.rows; r++) {
+        for (let c = 0; c < tray.cols; c++) {
+          if (scope === 'row' && r !== idx) continue;
+          if (scope === 'col' && c !== idx) continue;
+          if (scope === 'cell' && (r !== cellR || c !== cellC)) continue;
+          const slot = tray.slots[r * tray.cols + c];
+          if (slot.state === 'sown' && !options.fillPreviewReplace) continue;
+          const cx = ox + c * p + p / 2;
+          const cy = oy + r * p + p / 2;
+          ctx.save();
+          ctx.translate(cx, cy);
+          renderPlant(ctx, cultivar.id, radius, cultivar.color);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
     }
   }
 }

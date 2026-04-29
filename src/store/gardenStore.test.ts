@@ -256,6 +256,58 @@ describe('seed-starting actions', () => {
     expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
   });
 
+  it('fillRow only fills cells in the specified row', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillRow(tray.id, 1, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    for (let r = 0; r < t.rows; r++) {
+      for (let c = 0; c < t.cols; c++) {
+        const expected = r === 1 ? 'sown' : 'empty';
+        expect(t.slots[r * t.cols + c].state).toBe(expected);
+      }
+    }
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.cols);
+  });
+
+  it('fillRow skips already-sown cells', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
+    useGardenStore.getState().fillRow(tray.id, 0, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(t.slots.slice(0, t.cols).every((s) => s.state === 'sown')).toBe(true);
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.cols);
+  });
+
+  it('fillRow ignores out-of-bounds row', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillRow(tray.id, 99, 'basil-genovese');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+
+  it('fillColumn only fills cells in the specified column', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillColumn(tray.id, 2, 'basil-genovese');
+    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    for (let r = 0; r < t.rows; r++) {
+      for (let c = 0; c < t.cols; c++) {
+        const expected = c === 2 ? 'sown' : 'empty';
+        expect(t.slots[r * t.cols + c].state).toBe(expected);
+      }
+    }
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.rows);
+  });
+
+  it('fillColumn ignores out-of-bounds column', () => {
+    const tray = instantiatePreset('1020-36')!;
+    useGardenStore.getState().addTray(tray);
+    useGardenStore.getState().fillColumn(tray.id, 99, 'basil-genovese');
+    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+
   it('clearCell removes the seedling and resets slot', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);

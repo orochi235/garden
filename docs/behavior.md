@@ -73,6 +73,14 @@ Running list of intended application behaviors.
 - Each planting references a cultivar by ID; display data (color, footprint, name) is resolved at render time
 - To add a new plant type: add an entry to the `cultivars` array and optionally a custom renderer in `src/canvas/plantRenderers.ts`
 
+## Drag & Drop
+
+- Drag ghosts represent the object being dragged, not a generic cursor decoration. They are rendered with the same visual the object will have once dropped (icon, color, footprint), scaled to the size it will appear at on the canvas (i.e., using the canvas's current zoom / pixel-per-inch).
+- When a putative placement is visible on the canvas (a preview drawn in-place — e.g., a snapped planting in a parent, a seedling in a target cell, or a row/column/all fill preview on a tray), the cursor-following ghost is hidden. The user sees either the in-canvas putative or the cursor ghost — never both at once.
+- This applies wherever a draggable item produces a canvas placement: garden palette (structures, zones, plantings) and seed-starting palette (cultivars onto tray cells, row/column/all affordances).
+- Cursor ghosts are created via `createDragGhost(...)` in `src/utils/dragGhost.ts`. New drag flows should use that helper rather than rolling their own DOM ghost element.
+- When possible, holding shift during a drag-and-drop operation implies a forced or overriding action — e.g., shift-dropping a cultivar onto an occupied cell or onto a row/column/all target replaces existing seedlings instead of skipping them. New drag flows that have an "override" or "force" variant should bind that variant to shift for consistency.
+
 ## Sidebar
 
 - Right-hand panel section titles have less space to the left of the toggle slider and a bit more to the right
@@ -87,3 +95,4 @@ Running list of intended application behaviors.
 - Seed-starting state (trays and seedlings) is saved alongside the garden in the same file under `seedStarting`
 - Cultivars are listed in the seed-starting palette only when their resolved `seedStarting.startable` is `true`
 - The render-layers panel in seed-starting mode exposes `tray-grid` and `seedling-labels` toggles
+- Seedlings with warnings (e.g., placed in a tray whose cell size doesn't match the cultivar's preferred size) are highlighted with a goldenrod outline ring around the icon
