@@ -69,6 +69,7 @@ export function CanvasStack() {
   const seedStartingPanX = useUiStore((s) => s.seedStartingPanX);
   const seedStartingPanY = useUiStore((s) => s.seedStartingPanY);
   const showSeedlingLabels = useUiStore((s) => s.renderLayerVisibility['seedling-labels'] ?? false);
+  const showTrayGrid = useUiStore((s) => s.renderLayerVisibility['tray-grid'] ?? true);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
   const structureRenderer = useRef<StructureLayerRenderer>(null!);
@@ -301,7 +302,7 @@ export function CanvasStack() {
         const trayPxH = tray.heightIn * pxPerInch;
         const originX = (width - trayPxW) / 2 + seedStartingPanX;
         const originY = (height - trayPxH) / 2 + seedStartingPanY;
-        renderTrayBase(ctx, tray, pxPerInch, originX, originY);
+        renderTrayBase(ctx, tray, pxPerInch, originX, originY, { showGrid: showTrayGrid });
         renderSeedlings(ctx, tray, garden.seedStarting.seedlings, pxPerInch, originX, originY, {
           showLabel: showSeedlingLabels,
         });
@@ -309,7 +310,7 @@ export function CanvasStack() {
       }
       plantingRenderer.current.render(ctx);
     },
-    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, showTrayGrid, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(

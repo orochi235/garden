@@ -105,6 +105,8 @@ function defaultState() {
       'structure-surfaces': false,
       'structure-plantable-area': false,
       'planting-measurements': false,
+      'seedling-labels': false,
+      'tray-grid': true,
     } as Record<string, boolean>,
     renderLayerOrder: {} as Record<string, string[]>,
     debugOverlappingLabels: false,

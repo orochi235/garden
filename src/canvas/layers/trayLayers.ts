@@ -35,7 +35,9 @@ export function renderTrayBase(
   pxPerInch: number,
   originX: number,
   originY: number,
+  options: { showGrid?: boolean } = {},
 ) {
+  const { showGrid = true } = options;
   const w = tray.widthIn * pxPerInch;
   const h = tray.heightIn * pxPerInch;
 
@@ -43,22 +45,28 @@ export function renderTrayBase(
   ctx.fillStyle = '#3a2e22';
   ctx.fillRect(originX, originY, w, h);
 
-  // Cell grid
   ctx.strokeStyle = '#1a1410';
   ctx.lineWidth = 1;
-  const p = tray.cellPitchIn * pxPerInch;
-  for (let c = 0; c <= tray.cols; c++) {
-    const x = originX + c * p;
-    ctx.beginPath();
-    ctx.moveTo(x, originY);
-    ctx.lineTo(x, originY + h);
-    ctx.stroke();
-  }
-  for (let r = 0; r <= tray.rows; r++) {
-    const y = originY + r * p;
-    ctx.beginPath();
-    ctx.moveTo(originX, y);
-    ctx.lineTo(originX + w, y);
-    ctx.stroke();
+
+  if (showGrid) {
+    // Cell grid (includes outline at c=0/c=cols and r=0/r=rows)
+    const p = tray.cellPitchIn * pxPerInch;
+    for (let c = 0; c <= tray.cols; c++) {
+      const x = originX + c * p;
+      ctx.beginPath();
+      ctx.moveTo(x, originY);
+      ctx.lineTo(x, originY + h);
+      ctx.stroke();
+    }
+    for (let r = 0; r <= tray.rows; r++) {
+      const y = originY + r * p;
+      ctx.beginPath();
+      ctx.moveTo(originX, y);
+      ctx.lineTo(originX + w, y);
+      ctx.stroke();
+    }
+  } else {
+    // Tray outline only
+    ctx.strokeRect(originX, originY, w, h);
   }
 }
