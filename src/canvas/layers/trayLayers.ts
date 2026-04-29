@@ -151,8 +151,8 @@ function drawDragSpreadAffordances(
 }
 
 /**
- * Draws a small planting-marker icon: a stake (rectangle) topped with a tag (rounded rect),
- * pointing in the given direction. (cx, cy) is the marker's center.
+ * Draws a home-plate pentagon pointing in the given direction. (cx, cy) is the marker's center.
+ * Canonical orientation ("down"): flat top, point at bottom.
  */
 function drawPlantingMarker(
   ctx: CanvasRenderingContext2D,
@@ -166,39 +166,24 @@ function drawPlantingMarker(
 ) {
   ctx.save();
   ctx.translate(cx, cy);
-  // Rotate so "down" is the canonical orientation: tag at top, stake pointing downward.
   if (dir === 'right') ctx.rotate(-Math.PI / 2);
   else if (dir === 'down-right') ctx.rotate(-Math.PI / 4);
 
-  const tagH = length * 0.6;
-  const tagW = width * 2.6;
-  const r = Math.min(2, tagH / 2, tagW / 2);
+  const plateW = width * 2.6;
+  const top = -length / 2;
+  const tip = length / 2;
+  const shoulder = tip - plateW / 2;
 
   ctx.lineWidth = 1;
   ctx.strokeStyle = stroke;
   ctx.fillStyle = fill;
 
-  const tagTop = -length / 2;
-  const tagBottom = tagTop + tagH;
-  const stakeBottom = length / 2;
-  const stakeShoulder = stakeBottom - width / 2;
-
-  // Single combined silhouette: rounded tag on top, stake with pointed bottom below.
   ctx.beginPath();
-  ctx.moveTo(-tagW / 2 + r, tagTop);
-  ctx.lineTo(tagW / 2 - r, tagTop);
-  ctx.arcTo(tagW / 2, tagTop, tagW / 2, tagTop + r, r);
-  ctx.lineTo(tagW / 2, tagBottom - r);
-  ctx.arcTo(tagW / 2, tagBottom, tagW / 2 - r, tagBottom, r);
-  ctx.lineTo(width / 2, tagBottom);
-  ctx.lineTo(width / 2, stakeShoulder);
-  ctx.lineTo(0, stakeBottom);
-  ctx.lineTo(-width / 2, stakeShoulder);
-  ctx.lineTo(-width / 2, tagBottom);
-  ctx.lineTo(-tagW / 2 + r, tagBottom);
-  ctx.arcTo(-tagW / 2, tagBottom, -tagW / 2, tagBottom - r, r);
-  ctx.lineTo(-tagW / 2, tagTop + r);
-  ctx.arcTo(-tagW / 2, tagTop, -tagW / 2 + r, tagTop, r);
+  ctx.moveTo(-plateW / 2, top);
+  ctx.lineTo(plateW / 2, top);
+  ctx.lineTo(plateW / 2, shoulder);
+  ctx.lineTo(0, tip);
+  ctx.lineTo(-plateW / 2, shoulder);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();

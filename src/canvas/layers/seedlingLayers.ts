@@ -111,7 +111,7 @@ export function renderSeedlings(
       const previewWarn =
         options.showWarnings !== false && cultivarHasTrayWarning(cultivar.id, tray);
       ctx.save();
-      ctx.globalAlpha = options.fillPreviewReplace ? 0.7 : 0.4;
+      ctx.globalAlpha = 0.4;
       for (let r = 0; r < tray.rows; r++) {
         for (let c = 0; c < tray.cols; c++) {
           if (scope === 'row' && r !== idx) continue;
