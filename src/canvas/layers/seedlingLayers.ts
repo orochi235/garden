@@ -1,7 +1,7 @@
 import type { Seedling, Tray } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { getCultivar } from '../../model/cultivars';
-import { hasSeedlingWarnings, SEEDLING_WARNING_COLOR } from '../../model/seedlingWarnings';
+import { cultivarHasTrayWarning, hasSeedlingWarnings, SEEDLING_WARNING_COLOR } from '../../model/seedlingWarnings';
 import { renderPlant } from '../plantRenderers';
 
 export interface SownCellEntry {
@@ -91,6 +91,8 @@ export function renderSeedlings(
       const idx = options.fillPreviewIndex ?? 0;
       const cellR = options.fillPreviewRow ?? 0;
       const cellC = options.fillPreviewCol ?? 0;
+      const previewWarn =
+        options.showWarnings !== false && cultivarHasTrayWarning(cultivar.id, tray);
       ctx.save();
       ctx.globalAlpha = options.fillPreviewReplace ? 0.7 : 0.4;
       for (let r = 0; r < tray.rows; r++) {
@@ -106,6 +108,15 @@ export function renderSeedlings(
           ctx.translate(cx, cy);
           renderPlant(ctx, cultivar.id, radius, cultivar.color);
           ctx.restore();
+          if (previewWarn) {
+            ctx.save();
+            ctx.strokeStyle = SEEDLING_WARNING_COLOR;
+            ctx.lineWidth = Math.max(1.5, p * 0.06);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius + ctx.lineWidth * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
         }
       }
       ctx.restore();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSeedling, createTray, type CellSize } from './seedStarting';
 import { getAllCultivars } from './cultivars';
-import { getSeedlingWarnings, hasSeedlingWarnings } from './seedlingWarnings';
+import { cultivarHasTrayWarning, getSeedlingWarnings, hasSeedlingWarnings } from './seedlingWarnings';
 
 function findCultivarWithCellSize(size: CellSize) {
   return getAllCultivars().find((c) => c.seedStarting.cellSize === size);
@@ -25,6 +25,16 @@ describe('seedling warnings', () => {
     const warnings = getSeedlingWarnings(seedling, tray);
     expect(warnings).toHaveLength(1);
     expect(warnings[0].kind).toBe('wrong-cell-size');
+  });
+
+  it('cultivarHasTrayWarning matches the cell-size mismatch rule', () => {
+    const cultivar = findCultivarWithCellSize('medium');
+    if (!cultivar) return;
+    const matchTray = createTray({ rows: 1, cols: 1, cellSize: 'medium', label: 't' });
+    const mismatchTray = createTray({ rows: 1, cols: 1, cellSize: 'large', label: 't' });
+    expect(cultivarHasTrayWarning(cultivar.id, matchTray)).toBe(false);
+    expect(cultivarHasTrayWarning(cultivar.id, mismatchTray)).toBe(true);
+    expect(cultivarHasTrayWarning('nonexistent', mismatchTray)).toBe(false);
   });
 
   it('returns no warnings for unknown cultivar id', () => {

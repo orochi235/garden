@@ -29,3 +29,10 @@ export function getSeedlingWarnings(seedling: Seedling, tray: Tray): SeedlingWar
 export function hasSeedlingWarnings(seedling: Seedling, tray: Tray): boolean {
   return getSeedlingWarnings(seedling, tray).length > 0;
 }
+
+/** Whether a putative placement of `cultivarId` in `tray` would produce a warning. */
+export function cultivarHasTrayWarning(cultivarId: string, tray: Tray): boolean {
+  const cultivar = getCultivar(cultivarId);
+  if (!cultivar) return false;
+  return cultivar.seedStarting.cellSize !== tray.cellSize;
+}
