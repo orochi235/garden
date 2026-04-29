@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { computeSlots } from '../model/arrangement';
 import type { Arrangement } from '../model/arrangement';
+import { emptySeedStartingState } from '../model/seedStarting';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
@@ -127,6 +128,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           s.groupId = null;
         }
       }
+      if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
       set({ garden });
     },
 

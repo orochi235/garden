@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { emptySeedStartingState } from '../model/seedStarting';
 import { blankGarden, useGardenStore } from './gardenStore';
 
 describe('gardenStore', () => {
@@ -192,10 +193,17 @@ describe('gardenStore', () => {
       structures: [],
       zones: [],
       plantings: [],
-      seedStarting: { trays: [], seedlings: [] },
+      seedStarting: emptySeedStartingState(),
     };
     loadGarden(data);
     expect(useGardenStore.getState().garden.name).toBe('Loaded');
     expect(useGardenStore.getState().garden.gridCellSizeFt).toBe(0.5);
+  });
+
+  it('loadGarden backfills seedStarting when missing', () => {
+    const legacy = { ...blankGarden() } as any;
+    delete legacy.seedStarting;
+    useGardenStore.getState().loadGarden(legacy);
+    expect(useGardenStore.getState().garden.seedStarting).toEqual(emptySeedStartingState());
   });
 });

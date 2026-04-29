@@ -1,3 +1,4 @@
+import { emptySeedStartingState } from '../model/seedStarting';
 import type { Garden } from '../model/types';
 
 export function serializeGarden(garden: Garden): string {
@@ -9,6 +10,7 @@ export function deserializeGarden(json: string): Garden {
   if (!data.version || !data.name || data.widthFt == null || data.heightFt == null) {
     throw new Error('Invalid garden file: missing required fields');
   }
+  if (!data.seedStarting) data.seedStarting = emptySeedStartingState();
   return data as Garden;
 }
 
