@@ -10,6 +10,16 @@ export interface SownCellEntry {
   seedling: Seedling;
 }
 
+function strokeWarningRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, radius: number, p: number) {
+  ctx.save();
+  ctx.strokeStyle = SEEDLING_WARNING_COLOR;
+  ctx.lineWidth = Math.max(1, p * 0.035);
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + Math.max(1.5, p * 0.05), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function collectSownCells(tray: Tray, seedlings: Seedling[]): SownCellEntry[] {
   const byId = new Map(seedlings.map((s) => [s.id, s]));
   const out: SownCellEntry[] = [];
@@ -60,13 +70,7 @@ export function renderSeedlings(
     ctx.restore();
 
     if (options.showWarnings !== false && hasSeedlingWarnings(seedling, tray)) {
-      ctx.save();
-      ctx.strokeStyle = SEEDLING_WARNING_COLOR;
-      ctx.lineWidth = Math.max(1, p * 0.035);
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius + Math.max(1.5, p * 0.05), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+      strokeWarningRing(ctx, cx, cy, radius, p);
     }
 
     if (options.showLabel) {
@@ -109,13 +113,7 @@ export function renderSeedlings(
           renderPlant(ctx, cultivar.id, radius, cultivar.color);
           ctx.restore();
           if (previewWarn) {
-            ctx.save();
-            ctx.strokeStyle = SEEDLING_WARNING_COLOR;
-            ctx.lineWidth = Math.max(1.5, p * 0.06);
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius + ctx.lineWidth * 0.6, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
+            strokeWarningRing(ctx, cx, cy, radius, p);
           }
         }
       }
