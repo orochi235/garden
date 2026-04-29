@@ -49,16 +49,16 @@ export function renderTrayBase(
   const { showGrid = true, showDragSpreadAffordances = false, dragSpreadAffordanceHover = null } = options;
   const w = tray.widthIn * pxPerInch;
   const h = tray.heightIn * pxPerInch;
+  const radius = Math.min(w, h) * 0.04;
 
-  // Tray body
   ctx.fillStyle = '#3a3a3a';
-  ctx.fillRect(originX, originY, w, h);
+  ctx.beginPath();
+  ctx.roundRect(originX, originY, w, h, radius);
+  ctx.fill();
 
   ctx.strokeStyle = '#1a1a1a';
   ctx.lineWidth = 1;
-
-  // Always draw the outer tray rim
-  ctx.strokeRect(originX, originY, w, h);
+  ctx.stroke();
 
   {
     const p = tray.cellPitchIn * pxPerInch;
