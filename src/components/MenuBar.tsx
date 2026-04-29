@@ -2,6 +2,7 @@ import { useActiveTheme } from '../hooks/useActiveTheme';
 import { useGardenStore } from '../store/gardenStore';
 import styles from '../styles/MenuBar.module.css';
 import { downloadGarden, openGardenFile } from '../utils/file';
+import { ModeSwitcher } from './ModeSwitcher';
 
 export function MenuBar() {
   const garden = useGardenStore((s) => s.garden);
@@ -33,6 +34,7 @@ export function MenuBar() {
       >
         Garden Planner
       </div>
+      <ModeSwitcher />
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>
         <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>
