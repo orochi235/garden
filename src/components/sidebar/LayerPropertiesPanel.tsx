@@ -4,6 +4,7 @@ import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
+import { AlmanacPanel } from './AlmanacPanel';
 import { DebugThemePanel } from './DebugThemePanel';
 import { LayerSection } from './LayerSection';
 import { RenderLayersPanel } from './RenderLayersPanel';
@@ -31,7 +32,18 @@ export function LayerPropertiesPanel() {
   const renderLayerVisibility = useUiStore((s) => s.renderLayerVisibility);
   const setRenderLayerVisible = useUiStore((s) => s.setRenderLayerVisible);
   const setBlueprint = useGardenStore((s) => s.setBlueprint);
+  const appMode = useUiStore((s) => s.appMode);
   const unit = garden.displayUnit;
+
+  if (appMode === 'seed-starting') {
+    return (
+      <div className={styles.panel}>
+        <AlmanacPanel />
+        <RenderLayersPanel />
+        <DebugThemePanel />
+      </div>
+    );
+  }
 
   function handleLoadBlueprint() {
     const input = document.createElement('input');

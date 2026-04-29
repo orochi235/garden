@@ -210,4 +210,89 @@ describe('uiStore', () => {
       expect(useUiStore.getState().dragOverlay).toBeNull();
     });
   });
+
+  describe('seed-starting view state', () => {
+    it('seedStartingZoom defaults to 30 and clamps', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().seedStartingZoom).toBe(30);
+      useUiStore.getState().setSeedStartingZoom(1);
+      expect(useUiStore.getState().seedStartingZoom).toBe(5);
+      useUiStore.getState().setSeedStartingZoom(500);
+      expect(useUiStore.getState().seedStartingZoom).toBe(100);
+    });
+
+    it('seedStartingPan defaults to 0,0 and can be set', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().seedStartingPanX).toBe(0);
+      expect(useUiStore.getState().seedStartingPanY).toBe(0);
+      useUiStore.getState().setSeedStartingPan(10, 20);
+      expect(useUiStore.getState().seedStartingPanX).toBe(10);
+      expect(useUiStore.getState().seedStartingPanY).toBe(20);
+    });
+
+    it('seedFillPreview defaults to null and can be set/cleared', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().seedFillPreview).toBeNull();
+      useUiStore.getState().setSeedFillPreview({ trayId: 't1', cultivarId: 'tomato' });
+      expect(useUiStore.getState().seedFillPreview).toEqual({ trayId: 't1', cultivarId: 'tomato' });
+      useUiStore.getState().setSeedFillPreview(null);
+      expect(useUiStore.getState().seedFillPreview).toBeNull();
+    });
+
+    it('seed-starting state resets', () => {
+      useUiStore.getState().setSeedStartingZoom(50);
+      useUiStore.getState().setSeedStartingPan(5, 5);
+      useUiStore.getState().setSeedFillPreview({ trayId: 't', cultivarId: 'c' });
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().seedStartingZoom).toBe(30);
+      expect(useUiStore.getState().seedStartingPanX).toBe(0);
+      expect(useUiStore.getState().seedFillPreview).toBeNull();
+    });
+  });
+
+  describe('almanacFilters', () => {
+    it('defaults to empty filter set', () => {
+      useUiStore.getState().reset();
+      const f = useUiStore.getState().almanacFilters;
+      expect(f).toEqual({ cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null });
+    });
+
+    it('setAlmanacFilters merges partial patches', () => {
+      useUiStore.getState().reset();
+      useUiStore.getState().setAlmanacFilters({ cellSizes: ['small'] });
+      expect(useUiStore.getState().almanacFilters.cellSizes).toEqual(['small']);
+      expect(useUiStore.getState().almanacFilters.seasons).toEqual([]);
+
+      useUiStore.getState().setAlmanacFilters({ usdaZone: 6 });
+      expect(useUiStore.getState().almanacFilters.cellSizes).toEqual(['small']);
+      expect(useUiStore.getState().almanacFilters.usdaZone).toBe(6);
+    });
+
+    it('resetAlmanacFilters clears everything', () => {
+      useUiStore.getState().setAlmanacFilters({
+        cellSizes: ['small', 'medium'],
+        seasons: ['cool'],
+        usdaZone: 6,
+        lastFrostDate: '2026-05-01',
+      });
+      useUiStore.getState().resetAlmanacFilters();
+      expect(useUiStore.getState().almanacFilters).toEqual({
+        cellSizes: [],
+        seasons: [],
+        usdaZone: null,
+        lastFrostDate: null,
+      });
+    });
+
+    it('almanacFilters reset to defaults on store reset', () => {
+      useUiStore.getState().setAlmanacFilters({ cellSizes: ['large'], usdaZone: 9 });
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().almanacFilters).toEqual({
+        cellSizes: [],
+        seasons: [],
+        usdaZone: null,
+        lastFrostDate: null,
+      });
+    });
+  });
 });

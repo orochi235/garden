@@ -1,6 +1,7 @@
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/ModeSwitcher.module.css';
 import { useActiveTheme } from '../hooks/useActiveTheme';
+import { enterSeedStarting } from '../utils/enterSeedStarting';
 
 export function ModeSwitcher() {
   const appMode = useUiStore((s) => s.appMode);
@@ -23,7 +24,7 @@ export function ModeSwitcher() {
         aria-pressed={appMode === 'seed-starting'}
         className={`${styles.tab} ${appMode === 'seed-starting' ? styles.active : ''}`}
         style={{ background: appMode === 'seed-starting' ? theme.listHover : 'transparent' }}
-        onClick={() => setAppMode('seed-starting')}
+        onClick={enterSeedStarting}
       >
         Seed Starting
       </button>

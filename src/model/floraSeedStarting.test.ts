@@ -23,4 +23,12 @@ describe('resolveSeedStarting', () => {
     expect(r.startable).toBe(true);
     expect(r.cellSize).toBe('large');
   });
+
+  it('weeksBeforeLastFrost defaults to null and propagates from species/cultivar', () => {
+    expect(resolveSeedStarting(undefined, undefined).weeksBeforeLastFrost).toBeNull();
+    const fromSpecies = resolveSeedStarting({ weeksBeforeLastFrost: [8, 4] }, undefined);
+    expect(fromSpecies.weeksBeforeLastFrost).toEqual([8, 4]);
+    const fromCultivar = resolveSeedStarting({ weeksBeforeLastFrost: [8, 4] }, { weeksBeforeLastFrost: [6, 2] });
+    expect(fromCultivar.weeksBeforeLastFrost).toEqual([6, 2]);
+  });
 });

@@ -44,30 +44,47 @@ export function renderTrayBase(
   const h = tray.heightIn * pxPerInch;
 
   // Tray body
-  ctx.fillStyle = '#3a2e22';
+  ctx.fillStyle = '#3a3a3a';
   ctx.fillRect(originX, originY, w, h);
 
-  ctx.strokeStyle = '#1a1410';
+  ctx.strokeStyle = '#1a1a1a';
   ctx.lineWidth = 1;
 
   // Always draw the outer tray rim
   ctx.strokeRect(originX, originY, w, h);
 
-  if (showGrid) {
-    // Snap points: small dots at each cell center (matches drag-lab snap-point style)
+  {
     const p = tray.cellPitchIn * pxPerInch;
     const off = trayInteriorOffsetIn(tray);
     const ox = originX + off.x * pxPerInch;
     const oy = originY + off.y * pxPerInch;
+    const wellRadius = p * 0.4;
     const dotRadius = Math.max(1.5, p * 0.06);
-    ctx.fillStyle = 'rgba(91,164,207,0.5)';
+
+    // Well rings: subtle rim showing the physical well opening
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1;
     for (let r = 0; r < tray.rows; r++) {
       for (let c = 0; c < tray.cols; c++) {
         const cx = ox + c * p + p / 2;
         const cy = oy + r * p + p / 2;
         ctx.beginPath();
-        ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(cx, cy, wellRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    if (showGrid) {
+      // Snap points: small dots at each cell center (drag-lab style)
+      ctx.fillStyle = 'rgba(91,164,207,0.5)';
+      for (let r = 0; r < tray.rows; r++) {
+        for (let c = 0; c < tray.cols; c++) {
+          const cx = ox + c * p + p / 2;
+          const cy = oy + r * p + p / 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
   }

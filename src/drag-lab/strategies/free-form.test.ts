@@ -19,9 +19,9 @@ describe('freeFormStrategy', () => {
     expect(result.item.y).toBe(2.3);
   });
 
-  it('returns no drag feedback', () => {
+  it('returns hide-preview drag feedback', () => {
     const feedback = freeFormStrategy.onDragOver(bounds, 'rectangle', { x: 1, y: 1 }, [], {});
-    expect(feedback).toBeNull();
+    expect(feedback?.hide).toBe('preview');
   });
 
   it('has empty config schema', () => {

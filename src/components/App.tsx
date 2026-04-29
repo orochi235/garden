@@ -6,6 +6,7 @@ import { createPlanting, createStructure, createZone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
+import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { autosave } from '../utils/file';
 import { screenToWorld, snapToGrid } from '../utils/grid';
 import { getPlantingPosition } from '../utils/planting';
@@ -37,7 +38,11 @@ export function App() {
     fetch(`${import.meta.env.BASE_URL}default.garden`)
       .then((r) => r.json())
       .then((g) => loadGarden(g))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('mode') === 'seed-starting') enterSeedStarting();
+      });
   }, [loadGarden]);
 
   useEffect(() => {
@@ -335,21 +340,56 @@ export function App() {
         ghost = null;
       }
 
+      let lastClientX = startX;
+      let lastClientY = startY;
+      let shiftHeld = false;
+
+      function updateFillPreview() {
+        const setPreview = useUiStore.getState().setSeedFillPreview;
+        if (!dragging || !shiftHeld) {
+          setPreview(null);
+          return;
+        }
+        const v = viewport();
+        if (!v) {
+          setPreview(null);
+          return;
+        }
+        const sx = lastClientX - v.rect.left;
+        const sy = lastClientY - v.rect.top;
+        const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
+        setPreview(hit ? { trayId: v.vp.tray.id, cultivarId: entry.id } : null);
+      }
+
       function onMove(ev: PointerEvent) {
+        lastClientX = ev.clientX;
+        lastClientY = ev.clientY;
+        shiftHeld = ev.shiftKey;
         if (!dragging) {
           const dx = ev.clientX - startX;
           const dy = ev.clientY - startY;
           if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
           dragging = true;
+          (target as HTMLElement & { __dragged?: boolean }).__dragged = true;
         }
         moveGhost(ev.clientX, ev.clientY);
+        updateFillPreview();
+      }
+
+      function onKey(ev: KeyboardEvent) {
+        if (ev.key !== 'Shift') return;
+        shiftHeld = ev.type === 'keydown';
+        updateFillPreview();
       }
 
       function onUp(ev: PointerEvent) {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('keydown', onKey);
+        document.removeEventListener('keyup', onKey);
         target.releasePointerCapture(ev.pointerId);
         clearGhost();
+        useUiStore.getState().setSeedFillPreview(null);
         if (!dragging) return;
 
         const v = viewport();
@@ -367,6 +407,8 @@ export function App() {
 
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
+      document.addEventListener('keydown', onKey);
+      document.addEventListener('keyup', onKey);
     },
     [],
   );

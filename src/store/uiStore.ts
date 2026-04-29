@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import type { Planting, Structure, Zone, LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
+import type { Season } from '../model/species';
+import type { CellSize } from '../model/seedStarting';
+
+export interface AlmanacFilters {
+  /** When non-empty, only seedables with one of these cell sizes are shown. */
+  cellSizes: CellSize[];
+  /** When non-empty, only seedables with one of these seasons are shown. */
+  seasons: Season[];
+  /** When set, only seedables whose USDA zone range covers this zone are shown. */
+  usdaZone: number | null;
+  /** ISO date string (YYYY-MM-DD). Filters by intended planting / sow window. Null = ignore. */
+  lastFrostDate: string | null;
+}
 
 export type ViewMode = 'select' | 'select-area' | 'pan' | 'zoom' | 'draw';
 export type LabelMode = 'all' | 'active-layer' | 'selection';
@@ -50,10 +63,17 @@ interface UiStore {
   seedStartingZoom: number;
   seedStartingPanX: number;
   seedStartingPanY: number;
+  /** Transient ghost preview shown while dragging a cultivar over a tray with shift held. */
+  seedFillPreview: { trayId: string; cultivarId: string } | null;
+  /** Almanac panel filters that constrain which seedables show in the palette. */
+  almanacFilters: AlmanacFilters;
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
   setSeedStartingZoom: (zoom: number) => void;
   setSeedStartingPan: (x: number, y: number) => void;
+  setSeedFillPreview: (preview: { trayId: string; cultivarId: string } | null) => void;
+  setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
+  resetAlmanacFilters: () => void;
   setDragOverlay: (overlay: DragOverlay) => void;
   clearDragOverlay: () => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
@@ -121,6 +141,13 @@ function defaultState() {
     seedStartingZoom: 30,
     seedStartingPanX: 0,
     seedStartingPanY: 0,
+    seedFillPreview: null as { trayId: string; cultivarId: string } | null,
+    almanacFilters: {
+      cellSizes: [],
+      seasons: [],
+      usdaZone: null,
+      lastFrostDate: null,
+    } as AlmanacFilters,
   };
 }
 
@@ -170,5 +197,12 @@ export const useUiStore = create<UiStore>((set) => ({
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
   setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
   setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
+  setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
+  setAlmanacFilters: (patch) =>
+    set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),
+  resetAlmanacFilters: () =>
+    set({
+      almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
+    }),
   reset: () => set(defaultState()),
 }));

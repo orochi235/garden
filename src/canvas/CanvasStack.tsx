@@ -70,6 +70,7 @@ export function CanvasStack() {
   const seedStartingPanY = useUiStore((s) => s.seedStartingPanY);
   const showSeedlingLabels = useUiStore((s) => s.renderLayerVisibility['seedling-labels'] ?? false);
   const showTrayGrid = useUiStore((s) => s.renderLayerVisibility['tray-grid'] ?? true);
+  const seedFillPreview = useUiStore((s) => s.seedFillPreview);
 
   // --- Layer renderers (persistent instances with internal animation state) ---
   const structureRenderer = useRef<StructureLayerRenderer>(null!);
@@ -129,7 +130,20 @@ export function CanvasStack() {
   // --- Interaction hooks ---
   useAutoCenter(width, height, garden.widthFt, garden.heightFt, setPan);
   const clipboard = useClipboard();
-  const pan = usePanInteraction(setPan);
+  const setSeedStartingPan = useUiStore((s) => s.setSeedStartingPan);
+  const setSeedStartingZoom = useUiStore((s) => s.setSeedStartingZoom);
+  const pan = usePanInteraction(setPan, {
+    getPan: () => {
+      const s = useUiStore.getState();
+      return s.appMode === 'seed-starting'
+        ? { x: s.seedStartingPanX, y: s.seedStartingPanY }
+        : { x: s.panX, y: s.panY };
+    },
+    getSetPan: () => {
+      const s = useUiStore.getState();
+      return s.appMode === 'seed-starting' ? s.setSeedStartingPan : s.setPan;
+    },
+  });
   const moveInteraction = useMoveInteraction(containerRef, invalidate);
   const resize = useResizeInteraction(containerRef);
   const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
@@ -315,14 +329,17 @@ export function CanvasStack() {
         const trayPxH = tray.heightIn * pxPerInch;
         const originX = (width - trayPxW) / 2 + seedStartingPanX;
         const originY = (height - trayPxH) / 2 + seedStartingPanY;
+        const fillPreviewCultivarId =
+          seedFillPreview && seedFillPreview.trayId === tray.id ? seedFillPreview.cultivarId : null;
         renderSeedlings(ctx, tray, garden.seedStarting.seedlings, pxPerInch, originX, originY, {
           showLabel: showSeedlingLabels,
+          fillPreviewCultivarId,
         });
         return;
       }
       plantingRenderer.current.render(ctx);
     },
-    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
+    [appMode, currentTrayId, seedStartingZoom, seedStartingPanX, seedStartingPanY, showSeedlingLabels, seedFillPreview, garden.seedStarting, garden.plantings, garden.zones, garden.structures, zoom, panX, panY, layerOpacity.plantings, activeLayer, selectedIds, renderLayerVisibility, renderLayerOrder, labelMode, labelFontSize, plantIconScale, plantingRenderer.current.highlight, overlay, iconTick],
   );
 
   useLayerEffect(
@@ -336,6 +353,15 @@ export function CanvasStack() {
   // --- Event dispatch ---
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      const isSeed = useUiStore.getState().appMode === 'seed-starting';
+      if (isSeed) {
+        // Seed mode: only support pan (left-drag in pan view-mode, or right-button)
+        if (e.button === 2 || useUiStore.getState().viewMode === 'pan') {
+          pan.start(e);
+          setActiveCursor('grabbing');
+        }
+        return;
+      }
       if (e.button === 0) {
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -554,9 +580,24 @@ export function CanvasStack() {
 
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!e.metaKey) return;
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
+
+      if (useUiStore.getState().appMode === 'seed-starting') {
+        const { currentTrayId } = useUiStore.getState();
+        const { garden } = useGardenStore.getState();
+        const tray = garden.seedStarting.trays.find((t) => t.id === currentTrayId);
+        if (!tray) return;
+        const padding = 40;
+        const availW = rect.width - padding * 2;
+        const availH = rect.height - padding * 2;
+        const newZoom = Math.min(100, Math.max(5, Math.min(availW / tray.widthIn, availH / tray.heightIn)));
+        setSeedStartingZoom(newZoom);
+        setSeedStartingPan(0, 0);
+        return;
+      }
+
+      if (!e.metaKey) return;
       const { panX, panY, zoom } = useUiStore.getState();
       const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, {
         panX,
@@ -616,19 +657,25 @@ export function CanvasStack() {
     (e: React.WheelEvent) => {
       e.preventDefault();
 
-      // Alt+scroll cycles layers
-      if (e.altKey) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const currentState = useUiStore.getState();
+      const isSeed = currentState.appMode === 'seed-starting';
+
+      // Alt+scroll cycles layers (garden mode only)
+      if (e.altKey && !isSeed) {
         cycleLayer(e.deltaY > 0 ? -1 : 1);
         return;
       }
 
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      const stateZoom = isSeed ? currentState.seedStartingZoom : currentState.zoom;
+      const statePanX = isSeed ? currentState.seedStartingPanX : currentState.panX;
+      const statePanY = isSeed ? currentState.seedStartingPanY : currentState.panY;
+      const bounds = isSeed ? { min: 5, max: 100 } : { min: 10, max: 200 };
 
-      const currentState = useUiStore.getState();
       const result = computeWheelAction(
         currentState.viewMode,
-        { zoom: currentState.zoom, panX: currentState.panX, panY: currentState.panY },
+        { zoom: stateZoom, panX: statePanX, panY: statePanY },
         {
           deltaX: e.deltaX,
           deltaY: e.deltaY,
@@ -637,12 +684,18 @@ export function CanvasStack() {
           shiftKey: e.shiftKey,
           metaKey: e.metaKey,
         },
+        bounds,
       );
 
-      setZoom(result.zoom);
-      setPan(result.panX, result.panY);
+      if (isSeed) {
+        setSeedStartingZoom(result.zoom);
+        setSeedStartingPan(result.panX, result.panY);
+      } else {
+        setZoom(result.zoom);
+        setPan(result.panX, result.panY);
+      }
     },
-    [setZoom, setPan],
+    [setZoom, setPan, setSeedStartingZoom, setSeedStartingPan],
   );
 
   const canvasStyle = {

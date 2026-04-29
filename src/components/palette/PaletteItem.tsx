@@ -130,13 +130,27 @@ interface ParentRowProps {
   node: PlantingGroupNode;
   expanded: boolean;
   onToggle: () => void;
+  onDragBegin?: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
-export function PlantingParentRow({ node, expanded: _, onToggle }: ParentRowProps) {
+export function PlantingParentRow({ node, expanded: _, onToggle, onDragBegin }: ParentRowProps) {
   return (
     <div
       className={`${styles.row} ${styles.rowParent}`}
-      onClick={onToggle}
+      onPointerDown={(e) => {
+        if (e.button !== 0 || !onDragBegin) return;
+        const target = e.currentTarget as HTMLElement & { __dragged?: boolean };
+        target.__dragged = false;
+        onDragBegin(node.defaultEntry, e);
+      }}
+      onClick={(e) => {
+        const target = e.currentTarget as HTMLElement & { __dragged?: boolean };
+        if (target.__dragged) {
+          target.__dragged = false;
+          return;
+        }
+        onToggle();
+      }}
     >
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={node.defaultCultivarId} color={node.color} />

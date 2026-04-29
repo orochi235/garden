@@ -10,6 +10,8 @@ export interface SeedStartingFields {
   daysToGerminate: [number, number] | null;
   /** Min/max weeks from sow until ready to transplant. */
   weeksToTransplant: [number, number] | null;
+  /** Min/max weeks before the last frost date to start indoors. Negative = after last frost. */
+  weeksBeforeLastFrost: [number, number] | null;
   /** Sow depth in inches. */
   sowDepthIn: number | null;
   /** Light requirement during germination. */
@@ -25,6 +27,7 @@ export const DEFAULT_SEED_STARTING_FIELDS: SeedStartingFields = {
   cellSize: 'medium',
   daysToGerminate: null,
   weeksToTransplant: null,
+  weeksBeforeLastFrost: null,
   sowDepthIn: null,
   lightOnGermination: null,
   bottomHeat: null,
