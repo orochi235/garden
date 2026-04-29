@@ -62,9 +62,9 @@ export function renderSeedlings(
     if (options.showWarnings !== false && hasSeedlingWarnings(seedling, tray)) {
       ctx.save();
       ctx.strokeStyle = SEEDLING_WARNING_COLOR;
-      ctx.lineWidth = Math.max(1.5, p * 0.06);
+      ctx.lineWidth = Math.max(1, p * 0.035);
       ctx.beginPath();
-      ctx.arc(cx, cy, radius + ctx.lineWidth * 0.6, 0, Math.PI * 2);
+      ctx.arc(cx, cy, radius + Math.max(3, p * 0.12), 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
