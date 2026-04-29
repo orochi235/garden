@@ -26,3 +26,8 @@ dist-ssr
 .worktrees
 .playwright-mcp
 icons
+
+# Local dev screenshots
+almanac-panel*.png
+plant-rendering-check.png
+tray-*.png
