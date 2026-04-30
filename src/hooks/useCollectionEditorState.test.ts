@@ -109,15 +109,20 @@ describe('useCollectionEditorState — search and categories', () => {
     expect(result.current.visibleCultivars('left', db).some((c) => c.id === target.id)).toBe(true);
   });
 
-  it('search matches species name', () => {
+  it('search matches species name (substring haystack)', () => {
     const db = getAllCultivars();
     const target = db[0];
     const speciesName = getSpecies(target.speciesId)!.name;
     const { result } = renderHook(() => useCollectionEditorState([], db));
     act(() => result.current.setSearch('left', speciesName));
-    expect(result.current.visibleCultivars('left', db).every(
-      (c) => getSpecies(c.speciesId)?.name === speciesName,
-    )).toBe(true);
+    const visible = result.current.visibleCultivars('left', db);
+    expect(visible.some((c) => c.id === target.id)).toBe(true);
+    const needle = speciesName.toLowerCase();
+    expect(visible.every((c) => {
+      const sp = getSpecies(c.speciesId);
+      const haystack = [c.name, sp?.name ?? '', sp?.taxonomicName ?? ''].join(' ').toLowerCase();
+      return haystack.includes(needle);
+    })).toBe(true);
   });
 
   it('category filter restricts to selected categories; empty = no restriction', () => {

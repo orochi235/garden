@@ -121,31 +121,19 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     (side: Side, source: Cultivar[]): Cultivar[] => {
       const search = (side === 'left' ? searchLeft : searchRight).trim().toLowerCase();
       const cats = side === 'left' ? catsLeft : catsRight;
-      let filtered = cats.size > 0 ? source.filter((c) => cats.has(c.category)) : source;
-      if (search) {
-        // Prefer exact species-name match: if the search term exactly matches a species
-        // name in the source, restrict to that species to avoid cross-species noise from
-        // cultivar names that happen to contain the species name as a substring.
-        const exactSpeciesMatch = filtered.some(
-          (c) => (getSpecies(c.speciesId)?.name ?? '').toLowerCase() === search,
-        );
-        if (exactSpeciesMatch) {
-          filtered = filtered.filter(
-            (c) => (getSpecies(c.speciesId)?.name ?? '').toLowerCase() === search,
-          );
-        } else {
-          filtered = filtered.filter((c) => {
-            const species = getSpecies(c.speciesId);
-            const haystack = [
-              c.name,
-              species?.name ?? '',
-              species?.taxonomicName ?? '',
-            ].join(' ').toLowerCase();
-            return haystack.includes(search);
-          });
+      return source.filter((c) => {
+        if (cats.size > 0 && !cats.has(c.category)) return false;
+        if (search) {
+          const species = getSpecies(c.speciesId);
+          const haystack = [
+            c.name,
+            species?.name ?? '',
+            species?.taxonomicName ?? '',
+          ].join(' ').toLowerCase();
+          if (!haystack.includes(search)) return false;
         }
-      }
-      return filtered;
+        return true;
+      });
     },
     [searchLeft, searchRight, catsLeft, catsRight],
   );
