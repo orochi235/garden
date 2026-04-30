@@ -1,12 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { findInUseRemovals } from '../../model/collection';
-import { getAllCultivars } from '../../model/cultivars';
+import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/CollectionEditor.module.css';
 import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
-import { CollectionPane } from './CollectionPane';
-import { TransferControls } from './TransferControls';
+import { CultivarDataGrid } from './CultivarDataGrid';
+import { CollectionList } from './CollectionList';
+
+const CATEGORY_LABELS: Record<CultivarCategory, string> = {
+  vegetables: 'Vegetables',
+  greens: 'Greens',
+  fruits: 'Fruits',
+  squash: 'Squash',
+  'root-vegetables': 'Roots',
+  legumes: 'Legumes',
+  herbs: 'Herbs',
+  flowers: 'Flowers',
+};
+const CATEGORY_ORDER: CultivarCategory[] = [
+  'vegetables', 'greens', 'fruits', 'squash', 'root-vegetables', 'legumes', 'herbs', 'flowers',
+];
 
 export function CollectionEditor() {
   const garden = useGardenStore((s) => s.garden);
@@ -23,7 +37,7 @@ export function CollectionEditor() {
     () => database.filter((c) => !pendingIds.has(c.id)),
     [database, pendingIds],
   );
-  const rightSource = state.pending;
+  const visible = useMemo(() => state.visibleCultivars(leftSource), [state, leftSource]);
 
   function close() {
     setOpen(false);
@@ -68,10 +82,16 @@ export function CollectionEditor() {
     return () => window.removeEventListener('keydown', onKey);
   }, [warnRemovals, confirmDiscard, state.dirty]);
 
-  function dragStart(side: 'left' | 'right', id: string, e: React.DragEvent) {
+  function dragStart(id: string, e: React.DragEvent) {
     e.dataTransfer.setData('application/x-cultivar-id-from-other', id);
-    e.dataTransfer.setData('application/x-cultivar-source-side', side);
     e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function toggleCategory(cat: CultivarCategory) {
+    const next = new Set(state.categories);
+    if (next.has(cat)) next.delete(cat);
+    else next.add(cat);
+    state.setCategories(next);
   }
 
   return (
@@ -79,50 +99,62 @@ export function CollectionEditor() {
       <div className={styles.modal}>
         <div className={styles.header}>Collection</div>
         <div className={styles.body}>
-          <CollectionPane
-            side="left"
-            title="Available"
-            source={leftSource}
-            visibleCultivars={state.visibleCultivars('left', leftSource)}
-            search={state.searchOf('left')}
-            onSearchChange={(v) => state.setSearch('left', v)}
-            categories={state.categoriesOf('left')}
-            onCategoriesChange={(next) => state.setCategories('left', next)}
-            expandedSpecies={state.expandedSpecies('left')}
-            onSpeciesExpandToggle={(id) => state.toggleSpeciesExpand('left', id)}
-            isChecked={(id) => state.leftChecked.has(id)}
-            onCultivarToggle={(id) => state.toggleSelection('left', id)}
-            speciesTriState={(sid, kids) => state.speciesSelectionState('left', sid, kids)}
-            onSpeciesToggle={(sid, kids) => state.toggleSpeciesSelection('left', sid, kids)}
-            onCultivarDragStart={(id, e) => dragStart('left', id, e)}
-            onCultivarDragEnd={() => {}}
-            onDropFromOther={(id) => state.dragTransfer('right', id)}
-          />
-          <TransferControls
-            canTransferRight={state.leftChecked.size > 0}
-            canTransferLeft={state.rightChecked.size > 0}
-            onTransferRight={() => state.transferRight()}
-            onTransferLeft={() => state.transferLeft()}
-          />
-          <CollectionPane
-            side="right"
-            title="In Collection"
-            source={rightSource}
-            visibleCultivars={state.visibleCultivars('right', rightSource)}
-            search={state.searchOf('right')}
-            onSearchChange={(v) => state.setSearch('right', v)}
-            categories={state.categoriesOf('right')}
-            onCategoriesChange={(next) => state.setCategories('right', next)}
-            expandedSpecies={state.expandedSpecies('right')}
-            onSpeciesExpandToggle={(id) => state.toggleSpeciesExpand('right', id)}
-            isChecked={(id) => state.rightChecked.has(id)}
-            onCultivarToggle={(id) => state.toggleSelection('right', id)}
-            speciesTriState={(sid, kids) => state.speciesSelectionState('right', sid, kids)}
-            onSpeciesToggle={(sid, kids) => state.toggleSpeciesSelection('right', sid, kids)}
-            onCultivarDragStart={(id, e) => dragStart('right', id, e)}
-            onCultivarDragEnd={() => {}}
-            onDropFromOther={(id) => state.dragTransfer('left', id)}
-          />
+          <div className={styles.left}>
+            <div className={styles.paneTitle}>
+              <span>Available</span>
+              <button
+                type="button"
+                className={styles.transferButton}
+                onClick={() => state.transferRight()}
+                disabled={state.checked.size === 0}
+                title="Add selected to collection"
+              >Add {state.checked.size > 0 ? `(${state.checked.size})` : ''} ›</button>
+            </div>
+            <div className={styles.search}>
+              <input
+                className={styles.searchInput}
+                type="text"
+                placeholder="Search…"
+                value={state.search}
+                onChange={(e) => state.setSearch(e.target.value)}
+              />
+            </div>
+            <div className={styles.chips}>
+              {CATEGORY_ORDER.map((cat) => (
+                <span
+                  key={cat}
+                  className={`${styles.chip} ${state.categories.has(cat) ? styles.chipActive : ''}`}
+                  onClick={() => toggleCategory(cat)}
+                >
+                  {CATEGORY_LABELS[cat]}
+                </span>
+              ))}
+            </div>
+            <CultivarDataGrid
+              visibleCultivars={visible}
+              expandedSpecies={state.expandedSpecies}
+              onSpeciesExpandToggle={state.toggleSpeciesExpand}
+              isChecked={(id) => state.checked.has(id)}
+              onCultivarToggle={state.toggleChecked}
+              speciesTriState={state.speciesSelectionState}
+              onSpeciesToggle={state.toggleSpeciesSelection}
+              sortColumn={state.sortColumn}
+              sortDir={state.sortDir}
+              onSortChange={state.setSort}
+              onCultivarDragStart={dragStart}
+              onCultivarDragEnd={() => {}}
+            />
+          </div>
+          <div className={styles.right}>
+            <div className={styles.paneTitle}>
+              <span>In Collection ({state.pending.length})</span>
+            </div>
+            <CollectionList
+              collection={state.pending}
+              onRemove={state.removeOne}
+              onDropFromOther={state.addOne}
+            />
+          </div>
         </div>
         <div className={styles.footer}>
           <button type="button" className={styles.button} onClick={attemptCancel}>Cancel</button>

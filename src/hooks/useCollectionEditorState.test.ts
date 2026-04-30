@@ -14,90 +14,69 @@ describe('useCollectionEditorState — initial state', () => {
     const { result } = renderHook(() => useCollectionEditorState(committed, getAllCultivars()));
     expect(result.current.pending.map((c) => c.id)).toEqual([a.id]);
     expect(result.current.dirty).toBe(false);
-    expect(result.current.leftChecked).toEqual(new Set());
-    expect(result.current.rightChecked).toEqual(new Set());
+    expect(result.current.checked).toEqual(new Set());
+  });
+
+  it('expands all database species by default', () => {
+    const db = getAllCultivars().slice(0, 4);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    for (const c of db) {
+      expect(result.current.expandedSpecies.has(c.speciesId)).toBe(true);
+    }
   });
 });
 
 describe('useCollectionEditorState — selection', () => {
-  it('toggles individual cultivar checkboxes per side', () => {
+  it('toggles individual cultivar checkboxes', () => {
     const cultivars = getAllCultivars().slice(0, 2);
-    const committed = [snapshotCultivar(cultivars[0])];
-    const { result } = renderHook(() => useCollectionEditorState(committed, getAllCultivars()));
-    act(() => result.current.toggleSelection('left', cultivars[1].id));
-    expect(result.current.leftChecked.has(cultivars[1].id)).toBe(true);
-    act(() => result.current.toggleSelection('left', cultivars[1].id));
-    expect(result.current.leftChecked.has(cultivars[1].id)).toBe(false);
+    const { result } = renderHook(() => useCollectionEditorState([], cultivars));
+    act(() => result.current.toggleChecked(cultivars[1].id));
+    expect(result.current.checked.has(cultivars[1].id)).toBe(true);
+    act(() => result.current.toggleChecked(cultivars[1].id));
+    expect(result.current.checked.has(cultivars[1].id)).toBe(false);
   });
 });
 
 describe('useCollectionEditorState — transfer', () => {
-  it('transferRight adds left-checked items to pending and clears the checks', () => {
+  it('transferRight adds checked items to pending and clears the checks', () => {
     const db = getAllCultivars().slice(0, 3);
     const committed: Collection = [];
     const { result } = renderHook(() => useCollectionEditorState(committed, db));
     act(() => {
-      result.current.toggleSelection('left', db[0].id);
-      result.current.toggleSelection('left', db[1].id);
+      result.current.toggleChecked(db[0].id);
+      result.current.toggleChecked(db[1].id);
     });
     act(() => result.current.transferRight());
     expect(result.current.pending.map((c) => c.id).sort()).toEqual([db[0].id, db[1].id].sort());
-    expect(result.current.leftChecked.size).toBe(0);
+    expect(result.current.checked.size).toBe(0);
     expect(result.current.dirty).toBe(true);
   });
 
-  it('transferLeft removes right-checked items from pending and clears the checks', () => {
+  it('removeOne removes from pending', () => {
     const db = getAllCultivars().slice(0, 2);
     const committed = db.map((c) => ({ ...c }));
     const { result } = renderHook(() => useCollectionEditorState(committed, db));
-    act(() => result.current.toggleSelection('right', db[0].id));
-    act(() => result.current.transferLeft());
+    act(() => result.current.removeOne(db[0].id));
     expect(result.current.pending.map((c) => c.id)).toEqual([db[1].id]);
-    expect(result.current.rightChecked.size).toBe(0);
     expect(result.current.dirty).toBe(true);
+  });
+
+  it('addOne adds a single cultivar and unchecks it if present', () => {
+    const db = getAllCultivars().slice(0, 2);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.toggleChecked(db[0].id));
+    act(() => result.current.addOne(db[0].id));
+    expect(result.current.pending.map((c) => c.id)).toEqual([db[0].id]);
+    expect(result.current.checked.has(db[0].id)).toBe(false);
   });
 
   it('dirty returns to false when add-then-remove restores the committed set', () => {
     const db = getAllCultivars().slice(0, 1);
-    const committed: Collection = [];
-    const { result } = renderHook(() => useCollectionEditorState(committed, db));
-    act(() => result.current.toggleSelection('left', db[0].id));
-    act(() => result.current.transferRight());
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.addOne(db[0].id));
     expect(result.current.dirty).toBe(true);
-    act(() => result.current.toggleSelection('right', db[0].id));
-    act(() => result.current.transferLeft());
+    act(() => result.current.removeOne(db[0].id));
     expect(result.current.dirty).toBe(false);
-  });
-});
-
-describe('useCollectionEditorState — drag transfer', () => {
-  it('drag of an unchecked row from left transfers just that row, keeping selections intact', () => {
-    const db = getAllCultivars().slice(0, 2);
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    act(() => result.current.toggleSelection('left', db[1].id));
-    act(() => result.current.dragTransfer('left', db[0].id));
-    expect(result.current.pending.map((c) => c.id)).toEqual([db[0].id]);
-    expect(result.current.leftChecked.has(db[1].id)).toBe(true);
-  });
-
-  it('drag of a checked row from left transfers the whole checked set and clears it', () => {
-    const db = getAllCultivars().slice(0, 3);
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    act(() => {
-      result.current.toggleSelection('left', db[0].id);
-      result.current.toggleSelection('left', db[1].id);
-    });
-    act(() => result.current.dragTransfer('left', db[0].id));
-    expect(result.current.pending.map((c) => c.id).sort()).toEqual([db[0].id, db[1].id].sort());
-    expect(result.current.leftChecked.size).toBe(0);
-  });
-
-  it('drag from right works symmetrically (removal)', () => {
-    const db = getAllCultivars().slice(0, 1);
-    const committed = db.map((c) => ({ ...c }));
-    const { result } = renderHook(() => useCollectionEditorState(committed, db));
-    act(() => result.current.dragTransfer('right', db[0].id));
-    expect(result.current.pending).toEqual([]);
   });
 });
 
@@ -106,8 +85,8 @@ describe('useCollectionEditorState — search and categories', () => {
     const db = getAllCultivars();
     const { result } = renderHook(() => useCollectionEditorState([], db));
     const target = db[0];
-    act(() => result.current.setSearch('left', target.name.slice(0, 3).toLowerCase()));
-    expect(result.current.visibleCultivars('left', db).some((c) => c.id === target.id)).toBe(true);
+    act(() => result.current.setSearch(target.name.slice(0, 3).toLowerCase()));
+    expect(result.current.visibleCultivars(db).some((c) => c.id === target.id)).toBe(true);
   });
 
   it('search matches species name (substring haystack)', () => {
@@ -115,8 +94,8 @@ describe('useCollectionEditorState — search and categories', () => {
     const target = db[0];
     const speciesName = getSpecies(target.speciesId)!.name;
     const { result } = renderHook(() => useCollectionEditorState([], db));
-    act(() => result.current.setSearch('left', speciesName));
-    const visible = result.current.visibleCultivars('left', db);
+    act(() => result.current.setSearch(speciesName));
+    const visible = result.current.visibleCultivars(db);
     expect(visible.some((c) => c.id === target.id)).toBe(true);
     const needle = speciesName.toLowerCase();
     expect(visible.every((c) => {
@@ -129,9 +108,69 @@ describe('useCollectionEditorState — search and categories', () => {
   it('category filter restricts to selected categories; empty = no restriction', () => {
     const db = getAllCultivars();
     const { result } = renderHook(() => useCollectionEditorState([], db));
-    expect(result.current.visibleCultivars('left', db).length).toBe(db.length);
-    act(() => result.current.setCategories('left', new Set(['herbs'])));
-    expect(result.current.visibleCultivars('left', db).every((c) => c.category === 'herbs')).toBe(true);
+    expect(result.current.visibleCultivars(db).length).toBe(db.length);
+    act(() => result.current.setCategories(new Set(['herbs'])));
+    expect(result.current.visibleCultivars(db).every((c) => c.category === 'herbs')).toBe(true);
+  });
+});
+
+describe('useCollectionEditorState — expansion', () => {
+  it('toggleSpeciesExpand toggles expansion of a species id', () => {
+    const db = getAllCultivars().slice(0, 1);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    expect(result.current.expandedSpecies.has(db[0].speciesId)).toBe(true);
+    act(() => result.current.toggleSpeciesExpand(db[0].speciesId));
+    expect(result.current.expandedSpecies.has(db[0].speciesId)).toBe(false);
+    act(() => result.current.toggleSpeciesExpand(db[0].speciesId));
+    expect(result.current.expandedSpecies.has(db[0].speciesId)).toBe(true);
+  });
+});
+
+describe('useCollectionEditorState — species selection', () => {
+  function pickSpeciesWith(min: number, db: Cultivar[]) {
+    const groups = new Map<string, Cultivar[]>();
+    for (const c of db) {
+      const list = groups.get(c.speciesId) ?? [];
+      list.push(c);
+      groups.set(c.speciesId, list);
+    }
+    return [...groups.entries()].find(([, l]) => l.length >= min)!;
+  }
+
+  it('tri-state reflects none/some/all of visible children', () => {
+    const db = getAllCultivars();
+    const [, children] = pickSpeciesWith(2, db);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    expect(result.current.speciesSelectionState(children)).toBe('none');
+    act(() => result.current.toggleChecked(children[0].id));
+    expect(result.current.speciesSelectionState(children)).toBe(
+      children.length === 1 ? 'all' : 'some',
+    );
+  });
+
+  it('toggleSpeciesSelection bulk-adds then bulk-removes', () => {
+    const db = getAllCultivars();
+    const [, children] = pickSpeciesWith(2, db);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.toggleSpeciesSelection(children));
+    for (const c of children) expect(result.current.checked.has(c.id)).toBe(true);
+    act(() => result.current.toggleSpeciesSelection(children));
+    for (const c of children) expect(result.current.checked.has(c.id)).toBe(false);
+  });
+});
+
+describe('useCollectionEditorState — sort', () => {
+  it('setSort sets ascending on a new column; toggles direction on the same column', () => {
+    const db = getAllCultivars();
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.setSort('name'));
+    expect(result.current.sortColumn).toBe('name');
+    expect(result.current.sortDir).toBe('asc');
+    act(() => result.current.setSort('name'));
+    expect(result.current.sortDir).toBe('desc');
+    act(() => result.current.setSort('category'));
+    expect(result.current.sortColumn).toBe('category');
+    expect(result.current.sortDir).toBe('asc');
   });
 });
 
@@ -139,96 +178,20 @@ describe('useCollectionEditorState — cancel and removed-ids', () => {
   it('cancel restores pending to committed and clears selections', () => {
     const db = getAllCultivars().slice(0, 1);
     const { result } = renderHook(() => useCollectionEditorState([], db));
-    act(() => result.current.toggleSelection('left', db[0].id));
+    act(() => result.current.toggleChecked(db[0].id));
     act(() => result.current.transferRight());
     expect(result.current.dirty).toBe(true);
     act(() => result.current.cancel());
     expect(result.current.pending).toEqual([]);
     expect(result.current.dirty).toBe(false);
-    expect(result.current.leftChecked.size).toBe(0);
+    expect(result.current.checked.size).toBe(0);
   });
 
   it('computeRemovedIds returns ids in committed but not pending', () => {
     const db = getAllCultivars().slice(0, 2);
     const committed = db.map((c) => ({ ...c }));
     const { result } = renderHook(() => useCollectionEditorState(committed, db));
-    act(() => result.current.toggleSelection('right', db[0].id));
-    act(() => result.current.transferLeft());
+    act(() => result.current.removeOne(db[0].id));
     expect(result.current.computeRemovedIds()).toEqual([db[0].id]);
-  });
-});
-
-describe('useCollectionEditorState — expansion', () => {
-  it('left side starts with all database species expanded', () => {
-    const db = getAllCultivars().slice(0, 3);
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    for (const c of db) {
-      expect(result.current.expandedSpecies('left').has(c.speciesId)).toBe(true);
-    }
-    expect(result.current.expandedSpecies('right').size).toBe(0);
-  });
-
-  it('toggleSpeciesExpand toggles per-side expansion of a species id', () => {
-    const db = getAllCultivars().slice(0, 1);
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    expect(result.current.expandedSpecies('right').has(db[0].speciesId)).toBe(false);
-    act(() => result.current.toggleSpeciesExpand('right', db[0].speciesId));
-    expect(result.current.expandedSpecies('right').has(db[0].speciesId)).toBe(true);
-    act(() => result.current.toggleSpeciesExpand('right', db[0].speciesId));
-    expect(result.current.expandedSpecies('right').has(db[0].speciesId)).toBe(false);
-  });
-});
-
-describe('useCollectionEditorState — species selection', () => {
-  it('tri-state reflects none/some/all of visible children', () => {
-    const db = getAllCultivars();
-    const speciesCounts = new Map<string, Cultivar[]>();
-    for (const c of db) {
-      const list = speciesCounts.get(c.speciesId) ?? [];
-      list.push(c);
-      speciesCounts.set(c.speciesId, list);
-    }
-    const speciesId = [...speciesCounts.entries()].find(([, list]) => list.length >= 2)![0];
-    const children = speciesCounts.get(speciesId)!;
-
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    expect(result.current.speciesSelectionState('left', speciesId, children)).toBe('none');
-    act(() => result.current.toggleSelection('left', children[0].id));
-    expect(result.current.speciesSelectionState('left', speciesId, children)).toBe('some');
-    act(() => result.current.toggleSelection('left', children[1].id));
-    expect(result.current.speciesSelectionState('left', speciesId, children)).toBe(children.length === 2 ? 'all' : 'some');
-  });
-
-  it('toggleSpeciesSelection from "none" selects all visible children', () => {
-    const db = getAllCultivars();
-    const speciesGroups = new Map<string, Cultivar[]>();
-    for (const c of db) {
-      const list = speciesGroups.get(c.speciesId) ?? [];
-      list.push(c);
-      speciesGroups.set(c.speciesId, list);
-    }
-    const [speciesId, children] = [...speciesGroups.entries()].find(([, l]) => l.length >= 2)!;
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    act(() => result.current.toggleSpeciesSelection('left', speciesId, children));
-    for (const c of children) {
-      expect(result.current.leftChecked.has(c.id)).toBe(true);
-    }
-  });
-
-  it('toggleSpeciesSelection from "all" deselects all visible children', () => {
-    const db = getAllCultivars();
-    const speciesGroups = new Map<string, Cultivar[]>();
-    for (const c of db) {
-      const list = speciesGroups.get(c.speciesId) ?? [];
-      list.push(c);
-      speciesGroups.set(c.speciesId, list);
-    }
-    const [speciesId, children] = [...speciesGroups.entries()].find(([, l]) => l.length >= 2)!;
-    const { result } = renderHook(() => useCollectionEditorState([], db));
-    act(() => result.current.toggleSpeciesSelection('left', speciesId, children));
-    act(() => result.current.toggleSpeciesSelection('left', speciesId, children));
-    for (const c of children) {
-      expect(result.current.leftChecked.has(c.id)).toBe(false);
-    }
   });
 });

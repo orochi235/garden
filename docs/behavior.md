@@ -78,8 +78,11 @@ Running list of intended application behaviors.
 - Each garden has a per-garden **collection** of cultivars; only cultivars in the collection appear in the garden palette and the seed-starting palette
 - New gardens start with an empty collection — palettes are empty until the user adds cultivars
 - The collection is composed via the modal **Collection Editor**, opened from the menu bar ("Collection…") or the empty-state CTA in any cultivar palette
-- The editor has two symmetric panes (left = available cultivars, right = in-collection); cultivars transfer between sides via drag-and-drop, checkbox multiselect with `<` / `>` buttons, or a combination
-- Each pane has its own search box (matches cultivar name, species name, taxonomic name) and category chips; species rows are collapsible and have a tri-state checkbox over their visible children
+- The editor's left side is a sortable datagrid of available cultivars (columns: checkbox, swatch, name, variety, species, category, taxonomic) grouped by species — click a column header to sort, click again to toggle direction; species groups stay alphabetized
+- The right side is a compact list of cultivars currently in the collection, grouped by species, each with an `×` button to remove
+- Cultivars move left → right via checkbox + "Add" button or by dragging a row from the grid onto the right pane; right → left via the per-row `×`. Bulk-remove from the right is not supported
+- The grid has a search box (matches cultivar name, species name, taxonomic name) and category chips; species rows are collapsible and have a tri-state checkbox over their visible children
+- The grid opens with all species expanded
 - Edits in the editor are staged; Save commits, Cancel discards. Cancel + Esc both close (with a "Discard changes?" confirm if dirty); click-outside is disabled
 - On Save, if any cultivars being removed are still referenced by plantings or seedlings in the garden, a warning lists them — existing plantings/seedlings remain (the underlying flora database still resolves them) but the cultivar is unavailable for new placements until re-added
 - The collection is stored as a self-contained snapshot (`Cultivar[]`) on the garden; loaded saves missing the field default to empty
