@@ -1,4 +1,4 @@
-import { getAllCultivars } from '../../model/cultivars';
+import { getAllCultivars, type Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 
 export interface PaletteEntry {
@@ -18,7 +18,7 @@ export interface PaletteEntry {
   pattern?: string | null;
 }
 
-export const paletteItems: PaletteEntry[] = [
+const STRUCTURE_AND_ZONE_ITEMS: PaletteEntry[] = [
   // Structures
   {
     id: 'raised-bed',
@@ -112,23 +112,29 @@ export const paletteItems: PaletteEntry[] = [
     color: 'transparent',
     pattern: 'crosshatch',
   },
-  // Plantings — grouped by species, sorted by variety within each
-  ...getAllCultivars().map((c) => {
-    const species = getSpecies(c.speciesId);
-    return {
-      id: c.id,
-      name: c.name,
-      category: 'plantings' as const,
-      speciesId: c.speciesId,
-      speciesName: species?.name ?? c.speciesId,
-      varietyLabel: c.variety ?? c.name,
-      type: 'planting',
-      defaultWidth: 0,
-      defaultHeight: 0,
-      color: c.color,
-    };
-  }),
 ];
+
+function plantingEntry(c: Cultivar): PaletteEntry {
+  const species = getSpecies(c.speciesId);
+  return {
+    id: c.id,
+    name: c.name,
+    category: 'plantings',
+    speciesId: c.speciesId,
+    speciesName: species?.name ?? c.speciesId,
+    varietyLabel: c.variety ?? c.name,
+    type: 'planting',
+    defaultWidth: 0,
+    defaultHeight: 0,
+    color: c.color,
+  };
+}
+
+export function buildPaletteItems(cultivars: Cultivar[]): PaletteEntry[] {
+  return [...STRUCTURE_AND_ZONE_ITEMS, ...cultivars.map(plantingEntry)];
+}
+
+export const paletteItems: PaletteEntry[] = buildPaletteItems(getAllCultivars());
 
 export const categories = [
   { id: 'structures', label: 'Structures' },
