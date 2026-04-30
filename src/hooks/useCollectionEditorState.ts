@@ -38,7 +38,9 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
   const [searchRight, setSearchRightState] = useState('');
   const [catsLeft, setCatsLeftState] = useState<Set<CultivarCategory>>(() => new Set());
   const [catsRight, setCatsRightState] = useState<Set<CultivarCategory>>(() => new Set());
-  const [expandedLeft, setExpandedLeft] = useState<Set<string>>(() => new Set());
+  const [expandedLeft, setExpandedLeft] = useState<Set<string>>(
+    () => new Set(database.map((c) => c.speciesId)),
+  );
   const [expandedRight, setExpandedRight] = useState<Set<string>>(() => new Set());
 
   const toggleSelection = useCallback((side: Side, cultivarId: string) => {
@@ -180,9 +182,9 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     setSearchRightState('');
     setCatsLeftState(new Set());
     setCatsRightState(new Set());
-    setExpandedLeft(new Set());
+    setExpandedLeft(new Set(database.map((c) => c.speciesId)));
     setExpandedRight(new Set());
-  }, [committed]);
+  }, [committed, database]);
 
   const computeRemovedIds = useCallback((): string[] => {
     const pendingIds = new Set(pending.map((c) => c.id));

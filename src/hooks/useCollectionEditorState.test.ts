@@ -159,14 +159,23 @@ describe('useCollectionEditorState — cancel and removed-ids', () => {
 });
 
 describe('useCollectionEditorState — expansion', () => {
+  it('left side starts with all database species expanded', () => {
+    const db = getAllCultivars().slice(0, 3);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    for (const c of db) {
+      expect(result.current.expandedSpecies('left').has(c.speciesId)).toBe(true);
+    }
+    expect(result.current.expandedSpecies('right').size).toBe(0);
+  });
+
   it('toggleSpeciesExpand toggles per-side expansion of a species id', () => {
     const db = getAllCultivars().slice(0, 1);
     const { result } = renderHook(() => useCollectionEditorState([], db));
-    expect(result.current.expandedSpecies('left').has(db[0].speciesId)).toBe(false);
-    act(() => result.current.toggleSpeciesExpand('left', db[0].speciesId));
-    expect(result.current.expandedSpecies('left').has(db[0].speciesId)).toBe(true);
-    act(() => result.current.toggleSpeciesExpand('left', db[0].speciesId));
-    expect(result.current.expandedSpecies('left').has(db[0].speciesId)).toBe(false);
+    expect(result.current.expandedSpecies('right').has(db[0].speciesId)).toBe(false);
+    act(() => result.current.toggleSpeciesExpand('right', db[0].speciesId));
+    expect(result.current.expandedSpecies('right').has(db[0].speciesId)).toBe(true);
+    act(() => result.current.toggleSpeciesExpand('right', db[0].speciesId));
+    expect(result.current.expandedSpecies('right').has(db[0].speciesId)).toBe(false);
   });
 });
 
