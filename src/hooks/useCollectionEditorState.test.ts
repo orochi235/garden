@@ -135,6 +135,29 @@ describe('useCollectionEditorState — search and categories', () => {
   });
 });
 
+describe('useCollectionEditorState — cancel and removed-ids', () => {
+  it('cancel restores pending to committed and clears selections', () => {
+    const db = getAllCultivars().slice(0, 1);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.toggleSelection('left', db[0].id));
+    act(() => result.current.transferRight());
+    expect(result.current.dirty).toBe(true);
+    act(() => result.current.cancel());
+    expect(result.current.pending).toEqual([]);
+    expect(result.current.dirty).toBe(false);
+    expect(result.current.leftChecked.size).toBe(0);
+  });
+
+  it('computeRemovedIds returns ids in committed but not pending', () => {
+    const db = getAllCultivars().slice(0, 2);
+    const committed = db.map((c) => ({ ...c }));
+    const { result } = renderHook(() => useCollectionEditorState(committed, db));
+    act(() => result.current.toggleSelection('right', db[0].id));
+    act(() => result.current.transferLeft());
+    expect(result.current.computeRemovedIds()).toEqual([db[0].id]);
+  });
+});
+
 describe('useCollectionEditorState — expansion', () => {
   it('toggleSpeciesExpand toggles per-side expansion of a species id', () => {
     const db = getAllCultivars().slice(0, 1);

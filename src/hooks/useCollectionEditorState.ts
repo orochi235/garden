@@ -25,6 +25,8 @@ export interface CollectionEditorState {
   visibleCultivars: (side: Side, source: Cultivar[]) => Cultivar[];
   speciesSelectionState: (side: Side, speciesId: string, visibleChildren: Cultivar[]) => TriState;
   toggleSpeciesSelection: (side: Side, speciesId: string, visibleChildren: Cultivar[]) => void;
+  cancel: () => void;
+  computeRemovedIds: () => string[];
 }
 
 export function useCollectionEditorState(committed: Collection, database: Cultivar[]): CollectionEditorState {
@@ -170,6 +172,23 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     [],
   );
 
+  const cancel = useCallback(() => {
+    setPending(committed);
+    setLeftChecked(new Set());
+    setRightChecked(new Set());
+    setSearchLeftState('');
+    setSearchRightState('');
+    setCatsLeftState(new Set());
+    setCatsRightState(new Set());
+    setExpandedLeft(new Set());
+    setExpandedRight(new Set());
+  }, [committed]);
+
+  const computeRemovedIds = useCallback((): string[] => {
+    const pendingIds = new Set(pending.map((c) => c.id));
+    return committed.filter((c) => !pendingIds.has(c.id)).map((c) => c.id);
+  }, [committed, pending]);
+
   const dirty = useMemo(() => !sameIds(committed, pending), [committed, pending]);
 
   return {
@@ -190,6 +209,8 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     visibleCultivars,
     speciesSelectionState,
     toggleSpeciesSelection,
+    cancel,
+    computeRemovedIds,
   };
 }
 
