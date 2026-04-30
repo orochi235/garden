@@ -387,3 +387,19 @@ describe('seed-starting actions', () => {
     expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
   });
 });
+
+describe('collection orphan tolerance', () => {
+  it('plantings whose cultivar is not in the collection still resolve via the database', () => {
+    const [a] = getAllCultivars();
+    useGardenStore.getState().reset();
+    useGardenStore.setState((s) => ({
+      garden: {
+        ...s.garden,
+        plantings: [{ id: 'p1', parentId: 'parent', cultivarId: a.id, x: 0, y: 0, label: '', icon: null }],
+        collection: [],
+      },
+    }));
+    expect(useGardenStore.getState().garden.plantings[0].cultivarId).toBe(a.id);
+    expect(useGardenStore.getState().garden.collection).toEqual([]);
+  });
+});
