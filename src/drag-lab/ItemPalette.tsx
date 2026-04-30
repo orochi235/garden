@@ -1,28 +1,18 @@
 import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
-import { PX_PER_FT } from './constants';
+import { useDragHandle, type DragPayload } from '@/utils/pointerDrag';
 
-/** Create an offscreen canvas drag image sized to the item's actual canvas size. */
-function setCircleDragImage(e: React.DragEvent, radiusFt: number, color: string): void {
-  const diamPx = Math.round(radiusFt * 2 * PX_PER_FT);
-  const size = Math.max(diamPx, 4);
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  canvas.style.position = 'fixed';
-  canvas.style.left = '-9999px';
-  const ctx = canvas.getContext('2d')!;
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  document.body.appendChild(canvas);
-  e.dataTransfer.setDragImage(canvas, size / 2, size / 2);
-  requestAnimationFrame(() => canvas.remove());
+function makeCircleGhost(radiusFt: number, color: string): HTMLElement {
+  const diamPx = Math.max(Math.round(radiusFt * 2 * 40), 16);
+  const wrap = document.createElement('div');
+  wrap.style.width = `${diamPx}px`;
+  wrap.style.height = `${diamPx}px`;
+  wrap.style.borderRadius = '50%';
+  wrap.style.background = color;
+  wrap.style.border = '1.5px solid #fff';
+  wrap.style.opacity = '0.85';
+  return wrap;
 }
 
 const GENERIC_ITEMS: { color: string; radiusFt: number }[] = [
@@ -37,44 +27,10 @@ const GENERIC_ITEMS: { color: string; radiusFt: number }[] = [
 interface ItemPaletteProps {
   mode: 'generic' | 'cultivar';
   onSetMode: (mode: 'generic' | 'cultivar') => void;
-  onDragStart: (item: LabItem) => void;
 }
 
-export function ItemPalette({ mode, onSetMode, onDragStart }: ItemPaletteProps) {
+export function ItemPalette({ mode, onSetMode }: ItemPaletteProps) {
   const cultivars = getAllCultivars();
-
-  const startGenericDrag = useCallback((e: React.DragEvent, gi: typeof GENERIC_ITEMS[number]) => {
-    const item: LabItem = {
-      id: crypto.randomUUID(),
-      label: 'Item',
-      radiusFt: gi.radiusFt,
-      color: gi.color,
-      x: 0,
-      y: 0,
-    };
-    e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('text/plain', '');
-    setCircleDragImage(e, gi.radiusFt, gi.color);
-    onDragStart(item);
-  }, [onDragStart]);
-
-  const startCultivarDrag = useCallback((e: React.DragEvent, cultivarId: string) => {
-    const c = cultivars.find((cv) => cv.id === cultivarId);
-    if (!c) return;
-    const item: LabItem = {
-      id: crypto.randomUUID(),
-      label: c.name,
-      radiusFt: c.spacingFt / 2,
-      color: c.color,
-      x: 0,
-      y: 0,
-      cultivarId: c.id,
-    };
-    e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('text/plain', '');
-    setCircleDragImage(e, c.spacingFt / 2, c.color);
-    onDragStart(item);
-  }, [cultivars, onDragStart]);
 
   return (
     <div className="dl-palette">
@@ -92,17 +48,10 @@ export function ItemPalette({ mode, onSetMode, onDragStart }: ItemPaletteProps) 
           {GENERIC_ITEMS.map((gi) => {
             const sizePx = Math.max(16, gi.radiusFt * 2 * 40);
             return (
-              <div
+              <GenericPaletteItem
                 key={gi.color}
-                className="dl-palette-circle"
-                style={{
-                  background: gi.color,
-                  width: sizePx,
-                  height: sizePx,
-                }}
-                draggable
-                onDragStart={(e) => startGenericDrag(e, gi)}
-                title={`${gi.radiusFt} ft radius`}
+                gi={gi}
+                sizePx={sizePx}
               />
             );
           })}
@@ -112,19 +61,73 @@ export function ItemPalette({ mode, onSetMode, onDragStart }: ItemPaletteProps) 
       {mode === 'cultivar' && (
         <div className="dl-palette-list">
           {cultivars.slice(0, 30).map((c) => (
-            <div
-              key={c.id}
-              className="dl-palette-cultivar"
-              draggable
-              onDragStart={(e) => startCultivarDrag(e, c.id)}
-            >
-              <span className="dl-cultivar-dot" style={{ background: c.color }} />
-              <span className="dl-cultivar-name">{c.name}</span>
-              <span className="dl-cultivar-spacing">{c.spacingFt}ft</span>
-            </div>
+            <CultivarPaletteItem key={c.id} cultivar={c} />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function GenericPaletteItem({ gi, sizePx }: { gi: { color: string; radiusFt: number }; sizePx: number }) {
+  const getPayload = useCallback((): DragPayload => {
+    const item: LabItem = {
+      id: crypto.randomUUID(),
+      label: 'Item',
+      radiusFt: gi.radiusFt,
+      color: gi.color,
+      x: 0,
+      y: 0,
+    };
+    return { kind: 'lab-item', ids: [item.id], data: item };
+  }, [gi]);
+
+  const handle = useDragHandle(getPayload, {
+    createGhost: () => makeCircleGhost(gi.radiusFt, gi.color),
+  });
+
+  return (
+    <div
+      className="dl-palette-circle"
+      style={{
+        background: gi.color,
+        width: sizePx,
+        height: sizePx,
+        ...handle.style,
+      }}
+      onPointerDown={handle.onPointerDown}
+      title={`${gi.radiusFt} ft radius`}
+    />
+  );
+}
+
+function CultivarPaletteItem({ cultivar }: { cultivar: ReturnType<typeof getAllCultivars>[number] }) {
+  const getPayload = useCallback((): DragPayload => {
+    const item: LabItem = {
+      id: crypto.randomUUID(),
+      label: cultivar.name,
+      radiusFt: cultivar.spacingFt / 2,
+      color: cultivar.color,
+      x: 0,
+      y: 0,
+      cultivarId: cultivar.id,
+    };
+    return { kind: 'lab-item', ids: [item.id], data: item };
+  }, [cultivar]);
+
+  const handle = useDragHandle(getPayload, {
+    createGhost: () => makeCircleGhost(cultivar.spacingFt / 2, cultivar.color),
+  });
+
+  return (
+    <div
+      className="dl-palette-cultivar"
+      style={handle.style}
+      onPointerDown={handle.onPointerDown}
+    >
+      <span className="dl-cultivar-dot" style={{ background: cultivar.color }} />
+      <span className="dl-cultivar-name">{cultivar.name}</span>
+      <span className="dl-cultivar-spacing">{cultivar.spacingFt}ft</span>
     </div>
   );
 }

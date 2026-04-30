@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { LabItem, Point, Rect, ContainerShape, LayoutStrategy, DragFeedback } from './types';
 import { PX_PER_FT, DISPLAY_PX_PER_FT } from './constants';
+import { useDropZone } from '@/utils/pointerDrag';
 
 interface CanvasRendererProps {
   width: number;
@@ -11,9 +12,6 @@ interface CanvasRendererProps {
   config: Record<string, unknown>;
   onDrop: (pos: Point, item: LabItem) => void;
   onPickUpItem: (itemId: string) => LabItem | undefined;
-  dragItem: LabItem | null;
-  onDragStart: (item: LabItem) => void;
-  onDragEnd: () => void;
 }
 
 function hitTestItem(items: LabItem[], pos: Point): LabItem | null {
@@ -29,14 +27,13 @@ function hitTestItem(items: LabItem[], pos: Point): LabItem | null {
   return nearest;
 }
 
-export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onPickUpItem, dragItem, onDragStart, onDragEnd }: CanvasRendererProps) {
+export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onPickUpItem }: CanvasRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point | null>(null);
   const [feedback, setFeedback] = useState<DragFeedback | null>(null);
 
-  // Pointer-based drag for re-dragging items already on the canvas.
-  // Avoids HTML5 DnD quirks (ghost images, flash, same-element drop issues).
   const pointerDrag = useRef<{ item: LabItem } | null>(null);
+  const [paletteDragItem, setPaletteDragItem] = useState<LabItem | null>(null);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   const bounds: Rect = { x: 0, y: 0, width, height };
@@ -69,12 +66,11 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
 
       pointerDrag.current = { item: picked };
       setHoveredItemId(null);
-      onDragStart(picked);
       setMousePos(pos);
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
       e.preventDefault();
     },
-    [pxToFt, items, onPickUpItem, onDragStart],
+    [pxToFt, items, onPickUpItem],
   );
 
   const handlePointerMove = useCallback(
@@ -100,49 +96,44 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       pointerDrag.current = null;
       setFeedback(null);
       setMousePos(null);
-      onDragEnd();
     },
-    [pxToFt, onDrop, onDragEnd],
+    [pxToFt, onDrop],
   );
 
-  // --- HTML5 DnD (palette → canvas) ---
-
-  const handleDragOver = useCallback(
-    (e: React.DragEvent<HTMLCanvasElement>) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = dragItem ? 'copy' : 'none';
-      const pos = pxToFt(e.clientX, e.clientY);
-      setMousePos(pos);
-      if (dragItem) {
-        setFeedback(strategy.onDragOver(bounds, shape, pos, items, { ...config, _dragRadius: dragItem.radiusFt }));
+  const dropRef = useDropZone<HTMLCanvasElement>({
+    accepts: (kind) => kind === 'lab-item',
+    onOver: (active) => {
+      if (!active) {
+        setPaletteDragItem(null);
+        setFeedback(null);
+        setMousePos(null);
       }
     },
-    [pxToFt, dragItem, strategy, bounds, shape, items, config],
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLCanvasElement>) => {
-      e.preventDefault();
-      if (!dragItem) return;
-      const pos = pxToFt(e.clientX, e.clientY);
-      onDrop(pos, dragItem);
+    onMove: (payload, x, y) => {
+      const item = payload.data as LabItem;
+      setPaletteDragItem(item);
+      const pos = pxToFt(x, y);
+      setMousePos(pos);
+      setFeedback(strategy.onDragOver(bounds, shape, pos, items, { ...config, _dragRadius: item.radiusFt }));
+    },
+    onDrop: (payload, x, y) => {
+      const item = payload.data as LabItem;
+      const pos = pxToFt(x, y);
+      onDrop(pos, item);
+      setPaletteDragItem(null);
       setFeedback(null);
       setMousePos(null);
-      onDragEnd();
     },
-    [pxToFt, dragItem, onDrop, onDragEnd],
-  );
+  });
+
+  const setRefs = useCallback((el: HTMLCanvasElement | null) => {
+    canvasRef.current = el;
+    dropRef(el);
+  }, [dropRef]);
 
   const handlePointerLeave = useCallback(() => {
     if (!pointerDrag.current) {
       setHoveredItemId(null);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    if (!pointerDrag.current) {
-      setFeedback(null);
-      setMousePos(null);
     }
   }, []);
 
@@ -156,8 +147,7 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
     [pxToFt, items, onPickUpItem],
   );
 
-  // Active drag item is either from pointer drag or HTML5 DnD from palette
-  const activeDragItem = pointerDrag.current?.item ?? dragItem;
+  const activeDragItem = pointerDrag.current?.item ?? paletteDragItem;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -218,7 +208,7 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
 
   return (
     <canvas
-      ref={canvasRef}
+      ref={setRefs}
       width={canvasW}
       height={canvasH}
       style={{ width: width * DISPLAY_PX_PER_FT, height: height * DISPLAY_PX_PER_FT, cursor, touchAction: 'none' }}
@@ -226,9 +216,6 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onDragLeave={handleDragLeave}
       onContextMenu={handleContextMenu}
     />
   );

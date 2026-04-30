@@ -3,13 +3,15 @@ import { useCallback, useRef } from 'react';
 export interface DragPayload {
   kind: string;
   ids: string[];
+  data?: unknown;
 }
 
 interface DropZone {
   el: HTMLElement;
   accepts: (kind: string) => boolean;
-  onDrop: (payload: DragPayload) => void;
+  onDrop: (payload: DragPayload, clientX: number, clientY: number) => void;
   onOver?: (active: boolean) => void;
+  onMove?: (payload: DragPayload, clientX: number, clientY: number) => void;
 }
 
 const dropZones = new Set<DropZone>();
@@ -32,7 +34,7 @@ function findZone(x: number, y: number, kind: string): DropZone | null {
   return null;
 }
 
-function createGhost(source: HTMLElement, payload: DragPayload): HTMLElement {
+function defaultGhost(source: HTMLElement, payload: DragPayload): HTMLElement {
   const rect = source.getBoundingClientRect();
   const clone = source.cloneNode(true) as HTMLElement;
   clone.style.position = 'fixed';
@@ -68,9 +70,15 @@ function positionGhost(el: HTMLElement, x: number, y: number) {
   el.style.transform = `translate(${x - el.offsetWidth / 2}px, ${y - el.offsetHeight / 2}px) scale(0.92)`;
 }
 
-function beginPointerDrag(payload: DragPayload, source: HTMLElement, startX: number, startY: number) {
+function beginPointerDrag(
+  payload: DragPayload,
+  source: HTMLElement,
+  startX: number,
+  startY: number,
+  ghostFn: (source: HTMLElement, payload: DragPayload) => HTMLElement,
+) {
   if (activeDrag) return;
-  const ghost = createGhost(source, payload);
+  const ghost = ghostFn(source, payload);
   document.body.appendChild(ghost);
   positionGhost(ghost, startX, startY);
   activeDrag = { payload, ghost, lastZone: null };
@@ -84,12 +92,13 @@ function beginPointerDrag(payload: DragPayload, source: HTMLElement, startX: num
       zone?.onOver?.(true);
       activeDrag.lastZone = zone;
     }
+    zone?.onMove?.(payload, e.clientX, e.clientY);
   }
   function onUp(e: PointerEvent) {
     if (!activeDrag) return;
     const zone = findZone(e.clientX, e.clientY, payload.kind);
     activeDrag.lastZone?.onOver?.(false);
-    if (zone) zone.onDrop(activeDrag.payload);
+    if (zone) zone.onDrop(activeDrag.payload, e.clientX, e.clientY);
     cleanup();
   }
   function onCancel() {
@@ -110,7 +119,16 @@ function beginPointerDrag(payload: DragPayload, source: HTMLElement, startX: num
 
 const DRAG_THRESHOLD_PX_SQ = 25;
 
-export function useDragHandle(getPayload: () => DragPayload | null) {
+export interface DragHandleOptions {
+  createGhost?: (source: HTMLElement, payload: DragPayload) => HTMLElement;
+}
+
+export function useDragHandle(
+  getPayload: () => DragPayload | null,
+  options?: DragHandleOptions,
+) {
+  const optsRef = useRef(options);
+  optsRef.current = options;
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const target = e.currentTarget as HTMLElement;
@@ -133,7 +151,7 @@ export function useDragHandle(getPayload: () => DragPayload | null) {
             (ce) => { ce.stopPropagation(); ce.preventDefault(); },
             { capture: true, once: true },
           );
-          beginPointerDrag(payload, target, ev.clientX, ev.clientY);
+          beginPointerDrag(payload, target, ev.clientX, ev.clientY, optsRef.current?.createGhost ?? defaultGhost);
         }
       }
     }
@@ -153,8 +171,9 @@ export function useDragHandle(getPayload: () => DragPayload | null) {
 
 export interface DropZoneOptions {
   accepts: (kind: string) => boolean;
-  onDrop: (payload: DragPayload) => void;
+  onDrop: (payload: DragPayload, clientX: number, clientY: number) => void;
   onOver?: (active: boolean) => void;
+  onMove?: (payload: DragPayload, clientX: number, clientY: number) => void;
 }
 
 export function useDropZone<T extends HTMLElement>(opts: DropZoneOptions): (el: T | null) => void {
@@ -168,8 +187,9 @@ export function useDropZone<T extends HTMLElement>(opts: DropZoneOptions): (el: 
     cleanupRef.current = registerDropZone({
       el,
       accepts: (k) => optsRef.current.accepts(k),
-      onDrop: (p) => optsRef.current.onDrop(p),
+      onDrop: (p, x, y) => optsRef.current.onDrop(p, x, y),
       onOver: (a) => optsRef.current.onOver?.(a),
+      onMove: (p, x, y) => optsRef.current.onMove?.(p, x, y),
     });
   }, []);
 }
