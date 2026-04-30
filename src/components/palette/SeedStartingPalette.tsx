@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { passesAlmanacFilters } from '../../model/almanacFilter';
-import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
+import type { Cultivar, CultivarCategory } from '../../model/cultivars';
 import { resolveSeedStarting } from '../../model/floraSeedStarting';
 import { getSpecies } from '../../model/species';
 import { instantiatePreset, TRAY_CATALOG } from '../../model/trayCatalog';
@@ -43,9 +43,9 @@ interface Props {
 }
 
 /** Build PaletteEntry list of cultivars whose resolved seedStarting.startable === true. */
-function buildSeedablePaletteEntries(filters: AlmanacFilters): PaletteEntry[] {
+function buildSeedablePaletteEntries(cultivars: Cultivar[], filters: AlmanacFilters): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
-  for (const c of getAllCultivars()) {
+  for (const c of cultivars) {
     const species = getSpecies(c.speciesId);
     const resolved = resolveSeedStarting(species?.seedStarting, c.seedStarting);
     if (!resolved.startable) continue;
@@ -69,10 +69,15 @@ function buildSeedablePaletteEntries(filters: AlmanacFilters): PaletteEntry[] {
 export function SeedStartingPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
   const addTray = useGardenStore((s) => s.addTray);
+  const collection = useGardenStore((s) => s.garden.collection);
   const setCurrentTrayId = useUiStore((s) => s.setCurrentTrayId);
+  const setEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
   const almanacFilters = useUiStore((s) => s.almanacFilters);
 
-  const seedables = useMemo(() => buildSeedablePaletteEntries(almanacFilters), [almanacFilters]);
+  const seedables = useMemo(
+    () => buildSeedablePaletteEntries(collection, almanacFilters),
+    [collection, almanacFilters],
+  );
   const filtered = useMemo(() => {
     if (!search) return seedables;
     const q = search.toLowerCase();
@@ -131,7 +136,16 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
 
         {tree.length === 0 && (
           <div className={styles.category}>
-            <div className={styles.emptyMessage}>No seedable cultivars</div>
+            <div className={styles.emptyMessage}>
+              {collection.length === 0 ? (
+                <>
+                  Your collection is empty.{' '}
+                  <a href="#" onClick={(e) => { e.preventDefault(); setEditorOpen(true); }}>Edit Collection</a>
+                </>
+              ) : (
+                'No seedable cultivars in your collection'
+              )}
+            </div>
           </div>
         )}
         {treeByCategory.map(({ category, nodes }) => (
@@ -174,6 +188,15 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
             </div>
           </div>
         ))}
+      </div>
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={styles.editCollectionButton}
+          onClick={() => setEditorOpen(true)}
+        >
+          Edit Collection…
+        </button>
       </div>
     </div>
   );

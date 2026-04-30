@@ -27,7 +27,63 @@ function optimizePngBuffer(buf, scratchDir, idx) {
     '-define', 'png:compression-level=9',
     outPath,
   ]);
-  return readFileSync(outPath);
+  return { buf: readFileSync(outPath), path: outPath };
+}
+
+// Sample inside the seal script's feather zone (~6px) so we capture the
+// icon's visible rim color, not the feathered fade-out at the very edge.
+const INSET = 8;
+const PATCH = 6;
+
+function samplePatch(pngPath, x, y, w, h) {
+  const out = execFileSync('magick', [
+    pngPath, '-alpha', 'off',
+    '-crop', `${w}x${h}+${x}+${y}`,
+    '-format', '%[fx:int(mean.r*255)] %[fx:int(mean.g*255)] %[fx:int(mean.b*255)]',
+    'info:',
+  ]).toString().trim().split(/\s+/).map((s) => parseInt(s, 10));
+  return out;
+}
+
+function colorDist(a, b) {
+  return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
+}
+
+function sampleEdgeColor(pngPath) {
+  const dims = execFileSync('magick', ['identify', '-format', '%w %h', pngPath])
+    .toString().trim().split(/\s+/);
+  const W = parseInt(dims[0], 10);
+  const H = parseInt(dims[1], 10);
+  // 8 patches arranged around the icon, each PATCHxPATCH, INSET pixels in
+  // from the corresponding edge.
+  const xL = INSET;
+  const xR = W - INSET - PATCH;
+  const yT = INSET;
+  const yB = H - INSET - PATCH;
+  const xMid = Math.round((W - PATCH) / 2);
+  const yMid = Math.round((H - PATCH) / 2);
+  const patches = [
+    [xL, yT], [xR, yT], [xL, yB], [xR, yB],
+    [xMid, yT], [xMid, yB], [xL, yMid], [xR, yMid],
+  ];
+  const samples = patches.map(([x, y]) => samplePatch(pngPath, x, y, PATCH, PATCH));
+
+  // Robust central estimate: median per channel, then keep samples within
+  // a tolerance of the median and average those. Outliers (e.g. patches
+  // that landed on the subject) get dropped.
+  const median = (arr) => {
+    const s = [...arr].sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+  const med = [0, 1, 2].map((i) => median(samples.map((s) => s[i])));
+  const TOL = 24;
+  const kept = samples.filter((s) => colorDist(s, med) <= TOL);
+  const pool = kept.length >= 3 ? kept : samples;
+  const sum = pool.reduce((a, s) => [a[0] + s[0], a[1] + s[1], a[2] + s[2]], [0, 0, 0]);
+  const r = Math.round(sum[0] / pool.length);
+  const g = Math.round(sum[1] / pool.length);
+  const b = Math.round(sum[2] / pool.length);
+  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
 function processFile(rel) {
@@ -44,9 +100,11 @@ function processFile(rel) {
       if (!m) return;
       const buf = Buffer.from(m[1], 'base64');
       beforeBytes += buf.length;
-      const opt = optimizePngBuffer(buf, scratch, i);
-      afterBytes += opt.length;
-      entry.iconImage = `data:image/png;base64,${opt.toString('base64')}`;
+      const { buf: optBuf, path: optPath } = optimizePngBuffer(buf, scratch, i);
+      afterBytes += optBuf.length;
+      entry.iconImage = `data:image/png;base64,${optBuf.toString('base64')}`;
+      // Resample iconBgColor from the optimized image so it matches what's actually rendered.
+      if ('iconBgColor' in entry) entry.iconBgColor = sampleEdgeColor(optPath);
       touched++;
       if (touched % 20 === 0) process.stdout.write(`  ${touched} done\n`);
     });

@@ -84,6 +84,8 @@ interface UiStore {
   showSeedlingWarnings: boolean;
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
+  collectionEditorOpen: boolean;
+  setCollectionEditorOpen: (open: boolean) => void;
   setShowSeedlingWarnings: (show: boolean) => void;
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
@@ -173,6 +175,7 @@ function defaultState() {
       usdaZone: null,
       lastFrostDate: null,
     } as AlmanacFilters,
+    collectionEditorOpen: false,
   };
 }
 
@@ -233,5 +236,6 @@ export const useUiStore = create<UiStore>((set) => ({
     set({
       almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
     }),
+  setCollectionEditorOpen: (open) => set({ collectionEditorOpen: open }),
   reset: () => set(defaultState()),
 }));

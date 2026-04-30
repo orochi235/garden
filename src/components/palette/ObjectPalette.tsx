@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/ObjectPalette.module.css';
 import {
   PaletteItem,
@@ -7,9 +9,9 @@ import {
   PlantingChildRow,
 } from './PaletteItem';
 import {
+  buildPaletteItems,
   categories,
   type PaletteEntry,
-  paletteItems,
 } from './paletteData';
 import { usePlantingTree } from './usePlantingTree';
 
@@ -19,9 +21,12 @@ interface Props {
 
 export function ObjectPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
+  const collection = useGardenStore((s) => s.garden.collection);
+  const setEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
+  const items = useMemo(() => buildPaletteItems(collection), [collection]);
   const filtered = search
-    ? paletteItems.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
-    : paletteItems;
+    ? items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
+    : items;
 
   const plantingEntries = useMemo(
     () => filtered.filter((item) => item.category === 'plantings'),
@@ -43,7 +48,20 @@ export function ObjectPalette({ onDragBegin }: Props) {
       <div className={styles.scrollArea}>
         {categories.map((cat) => {
           const items = filtered.filter((item) => item.category === cat.id);
-          if (items.length === 0) return null;
+          if (items.length === 0) {
+            if (cat.id === 'plantings' && collection.length === 0 && !search) {
+              return (
+                <div key={cat.id} className={styles.category}>
+                  <div className={styles.categoryLabel}>{cat.label}</div>
+                  <div className={styles.emptyMessage}>
+                    Your collection is empty.{' '}
+                    <a href="#" onClick={(e) => { e.preventDefault(); setEditorOpen(true); }}>Edit Collection</a>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          }
 
           if (cat.id === 'plantings') {
             return (
@@ -102,6 +120,15 @@ export function ObjectPalette({ onDragBegin }: Props) {
             </div>
           );
         })}
+      </div>
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={styles.editCollectionButton}
+          onClick={() => setEditorOpen(true)}
+        >
+          Edit Collection…
+        </button>
       </div>
     </div>
   );

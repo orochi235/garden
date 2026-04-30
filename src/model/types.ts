@@ -1,6 +1,7 @@
 import type { Arrangement, ParentBounds } from './arrangement';
 import { defaultArrangement } from './arrangement';
 import { getCultivar } from './cultivars';
+import type { Cultivar } from './cultivars';
 import type { SeedStartingState } from './seedStarting';
 import { emptySeedStartingState } from './seedStarting';
 
@@ -90,6 +91,7 @@ export interface Garden {
   zones: Zone[];
   plantings: Planting[];
   seedStarting: SeedStartingState;
+  collection: Cultivar[];
 }
 
 let _idCounter = 0;
@@ -112,6 +114,7 @@ export function createGarden(opts: { name: string; widthFt: number; heightFt: nu
     zones: [],
     plantings: [],
     seedStarting: emptySeedStartingState(),
+    collection: [],
   };
 }
 

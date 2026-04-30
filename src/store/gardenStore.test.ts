@@ -194,6 +194,7 @@ describe('gardenStore', () => {
       zones: [],
       plantings: [],
       seedStarting: emptySeedStartingState(),
+      collection: [],
     };
     loadGarden(data);
     expect(useGardenStore.getState().garden.name).toBe('Loaded');
@@ -205,6 +206,36 @@ describe('gardenStore', () => {
     delete legacy.seedStarting;
     useGardenStore.getState().loadGarden(legacy);
     expect(useGardenStore.getState().garden.seedStarting).toEqual(emptySeedStartingState());
+  });
+});
+
+import { snapshotCultivar } from '../model/collection';
+import { getAllCultivars } from '../model/cultivars';
+
+describe('setCollection', () => {
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+  });
+
+  it('replaces the collection with the provided value', () => {
+    const [a, b] = getAllCultivars();
+    const next = [snapshotCultivar(a), snapshotCultivar(b)];
+    useGardenStore.getState().setCollection(next);
+    expect(useGardenStore.getState().garden.collection.map((c) => c.id)).toEqual([a.id, b.id]);
+  });
+
+  it('is undoable', () => {
+    const [a] = getAllCultivars();
+    useGardenStore.getState().setCollection([snapshotCultivar(a)]);
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.collection).toEqual([]);
+  });
+
+  it('survives load of a garden missing a collection key', () => {
+    const garden = JSON.parse(JSON.stringify(useGardenStore.getState().garden));
+    delete garden.collection;
+    useGardenStore.getState().loadGarden(garden);
+    expect(useGardenStore.getState().garden.collection).toEqual([]);
   });
 });
 
@@ -355,5 +386,21 @@ describe('seed-starting actions', () => {
     const t = useGardenStore.getState().garden.seedStarting.trays[0];
     expect(t.slots[0].state).toBe('empty');
     expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+});
+
+describe('collection orphan tolerance', () => {
+  it('plantings whose cultivar is not in the collection still resolve via the database', () => {
+    const [a] = getAllCultivars();
+    useGardenStore.getState().reset();
+    useGardenStore.setState((s) => ({
+      garden: {
+        ...s.garden,
+        plantings: [{ id: 'p1', parentId: 'parent', cultivarId: a.id, x: 0, y: 0, label: '', icon: null }],
+        collection: [],
+      },
+    }));
+    expect(useGardenStore.getState().garden.plantings[0].cultivarId).toBe(a.id);
+    expect(useGardenStore.getState().garden.collection).toEqual([]);
   });
 });

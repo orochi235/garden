@@ -192,17 +192,31 @@ export function layoutMarkdown(
 
 import type { TextRenderer } from './renderLabel';
 
-function buildFont(fontSize: number, bold: boolean, italic: boolean): string {
+export interface MarkdownFontOptions {
+  /** Font-family spec (e.g. `'"Iowan Old Style", Georgia, serif'`). Defaults to `sans-serif`. */
+  family?: string;
+  /** Numeric weight applied to non-bold runs. Bold runs always use `bold`. Default `normal`. */
+  weight?: string | number;
+}
+
+function buildFont(
+  fontSize: number,
+  bold: boolean,
+  italic: boolean,
+  opts: MarkdownFontOptions = {},
+): string {
+  const family = opts.family ?? 'sans-serif';
+  const weight = bold ? 'bold' : (opts.weight !== undefined ? String(opts.weight) : 'normal');
   const parts: string[] = [];
   if (italic) parts.push('italic');
-  if (bold) parts.push('bold');
-  parts.push(`${fontSize}px sans-serif`);
+  parts.push(weight);
+  parts.push(`${fontSize}px ${family}`);
   return parts.join(' ');
 }
 
-function canvasMeasure(ctx: CanvasRenderingContext2D): MeasureFn {
+function canvasMeasure(ctx: CanvasRenderingContext2D, opts: MarkdownFontOptions = {}): MeasureFn {
   return (text, fontSize, bold, italic) => {
-    ctx.font = buildFont(fontSize, bold, italic);
+    ctx.font = buildFont(fontSize, bold, italic, opts);
     return ctx.measureText(text).width;
   };
 }
@@ -212,8 +226,9 @@ export function createMarkdownRenderer(
   text: string,
   fontSize: number,
   maxWidth: number = Infinity,
-): { renderer: TextRenderer; width: number; height: number } {
-  const measure = canvasMeasure(ctx);
+  fontOpts: MarkdownFontOptions = {},
+): { renderer: TextRenderer; strokeRenderer: TextRenderer; width: number; height: number } {
+  const measure = canvasMeasure(ctx, fontOpts);
   const parsed = parseMarkdownRuns(text);
   const layout = layoutMarkdown(parsed, maxWidth, fontSize, measure);
 
@@ -222,7 +237,7 @@ export function createMarkdownRenderer(
     for (const line of layout.lines) {
       for (const run of line.runs) {
         const effSize = fontSize + run.sizeOffset;
-        _ctx.font = buildFont(effSize, run.bold, run.italic);
+        _ctx.font = buildFont(effSize, run.bold, run.italic, fontOpts);
         _ctx.fillStyle = run.italic && !run.bold ? 'rgba(255, 255, 255, 0.7)' : '#FFFFFF';
         const lineOffset = (layout.width - line.width) / 2;
         _ctx.fillText(run.text, x + lineOffset + run.x, lineY);
@@ -231,5 +246,18 @@ export function createMarkdownRenderer(
     }
   };
 
-  return { renderer, width: layout.width, height: layout.height };
+  const strokeRenderer: TextRenderer = (_ctx, _text, x, y) => {
+    let lineY = y;
+    for (const line of layout.lines) {
+      for (const run of line.runs) {
+        const effSize = fontSize + run.sizeOffset;
+        _ctx.font = buildFont(effSize, run.bold, run.italic, fontOpts);
+        const lineOffset = (layout.width - line.width) / 2;
+        _ctx.strokeText(run.text, x + lineOffset + run.x, lineY);
+      }
+      lineY += line.height;
+    }
+  };
+
+  return { renderer, strokeRenderer, width: layout.width, height: layout.height };
 }

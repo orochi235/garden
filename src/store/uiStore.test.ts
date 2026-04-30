@@ -295,4 +295,15 @@ describe('uiStore', () => {
       });
     });
   });
+
+  describe('collectionEditorOpen', () => {
+    it('defaults to false and toggles', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().collectionEditorOpen).toBe(false);
+      useUiStore.getState().setCollectionEditorOpen(true);
+      expect(useUiStore.getState().collectionEditorOpen).toBe(true);
+      useUiStore.getState().setCollectionEditorOpen(false);
+      expect(useUiStore.getState().collectionEditorOpen).toBe(false);
+    });
+  });
 });
