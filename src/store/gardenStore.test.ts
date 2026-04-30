@@ -194,6 +194,7 @@ describe('gardenStore', () => {
       zones: [],
       plantings: [],
       seedStarting: emptySeedStartingState(),
+      collection: [],
     };
     loadGarden(data);
     expect(useGardenStore.getState().garden.name).toBe('Loaded');
