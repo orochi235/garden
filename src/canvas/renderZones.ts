@@ -1,8 +1,8 @@
 import type { Zone } from '../model/types';
-import { worldToScreen } from '../utils/grid';
-import { renderLabel } from './renderLabel';
-import type { PatternId } from './patterns';
-import { renderPatternOverlay } from './patterns';
+import { worldToScreen } from '@/canvas-kit';
+import { renderLabel } from '@/canvas-kit';
+import type { PatternId } from '@/canvas-kit';
+import { renderPatternOverlay } from '@/canvas-kit';
 import type { ZoneRenderOptions } from './renderOptions';
 
 export function renderZones(

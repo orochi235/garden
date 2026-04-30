@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { screenToWorld } from '../../utils/grid';
+import { screenToWorld } from '@/canvas-kit';
 import { hitTestArea } from '../hitTest';
 
 interface AreaSelectDeps {

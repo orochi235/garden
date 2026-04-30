@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { RenderLayer } from './renderLayer';
-import { runLayers } from './renderLayer';
+import type { RenderLayer } from '@/canvas-kit';
+import { runLayers } from '@/canvas-kit';
 
 // Minimal mock for CanvasRenderingContext2D
 function makeCtx(): CanvasRenderingContext2D {

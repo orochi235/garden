@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { screenToWorld, snapToGrid } from '../../utils/grid';
+import { screenToWorld, snapToGrid } from '@/canvas-kit';
 
 interface PlotDeps {
   containerRef: React.RefObject<HTMLDivElement | null>;

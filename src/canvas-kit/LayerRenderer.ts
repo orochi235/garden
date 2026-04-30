@@ -1,4 +1,4 @@
-import type { ViewTransform } from '../utils/grid';
+import type { ViewTransform } from './grid';
 
 /**
  * Base class for layer renderers. Holds shared state (view, dimensions,

@@ -1,6 +1,6 @@
 import type { LabelMode } from '../store/uiStore';
 import type { Planting, Structure, Zone } from '../model/types';
-import type { ViewTransform } from '../utils/grid';
+import type { ViewTransform } from '@/canvas-kit';
 
 /** Common base for structure, zone, and planting layer data. */
 export interface EntityLayerData {

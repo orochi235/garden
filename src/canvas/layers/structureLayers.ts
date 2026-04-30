@@ -1,10 +1,10 @@
 import { FILL_COLORS } from '../../model/types';
 import type { Structure } from '../../model/types';
-import type { RenderLayer } from '../renderLayer';
+import type { RenderLayer } from '@/canvas-kit';
 import type { StructureLayerData, StructureRenderItem } from '../layerData';
-import { worldToScreen } from '../../utils/grid';
-import { renderLabel } from '../renderLabel';
-import { renderPatternOverlay } from '../patterns';
+import { worldToScreen } from '@/canvas-kit';
+import { renderLabel } from '@/canvas-kit';
+import { renderPatternOverlay } from '@/canvas-kit';
 
 /** Sort structures, separate grouped vs ungrouped, and build an interleaved render queue. */
 export function buildStructureRenderQueue(structures: Structure[]): {

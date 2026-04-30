@@ -1,8 +1,8 @@
 import type { Planting, Structure, Zone } from '../model/types';
 import type { LabelMode } from '../store/uiStore';
-import { LayerRenderer } from './LayerRenderer';
+import { LayerRenderer } from '@/canvas-kit';
 import { buildPlantingLayerData, PLANTING_LAYERS } from './layers/plantingLayers';
-import { runLayers } from './renderLayer';
+import { runLayers } from '@/canvas-kit';
 import { renderOverlayPlantings } from './renderPlantings';
 
 export class PlantingLayerRenderer extends LayerRenderer {

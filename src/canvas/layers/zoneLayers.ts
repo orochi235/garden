@@ -1,9 +1,9 @@
-import type { RenderLayer } from '../renderLayer';
+import type { RenderLayer } from '@/canvas-kit';
 import type { ZoneLayerData } from '../layerData';
-import { worldToScreen } from '../../utils/grid';
-import { renderLabel } from '../renderLabel';
-import type { PatternId } from '../patterns';
-import { renderPatternOverlay } from '../patterns';
+import { worldToScreen } from '@/canvas-kit';
+import { renderLabel } from '@/canvas-kit';
+import type { PatternId } from '@/canvas-kit';
+import { renderPatternOverlay } from '@/canvas-kit';
 
 export const ZONE_LAYERS: RenderLayer<ZoneLayerData>[] = [
   {

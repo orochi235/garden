@@ -1,8 +1,8 @@
 import type { Planting, Structure, Zone } from '../model/types';
-import { LayerRenderer } from './LayerRenderer';
+import { LayerRenderer } from '@/canvas-kit';
 import type { SystemLayerData } from './layerData';
 import { SELECTION_LAYERS } from './layers/selectionLayers';
-import { runLayers } from './renderLayer';
+import { runLayers } from '@/canvas-kit';
 
 export class SystemLayerRenderer extends LayerRenderer {
   selectedIds: string[] = [];

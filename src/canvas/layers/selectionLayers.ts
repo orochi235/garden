@@ -1,7 +1,7 @@
 import { getCultivar } from '../../model/cultivars';
-import { worldToScreen } from '../../utils/grid';
-import { renderLabel } from '../renderLabel';
-import type { RenderLayer } from '../renderLayer';
+import { worldToScreen } from '@/canvas-kit';
+import { renderLabel } from '@/canvas-kit';
+import type { RenderLayer } from '@/canvas-kit';
 import type { SystemLayerData } from '../layerData';
 
 export const SELECTION_LAYERS: RenderLayer<SystemLayerData>[] = [

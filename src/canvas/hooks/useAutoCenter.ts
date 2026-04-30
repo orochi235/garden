@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useUiStore } from '../../store/uiStore';
-import { fitZoom } from './fitToBounds';
+import { fitZoom } from '@/canvas-kit';
 
 /** Compute zoom and pan values that fit the garden within the viewport. */
 export function computeFitView(

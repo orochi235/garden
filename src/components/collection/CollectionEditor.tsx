@@ -6,7 +6,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/CollectionEditor.module.css';
 import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
-import type { DragPayload } from '../../utils/pointerDrag';
+import type { DragPayload } from '@/canvas-kit';
 import { CultivarDataGrid } from './CultivarDataGrid';
 import { CultivarIconView } from './CultivarIconView';
 import { CollectionList } from './CollectionList';

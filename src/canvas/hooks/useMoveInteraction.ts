@@ -4,7 +4,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createPlanting } from '../../model/types';
 import type { Planting, Structure } from '../../model/types';
-import { screenToWorld, snapToGrid } from '../../utils/grid';
+import { screenToWorld, snapToGrid } from '@/canvas-kit';
 import { structuresCollide } from '../../utils/collision';
 
 /** How long the cursor must dwell over a container before snapping (ms). */
@@ -410,17 +410,16 @@ export function useMoveInteraction(
               return;
             }
           } else {
-            // Free drag: compare world coords back to parent-relative
+            // Free drag, no snap target: snap back if released near the
+            // original position; the actual remove happens below after
+            // checkpoint so it lands in the undo stack.
             const moved = overlay.objects[0] as Planting;
-            const parent = garden.structures.find(s => s.id === original.parentId)
-              ?? garden.zones.find(z => z.id === original.parentId);
-            if (parent) {
-              const finalRelX = moved.x - parent.x;
-              const finalRelY = moved.y - parent.y;
-              if (original.x === finalRelX && original.y === finalRelY) {
-                cancel();
-                return;
-              }
+            const dx = moved.x - moveStart.current.objX;
+            const dy = moved.y - moveStart.current.objY;
+            const snapBackRadius = garden.gridCellSizeFt;
+            if (dx * dx + dy * dy <= snapBackRadius * snapBackRadius) {
+              cancel();
+              return;
             }
           }
         }
@@ -460,20 +459,11 @@ export function useMoveInteraction(
           });
         }
       } else {
-        // Free drag — convert world coords back to parent-relative
+        // Free drag — no snap target.
         if (overlay.hideIds.length > 0) {
-          // Move: find parent and compute relative coords
-          const plantingId = overlay.hideIds[0];
-          const origPlanting = garden.plantings.find(p => p.id === plantingId);
-          const parentId = origPlanting?.parentId ?? '';
-          const parent = garden.structures.find(s => s.id === parentId)
-            ?? garden.zones.find(z => z.id === parentId);
-          if (parent) {
-            updatePlanting(plantingId, {
-              x: overlayPlanting.x - parent.x,
-              y: overlayPlanting.y - parent.y,
-            });
-          }
+          // Move: dropped into empty space — remove the planting. (Snap-back
+          // near the original position was already handled before checkpoint.)
+          useGardenStore.getState().removePlanting(overlay.hideIds[0]);
         } else {
           // Clone: find container under world coords and add planting
           // For now, find any container that contains the point

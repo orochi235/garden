@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
-import { useDropZone } from '../../utils/pointerDrag';
+import { useDropZone } from '@/canvas-kit';
 
 interface Props {
   collection: Cultivar[];

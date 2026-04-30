@@ -1,8 +1,8 @@
 import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
-import { worldToScreen } from '../utils/grid';
-import { renderLabel } from './renderLabel';
-import { renderPatternOverlay } from './patterns';
+import { worldToScreen } from '@/canvas-kit';
+import { renderLabel } from '@/canvas-kit';
+import { renderPatternOverlay } from '@/canvas-kit';
 import type { StructureRenderOptions } from './renderOptions';
 
 /** Render a single ungrouped structure with fill, stroke, and decorations. */

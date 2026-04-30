@@ -3,14 +3,14 @@ import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
 import { getSpecies } from '../../model/species';
-import { worldToScreen } from '../../utils/grid';
-import type { ViewTransform } from '../../utils/grid';
+import { worldToScreen } from '@/canvas-kit';
+import type { ViewTransform } from '@/canvas-kit';
 import type { LabelMode } from '../../store/uiStore';
-import { createMarkdownRenderer } from '../markdownText';
-import type { TextRenderer } from '../renderLabel';
-import { renderLabel } from '../renderLabel';
+import { createMarkdownRenderer } from '@/canvas-kit';
+import type { TextRenderer } from '@/canvas-kit';
+import { renderLabel } from '@/canvas-kit';
 import { renderPlant } from '../plantRenderers';
-import type { RenderLayer } from '../renderLayer';
+import type { RenderLayer } from '@/canvas-kit';
 import type { PlantingLayerData, PlantingParent, RenderedRect } from '../layerData';
 
 function rectsOverlap(a: RenderedRect, b: RenderedRect): boolean {

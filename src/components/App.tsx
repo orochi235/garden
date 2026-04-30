@@ -3,8 +3,8 @@ import { CanvasStack } from '../canvas/CanvasStack';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
 import { hitTestDragSpreadAffordance, hitTestCell } from '../canvas/seedStartingHitTest';
 import { getTrayViewport } from '../canvas/hooks/useTrayViewport';
-import { createDragGhost } from '../utils/dragGhost';
-import { startThresholdDrag } from '../utils/thresholdDrag';
+import { createDragGhost } from '@/canvas-kit';
+import { startThresholdDrag } from '@/canvas-kit';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { createPlanting, createStructure, createZone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
@@ -14,7 +14,7 @@ import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { autosave, loadPersistedCollection } from '../utils/file';
 import type { Cultivar } from '../model/cultivars';
 import { WelcomeModal } from './WelcomeModal';
-import { screenToWorld, snapToGrid } from '../utils/grid';
+import { screenToWorld, snapToGrid } from '@/canvas-kit';
 import { getPlantingPosition } from '../utils/planting';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
@@ -94,6 +94,43 @@ export function App() {
   const handlePaletteDragBegin = useCallback(
     (entry: PaletteEntry, e: React.PointerEvent) => {
       let transientObj: ReturnType<typeof createStructure> | ReturnType<typeof createZone> | ReturnType<typeof createPlanting> | null = null;
+      let ghost: ReturnType<typeof createDragGhost> | null = null;
+      let unsubIcon: (() => void) | null = null;
+
+      function ensureGhost() {
+        if (ghost) return ghost;
+        const { zoom } = useUiStore.getState();
+        const cellPx = useGardenStore.getState().garden.gridCellSizeFt;
+        if (entry.category === 'plantings') {
+          const radius = Math.max(8, 0.4 * 30 * zoom);
+          ghost = createDragGhost({
+            sizeCss: radius * 2,
+            paint: (ctx) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
+          });
+          unsubIcon = onIconLoad(() => ghost?.repaint());
+        } else {
+          const sizeCss = Math.max(24, Math.min(80, entry.defaultWidth * cellPx * zoom));
+          ghost = createDragGhost({
+            sizeCss,
+            paint: (ctx, size) => {
+              ctx.fillStyle = entry.color ?? '#888';
+              ctx.globalAlpha = 0.7;
+              ctx.fillRect(-size / 2, -size / 2, size, size);
+              ctx.globalAlpha = 1;
+              ctx.strokeStyle = '#fff';
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(-size / 2 + 1, -size / 2 + 1, size - 2, size - 2);
+            },
+          });
+        }
+        return ghost;
+      }
+      function clearGhost() {
+        unsubIcon?.();
+        unsubIcon = null;
+        ghost?.destroy();
+        ghost = null;
+      }
 
       function getCanvasRect() {
         const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
@@ -229,9 +266,18 @@ export function App() {
       }
 
       startThresholdDrag(e, {
-        onActivate: (ev) => createTransientObject(ev.clientX, ev.clientY),
-        onMove: (ev) => updateOverlayPosition(ev.clientX, ev.clientY),
+        onActivate: (ev) => {
+          ensureGhost().move(ev.clientX, ev.clientY);
+          createTransientObject(ev.clientX, ev.clientY);
+          ghost?.setHidden(useUiStore.getState().dragOverlay != null);
+        },
+        onMove: (ev) => {
+          ensureGhost().move(ev.clientX, ev.clientY);
+          updateOverlayPosition(ev.clientX, ev.clientY);
+          ghost?.setHidden(useUiStore.getState().dragOverlay != null);
+        },
         onCommit: (ev) => {
+          clearGhost();
         // Commit the drop
         const rect = getCanvasRect();
         if (rect) {
@@ -294,7 +340,10 @@ export function App() {
 
         useUiStore.getState().clearDragOverlay();
         },
-        onCancel: () => useUiStore.getState().clearDragOverlay(),
+        onCancel: () => {
+          clearGhost();
+          useUiStore.getState().clearDragOverlay();
+        },
       });
     },
     [],

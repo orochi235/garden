@@ -1,9 +1,9 @@
 import type { Structure } from '../model/types';
 import type { LabelMode } from '../store/uiStore';
-import { LayerRenderer } from './LayerRenderer';
+import { LayerRenderer } from '@/canvas-kit';
 import type { StructureLayerData } from './layerData';
 import { buildStructureRenderQueue, STRUCTURE_LAYERS } from './layers/structureLayers';
-import { runLayers } from './renderLayer';
+import { runLayers } from '@/canvas-kit';
 import { renderStructures } from './renderStructures';
 
 export class StructureLayerRenderer extends LayerRenderer {

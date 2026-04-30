@@ -1,5 +1,5 @@
-import type { ViewTransform } from '../utils/grid';
-import { worldToScreen } from '../utils/grid';
+import type { ViewTransform } from './grid';
+import { worldToScreen } from './grid';
 
 interface GridOptions {
   widthFt: number;

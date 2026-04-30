@@ -1,7 +1,7 @@
 import { computeSlots, type Arrangement } from '../model/arrangement';
 import type { Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
-import { snapToGrid } from './grid';
+import { snapToGrid } from '@/canvas-kit';
 
 /**
  * Determine where to place a new planting inside a parent.

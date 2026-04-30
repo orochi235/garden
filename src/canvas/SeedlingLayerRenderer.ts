@@ -1,6 +1,6 @@
 import type { Seedling, Tray } from '../model/seedStarting';
 import type { useUiStore } from '../store/uiStore';
-import { LayerRenderer } from './LayerRenderer';
+import { LayerRenderer } from '@/canvas-kit';
 import { renderSeedlings } from './layers/seedlingLayers';
 
 type FillPreview = ReturnType<typeof useUiStore.getState>['seedFillPreview'];

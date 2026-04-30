@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { LabItem, Point, Rect, ContainerShape, LayoutStrategy, DragFeedback } from './types';
 import { PX_PER_FT, DISPLAY_PX_PER_FT } from './constants';
-import { useDropZone } from '@/utils/pointerDrag';
+import { useDropZone } from '@/canvas-kit';
 
 interface CanvasRendererProps {
   width: number;

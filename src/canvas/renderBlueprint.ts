@@ -1,6 +1,6 @@
 import type { Blueprint } from '../model/types';
-import type { ViewTransform } from '../utils/grid';
-import { worldToScreen } from '../utils/grid';
+import type { ViewTransform } from '@/canvas-kit';
+import { worldToScreen } from '@/canvas-kit';
 
 const imageCache = new Map<string, HTMLImageElement>();
 

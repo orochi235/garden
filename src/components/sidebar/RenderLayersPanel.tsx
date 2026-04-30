@@ -1,7 +1,7 @@
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
-import type { RenderLayer } from '../../canvas/renderLayer';
+import type { RenderLayer } from '@/canvas-kit';
 import { ZONE_LAYERS } from '../../canvas/layers/zoneLayers';
 import { STRUCTURE_LAYERS } from '../../canvas/layers/structureLayers';
 import { PLANTING_LAYERS } from '../../canvas/layers/plantingLayers';

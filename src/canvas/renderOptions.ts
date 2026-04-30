@@ -1,6 +1,6 @@
 import type { LabelMode } from '../store/uiStore';
-import type { ViewTransform } from '../utils/grid';
-import type { PatternId } from './patterns';
+import type { ViewTransform } from '@/canvas-kit';
+import type { PatternId } from '@/canvas-kit';
 
 /** Common rendering options shared across all layer render functions. */
 export interface RenderOptions {

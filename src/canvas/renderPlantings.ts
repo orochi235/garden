@@ -1,7 +1,7 @@
 import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
-import { worldToScreen } from '../utils/grid';
+import { worldToScreen } from '@/canvas-kit';
 import type { OverlayRenderOptions } from './renderOptions';
 import { renderPlant } from './plantRenderers';
 
@@ -54,7 +54,9 @@ export function renderOverlayPlantings(
     if (!parent) continue;
 
     const wall = parent.wallThicknessFt ?? 0;
-    const clipped = wall > 0;
+    // Free-agent during drag: when not snapped, planting is detached from any
+    // container, so don't clip to the (former) parent's walls.
+    const clipped = wall > 0 && snapped;
     if (clipped) {
       ctx.save();
       const [psx, psy] = worldToScreen(parent.x, parent.y, view);
