@@ -7,3 +7,28 @@ export type Collection = Cultivar[];
 export function snapshotCultivar(cultivar: Cultivar): Cultivar {
   return structuredClone(cultivar);
 }
+
+/** Append cultivars whose ids are not already present. Idempotent. Stable order: existing first, then new in insertion order. */
+export function addToCollection(collection: Collection, additions: Cultivar[]): Collection {
+  if (additions.length === 0) return collection;
+  const existing = new Set(collection.map((c) => c.id));
+  const fresh = additions.filter((c) => !existing.has(c.id));
+  if (fresh.length === 0) return collection;
+  return [...collection, ...fresh];
+}
+
+/** Remove cultivars by id. Idempotent on missing ids. */
+export function removeFromCollection(collection: Collection, ids: string[]): Collection {
+  if (ids.length === 0) return collection;
+  const toRemove = new Set(ids);
+  const next = collection.filter((c) => !toRemove.has(c.id));
+  return next.length === collection.length ? collection : next;
+}
+
+export function hasCultivar(collection: Collection, id: string): boolean {
+  return collection.some((c) => c.id === id);
+}
+
+export function getCollectionCultivar(collection: Collection, id: string): Cultivar | undefined {
+  return collection.find((c) => c.id === id);
+}
