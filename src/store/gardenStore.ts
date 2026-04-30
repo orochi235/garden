@@ -7,6 +7,7 @@ import type { Cultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
+import { persistCollection } from '../utils/file';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
 
@@ -206,6 +207,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     setCollection: (collection) => {
       commitPatch({ collection });
+      persistCollection(collection);
     },
 
     setBlueprint: (blueprint) => {

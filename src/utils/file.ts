@@ -49,6 +49,25 @@ export function openGardenFile(): Promise<Garden> {
 }
 
 const AUTOSAVE_KEY = 'garden-planner-autosave';
+const COLLECTION_KEY = 'garden-planner-collection';
+
+export function persistCollection(collection: unknown): void {
+  try {
+    localStorage.setItem(COLLECTION_KEY, JSON.stringify(collection));
+  } catch {
+    // ignore
+  }
+}
+
+export function loadPersistedCollection<T>(): T | null {
+  const raw = localStorage.getItem(COLLECTION_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
 
 export function autosave(garden: Garden): void {
   localStorage.setItem(AUTOSAVE_KEY, serializeGarden(garden));

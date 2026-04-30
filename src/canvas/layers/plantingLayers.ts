@@ -421,7 +421,7 @@ export const PLANTING_LAYERS: RenderLayer<PlantingLayerData>[] = [
         const [sx, sy] = worldToScreen(s.x, s.y, view);
         const sw = s.width * view.zoom;
         const sh = s.height * view.zoom;
-        ctx.strokeStyle = '#333333';
+        ctx.strokeStyle = s.type === 'pot' ? '#8a3a18' : '#333333';
         ctx.lineWidth = 1;
         if (s.type === 'pot' || s.type === 'felt-planter') {
           const rimWidth = Math.max(1.5, s.wallThicknessFt * view.zoom);

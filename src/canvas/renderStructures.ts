@@ -28,7 +28,14 @@ function renderSingle(
     ctx.beginPath();
     ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
+    if (s.type === 'pot') {
+      ctx.save();
+      ctx.strokeStyle = '#8a3a18';
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.stroke();
+    }
     ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
     ctx.beginPath();
     ctx.ellipse(cx, cy, r - rimWidth, r - rimWidth, 0, 0, Math.PI * 2);

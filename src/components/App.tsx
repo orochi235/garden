@@ -11,7 +11,9 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
 import { enterSeedStarting } from '../utils/enterSeedStarting';
-import { autosave } from '../utils/file';
+import { autosave, loadPersistedCollection } from '../utils/file';
+import type { Cultivar } from '../model/cultivars';
+import { WelcomeModal } from './WelcomeModal';
 import { screenToWorld, snapToGrid } from '../utils/grid';
 import { getPlantingPosition } from '../utils/planting';
 import { MenuBar } from './MenuBar';
@@ -28,7 +30,9 @@ const DEFAULT_PANEL = 240;
 export function App() {
   const garden = useGardenStore((s) => s.garden);
   const loadGarden = useGardenStore((s) => s.loadGarden);
+  const setCollection = useGardenStore((s) => s.setCollection);
   const appMode = useUiStore((s) => s.appMode);
+  const [showWelcome, setShowWelcome] = useState(false);
   const { theme, prevTheme, layerFlip, transitionDuration } = useActiveTheme();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
   const [rightWidth, setRightWidth] = useState(DEFAULT_PANEL);
@@ -71,8 +75,17 @@ export function App() {
       .finally(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('mode') === 'seed-starting') enterSeedStarting();
+        const persisted = loadPersistedCollection<Cultivar[]>();
+        if (persisted && persisted.length > 0) {
+          setCollection(persisted);
+        } else if (
+          (useGardenStore.getState().garden.collection ?? []).length === 0 &&
+          params.toString() === ''
+        ) {
+          setShowWelcome(true);
+        }
       });
-  }, [loadGarden]);
+  }, [loadGarden, setCollection]);
 
   useEffect(() => {
     autosave(garden);
@@ -535,6 +548,7 @@ export function App() {
       <div className={styles.status}>
         <StatusBar />
       </div>
+      {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
     </div>
   );
 }

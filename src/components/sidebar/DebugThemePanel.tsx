@@ -2,8 +2,6 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { LabelMode } from '../../store/uiStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
-import type { TimePeriod } from '../../utils/timeTheme';
-import { ALL_PERIODS, getTheme } from '../../utils/timeTheme';
 import { LayerSection } from './LayerSection';
 
 const LABEL_MODES: { value: LabelMode; label: string }[] = [
@@ -13,8 +11,6 @@ const LABEL_MODES: { value: LabelMode; label: string }[] = [
 ];
 
 export function DebugThemePanel() {
-  const themeOverride = useUiStore((s) => s.themeOverride);
-  const setThemeOverride = useUiStore((s) => s.setThemeOverride);
   const debugOverlappingLabels = useUiStore((s) => s.debugOverlappingLabels);
   const setDebugOverlappingLabels = useUiStore((s) => s.setDebugOverlappingLabels);
   const labelMode = useUiStore((s) => s.labelMode);
@@ -24,6 +20,7 @@ export function DebugThemePanel() {
   const plantIconScale = useUiStore((s) => s.plantIconScale);
   const setPlantIconScale = useUiStore((s) => s.setPlantIconScale);
   const loadGarden = useGardenStore((s) => s.loadGarden);
+  const setCollection = useGardenStore((s) => s.setCollection);
 
   function handleResetGarden() {
     localStorage.removeItem('garden-planner-autosave');
@@ -33,84 +30,13 @@ export function DebugThemePanel() {
       .catch(() => {});
   }
 
+  function handleResetCollection() {
+    localStorage.removeItem('garden-planner-collection');
+    setCollection([]);
+  }
+
   return (
     <LayerSection title="Debug" defaultOpen>
-      <div className={styles.themeGrid}>
-        <button
-          className={`${styles.themeSwatch} ${themeOverride === 'live' ? styles.themeSwatchActive : ''}`}
-          onClick={() => setThemeOverride('live')}
-          title="Live (geolocation-based)"
-        >
-          <span
-            className={styles.themeSwatchColor}
-            style={{
-              background:
-                'conic-gradient(#E8A868, #58A0B0, #60C8E8, #D4B888, #3E2E60, #1A2744, #101828, #E8A868)',
-            }}
-          />
-          <span className={styles.themeSwatchLabel}>Live</span>
-        </button>
-        <button
-          className={`${styles.themeSwatch} ${themeOverride === null ? styles.themeSwatchActive : ''}`}
-          onClick={() => setThemeOverride(null)}
-          title="Cycle (clock-based)"
-        >
-          <span
-            className={styles.themeSwatchColor}
-            style={{
-              background:
-                'conic-gradient(from 90deg, #E8A868, #60C8E8, #48C0E0, #804878, #1A2744, #E8A868)',
-            }}
-          />
-          <span className={styles.themeSwatchLabel}>Cycle</span>
-        </button>
-        <button
-          className={`${styles.themeSwatch} ${themeOverride === 'slow-cycle' ? styles.themeSwatchActive : ''}`}
-          onClick={() => setThemeOverride('slow-cycle')}
-          title="Slow cycle (20s crossfade)"
-        >
-          <span
-            className={styles.themeSwatchColor}
-            style={{
-              background:
-                'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)',
-            }}
-          />
-          <span className={styles.themeSwatchLabel}>Slow</span>
-        </button>
-        <button
-          className={`${styles.themeSwatch} ${themeOverride === 'cycle' ? styles.themeSwatchActive : ''}`}
-          onClick={() => setThemeOverride('cycle')}
-          title="Fast cycle (5s crossfade)"
-        >
-          <span
-            className={styles.themeSwatchColor}
-            style={{
-              background:
-                'linear-gradient(90deg, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828, #E8A868, #60C8E8, #48C0E0, #804878, #3E2E60, #1A2744, #101828)',
-            }}
-          />
-          <span className={styles.themeSwatchLabel}>Fast</span>
-        </button>
-      </div>
-      <hr className={styles.themeDivider} />
-      <div className={styles.themeGrid}>
-        {ALL_PERIODS.map((period: TimePeriod) => (
-          <button
-            key={period}
-            className={`${styles.themeSwatch} ${themeOverride === period ? styles.themeSwatchActive : ''}`}
-            onClick={() => setThemeOverride(period)}
-            title={period}
-          >
-            <span
-              className={styles.themeSwatchColor}
-              style={{ background: getTheme(period).menuBarBg }}
-            />
-            <span className={styles.themeSwatchLabel}>{period}</span>
-          </button>
-        ))}
-      </div>
-      <hr className={styles.themeDivider} />
       <label className={styles.surfaceToggle}>
         <input
           type="checkbox"
@@ -165,6 +91,12 @@ export function DebugThemePanel() {
         onClick={handleResetGarden}
       >
         Reset to Default Garden
+      </button>
+      <button
+        className={styles.resetButton}
+        onClick={handleResetCollection}
+      >
+        Reset Collection
       </button>
     </LayerSection>
   );

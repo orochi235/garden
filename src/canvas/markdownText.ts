@@ -114,6 +114,7 @@ export function layoutMarkdown(
   maxWidth: number,
   fontSize: number,
   measure: MeasureFn,
+  lineHeightFactor: number = 1.3,
 ): LayoutResult {
   if (runs.length === 0) return { lines: [], width: 0, height: 0 };
 
@@ -124,7 +125,7 @@ export function layoutMarkdown(
 
   function commitLine() {
     const effectiveFontSize = lineMaxSize > 0 ? lineMaxSize : fontSize;
-    const lineHeight = Math.round(effectiveFontSize * 1.3);
+    const lineHeight = Math.round(effectiveFontSize * lineHeightFactor);
     lines.push({ runs: currentRuns, width: lineX, height: lineHeight });
     currentRuns = [];
     lineX = 0;
@@ -197,6 +198,10 @@ export interface MarkdownFontOptions {
   family?: string;
   /** Numeric weight applied to non-bold runs. Bold runs always use `bold`. Default `normal`. */
   weight?: string | number;
+  /** Override fill color. When set, used for all runs (italic and bold). */
+  color?: string;
+  /** Multiplier applied to font size for line height. Default 1.3. */
+  lineHeight?: number;
 }
 
 function buildFont(
@@ -230,7 +235,7 @@ export function createMarkdownRenderer(
 ): { renderer: TextRenderer; strokeRenderer: TextRenderer; width: number; height: number } {
   const measure = canvasMeasure(ctx, fontOpts);
   const parsed = parseMarkdownRuns(text);
-  const layout = layoutMarkdown(parsed, maxWidth, fontSize, measure);
+  const layout = layoutMarkdown(parsed, maxWidth, fontSize, measure, fontOpts.lineHeight);
 
   const renderer: TextRenderer = (_ctx, _text, x, y) => {
     let lineY = y;
@@ -238,7 +243,8 @@ export function createMarkdownRenderer(
       for (const run of line.runs) {
         const effSize = fontSize + run.sizeOffset;
         _ctx.font = buildFont(effSize, run.bold, run.italic, fontOpts);
-        _ctx.fillStyle = run.italic && !run.bold ? 'rgba(255, 255, 255, 0.7)' : '#FFFFFF';
+        _ctx.fillStyle = fontOpts.color
+          ?? (run.italic && !run.bold ? 'rgba(255, 255, 255, 0.7)' : '#FFFFFF');
         const lineOffset = (layout.width - line.width) / 2;
         _ctx.fillText(run.text, x + lineOffset + run.x, lineY);
       }

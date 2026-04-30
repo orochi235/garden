@@ -6,6 +6,7 @@ import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
 import { AlmanacPanel } from './AlmanacPanel';
 import { DebugThemePanel } from './DebugThemePanel';
+import { ThemeDebugPanel } from './ThemeDebugPanel';
 import { LayerSection } from './LayerSection';
 import { RenderLayersPanel } from './RenderLayersPanel';
 
@@ -41,6 +42,7 @@ export function LayerPropertiesPanel() {
         <AlmanacPanel />
         <RenderLayersPanel />
         <DebugThemePanel />
+        <ThemeDebugPanel />
       </div>
     );
   }

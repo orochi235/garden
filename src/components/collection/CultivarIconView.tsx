@@ -34,7 +34,7 @@ function darkenHex(hex: string, factor: number): string {
 
 const TILE_W = 144;
 const TILE_H = 200;
-const ICON_RADIUS = (TILE_H / 2) * 0.8;
+const ICON_RADIUS = TILE_H / 2;
 const ICON_CY = TILE_H / 2;
 const TOP_TEXT_Y = 12;
 const BOTTOM_TEXT_BASE = TILE_H - 23;
@@ -46,8 +46,10 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
   const [tick, setTick] = useState(0);
   useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
-  const rawSpeciesName = getSpecies(cultivar.speciesId)?.name ?? cultivar.name;
+  const species = getSpecies(cultivar.speciesId);
+  const rawSpeciesName = species?.name ?? cultivar.name;
   const speciesName = unwindCommaName(rawSpeciesName);
+  const taxonomicName = species?.taxonomicName ?? '';
   const variety = cultivar.variety ?? '';
 
   useEffect(() => {
@@ -101,12 +103,23 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
     ctx.restore();
 
     if (variety) {
-      const varietyMd = `*${variety}*`;
-      const bot = createMarkdownRenderer(ctx, varietyMd, FONT_SIZE, TILE_W - TEXT_PAD * 2, {
+      ctx.save();
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(TEXT_PAD * 2, TOP_TEXT_Y + 20);
+      ctx.lineTo(TILE_W - TEXT_PAD * 2, TOP_TEXT_Y + 20);
+      ctx.stroke();
+      ctx.restore();
+
+      const varTopMd = `*${variety}*`;
+      const varTop = createMarkdownRenderer(ctx, varTopMd, 19, TILE_W - TEXT_PAD * 2, {
         family: '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif',
+        lineHeight: 1.05,
+        color: '#FFFFFF',
       });
-      const botX = (TILE_W - bot.width) / 2;
-      const botY = BOTTOM_TEXT_BASE + (FONT_SIZE - bot.height) / 2;
+      const varTopX = (TILE_W - varTop.width) / 2;
+      const varTopY = TOP_TEXT_Y + 26;
       ctx.save();
       ctx.lineJoin = 'round';
       ctx.miterLimit = 2;
@@ -114,12 +127,52 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
       ctx.lineWidth = 3;
       ctx.shadowColor = dark;
       ctx.shadowBlur = 4;
-      bot.strokeRenderer(ctx, varietyMd, botX, botY);
+      varTop.strokeRenderer(ctx, varTopMd, varTopX, varTopY);
       ctx.shadowBlur = 0;
-      bot.renderer(ctx, varietyMd, botX, botY);
+      varTop.renderer(ctx, varTopMd, varTopX, varTopY);
       ctx.restore();
     }
-  }, [cultivar.id, cultivar.color, cultivar.iconBgColor, speciesName, variety, tick]);
+
+    if (taxonomicName) {
+      const words = taxonomicName.split(' ');
+      let formatted = taxonomicName;
+      for (let i = 2; i < words.length; i++) {
+        if (words[i].includes('.')) {
+          formatted = [...words.slice(0, i), '\n' + words.slice(i).join(' ')].join(' ').replace(' \n', '\n');
+          break;
+        }
+      }
+      const taxMd = `*${formatted}*`;
+      const taxFontSize = 10;
+      const tax = createMarkdownRenderer(ctx, taxMd, taxFontSize, TILE_W - TEXT_PAD * 2, {
+        family: '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif',
+        color: '#000000',
+      });
+      const padX = 8;
+      const padY = 2;
+      const lozW = tax.width + padX * 2;
+      const lozH = tax.height + padY * 2;
+      const lozX = (TILE_W - lozW) / 2;
+      const lozY = BOTTOM_TEXT_BASE + (FONT_SIZE - tax.height) / 2 - padY - 3;
+      const radius = lozH / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(lozX + radius, lozY);
+      ctx.lineTo(lozX + lozW - radius, lozY);
+      ctx.arc(lozX + lozW - radius, lozY + radius, radius, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(lozX + radius, lozY + lozH);
+      ctx.arc(lozX + radius, lozY + radius, radius, Math.PI / 2, -Math.PI / 2);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = dark;
+      ctx.stroke();
+      ctx.fillStyle = '#000000';
+      tax.renderer(ctx, taxMd, lozX + padX, lozY + padY + 2);
+      ctx.restore();
+    }
+  }, [cultivar.id, cultivar.color, cultivar.iconBgColor, speciesName, taxonomicName, variety, tick]);
 
   return (
     <canvas

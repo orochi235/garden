@@ -131,6 +131,14 @@ function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
 }
 
+function readCollectionParam(): boolean {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('collection')) return false;
+  const v = params.get('collection');
+  return v !== 'false' && v !== '0' && v !== 'null';
+}
+
 function defaultState() {
   return {
     activeLayer: 'structures' as LayerId,
@@ -175,7 +183,7 @@ function defaultState() {
       usdaZone: null,
       lastFrostDate: null,
     } as AlmanacFilters,
-    collectionEditorOpen: false,
+    collectionEditorOpen: readCollectionParam(),
   };
 }
 
@@ -236,6 +244,14 @@ export const useUiStore = create<UiStore>((set) => ({
     set({
       almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
     }),
-  setCollectionEditorOpen: (open) => set({ collectionEditorOpen: open }),
+  setCollectionEditorOpen: (open) => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (open) url.searchParams.set('collection', '1');
+      else url.searchParams.delete('collection');
+      window.history.replaceState({}, '', url);
+    }
+    set({ collectionEditorOpen: open });
+  },
   reset: () => set(defaultState()),
 }));
