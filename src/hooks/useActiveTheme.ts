@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useUiStore } from '../store/uiStore';
 import { getSolarTimes } from '../utils/sunCalc';
 import {
-  ALL_PERIODS,
+  CYCLE_PERIODS,
   getCurrentTheme,
   getSolarTimePeriod,
   getTheme,
@@ -76,14 +76,23 @@ export function useActiveTheme(): CycleState {
 
   const liveTheme = useLiveTheme(themeOverride === 'live');
 
+  // Re-render every minute while in seed-starting mode so the basement theme
+  // can switch between day/night variants at the 21:00 / 05:00 boundary.
+  const [, setClockTick] = useState(0);
+  useEffect(() => {
+    if (appMode !== 'seed-starting') return;
+    const id = setInterval(() => setClockTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, [appMode]);
+
   useEffect(() => {
     if (!isCycling) return;
     setCycleIndex(0);
     prevThemeRef.current = null;
     const id = setInterval(() => {
       setCycleIndex((prev) => {
-        prevThemeRef.current = getTheme(ALL_PERIODS[prev]);
-        return (prev + 1) % ALL_PERIODS.length;
+        prevThemeRef.current = getTheme(CYCLE_PERIODS[prev]);
+        return (prev + 1) % CYCLE_PERIODS.length;
       });
       setLayerFlip((f) => !f);
     }, interval);
@@ -92,11 +101,13 @@ export function useActiveTheme(): CycleState {
 
   let theme: TimeTheme;
   if (appMode === 'seed-starting') {
-    theme = getTheme('basement');
+    const hour = new Date().getHours();
+    const afterDark = hour >= 21 || hour < 5;
+    theme = getTheme(afterDark ? 'cellar' : 'basement');
   } else if (themeOverride === 'live') {
     theme = liveTheme;
   } else if (isCycling) {
-    theme = getTheme(ALL_PERIODS[cycleIndex]);
+    theme = getTheme(CYCLE_PERIODS[cycleIndex]);
   } else if (themeOverride) {
     theme = getTheme(themeOverride);
   } else {

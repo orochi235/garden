@@ -14,31 +14,65 @@
   max-width: 220px;
 }
 
+.row {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.row.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
 .item {
   appearance: none;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   color: #d8dce0;
   font: inherit;
   font-size: 12px;
   text-align: left;
   padding: 4px 8px;
-  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background 120ms ease, color 120ms ease;
+  flex: 1 1 auto;
+  min-width: 0;
+  transition: color 120ms ease;
 }
 
-.item:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.active {
-  background: rgba(255, 255, 255, 0.14);
+.row.active .item {
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.deleteButton {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: color 120ms ease, opacity 120ms ease;
+}
+
+.row:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  color: #ff8080;
 }
 
 .editInput {

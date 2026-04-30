@@ -184,7 +184,32 @@ const basement: TimeTheme = {
   listHover: 'rgba(20, 30, 40, 0.22)',
 };
 
-const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight, basement };
+const cellar: TimeTheme = {
+  paletteBackground: `
+    linear-gradient(to top,
+      #14080A 0%, #2E1F12 4%, #281A0F 9%, #1F160E 15%,
+      #1C1410 22%, #1A1614 30%, #181A1C 40%, #14161A 50%,
+      #10131A 60%, #0C0E14 70%, #232B36 80%, #05060A 90%, #03040A 100%
+    ),
+    radial-gradient(ellipse 60% 4% at 10% 72%, rgba(255, 255, 245, 0.85) 0%, rgba(235, 245, 225, 0.55) 20%, rgba(200, 220, 200, 0.25) 50%, transparent 85%),
+    linear-gradient(to top,
+      transparent 0%,
+      transparent calc(40% - 62px),
+      rgba(0, 0, 0, 0.95) 40%,
+      transparent calc(40% + 62px),
+      transparent 100%
+    ),
+    radial-gradient(ellipse 35% 14% at 22% 100%, rgba(225, 240, 225, 0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 14% at 78% 100%, rgba(225, 240, 225, 0.28) 0%, transparent 65%),
+    linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 22%)`,
+  searchOverlay: 'rgba(30, 31, 30, 0.9)',
+  menuBarBg: 'transparent',
+  menuBarTitle: '#E8EEF4',
+  menuBarText: '#C0C8D0',
+  listHover: 'rgba(255, 255, 255, 0.10)',
+};
+
+const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight, basement, cellar };
 
 export type TimePeriod = keyof typeof themes;
 
@@ -207,7 +232,22 @@ export function getTheme(period: TimePeriod): TimeTheme {
   return themes[period];
 }
 
+/** Themes shown in the debug palette. */
 export const ALL_PERIODS: TimePeriod[] = [
+  'sunrise',
+  'morning',
+  'noon',
+  'afternoon',
+  'sunset',
+  'twilight',
+  'night',
+  'midnight',
+  'basement',
+  'cellar',
+];
+
+/** Day/night themes used by the auto-cycle override (excludes basement variants). */
+export const CYCLE_PERIODS: TimePeriod[] = [
   'sunrise',
   'morning',
   'noon',

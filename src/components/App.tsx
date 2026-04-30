@@ -456,7 +456,8 @@ export function App() {
         setLeftWidth(Math.min(MAX_PANEL, Math.max(MIN_PANEL, raw)));
       } else {
         // Right sidebar can collapse fully: snap to 0 below MIN_PANEL/2.
-        const snapped = raw < MIN_PANEL / 2 ? 0 : Math.min(MAX_PANEL, Math.max(MIN_PANEL, raw));
+        // Cap at DEFAULT_PANEL — the right panel can't grow past its initial size.
+        const snapped = raw < MIN_PANEL / 2 ? 0 : Math.min(DEFAULT_PANEL, Math.max(MIN_PANEL, raw));
         if (snapped > 0) savedRightWidth.current = snapped;
         setRightWidth(snapped);
       }
