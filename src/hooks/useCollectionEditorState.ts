@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Collection } from '../model/collection';
+import { addToCollection, removeFromCollection, snapshotCultivar } from '../model/collection';
+import type { Cultivar } from '../model/cultivars';
 
 export type Side = 'left' | 'right';
 
@@ -9,9 +11,11 @@ export interface CollectionEditorState {
   leftChecked: Set<string>;
   rightChecked: Set<string>;
   toggleSelection: (side: Side, cultivarId: string) => void;
+  transferRight: () => void;
+  transferLeft: () => void;
 }
 
-export function useCollectionEditorState(committed: Collection): CollectionEditorState {
+export function useCollectionEditorState(committed: Collection, database: Cultivar[]): CollectionEditorState {
   const [pending, setPending] = useState<Collection>(committed);
   const [leftChecked, setLeftChecked] = useState<Set<string>>(() => new Set());
   const [rightChecked, setRightChecked] = useState<Set<string>>(() => new Set());
@@ -26,9 +30,27 @@ export function useCollectionEditorState(committed: Collection): CollectionEdito
     });
   }, []);
 
+  const transferRight = useCallback(() => {
+    if (leftChecked.size === 0) return;
+    const additions: Cultivar[] = [];
+    for (const id of leftChecked) {
+      const source = database.find((c) => c.id === id);
+      if (source) additions.push(snapshotCultivar(source));
+    }
+    setPending((prev) => addToCollection(prev, additions));
+    setLeftChecked(new Set());
+  }, [leftChecked, database]);
+
+  const transferLeft = useCallback(() => {
+    if (rightChecked.size === 0) return;
+    const ids = [...rightChecked];
+    setPending((prev) => removeFromCollection(prev, ids));
+    setRightChecked(new Set());
+  }, [rightChecked]);
+
   const dirty = useMemo(() => !sameIds(committed, pending), [committed, pending]);
 
-  return { pending, dirty, leftChecked, rightChecked, toggleSelection };
+  return { pending, dirty, leftChecked, rightChecked, toggleSelection, transferRight, transferLeft };
 }
 
 function sameIds(a: Collection, b: Collection): boolean {
