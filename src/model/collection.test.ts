@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { addToCollection, getCollectionCultivar, hasCultivar, removeFromCollection, snapshotCultivar, type Collection } from './collection';
+import { addToCollection, findInUseRemovals, getCollectionCultivar, hasCultivar, removeFromCollection, snapshotCultivar, type Collection } from './collection';
+import type { Planting } from './types';
+import type { Seedling } from './seedStarting';
 import { getAllCultivars } from './cultivars';
 
 describe('snapshotCultivar', () => {
@@ -77,5 +79,45 @@ describe('hasCultivar / getCollectionCultivar', () => {
     expect(hasCultivar(collection, b.id)).toBe(false);
     expect(getCollectionCultivar(collection, a.id)?.id).toBe(a.id);
     expect(getCollectionCultivar(collection, b.id)).toBeUndefined();
+  });
+});
+
+function planting(cultivarId: string): Planting {
+  return {
+    id: `p-${cultivarId}`,
+    parentId: 'parent',
+    cultivarId,
+    x: 0,
+    y: 0,
+    label: '',
+    icon: null,
+  };
+}
+
+function seedling(cultivarId: string): Seedling {
+  return {
+    id: `s-${cultivarId}`,
+    cultivarId,
+    trayId: 't1',
+    row: 0,
+    col: 0,
+    labelOverride: null,
+  };
+}
+
+describe('findInUseRemovals', () => {
+  it('returns ids of removed cultivars referenced by plantings or seedlings', () => {
+    const removed = ['cult-a', 'cult-b', 'cult-c'];
+    const plantings = [planting('cult-a')];
+    const seedlings = [seedling('cult-c')];
+    expect(findInUseRemovals(removed, plantings, seedlings).sort()).toEqual(['cult-a', 'cult-c']);
+  });
+
+  it('returns empty when no removed ids are in use', () => {
+    expect(findInUseRemovals(['x'], [planting('y')], [seedling('z')])).toEqual([]);
+  });
+
+  it('deduplicates: an id used by both a planting and a seedling appears once', () => {
+    expect(findInUseRemovals(['cult-a'], [planting('cult-a')], [seedling('cult-a')])).toEqual(['cult-a']);
   });
 });

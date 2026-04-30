@@ -32,3 +32,24 @@ export function hasCultivar(collection: Collection, id: string): boolean {
 export function getCollectionCultivar(collection: Collection, id: string): Cultivar | undefined {
   return collection.find((c) => c.id === id);
 }
+
+import type { Planting } from './types';
+import type { Seedling } from './seedStarting';
+
+/** Of the cultivar ids being removed, return those still referenced by any planting or seedling. */
+export function findInUseRemovals(
+  removedIds: string[],
+  plantings: Planting[],
+  seedlings: Seedling[],
+): string[] {
+  if (removedIds.length === 0) return [];
+  const removed = new Set(removedIds);
+  const found = new Set<string>();
+  for (const p of plantings) {
+    if (removed.has(p.cultivarId)) found.add(p.cultivarId);
+  }
+  for (const s of seedlings) {
+    if (removed.has(s.cultivarId)) found.add(s.cultivarId);
+  }
+  return [...found];
+}
