@@ -9,6 +9,7 @@ interface Props {
   visibleCultivars: Cultivar[];
   isChecked: (id: string) => boolean;
   onCultivarToggle: (id: string) => void;
+  onCultivarAdd: (id: string) => void;
   onCultivarDragStart: (id: string, e: React.DragEvent) => void;
   onCultivarDragEnd: () => void;
 }
@@ -19,6 +20,16 @@ function unwindCommaName(name: string): string {
   const head = name.slice(0, i).trim();
   const tail = name.slice(i + 1).trim();
   return tail ? `${tail} ${head}` : head;
+}
+
+function darkenHex(hex: string, factor: number): string {
+  const m = hex.match(/^#([0-9a-f]{6})$/i);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = Math.round(((n >> 16) & 0xff) * factor);
+  const g = Math.round(((n >> 8) & 0xff) * factor);
+  const b = Math.round((n & 0xff) * factor);
+  return `rgb(${r},${g},${b})`;
 }
 
 const TILE_W = 144;
@@ -48,6 +59,8 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
     canvas.height = TILE_H * dpr;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, TILE_W, TILE_H);
+    ctx.fillStyle = cultivar.iconBgColor ?? cultivar.color;
+    ctx.fillRect(0, 0, TILE_W, TILE_H);
     ctx.textBaseline = 'top';
 
     ctx.save();
@@ -55,37 +68,58 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
     renderIcon(ctx, cultivar.id, ICON_RADIUS, cultivar.color);
     ctx.restore();
 
+    const bg = cultivar.iconBgColor ?? cultivar.color;
+    const dark = darkenHex(bg, 0.5);
+
     const upper = speciesName.toUpperCase();
     const target = TILE_W - TEXT_PAD * 2;
     ctx.save();
-    ctx.font = 'bold 14px "Times New Roman", Georgia, serif';
-    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '600 14px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
     ctx.textBaseline = 'top';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
     const baseWidth = ctx.measureText(upper).width;
     const ctxAny = ctx as CanvasRenderingContext2D & { letterSpacing?: string };
+    let drawX: number;
     if (upper.length > 1 && baseWidth < target) {
       const extra = (target - baseWidth) / (upper.length - 1);
       const spacing = Math.min(extra, 6);
       ctxAny.letterSpacing = `${spacing}px`;
       const widthWithSpacing = baseWidth + spacing * (upper.length - 1);
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 2;
-      ctx.fillText(upper, (TILE_W - widthWithSpacing) / 2, TOP_TEXT_Y);
+      drawX = (TILE_W - widthWithSpacing) / 2;
     } else {
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 2;
-      ctx.fillText(upper, (TILE_W - baseWidth) / 2, TOP_TEXT_Y);
+      drawX = (TILE_W - baseWidth) / 2;
     }
+    ctx.strokeStyle = dark;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = dark;
+    ctx.shadowBlur = 4;
+    ctx.strokeText(upper, drawX, TOP_TEXT_Y);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(upper, drawX, TOP_TEXT_Y);
     ctx.restore();
 
     if (variety) {
       const varietyMd = `*${variety}*`;
-      const bot = createMarkdownRenderer(ctx, varietyMd, FONT_SIZE, TILE_W - TEXT_PAD * 2);
+      const bot = createMarkdownRenderer(ctx, varietyMd, FONT_SIZE, TILE_W - TEXT_PAD * 2, {
+        family: '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif',
+      });
       const botX = (TILE_W - bot.width) / 2;
       const botY = BOTTOM_TEXT_BASE + (FONT_SIZE - bot.height) / 2;
+      ctx.save();
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = dark;
+      ctx.shadowBlur = 4;
+      bot.strokeRenderer(ctx, varietyMd, botX, botY);
+      ctx.shadowBlur = 0;
       bot.renderer(ctx, varietyMd, botX, botY);
+      ctx.restore();
     }
-  }, [cultivar.id, cultivar.color, speciesName, variety, tick]);
+  }, [cultivar.id, cultivar.color, cultivar.iconBgColor, speciesName, variety, tick]);
 
   return (
     <canvas
@@ -128,6 +162,7 @@ export function CultivarIconView(props: Props) {
               onDragStart={(e) => props.onCultivarDragStart(c.id, e)}
               onDragEnd={props.onCultivarDragEnd}
               onClick={() => props.onCultivarToggle(c.id)}
+              onDoubleClick={() => props.onCultivarAdd(c.id)}
               title={tooltip}
             >
               <PacketCanvas cultivar={c} />

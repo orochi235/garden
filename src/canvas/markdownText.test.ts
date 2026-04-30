@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { parseMarkdownRuns, layoutMarkdown } from './markdownText';
+import { createMarkdownRenderer, parseMarkdownRuns, layoutMarkdown } from './markdownText';
+
+function makeMockCtx() {
+  const fillCalls: Array<{ text: string; font: string; fillStyle: string }> = [];
+  const strokeCalls: Array<{ text: string; font: string; strokeStyle: string }> = [];
+  const ctx: {
+    font: string;
+    fillStyle: string;
+    strokeStyle: string;
+    measureText: (text: string) => { width: number };
+    fillText: (text: string) => void;
+    strokeText: (text: string) => void;
+  } = {
+    font: '',
+    fillStyle: '#000',
+    strokeStyle: '#000',
+    measureText: (text: string) => ({ width: text.length * 10 }),
+    fillText(text: string) { fillCalls.push({ text, font: ctx.font, fillStyle: ctx.fillStyle }); },
+    strokeText(text: string) { strokeCalls.push({ text, font: ctx.font, strokeStyle: ctx.strokeStyle }); },
+  };
+  const typedCtx = ctx as unknown as CanvasRenderingContext2D & {
+    fillText: (text: string) => void;
+    strokeText: (text: string) => void;
+  };
+  return { ctx: typedCtx, fillCalls, strokeCalls };
+}
 
 // Mock measure: each character = 10px wide, regardless of style
 const mockMeasure = (text: string) => text.length * 10;
@@ -180,5 +205,42 @@ describe('layoutMarkdown', () => {
     expect(result.lines).toHaveLength(0);
     expect(result.width).toBe(0);
     expect(result.height).toBe(0);
+  });
+});
+
+describe('createMarkdownRenderer', () => {
+  it('uses sans-serif by default', () => {
+    const { ctx, fillCalls } = makeMockCtx();
+    const r = createMarkdownRenderer(ctx, 'hello', 13);
+    r.renderer(ctx, 'hello', 0, 0);
+    expect(fillCalls[0].font).toContain('sans-serif');
+  });
+
+  it('honors custom family option', () => {
+    const { ctx, fillCalls } = makeMockCtx();
+    const r = createMarkdownRenderer(ctx, 'hi', 13, Infinity, {
+      family: '"Iowan Old Style", Georgia, serif',
+    });
+    r.renderer(ctx, 'hi', 0, 0);
+    expect(fillCalls[0].font).toContain('"Iowan Old Style"');
+  });
+
+  it('applies non-bold weight to plain runs and bold for **bold** runs', () => {
+    const { ctx, fillCalls } = makeMockCtx();
+    const r = createMarkdownRenderer(ctx, 'a **b** c', 13, Infinity, { weight: 600 });
+    r.renderer(ctx, 'a **b** c', 0, 0);
+    const aFont = fillCalls.find((c) => c.text === 'a ')!.font;
+    const bFont = fillCalls.find((c) => c.text === 'b')!.font;
+    expect(aFont).toContain('600');
+    expect(bFont).toContain('bold');
+  });
+
+  it('strokeRenderer calls strokeText with the same layout', () => {
+    const { ctx, fillCalls, strokeCalls } = makeMockCtx();
+    const r = createMarkdownRenderer(ctx, '*hi*', 13);
+    r.renderer(ctx, '*hi*', 0, 0);
+    r.strokeRenderer(ctx, '*hi*', 0, 0);
+    expect(strokeCalls.map((c) => c.text)).toEqual(fillCalls.map((c) => c.text));
+    expect(strokeCalls).toHaveLength(1);
   });
 });

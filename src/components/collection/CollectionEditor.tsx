@@ -35,7 +35,20 @@ export function CollectionEditor() {
 
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [warnRemovals, setWarnRemovals] = useState<string[] | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [confirmAddSelected, setConfirmAddSelected] = useState(false);
+  const [pendingSaveAfterTransfer, setPendingSaveAfterTransfer] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('icons');
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Enter' && e.shiftKey && state.checked.size > 0) {
+        e.preventDefault();
+        state.transferRight();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [state]);
 
   const pendingIds = useMemo(() => new Set(state.pending.map((c) => c.id)), [state.pending]);
   const leftSource = useMemo(
@@ -65,6 +78,14 @@ export function CollectionEditor() {
   }
 
   function attemptSave() {
+    if (state.checked.size > 0) {
+      setConfirmAddSelected(true);
+      return;
+    }
+    runSaveChecks();
+  }
+
+  function runSaveChecks() {
     const removed = state.computeRemovedIds();
     const inUse = findInUseRemovals(removed, garden.plantings, garden.seedStarting.seedlings);
     if (inUse.length > 0) {
@@ -81,16 +102,25 @@ export function CollectionEditor() {
   }
 
   useEffect(() => {
+    if (pendingSaveAfterTransfer && state.checked.size === 0) {
+      setPendingSaveAfterTransfer(false);
+      runSaveChecks();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSaveAfterTransfer, state.checked.size]);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         if (warnRemovals) setWarnRemovals(null);
+        else if (confirmAddSelected) setConfirmAddSelected(false);
         else if (confirmDiscard) setConfirmDiscard(false);
         else attemptCancel();
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [warnRemovals, confirmDiscard, state.dirty]);
+  }, [warnRemovals, confirmDiscard, confirmAddSelected, state.dirty]);
 
   function dragStart(id: string, e: React.DragEvent) {
     e.dataTransfer.setData('application/x-cultivar-id-from-other', id);
@@ -107,7 +137,16 @@ export function CollectionEditor() {
   return createPortal(
     <div className={styles.backdrop}>
       <div className={styles.modal}>
-        <div className={styles.header}>Collection</div>
+        <div className={styles.header}>
+          <span>Collection</span>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={attemptCancel}
+            aria-label="Close"
+            title="Close"
+          >×</button>
+        </div>
         <div className={styles.body}>
           <div className={styles.left}>
             <div className={styles.paneTitle}>
@@ -160,6 +199,7 @@ export function CollectionEditor() {
                   visibleCultivars={visible}
                   isChecked={(id) => state.checked.has(id)}
                   onCultivarToggle={state.toggleChecked}
+                  onCultivarAdd={state.addOne}
                   onCultivarDragStart={dragStart}
                   onCultivarDragEnd={() => {}}
                 />
@@ -210,6 +250,23 @@ export function CollectionEditor() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button type="button" className={styles.button} onClick={() => setConfirmDiscard(false)}>Keep editing</button>
               <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={performCancel}>Discard</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmAddSelected && (
+        <div className={styles.backdrop} style={{ zIndex: 1100 }}>
+          <div className={styles.confirmDialog}>
+            <p>You have {state.checked.size} packet{state.checked.size === 1 ? '' : 's'} selected. Add {state.checked.size === 1 ? 'it' : 'them'} to the collection before saving?</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" className={styles.button} onClick={() => setConfirmAddSelected(false)}>Keep editing</button>
+              <button type="button" className={styles.button} onClick={() => { setConfirmAddSelected(false); runSaveChecks(); }}>Save without adding</button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonPrimary}`}
+                onClick={() => { state.transferRight(); setConfirmAddSelected(false); setPendingSaveAfterTransfer(true); }}
+              >Add and save</button>
             </div>
           </div>
         </div>

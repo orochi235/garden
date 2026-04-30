@@ -16,7 +16,28 @@
   overflow: hidden;
 }
 
-.header { padding: 12px 16px; border-bottom: 1px solid var(--theme-divider, #333); font-weight: 600; }
+.header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--theme-divider, #333);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.closeButton {
+  width: 24px; height: 24px;
+  padding: 0;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(255,255,255,0.55);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.closeButton:hover { color: #fff; background: rgba(255,255,255,0.1); }
 .body { flex: 1; display: flex; min-height: 0; }
 
 .left {
@@ -112,10 +133,23 @@
   cursor: grab; user-select: none;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  position: relative;
+}
+.packet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: none;
+  transition: box-shadow 0.15s;
 }
 .packet:hover { background: rgba(255,255,255,0.08); }
 .packet:active { cursor: grabbing; }
-.tileChecked { border-color: var(--theme-accent, #4a7c59); background: rgba(74,124,89,0.18); }
+.tileChecked { border-color: #b6ff3c; }
+.tileChecked::after {
+  box-shadow: inset 0 0 0 2px rgba(182,255,60,0.6), inset 0 0 16px 2px rgba(182,255,60,0.6);
+}
 .packetCanvas { width: 144px; height: 200px; }
 .tileCanvas { width: 64px; height: 64px; }
 

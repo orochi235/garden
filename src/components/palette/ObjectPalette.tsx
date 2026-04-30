@@ -121,6 +121,15 @@ export function ObjectPalette({ onDragBegin }: Props) {
           );
         })}
       </div>
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={styles.editCollectionButton}
+          onClick={() => setEditorOpen(true)}
+        >
+          Edit Collection…
+        </button>
+      </div>
     </div>
   );
 }
