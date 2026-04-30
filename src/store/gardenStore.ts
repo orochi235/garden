@@ -3,6 +3,7 @@ import { computeSlots } from '../model/arrangement';
 import type { Arrangement } from '../model/arrangement';
 import { createSeedling, emptySeedStartingState, getCell, setCell } from '../model/seedStarting';
 import type { Seedling, Tray } from '../model/seedStarting';
+import type { Cultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
@@ -20,6 +21,7 @@ interface GardenStore {
     >,
   ) => void;
   loadGarden: (garden: Garden) => void;
+  setCollection: (collection: Cultivar[]) => void;
   reset: () => void;
   setBlueprint: (blueprint: Blueprint | null) => void;
   addStructure: (opts: {
@@ -200,6 +202,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     updateGarden: (updates) => {
       commitPatch(updates);
+    },
+
+    setCollection: (collection) => {
+      commitPatch({ collection });
     },
 
     setBlueprint: (blueprint) => {

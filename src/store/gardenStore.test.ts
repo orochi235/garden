@@ -208,6 +208,36 @@ describe('gardenStore', () => {
   });
 });
 
+import { snapshotCultivar } from '../model/collection';
+import { getAllCultivars } from '../model/cultivars';
+
+describe('setCollection', () => {
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+  });
+
+  it('replaces the collection with the provided value', () => {
+    const [a, b] = getAllCultivars();
+    const next = [snapshotCultivar(a), snapshotCultivar(b)];
+    useGardenStore.getState().setCollection(next);
+    expect(useGardenStore.getState().garden.collection.map((c) => c.id)).toEqual([a.id, b.id]);
+  });
+
+  it('is undoable', () => {
+    const [a] = getAllCultivars();
+    useGardenStore.getState().setCollection([snapshotCultivar(a)]);
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.collection).toEqual([]);
+  });
+
+  it('survives load of a garden missing a collection key', () => {
+    const garden = JSON.parse(JSON.stringify(useGardenStore.getState().garden));
+    delete garden.collection;
+    useGardenStore.getState().loadGarden(garden);
+    expect(useGardenStore.getState().garden.collection).toEqual([]);
+  });
+});
+
 import { instantiatePreset } from '../model/trayCatalog';
 
 describe('seed-starting actions', () => {
