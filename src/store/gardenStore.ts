@@ -189,6 +189,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         }
       }
       if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
+      if (!garden.collection) garden.collection = [];
       set({ garden });
     },
 
