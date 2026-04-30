@@ -231,7 +231,31 @@ The script resizes each embedded PNG to 128×128 and quantizes to a 128-color
 palette. Typical reduction: ~90 MB of icon data → ~1 MB. Re-run this any time
 new icons are embedded.
 
-### 9. Generate distribution icons
+The optimizer also re-samples each entry's `iconBgColor` from 8 small swatches
+arranged around the perimeter, INSET pixels in from the edge (median-filtered
+to drop swatches that landed on the subject), so it matches the icon's visible
+rim color rather than any artifacts at the very edge. Any time you re-encode
+icon image data, run this script — `iconBgColor` must be resampled afterward,
+never left over from a pre-optimization sample.
+
+### 9. Seal edges
+
+Source grids often leave gridline artifacts (dark rows, anti-aliased seams) on
+the outermost pixels of each cell, which show up as visible seams when the
+icon is drawn against a panel of `iconBgColor`. Run the seal script to
+hard-paint the outermost few pixels with `iconBgColor`:
+
+```bash
+node scripts/seal-icon-edges.mjs
+```
+
+This samples the bg with the same perimeter-swatch method, then overwrites the
+outer `TRIM` pixels (default 2) on every side with that color. The interior
+stays untouched — edges become uniform without any feather/fade. Updates both
+the embedded JSON and the PNGs in `icons/`, `icons/opaque/`, `icons/transparent/`,
+`icons/dist/`. After sealing, every edge pixel equals `iconBgColor` exactly.
+
+### 10. Generate distribution icons
 
 Resize each final icon to `OUTPUT_SIZE x OUTPUT_SIZE` and save to `icons/dist/`:
 
@@ -245,7 +269,7 @@ done
 echo "Generated $(ls icons/dist/*.png | wc -l) dist icons at ${OUTPUT_SIZE}x${OUTPUT_SIZE}"
 ```
 
-### 9. Verify
+### 11. Verify
 
 Spot-check 2-3 icons by reading the PNG files to confirm:
 - Correct crop (no gridline artifacts)

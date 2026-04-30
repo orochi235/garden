@@ -37,7 +37,9 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
   const [pending, setPending] = useState<Collection>(committed);
   const [checked, setChecked] = useState<Set<string>>(() => new Set());
   const [search, setSearchState] = useState('');
-  const [categories, setCategoriesState] = useState<Set<CultivarCategory>>(() => new Set());
+  const [categories, setCategoriesState] = useState<Set<CultivarCategory>>(
+    () => new Set(database.map((c) => c.category)),
+  );
   const [expandedSpecies, setExpandedSpecies] = useState<Set<string>>(
     () => new Set(database.map((c) => c.speciesId)),
   );
@@ -79,7 +81,7 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     (source: Cultivar[]): Cultivar[] => {
       const needle = search.trim().toLowerCase();
       return source.filter((c) => {
-        if (categories.size > 0 && !categories.has(c.category)) return false;
+        if (!categories.has(c.category)) return false;
         if (needle) {
           const sp = getSpecies(c.speciesId);
           const haystack = [c.name, sp?.name ?? '', sp?.taxonomicName ?? '']
@@ -149,7 +151,7 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     setPending(committed);
     setChecked(new Set());
     setSearchState('');
-    setCategoriesState(new Set());
+    setCategoriesState(new Set(database.map((c) => c.category)));
     setExpandedSpecies(new Set(database.map((c) => c.speciesId)));
     setSortColumn('species');
     setSortDir('asc');

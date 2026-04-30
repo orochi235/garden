@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { findInUseRemovals } from '../../model/collection';
 import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
@@ -6,7 +7,10 @@ import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/CollectionEditor.module.css';
 import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
 import { CultivarDataGrid } from './CultivarDataGrid';
+import { CultivarIconView } from './CultivarIconView';
 import { CollectionList } from './CollectionList';
+
+type ViewMode = 'list' | 'icons';
 
 const CATEGORY_LABELS: Record<CultivarCategory, string> = {
   vegetables: 'Vegetables',
@@ -26,11 +30,12 @@ export function CollectionEditor() {
   const garden = useGardenStore((s) => s.garden);
   const setCollection = useGardenStore((s) => s.setCollection);
   const setOpen = useUiStore((s) => s.setCollectionEditorOpen);
-  const database = useMemo(() => getAllCultivars(), []);
+  const database = useMemo(() => getAllCultivars().filter((c) => c.variety != null), []);
   const state = useCollectionEditorState(garden.collection, database);
 
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [warnRemovals, setWarnRemovals] = useState<string[] | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   const pendingIds = useMemo(() => new Set(state.pending.map((c) => c.id)), [state.pending]);
   const leftSource = useMemo(
@@ -38,6 +43,11 @@ export function CollectionEditor() {
     [database, pendingIds],
   );
   const visible = useMemo(() => state.visibleCultivars(leftSource), [state, leftSource]);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of leftSource) counts[c.category] = (counts[c.category] ?? 0) + 1;
+    return counts;
+  }, [leftSource]);
 
   function close() {
     setOpen(false);
@@ -94,7 +104,7 @@ export function CollectionEditor() {
     state.setCategories(next);
   }
 
-  return (
+  return createPortal(
     <div className={styles.backdrop}>
       <div className={styles.modal}>
         <div className={styles.header}>Collection</div>
@@ -126,10 +136,35 @@ export function CollectionEditor() {
                   className={`${styles.chip} ${state.categories.has(cat) ? styles.chipActive : ''}`}
                   onClick={() => toggleCategory(cat)}
                 >
-                  {CATEGORY_LABELS[cat]}
+                  {CATEGORY_LABELS[cat]} <span className={styles.chipCount}>{categoryCounts[cat] ?? 0}</span>
                 </span>
               ))}
+              <div className={styles.viewToggle}>
+                <button
+                  type="button"
+                  className={`${styles.viewToggleButton} ${viewMode === 'list' ? styles.viewToggleActive : ''}`}
+                  onClick={() => setViewMode('list')}
+                  title="List view"
+                >☰</button>
+                <button
+                  type="button"
+                  className={`${styles.viewToggleButton} ${viewMode === 'icons' ? styles.viewToggleActive : ''}`}
+                  onClick={() => setViewMode('icons')}
+                  title="Icon view"
+                >▦</button>
+              </div>
             </div>
+            {viewMode === 'icons' ? (
+              <div className={styles.gridWrap}>
+                <CultivarIconView
+                  visibleCultivars={visible}
+                  isChecked={(id) => state.checked.has(id)}
+                  onCultivarToggle={state.toggleChecked}
+                  onCultivarDragStart={dragStart}
+                  onCultivarDragEnd={() => {}}
+                />
+              </div>
+            ) : (
             <CultivarDataGrid
               visibleCultivars={visible}
               expandedSpecies={state.expandedSpecies}
@@ -144,6 +179,7 @@ export function CollectionEditor() {
               onCultivarDragStart={dragStart}
               onCultivarDragEnd={() => {}}
             />
+            )}
           </div>
           <div className={styles.right}>
             <div className={styles.paneTitle}>
@@ -197,6 +233,7 @@ export function CollectionEditor() {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

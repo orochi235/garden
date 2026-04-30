@@ -1,6 +1,6 @@
 .backdrop {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0,0,0,0.8);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
 }
@@ -38,10 +38,11 @@
 .chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px; }
 .chip { padding: 2px 8px; border-radius: 12px; border: 1px solid var(--theme-divider, #333); cursor: pointer; user-select: none; font-size: 0.85em; }
 .chipActive { background: var(--theme-accent, #4a7c59); border-color: transparent; color: #fff; }
+.chipCount { opacity: 0.7; font-size: 0.9em; margin-left: 2px; }
 
 /* Datagrid */
 .gridWrap { flex: 1; overflow: auto; }
-.grid { display: grid; grid-template-columns: 28px 20px 28px minmax(120px, 1.4fr) minmax(100px, 1fr) minmax(120px, 1fr) 110px minmax(140px, 1.2fr); width: 100%; font-size: 0.9em; }
+.grid { display: grid; grid-template-columns: 24px 24px 24px 24px minmax(140px, 1.4fr) 110px minmax(140px, 1.2fr); width: 100%; font-size: 0.9em; }
 .gridHeader { display: contents; }
 .gridHeader > div {
   position: sticky; top: 0; z-index: 1;
@@ -55,19 +56,16 @@
 .sortable:hover { opacity: 1; }
 .sortArrow { margin-left: 4px; opacity: 0.7; font-size: 0.8em; }
 
-.speciesRow { display: contents; }
+.speciesRow { display: contents; cursor: pointer; }
 .speciesRow > div {
   background: rgba(255,255,255,0.03);
-  padding: 4px 8px;
+  padding: 4px 4px;
   border-bottom: 1px solid var(--theme-divider, #333);
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center;
 }
-.speciesHead {
-  grid-column: 1 / -1;
-  cursor: pointer;
-}
-.speciesChevron { width: 12px; text-align: center; opacity: 0.7; flex-shrink: 0; }
-.speciesCount { margin-left: auto; opacity: 0.6; font-size: 0.85em; }
+.speciesChevron { justify-content: center; opacity: 0.7; }
+.speciesName { gap: 8px; padding-left: 4px; font-weight: 500; }
+.speciesCount { opacity: 0.6; font-size: 0.85em; }
 
 .cultivarRow { display: contents; cursor: grab; }
 .cultivarRow > div {
@@ -90,6 +88,36 @@
 .removeButton:hover { opacity: 1; }
 
 .dropTarget { outline: 2px dashed var(--theme-accent, #4a7c59); outline-offset: -4px; }
+
+.viewToggle { margin-left: auto; display: flex; gap: 2px; }
+.viewToggleButton {
+  padding: 2px 8px; border-radius: 4px; border: 1px solid var(--theme-divider, #333);
+  background: var(--theme-input-bg, #15161a); color: inherit; cursor: pointer; font-size: 0.95em;
+}
+.viewToggleActive { background: var(--theme-accent, #4a7c59); border-color: transparent; color: #fff; }
+
+.iconView { padding: 4px 8px 12px; }
+.iconGroup { margin-bottom: 8px; }
+.iconGroupTitle {
+  font-size: 0.85em; opacity: 0.7; padding: 6px 4px 4px;
+  position: sticky; top: 0; background: var(--theme-panel-bg, #1f2123); z-index: 1;
+  border-bottom: 1px solid var(--theme-divider, #333);
+}
+.iconTiles { display: flex; flex-wrap: wrap; gap: 18px; padding: 14px 10px; }
+.packet {
+  width: 144px; height: 200px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid transparent;
+  cursor: grab; user-select: none;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.packet:hover { background: rgba(255,255,255,0.08); }
+.packet:active { cursor: grabbing; }
+.tileChecked { border-color: var(--theme-accent, #4a7c59); background: rgba(74,124,89,0.18); }
+.packetCanvas { width: 144px; height: 200px; }
+.tileCanvas { width: 64px; height: 64px; }
 
 .footer { padding: 12px 16px; border-top: 1px solid var(--theme-divider, #333); display: flex; justify-content: space-between; align-items: center; }
 .button { padding: 6px 14px; border-radius: 4px; border: 1px solid var(--theme-divider, #333); background: var(--theme-input-bg, #15161a); color: inherit; cursor: pointer; }

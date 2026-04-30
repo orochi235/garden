@@ -89,9 +89,8 @@ export function CultivarDataGrid(props: Props) {
           <div />
           <div />
           <div />
+          <div />
           {header('name', 'Name')}
-          {header('variety', 'Variety')}
-          {header('species', 'Species')}
           {header('category', 'Category')}
           {header('taxonomic', 'Taxonomic')}
         </div>
@@ -137,15 +136,51 @@ function SpeciesBlock(props: BlockProps) {
     if (triRef.current) triRef.current.indeterminate = props.triState === 'some';
   }, [props.triState]);
 
+  if (props.group.children.length === 1) {
+    const c = props.group.children[0];
+    const taxonomic = getSpecies(c.speciesId)?.taxonomicName ?? '';
+    const label = c.variety ? `${props.group.speciesName} — ${c.variety}` : props.group.speciesName;
+    return (
+      <div
+        className={styles.cultivarRow}
+        draggable
+        onDragStart={(e) => props.onCultivarDragStart(c.id, e)}
+        onDragEnd={props.onCultivarDragEnd}
+      >
+        <div />
+        <div>
+          <input
+            type="checkbox"
+            checked={props.isChecked(c.id)}
+            onChange={() => props.onCultivarToggle(c.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <div />
+        <div>
+          <span className={styles.swatch} style={{ background: c.color }} />
+        </div>
+        <div>{label}</div>
+        <div>{CATEGORY_LABELS[c.category]}</div>
+        <div style={{ fontStyle: 'italic', opacity: 0.8 }}>{taxonomic}</div>
+      </div>
+    );
+  }
+
   const checkedCount = props.group.children.filter((c) => props.isChecked(c.id)).length;
   const total = props.group.children.length;
   const countLabel = checkedCount === total ? `${total}` : `${checkedCount}/${total}`;
+  const taxonomic = getSpecies(props.group.children[0]?.speciesId ?? '')?.taxonomicName ?? '';
+  const categories = new Set(props.group.children.map((c) => c.category));
+  const categoryLabel = categories.size === 1
+    ? CATEGORY_LABELS[[...categories][0]]
+    : '';
 
   return (
     <>
-      <div className={styles.speciesRow}>
-        <div className={styles.speciesHead} onClick={props.onSpeciesExpandToggle}>
-          <span className={styles.speciesChevron}>{props.expanded ? '▾' : '▸'}</span>
+      <div className={styles.speciesRow} onClick={props.onSpeciesExpandToggle}>
+        <div className={styles.speciesChevron}>{props.expanded ? '▾' : '▸'}</div>
+        <div>
           <input
             ref={triRef}
             type="checkbox"
@@ -153,9 +188,15 @@ function SpeciesBlock(props: BlockProps) {
             onChange={props.onSpeciesToggle}
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+        <div />
+        <div />
+        <div className={styles.speciesName}>
           <span>{props.group.speciesName}</span>
           <span className={styles.speciesCount}>{countLabel}</span>
         </div>
+        <div>{categoryLabel}</div>
+        <div style={{ fontStyle: 'italic', opacity: 0.8 }}>{taxonomic}</div>
       </div>
       {props.expanded &&
         props.group.children.map((c) => (
@@ -166,6 +207,8 @@ function SpeciesBlock(props: BlockProps) {
             onDragStart={(e) => props.onCultivarDragStart(c.id, e)}
             onDragEnd={props.onCultivarDragEnd}
           >
+            <div />
+            <div />
             <div>
               <input
                 type="checkbox"
@@ -177,12 +220,9 @@ function SpeciesBlock(props: BlockProps) {
             <div>
               <span className={styles.swatch} style={{ background: c.color }} />
             </div>
+            <div>{c.variety ?? c.name}</div>
             <div />
-            <div>{c.name}</div>
-            <div>{c.variety ?? ''}</div>
-            <div>{props.group.speciesName}</div>
-            <div>{CATEGORY_LABELS[c.category]}</div>
-            <div style={{ fontStyle: 'italic', opacity: 0.8 }}>{getSpecies(c.speciesId)?.taxonomicName ?? ''}</div>
+            <div />
           </div>
         ))}
     </>
