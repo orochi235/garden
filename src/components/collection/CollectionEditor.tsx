@@ -6,6 +6,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/CollectionEditor.module.css';
 import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
+import type { DragPayload } from '../../utils/pointerDrag';
 import { CultivarDataGrid } from './CultivarDataGrid';
 import { CultivarIconView } from './CultivarIconView';
 import { CollectionList } from './CollectionList';
@@ -122,11 +123,10 @@ export function CollectionEditor() {
     return () => window.removeEventListener('keydown', onKey);
   }, [warnRemovals, confirmDiscard, confirmAddSelected, state.dirty]);
 
-  function dragStart(id: string, e: React.DragEvent) {
+  function getDragPayload(id: string): DragPayload {
     const ids = Array.from(new Set([id, ...state.checked]));
-    e.dataTransfer.setData('application/x-cultivar-id-from-other', ids.join(','));
-    e.dataTransfer.effectAllowed = 'move';
     if (!state.checked.has(id)) state.toggleChecked(id);
+    return { kind: 'cultivar', ids };
   }
 
   function toggleCategory(cat: CultivarCategory) {
@@ -202,8 +202,7 @@ export function CollectionEditor() {
                   isChecked={(id) => state.checked.has(id)}
                   onCultivarToggle={state.toggleChecked}
                   onCultivarAdd={state.addOne}
-                  onCultivarDragStart={dragStart}
-                  onCultivarDragEnd={() => {}}
+                  getDragPayload={getDragPayload}
                 />
               </div>
             ) : (
@@ -218,8 +217,7 @@ export function CollectionEditor() {
               sortColumn={state.sortColumn}
               sortDir={state.sortDir}
               onSortChange={state.setSort}
-              onCultivarDragStart={dragStart}
-              onCultivarDragEnd={() => {}}
+              getDragPayload={getDragPayload}
             />
             )}
           </div>

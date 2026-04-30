@@ -4,14 +4,14 @@ import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
+import { useDragHandle, type DragPayload } from '../../utils/pointerDrag';
 
 interface Props {
   visibleCultivars: Cultivar[];
   isChecked: (id: string) => boolean;
   onCultivarToggle: (id: string) => void;
   onCultivarAdd: (id: string) => void;
-  onCultivarDragStart: (id: string, e: React.DragEvent) => void;
-  onCultivarDragEnd: () => void;
+  getDragPayload: (id: string) => DragPayload;
 }
 
 function unwindCommaName(name: string): string {
@@ -184,6 +184,36 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
   );
 }
 
+function PacketTile({
+  cultivar,
+  checked,
+  onToggle,
+  onAdd,
+  getDragPayload,
+}: {
+  cultivar: Cultivar;
+  checked: boolean;
+  onToggle: () => void;
+  onAdd: () => void;
+  getDragPayload: (id: string) => DragPayload;
+}) {
+  const speciesName = getSpecies(cultivar.speciesId)?.name ?? cultivar.name;
+  const tooltip = cultivar.variety ? `${speciesName} — ${cultivar.variety}` : speciesName;
+  const handle = useDragHandle(() => getDragPayload(cultivar.id));
+  return (
+    <div
+      className={`${styles.packet} ${checked ? styles.tileChecked : ''}`}
+      style={{ background: cultivar.iconBgColor ?? cultivar.color, ...handle.style }}
+      onPointerDown={handle.onPointerDown}
+      onClick={onToggle}
+      onDoubleClick={onAdd}
+      title={tooltip}
+    >
+      <PacketCanvas cultivar={cultivar} />
+    </div>
+  );
+}
+
 export function CultivarIconView(props: Props) {
   const sorted = useMemo(() => {
     return [...props.visibleCultivars].sort((a, b) => {
@@ -202,26 +232,16 @@ export function CultivarIconView(props: Props) {
   return (
     <div className={styles.iconView}>
       <div className={styles.iconTiles}>
-        {sorted.map((c) => {
-          const checked = props.isChecked(c.id);
-          const speciesName = getSpecies(c.speciesId)?.name ?? c.name;
-          const tooltip = c.variety ? `${speciesName} — ${c.variety}` : speciesName;
-          return (
-            <div
-              key={c.id}
-              className={`${styles.packet} ${checked ? styles.tileChecked : ''}`}
-              style={{ background: c.iconBgColor ?? c.color }}
-              draggable
-              onDragStart={(e) => props.onCultivarDragStart(c.id, e)}
-              onDragEnd={props.onCultivarDragEnd}
-              onClick={() => props.onCultivarToggle(c.id)}
-              onDoubleClick={() => props.onCultivarAdd(c.id)}
-              title={tooltip}
-            >
-              <PacketCanvas cultivar={c} />
-            </div>
-          );
-        })}
+        {sorted.map((c) => (
+          <PacketTile
+            key={c.id}
+            cultivar={c}
+            checked={props.isChecked(c.id)}
+            onToggle={() => props.onCultivarToggle(c.id)}
+            onAdd={() => props.onCultivarAdd(c.id)}
+            getDragPayload={props.getDragPayload}
+          />
+        ))}
       </div>
     </div>
   );

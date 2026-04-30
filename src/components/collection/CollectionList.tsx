@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
+import { useDropZone } from '../../utils/pointerDrag';
 
 interface Props {
   collection: Cultivar[];
@@ -28,29 +29,18 @@ export function CollectionList({ collection, onRemove, onDropFromOther }: Props)
       .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
   }, [collection]);
 
-  function handleDragOver(e: React.DragEvent) {
-    if (e.dataTransfer.types.includes('application/x-cultivar-id-from-other')) {
-      e.preventDefault();
-      setDropActive(true);
-    }
-  }
-  function handleDragLeave() {
-    setDropActive(false);
-  }
-  function handleDrop(e: React.DragEvent) {
-    setDropActive(false);
-    const raw = e.dataTransfer.getData('application/x-cultivar-id-from-other');
-    if (!raw) return;
-    const ids = raw.split(',').filter(Boolean);
-    if (ids.length > 0) onDropFromOther(ids);
-  }
+  const dropRef = useDropZone<HTMLDivElement>({
+    accepts: (kind) => kind === 'cultivar',
+    onOver: setDropActive,
+    onDrop: (payload) => {
+      if (payload.ids.length > 0) onDropFromOther(payload.ids);
+    },
+  });
 
   return (
     <div
+      ref={dropRef}
       className={`${styles.collectionList} ${dropActive ? styles.dropTarget : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
     >
       {collection.length === 0 && (
         <div className={styles.emptyMessage}>Empty</div>

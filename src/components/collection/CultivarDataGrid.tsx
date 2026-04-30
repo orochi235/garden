@@ -3,6 +3,7 @@ import type { Cultivar, CultivarCategory } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
 import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
+import { useDragHandle, type DragPayload } from '../../utils/pointerDrag';
 
 interface Props {
   visibleCultivars: Cultivar[];
@@ -15,8 +16,7 @@ interface Props {
   sortColumn: SortColumn;
   sortDir: SortDir;
   onSortChange: (column: SortColumn) => void;
-  onCultivarDragStart: (id: string, e: React.DragEvent) => void;
-  onCultivarDragEnd: () => void;
+  getDragPayload: (id: string) => DragPayload;
 }
 
 const CATEGORY_LABELS: Record<CultivarCategory, string> = {
@@ -109,8 +109,7 @@ export function CultivarDataGrid(props: Props) {
             onSpeciesToggle={() => props.onSpeciesToggle(g.children)}
             onSpeciesExpandToggle={() => props.onSpeciesExpandToggle(g.speciesId)}
             onCultivarToggle={props.onCultivarToggle}
-            onCultivarDragStart={props.onCultivarDragStart}
-            onCultivarDragEnd={props.onCultivarDragEnd}
+            getDragPayload={props.getDragPayload}
           />
         ))}
       </div>
@@ -126,8 +125,7 @@ interface BlockProps {
   onSpeciesToggle: () => void;
   onSpeciesExpandToggle: () => void;
   onCultivarToggle: (id: string) => void;
-  onCultivarDragStart: (id: string, e: React.DragEvent) => void;
-  onCultivarDragEnd: () => void;
+  getDragPayload: (id: string) => DragPayload;
 }
 
 function SpeciesBlock(props: BlockProps) {
@@ -141,11 +139,9 @@ function SpeciesBlock(props: BlockProps) {
     const taxonomic = getSpecies(c.speciesId)?.taxonomicName ?? '';
     const label = c.variety ? `${props.group.speciesName} — ${c.variety}` : props.group.speciesName;
     return (
-      <div
-        className={styles.cultivarRow}
-        draggable
-        onDragStart={(e) => props.onCultivarDragStart(c.id, e)}
-        onDragEnd={props.onCultivarDragEnd}
+      <CultivarRow
+        cultivar={c}
+        getDragPayload={props.getDragPayload}
       >
         <div />
         <div>
@@ -163,7 +159,7 @@ function SpeciesBlock(props: BlockProps) {
         <div>{label}</div>
         <div>{CATEGORY_LABELS[c.category]}</div>
         <div style={{ fontStyle: 'italic', opacity: 0.8 }}>{taxonomic}</div>
-      </div>
+      </CultivarRow>
     );
   }
 
@@ -200,12 +196,10 @@ function SpeciesBlock(props: BlockProps) {
       </div>
       {props.expanded &&
         props.group.children.map((c) => (
-          <div
+          <CultivarRow
             key={c.id}
-            className={styles.cultivarRow}
-            draggable
-            onDragStart={(e) => props.onCultivarDragStart(c.id, e)}
-            onDragEnd={props.onCultivarDragEnd}
+            cultivar={c}
+            getDragPayload={props.getDragPayload}
           >
             <div />
             <div />
@@ -223,8 +217,29 @@ function SpeciesBlock(props: BlockProps) {
             <div>{c.variety ?? c.name}</div>
             <div />
             <div />
-          </div>
+          </CultivarRow>
         ))}
     </>
+  );
+}
+
+function CultivarRow({
+  cultivar,
+  getDragPayload,
+  children,
+}: {
+  cultivar: Cultivar;
+  getDragPayload: (id: string) => DragPayload;
+  children: React.ReactNode;
+}) {
+  const handle = useDragHandle(() => getDragPayload(cultivar.id));
+  return (
+    <div
+      className={styles.cultivarRow}
+      style={handle.style}
+      onPointerDown={handle.onPointerDown}
+    >
+      {children}
+    </div>
   );
 }
