@@ -28,6 +28,7 @@ export interface CollectionEditorState {
   toggleSpeciesSelection: (visibleChildren: Cultivar[]) => void;
   transferRight: () => void;
   addOne: (id: string) => void;
+  addMany: (ids: string[]) => void;
   removeOne: (id: string) => void;
   cancel: () => void;
   computeRemovedIds: () => string[];
@@ -143,6 +144,27 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     });
   }, [database]);
 
+  const addMany = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    const additions: Cultivar[] = [];
+    for (const id of ids) {
+      const source = database.find((c) => c.id === id);
+      if (source) additions.push(snapshotCultivar(source));
+    }
+    if (additions.length === 0) return;
+    setPending((prev) => addToCollection(prev, additions));
+    setChecked((prev) => {
+      let next: Set<string> | null = null;
+      for (const id of ids) {
+        if (prev.has(id)) {
+          if (!next) next = new Set(prev);
+          next.delete(id);
+        }
+      }
+      return next ?? prev;
+    });
+  }, [database]);
+
   const removeOne = useCallback((id: string) => {
     setPending((prev) => removeFromCollection(prev, [id]));
   }, []);
@@ -183,6 +205,7 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     toggleSpeciesSelection,
     transferRight,
     addOne,
+    addMany,
     removeOne,
     cancel,
     computeRemovedIds,

@@ -6,7 +6,7 @@ import styles from '../../styles/CollectionEditor.module.css';
 interface Props {
   collection: Cultivar[];
   onRemove: (id: string) => void;
-  onDropFromOther: (draggedId: string) => void;
+  onDropFromOther: (draggedIds: string[]) => void;
 }
 
 export function CollectionList({ collection, onRemove, onDropFromOther }: Props) {
@@ -39,8 +39,10 @@ export function CollectionList({ collection, onRemove, onDropFromOther }: Props)
   }
   function handleDrop(e: React.DragEvent) {
     setDropActive(false);
-    const id = e.dataTransfer.getData('application/x-cultivar-id-from-other');
-    if (id) onDropFromOther(id);
+    const raw = e.dataTransfer.getData('application/x-cultivar-id-from-other');
+    if (!raw) return;
+    const ids = raw.split(',').filter(Boolean);
+    if (ids.length > 0) onDropFromOther(ids);
   }
 
   return (

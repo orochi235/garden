@@ -123,8 +123,10 @@ export function CollectionEditor() {
   }, [warnRemovals, confirmDiscard, confirmAddSelected, state.dirty]);
 
   function dragStart(id: string, e: React.DragEvent) {
-    e.dataTransfer.setData('application/x-cultivar-id-from-other', id);
+    const ids = Array.from(new Set([id, ...state.checked]));
+    e.dataTransfer.setData('application/x-cultivar-id-from-other', ids.join(','));
     e.dataTransfer.effectAllowed = 'move';
+    if (!state.checked.has(id)) state.toggleChecked(id);
   }
 
   function toggleCategory(cat: CultivarCategory) {
@@ -228,7 +230,7 @@ export function CollectionEditor() {
             <CollectionList
               collection={state.pending}
               onRemove={state.removeOne}
-              onDropFromOther={state.addOne}
+              onDropFromOther={state.addMany}
             />
           </div>
         </div>

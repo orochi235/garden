@@ -41,8 +41,9 @@
 .body { flex: 1; display: flex; min-height: 0; }
 
 .left {
-  flex: 2; min-width: 0;
+  flex: 0 0 860px;
   display: flex; flex-direction: column;
+  min-width: 0;
   border-right: 1px solid var(--theme-divider, #333);
 }
 .right {
@@ -124,7 +125,7 @@
   position: sticky; top: 0; background: var(--theme-panel-bg, #1f2123); z-index: 1;
   border-bottom: 1px solid var(--theme-divider, #333);
 }
-.iconTiles { display: flex; flex-wrap: wrap; gap: 18px; padding: 14px 10px; }
+.iconTiles { display: flex; flex-wrap: wrap; gap: 18px; padding: 14px 0 14px 10px; }
 .packet {
   width: 144px; height: 200px;
   border-radius: 3px;
