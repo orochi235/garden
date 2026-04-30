@@ -13,6 +13,7 @@ export interface CollectionEditorState {
   toggleSelection: (side: Side, cultivarId: string) => void;
   transferRight: () => void;
   transferLeft: () => void;
+  dragTransfer: (from: Side, draggedId: string) => void;
 }
 
 export function useCollectionEditorState(committed: Collection, database: Cultivar[]): CollectionEditorState {
@@ -48,9 +49,29 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     setRightChecked(new Set());
   }, [rightChecked]);
 
+  const dragTransfer = useCallback((from: Side, draggedId: string) => {
+    const checked = from === 'left' ? leftChecked : rightChecked;
+    const setChecked = from === 'left' ? setLeftChecked : setRightChecked;
+    const useGroup = checked.has(draggedId);
+    const ids = useGroup ? [...checked] : [draggedId];
+
+    if (from === 'left') {
+      const additions: Cultivar[] = [];
+      for (const id of ids) {
+        const source = database.find((c) => c.id === id);
+        if (source) additions.push(snapshotCultivar(source));
+      }
+      setPending((prev) => addToCollection(prev, additions));
+    } else {
+      setPending((prev) => removeFromCollection(prev, ids));
+    }
+
+    if (useGroup) setChecked(new Set());
+  }, [leftChecked, rightChecked, database]);
+
   const dirty = useMemo(() => !sameIds(committed, pending), [committed, pending]);
 
-  return { pending, dirty, leftChecked, rightChecked, toggleSelection, transferRight, transferLeft };
+  return { pending, dirty, leftChecked, rightChecked, toggleSelection, transferRight, transferLeft, dragTransfer };
 }
 
 function sameIds(a: Collection, b: Collection): boolean {

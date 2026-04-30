@@ -67,3 +67,34 @@ describe('useCollectionEditorState — transfer', () => {
     expect(result.current.dirty).toBe(false);
   });
 });
+
+describe('useCollectionEditorState — drag transfer', () => {
+  it('drag of an unchecked row from left transfers just that row, keeping selections intact', () => {
+    const db = getAllCultivars().slice(0, 2);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.toggleSelection('left', db[1].id));
+    act(() => result.current.dragTransfer('left', db[0].id));
+    expect(result.current.pending.map((c) => c.id)).toEqual([db[0].id]);
+    expect(result.current.leftChecked.has(db[1].id)).toBe(true);
+  });
+
+  it('drag of a checked row from left transfers the whole checked set and clears it', () => {
+    const db = getAllCultivars().slice(0, 3);
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => {
+      result.current.toggleSelection('left', db[0].id);
+      result.current.toggleSelection('left', db[1].id);
+    });
+    act(() => result.current.dragTransfer('left', db[0].id));
+    expect(result.current.pending.map((c) => c.id).sort()).toEqual([db[0].id, db[1].id].sort());
+    expect(result.current.leftChecked.size).toBe(0);
+  });
+
+  it('drag from right works symmetrically (removal)', () => {
+    const db = getAllCultivars().slice(0, 1);
+    const committed = db.map((c) => ({ ...c }));
+    const { result } = renderHook(() => useCollectionEditorState(committed, db));
+    act(() => result.current.dragTransfer('right', db[0].id));
+    expect(result.current.pending).toEqual([]);
+  });
+});
