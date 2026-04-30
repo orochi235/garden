@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
+import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
 import { downloadGarden, openGardenFile } from '../utils/file';
+import { CollectionEditor } from './collection/CollectionEditor';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { ModeOnly } from './ModeOnly';
 import { ModeSwitcher } from './ModeSwitcher';
@@ -12,6 +14,8 @@ export function MenuBar() {
   const loadGarden = useGardenStore((s) => s.loadGarden);
   const reset = useGardenStore((s) => s.reset);
   const [builderOpen, setBuilderOpen] = useState(false);
+  const collectionEditorOpen = useUiStore((s) => s.collectionEditorOpen);
+  const setCollectionEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
 
   async function handleOpen() {
     try {
@@ -34,6 +38,7 @@ export function MenuBar() {
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       </ModeOnly>
       {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}
+      {collectionEditorOpen && <CollectionEditor />}
       <div className={styles.spacer} />
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>
@@ -45,6 +50,7 @@ export function MenuBar() {
       <div className={styles.menus}>
         <span onClick={handleNew}>New</span>
         <span onClick={handleOpen}>Open</span>
+        <span onClick={() => setCollectionEditorOpen(true)}>Collection…</span>
         <span
           onClick={handleSave}
           className={styles.saveButton}
