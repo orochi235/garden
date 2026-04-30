@@ -5,6 +5,7 @@ import type { Cultivar, CultivarCategory } from '../model/cultivars';
 import { getSpecies } from '../model/species';
 
 export type Side = 'left' | 'right';
+export type TriState = 'none' | 'some' | 'all';
 
 export interface CollectionEditorState {
   pending: Collection;
@@ -22,6 +23,8 @@ export interface CollectionEditorState {
   searchOf: (side: Side) => string;
   categoriesOf: (side: Side) => Set<CultivarCategory>;
   visibleCultivars: (side: Side, source: Cultivar[]) => Cultivar[];
+  speciesSelectionState: (side: Side, speciesId: string, visibleChildren: Cultivar[]) => TriState;
+  toggleSpeciesSelection: (side: Side, speciesId: string, visibleChildren: Cultivar[]) => void;
 }
 
 export function useCollectionEditorState(committed: Collection, database: Cultivar[]): CollectionEditorState {
@@ -138,6 +141,35 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     [searchLeft, searchRight, catsLeft, catsRight],
   );
 
+  const speciesSelectionState = useCallback(
+    (side: Side, _speciesId: string, visibleChildren: Cultivar[]): TriState => {
+      if (visibleChildren.length === 0) return 'none';
+      const checked = side === 'left' ? leftChecked : rightChecked;
+      const checkedCount = visibleChildren.filter((c) => checked.has(c.id)).length;
+      if (checkedCount === 0) return 'none';
+      if (checkedCount === visibleChildren.length) return 'all';
+      return 'some';
+    },
+    [leftChecked, rightChecked],
+  );
+
+  const toggleSpeciesSelection = useCallback(
+    (side: Side, _speciesId: string, visibleChildren: Cultivar[]) => {
+      const setter = side === 'left' ? setLeftChecked : setRightChecked;
+      setter((prev) => {
+        const allChecked = visibleChildren.every((c) => prev.has(c.id));
+        const next = new Set(prev);
+        if (allChecked) {
+          for (const c of visibleChildren) next.delete(c.id);
+        } else {
+          for (const c of visibleChildren) next.add(c.id);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
   const dirty = useMemo(() => !sameIds(committed, pending), [committed, pending]);
 
   return {
@@ -156,6 +188,8 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     searchOf,
     categoriesOf,
     visibleCultivars,
+    speciesSelectionState,
+    toggleSpeciesSelection,
   };
 }
 

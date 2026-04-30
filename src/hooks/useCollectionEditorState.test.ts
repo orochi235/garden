@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { snapshotCultivar } from '../model/collection';
 import type { Collection } from '../model/collection';
 import { getAllCultivars } from '../model/cultivars';
+import type { Cultivar } from '../model/cultivars';
 import { getSpecies } from '../model/species';
 import { useCollectionEditorState } from './useCollectionEditorState';
 
@@ -143,5 +144,59 @@ describe('useCollectionEditorState — expansion', () => {
     expect(result.current.expandedSpecies('left').has(db[0].speciesId)).toBe(true);
     act(() => result.current.toggleSpeciesExpand('left', db[0].speciesId));
     expect(result.current.expandedSpecies('left').has(db[0].speciesId)).toBe(false);
+  });
+});
+
+describe('useCollectionEditorState — species selection', () => {
+  it('tri-state reflects none/some/all of visible children', () => {
+    const db = getAllCultivars();
+    const speciesCounts = new Map<string, Cultivar[]>();
+    for (const c of db) {
+      const list = speciesCounts.get(c.speciesId) ?? [];
+      list.push(c);
+      speciesCounts.set(c.speciesId, list);
+    }
+    const speciesId = [...speciesCounts.entries()].find(([, list]) => list.length >= 2)![0];
+    const children = speciesCounts.get(speciesId)!;
+
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    expect(result.current.speciesSelectionState('left', speciesId, children)).toBe('none');
+    act(() => result.current.toggleSelection('left', children[0].id));
+    expect(result.current.speciesSelectionState('left', speciesId, children)).toBe('some');
+    act(() => result.current.toggleSelection('left', children[1].id));
+    expect(result.current.speciesSelectionState('left', speciesId, children)).toBe(children.length === 2 ? 'all' : 'some');
+  });
+
+  it('toggleSpeciesSelection from "none" selects all visible children', () => {
+    const db = getAllCultivars();
+    const speciesGroups = new Map<string, Cultivar[]>();
+    for (const c of db) {
+      const list = speciesGroups.get(c.speciesId) ?? [];
+      list.push(c);
+      speciesGroups.set(c.speciesId, list);
+    }
+    const [speciesId, children] = [...speciesGroups.entries()].find(([, l]) => l.length >= 2)!;
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.toggleSpeciesSelection('left', speciesId, children));
+    for (const c of children) {
+      expect(result.current.leftChecked.has(c.id)).toBe(true);
+    }
+  });
+
+  it('toggleSpeciesSelection from "all" deselects all visible children', () => {
+    const db = getAllCultivars();
+    const speciesGroups = new Map<string, Cultivar[]>();
+    for (const c of db) {
+      const list = speciesGroups.get(c.speciesId) ?? [];
+      list.push(c);
+      speciesGroups.set(c.speciesId, list);
+    }
+    const [speciesId, children] = [...speciesGroups.entries()].find(([, l]) => l.length >= 2)!;
+    const { result } = renderHook(() => useCollectionEditorState([], db));
+    act(() => result.current.toggleSpeciesSelection('left', speciesId, children));
+    act(() => result.current.toggleSpeciesSelection('left', speciesId, children));
+    for (const c of children) {
+      expect(result.current.leftChecked.has(c.id)).toBe(false);
+    }
   });
 });
