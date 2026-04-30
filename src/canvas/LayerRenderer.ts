@@ -46,6 +46,17 @@ export abstract class LayerRenderer {
     this.height = height;
   }
 
+  /**
+   * Bulk-assign render parameters. Skips `undefined` values so callers can
+   * pass partial state without overwriting unrelated fields.
+   */
+  setParams(params: Partial<this>) {
+    for (const key in params) {
+      const v = params[key as keyof this];
+      if (v !== undefined) this[key as keyof this] = v as this[keyof this];
+    }
+  }
+
   /** Main render entry point. Clears canvas and calls subclass draw(). */
   render(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(0, 0, this.width, this.height);

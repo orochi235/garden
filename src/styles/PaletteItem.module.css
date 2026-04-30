@@ -11,19 +11,19 @@
   transition: background 0.15s;
 }
 .item:hover {
-  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
 }
 .item:active {
   cursor: grabbing;
 }
 .item.dragging {
-  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
   box-shadow:
-    inset 0 0 0 100px var(--list-hover, rgba(255, 255, 255, 0.06)),
-    inset 0 0 0 100px var(--list-hover, rgba(255, 255, 255, 0.06));
+    inset 0 0 0 100px var(--theme-list-hover, rgba(255, 255, 255, 0.06)),
+    inset 0 0 0 100px var(--theme-list-hover, rgba(255, 255, 255, 0.06));
 }
 .item.active {
-  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
   outline: 2px solid var(--color-leaf);
   outline-offset: -2px;
 }
@@ -60,17 +60,17 @@
   user-select: none;
 }
 .row:hover {
-  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
 }
 .row:active {
   cursor: grabbing;
 }
 .row.dragging {
-  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
   box-shadow:
-    inset 0 0 0 100px var(--list-hover, rgba(255, 255, 255, 0.06)),
-    inset 0 0 0 100px var(--list-hover, rgba(255, 255, 255, 0.06));
+    inset 0 0 0 100px var(--theme-list-hover, rgba(255, 255, 255, 0.06)),
+    inset 0 0 0 100px var(--theme-list-hover, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
 }
 .rowParent {

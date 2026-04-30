@@ -3,6 +3,7 @@ import { LayerSelector } from '../components/LayerSelector';
 import { ReturnToGarden } from '../components/ReturnToGarden';
 import { SeedWarningsToggle } from '../components/SeedWarningsToggle';
 import { FloatingTraySwitcher } from '../components/FloatingTraySwitcher';
+import { ModeOnly } from '../components/ModeOnly';
 import { ScaleIndicator } from '../components/ScaleIndicator';
 import { ViewToolbar } from '../components/ViewToolbar';
 import type { Planting, Structure, Zone } from '../model/types';
@@ -37,6 +38,8 @@ import { useCanvasSize } from './useCanvasSize';
 import { computeWheelAction } from './wheelHandler';
 import { getActiveViewport } from './viewport';
 import { ZoneLayerRenderer } from './ZoneLayerRenderer';
+import { getTrayViewport, getTrayViewportForSize } from './hooks/useTrayViewport';
+import { fitZoom } from './hooks/fitToBounds';
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,8 +77,10 @@ export function CanvasStack() {
   const appMode = useUiStore((s) => s.appMode);
   const currentTrayId = useUiStore((s) => s.currentTrayId);
   const seedStartingZoom = useUiStore((s) => s.seedStartingZoom);
-  const seedStartingPanX = useUiStore((s) => s.seedStartingPanX);
-  const seedStartingPanY = useUiStore((s) => s.seedStartingPanY);
+  // Subscribe to pan values so the component re-renders when they change;
+  // the actual values are read via getTrayViewportForSize during render.
+  void useUiStore((s) => s.seedStartingPanX);
+  void useUiStore((s) => s.seedStartingPanY);
   const showSeedlingLabels = useUiStore((s) => s.renderLayerVisibility['seedling-labels'] ?? false);
   const showSeedlingWarnings = useUiStore((s) => s.showSeedlingWarnings);
   const showTrayGrid = useUiStore((s) => s.renderLayerVisibility['tray-grid'] ?? true);
@@ -165,25 +170,17 @@ export function CanvasStack() {
     if (!tray || width === 0 || height === 0) return;
     if (autoFittedTrayRef.current === tray.id) return;
     autoFittedTrayRef.current = tray.id;
-    const padding = 40;
-    const availW = Math.max(1, width - padding * 2);
-    const availH = Math.max(1, height - padding * 2);
-    const fitZoom = Math.min(100, Math.max(5, Math.min(availW / tray.widthIn, availH / tray.heightIn)));
-    setSeedStartingZoom(fitZoom);
+    const z = fitZoom(
+      Math.max(1, width - 80),
+      Math.max(1, height - 80),
+      tray.widthIn,
+      tray.heightIn,
+      { min: 5, max: 100 },
+    );
+    setSeedStartingZoom(z);
     setSeedStartingPan(0, 0);
   }, [appMode, currentTrayId, width, height, garden.seedStarting.trays, setSeedStartingZoom, setSeedStartingPan]);
-  const pan = usePanInteraction(setPan, {
-    getPan: () => {
-      const s = useUiStore.getState();
-      return s.appMode === 'seed-starting'
-        ? { x: s.seedStartingPanX, y: s.seedStartingPanY }
-        : { x: s.panX, y: s.panY };
-    },
-    getSetPan: () => {
-      const s = useUiStore.getState();
-      return s.appMode === 'seed-starting' ? s.setSeedStartingPan : s.setPan;
-    },
-  });
+  const pan = usePanInteraction();
   const moveInteraction = useMoveInteraction(containerRef, invalidate);
   const resize = useResizeInteraction(containerRef);
   const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
@@ -256,41 +253,49 @@ export function CanvasStack() {
   ]);
 
   // Sync renderer state
-  structureRenderer.current.structures = garden.structures;
-  structureRenderer.current.opacity = layerOpacity.structures;
-  structureRenderer.current.renderLayerVisibility = renderLayerVisibility;
-  structureRenderer.current.renderLayerOrder = renderLayerOrder['structures'];
-  structureRenderer.current.debugOverlappingLabels = debugOverlappingLabels;
-  structureRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'structures' ? 'none' : labelMode;
-  structureRenderer.current.labelFontSize = labelFontSize;
+  structureRenderer.current.setParams({
+    structures: garden.structures,
+    opacity: layerOpacity.structures,
+    renderLayerVisibility,
+    renderLayerOrder: renderLayerOrder['structures'],
+    debugOverlappingLabels,
+    labelMode: labelMode === 'active-layer' && activeLayer !== 'structures' ? 'none' : labelMode,
+    labelFontSize,
+  });
   structureRenderer.current.setView(view, width, height);
 
-  zoneRenderer.current.zones = garden.zones;
-  zoneRenderer.current.opacity = layerOpacity.zones;
-  zoneRenderer.current.renderLayerVisibility = renderLayerVisibility;
-  zoneRenderer.current.renderLayerOrder = renderLayerOrder['zones'];
-  zoneRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'zones' ? 'none' : labelMode;
-  zoneRenderer.current.labelFontSize = labelFontSize;
+  zoneRenderer.current.setParams({
+    zones: garden.zones,
+    opacity: layerOpacity.zones,
+    renderLayerVisibility,
+    renderLayerOrder: renderLayerOrder['zones'],
+    labelMode: labelMode === 'active-layer' && activeLayer !== 'zones' ? 'none' : labelMode,
+    labelFontSize,
+  });
   zoneRenderer.current.setView(view, width, height);
 
-  plantingRenderer.current.plantings = garden.plantings;
-  plantingRenderer.current.zones = garden.zones;
-  plantingRenderer.current.structures = garden.structures;
-  plantingRenderer.current.opacity = layerOpacity.plantings;
-  plantingRenderer.current.selectedIds = selectedIds;
-  plantingRenderer.current.renderLayerVisibility = renderLayerVisibility;
-  plantingRenderer.current.renderLayerOrder = renderLayerOrder['plantings'];
-  plantingRenderer.current.labelMode = labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode;
-  plantingRenderer.current.labelFontSize = labelFontSize;
-  plantingRenderer.current.plantIconScale = plantIconScale;
+  plantingRenderer.current.setParams({
+    plantings: garden.plantings,
+    zones: garden.zones,
+    structures: garden.structures,
+    opacity: layerOpacity.plantings,
+    selectedIds,
+    renderLayerVisibility,
+    renderLayerOrder: renderLayerOrder['plantings'],
+    labelMode: labelMode === 'active-layer' && activeLayer !== 'plantings' ? 'none' : labelMode,
+    labelFontSize,
+    plantIconScale,
+  });
   plantingRenderer.current.setView(view, width, height);
 
-  systemRenderer.current.selectedIds = selectedIds;
-  systemRenderer.current.structures = garden.structures;
-  systemRenderer.current.zones = garden.zones;
-  systemRenderer.current.plantings = garden.plantings;
-  systemRenderer.current.renderLayerVisibility = renderLayerVisibility;
-  systemRenderer.current.renderLayerOrder = renderLayerOrder['system'];
+  systemRenderer.current.setParams({
+    selectedIds,
+    structures: garden.structures,
+    zones: garden.zones,
+    plantings: garden.plantings,
+    renderLayerVisibility,
+    renderLayerOrder: renderLayerOrder['system'],
+  });
   systemRenderer.current.setView(view, width, height);
 
   // --- Seed-starting renderers ---
@@ -298,12 +303,9 @@ export function CanvasStack() {
     appMode === 'seed-starting'
       ? garden.seedStarting.trays.find((t) => t.id === currentTrayId) ?? null
       : null;
-  const seedOriginX = currentTray
-    ? (width - currentTray.widthIn * seedStartingZoom) / 2 + seedStartingPanX
-    : 0;
-  const seedOriginY = currentTray
-    ? (height - currentTray.heightIn * seedStartingZoom) / 2 + seedStartingPanY
-    : 0;
+  const seedVp = getTrayViewportForSize(width, height, currentTray);
+  const seedOriginX = seedVp?.originX ?? 0;
+  const seedOriginY = seedVp?.originY ?? 0;
   const dragSpreadAffordanceHover =
     currentTray && seedFillPreview && seedFillPreview.trayId === currentTray.id
       ? seedFillPreview.scope === 'all'
@@ -315,26 +317,30 @@ export function CanvasStack() {
             : null
       : null;
 
-  trayRenderer.current.tray = currentTray;
-  trayRenderer.current.pxPerInch = seedStartingZoom;
-  trayRenderer.current.originX = seedOriginX;
-  trayRenderer.current.originY = seedOriginY;
-  trayRenderer.current.showGrid = showTrayGrid;
-  trayRenderer.current.showDragSpreadAffordances = seedDragCultivarId != null;
-  trayRenderer.current.dragSpreadAffordanceHover = dragSpreadAffordanceHover;
+  trayRenderer.current.setParams({
+    tray: currentTray,
+    pxPerInch: seedStartingZoom,
+    originX: seedOriginX,
+    originY: seedOriginY,
+    showGrid: showTrayGrid,
+    showDragSpreadAffordances: seedDragCultivarId != null,
+    dragSpreadAffordanceHover,
+  });
   trayRenderer.current.setView(view, width, height);
 
-  seedlingRenderer.current.tray = currentTray;
-  seedlingRenderer.current.seedlings = garden.seedStarting.seedlings;
-  seedlingRenderer.current.pxPerInch = seedStartingZoom;
-  seedlingRenderer.current.originX = seedOriginX;
-  seedlingRenderer.current.originY = seedOriginY;
-  seedlingRenderer.current.showLabel = showSeedlingLabels;
-  seedlingRenderer.current.showWarnings = showSeedlingWarnings;
-  seedlingRenderer.current.selectedIds = selectedIds;
-  seedlingRenderer.current.fillPreview = seedFillPreview;
-  seedlingRenderer.current.movePreview = seedMovePreview;
-  seedlingRenderer.current.hiddenSeedlingIds = hiddenSeedlingIds;
+  seedlingRenderer.current.setParams({
+    tray: currentTray,
+    seedlings: garden.seedStarting.seedlings,
+    pxPerInch: seedStartingZoom,
+    originX: seedOriginX,
+    originY: seedOriginY,
+    showLabel: showSeedlingLabels,
+    showWarnings: showSeedlingWarnings,
+    selectedIds,
+    fillPreview: seedFillPreview,
+    movePreview: seedMovePreview,
+    hiddenSeedlingIds,
+  });
   seedlingRenderer.current.setView(view, width, height);
 
   plantingRenderer.current.hideIds = overlay?.layer === 'plantings' ? overlay.hideIds : [];
@@ -426,15 +432,11 @@ export function CanvasStack() {
   const beginSeedlingDrag = useCallback((e: React.MouseEvent): boolean => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return false;
-    const ui = useUiStore.getState();
+    const vp = getTrayViewport(rect);
+    if (!vp) return false;
+    const { tray, pxPerInch, originX, originY } = vp;
     const { garden: g } = useGardenStore.getState();
-    const tray = g.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
-    if (!tray) return false;
-    const pxPerInch = ui.seedStartingZoom;
-    const trayPxW = tray.widthIn * pxPerInch;
-    const trayPxH = tray.heightIn * pxPerInch;
-    const originX = (rect.width - trayPxW) / 2 + ui.seedStartingPanX;
-    const originY = (rect.height - trayPxH) / 2 + ui.seedStartingPanY;
+    const ui = useUiStore.getState();
     const sx0 = e.clientX - rect.left;
     const sy0 = e.clientY - rect.top;
     const cell = hitTestCell(tray, { pxPerInch, originX, originY }, sx0, sy0);
@@ -807,13 +809,9 @@ export function CanvasStack() {
       if (uiState.appMode === 'seed-starting' && uiState.showSeedlingWarnings) {
         const rect = containerRef.current?.getBoundingClientRect();
         const { garden } = useGardenStore.getState();
-        const tray = garden.seedStarting.trays.find((t) => t.id === uiState.currentTrayId);
-        if (rect && tray) {
-          const pxPerInch = uiState.seedStartingZoom;
-          const trayPxW = tray.widthIn * pxPerInch;
-          const trayPxH = tray.heightIn * pxPerInch;
-          const originX = (rect.width - trayPxW) / 2 + uiState.seedStartingPanX;
-          const originY = (rect.height - trayPxH) / 2 + uiState.seedStartingPanY;
+        const vp = rect ? getTrayViewport(rect) : null;
+        if (rect && vp) {
+          const { tray, pxPerInch, originX, originY } = vp;
           const sx = e.clientX - rect.left;
           const sy = e.clientY - rect.top;
           const cell = hitTestCell(tray, { pxPerInch, originX, originY }, sx, sy);
@@ -1060,12 +1058,18 @@ export function CanvasStack() {
           {seedlingTooltip.message}
         </div>
       )}
-      {appMode === 'seed-starting' && <SeedWarningsToggle />}
-      {appMode === 'seed-starting' && <FloatingTraySwitcher />}
+      <ModeOnly mode="seed-starting">
+        <SeedWarningsToggle />
+        <FloatingTraySwitcher />
+      </ModeOnly>
       <ReturnToGarden canvasWidth={width} canvasHeight={height} />
-      {appMode !== 'seed-starting' && <ScaleIndicator canvasHeight={height} />}
+      <ModeOnly mode="garden">
+        <ScaleIndicator canvasHeight={height} />
+      </ModeOnly>
       <ViewToolbar />
-      {appMode !== 'seed-starting' && <LayerSelector />}
+      <ModeOnly mode="garden">
+        <LayerSelector />
+      </ModeOnly>
     </div>
   );
 }

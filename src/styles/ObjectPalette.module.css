@@ -130,7 +130,7 @@
   transition: background 0.15s;
 }
 .trayButton:hover {
-  background: var(--list-hover, rgba(255, 255, 255, 0.06));
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
 }
 .emptyMessage {
   padding: 12px;

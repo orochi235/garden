@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useActiveTheme } from '../../hooks/useActiveTheme';
 import styles from '../../styles/ObjectPalette.module.css';
 import {
   PaletteItem,
@@ -20,7 +19,6 @@ interface Props {
 
 export function ObjectPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
-  const { theme, transitionDuration: dur } = useActiveTheme();
   const filtered = search
     ? paletteItems.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
     : paletteItems;
@@ -50,16 +48,8 @@ export function ObjectPalette({ onDragBegin }: Props) {
           if (cat.id === 'plantings') {
             return (
               <div key={cat.id} className={styles.category}>
-                <div
-                  className={styles.categoryLabel}
-                  style={{ transition: `color ${dur} ease` }}
-                >
-                  {cat.label}
-                </div>
-                <div
-                  className={styles.treeContainer}
-                  style={{ '--list-hover': theme.listHover } as React.CSSProperties}
-                >
+                <div className={styles.categoryLabel}>{cat.label}</div>
+                <div className={styles.treeContainer}>
                   {tree.map((node) => {
                     if (node.kind === 'leaf') {
                       return (
@@ -99,16 +89,8 @@ export function ObjectPalette({ onDragBegin }: Props) {
 
           return (
             <div key={cat.id} className={styles.category}>
-              <div
-                className={styles.categoryLabel}
-                style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}
-              >
-                {cat.label}
-              </div>
-              <div
-                className={styles.itemGrid}
-                style={{ '--list-hover': theme.listHover } as React.CSSProperties}
-              >
+              <div className={styles.categoryLabel}>{cat.label}</div>
+              <div className={styles.itemGrid}>
                 {items.map((item) => (
                   <PaletteItem
                     key={item.id}

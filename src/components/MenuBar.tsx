@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useActiveTheme } from '../hooks/useActiveTheme';
 import { useGardenStore } from '../store/gardenStore';
-import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
 import { downloadGarden, openGardenFile } from '../utils/file';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
+import { ModeOnly } from './ModeOnly';
 import { ModeSwitcher } from './ModeSwitcher';
 import { TraySwitcher } from './TraySwitcher';
 
@@ -12,8 +11,6 @@ export function MenuBar() {
   const garden = useGardenStore((s) => s.garden);
   const loadGarden = useGardenStore((s) => s.loadGarden);
   const reset = useGardenStore((s) => s.reset);
-  const appMode = useUiStore((s) => s.appMode);
-  const { theme, transitionDuration: dur } = useActiveTheme();
   const [builderOpen, setBuilderOpen] = useState(false);
 
   async function handleOpen() {
@@ -30,20 +27,12 @@ export function MenuBar() {
   }
 
   return (
-    <div
-      className={styles.menuBar}
-      style={{ color: theme.menuBarText, transition: `color ${dur} ease` }}
-    >
-      <div
-        className={styles.title}
-        style={{ color: theme.menuBarTitle, transition: `color ${dur} ease` }}
-      >
-        Garden Planner
-      </div>
+    <div className={styles.menuBar}>
+      <div className={styles.title}>Garden Planner</div>
       <ModeSwitcher />
-      {appMode === 'seed-starting' && (
+      <ModeOnly mode="seed-starting">
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
-      )}
+      </ModeOnly>
       {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}
       <div className={styles.spacer} />
       <div className={styles.devNav}>
@@ -59,7 +48,7 @@ export function MenuBar() {
         <span
           onClick={handleSave}
           className={styles.saveButton}
-          style={{ background: theme.listHover }}
+          style={{ background: 'var(--theme-list-hover)' }}
         >Save</span>
       </div>
     </div>

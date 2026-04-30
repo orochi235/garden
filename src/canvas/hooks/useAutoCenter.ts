@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useUiStore } from '../../store/uiStore';
+import { fitZoom } from './fitToBounds';
 
 /** Compute zoom and pan values that fit the garden within the viewport. */
 export function computeFitView(
@@ -8,11 +9,9 @@ export function computeFitView(
   gardenWidthFt: number,
   gardenHeightFt: number,
 ): { zoom: number; panX: number; panY: number } {
-  const padding = 0.85;
-  const zoom = Math.min(
-    (viewportW * padding) / gardenWidthFt,
-    (viewportH * padding) / gardenHeightFt,
-  );
+  // Garden uses a ratio-style padding: content fills 85% of each axis.
+  const ratio = 0.85;
+  const zoom = fitZoom(viewportW * ratio, viewportH * ratio, gardenWidthFt, gardenHeightFt);
   const gardenW = gardenWidthFt * zoom;
   const gardenH = gardenHeightFt * zoom;
   return { zoom, panX: (viewportW - gardenW) / 2, panY: (viewportH - gardenH) / 2 };

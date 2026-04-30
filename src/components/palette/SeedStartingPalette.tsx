@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useActiveTheme } from '../../hooks/useActiveTheme';
 import { passesAlmanacFilters } from '../../model/almanacFilter';
 import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
 import { resolveSeedStarting } from '../../model/floraSeedStarting';
@@ -69,7 +68,6 @@ function buildSeedablePaletteEntries(filters: AlmanacFilters): PaletteEntry[] {
 
 export function SeedStartingPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
-  const { theme, transitionDuration: dur } = useActiveTheme();
   const addTray = useGardenStore((s) => s.addTray);
   const setCurrentTrayId = useUiStore((s) => s.setCurrentTrayId);
   const almanacFilters = useUiStore((s) => s.almanacFilters);
@@ -116,16 +114,8 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
       </div>
       <div className={styles.scrollArea}>
         <div className={styles.category}>
-          <div
-            className={styles.categoryLabel}
-            style={{ transition: `color ${dur} ease` }}
-          >
-            Trays
-          </div>
-          <div
-            className={styles.treeContainer}
-            style={{ '--list-hover': theme.listHover } as React.CSSProperties}
-          >
+          <div className={styles.categoryLabel}>Trays</div>
+          <div className={styles.treeContainer}>
             {TRAY_CATALOG.map((preset) => (
               <button
                 key={preset.id}
@@ -146,16 +136,8 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
         )}
         {treeByCategory.map(({ category, nodes }) => (
           <div key={category} className={styles.category}>
-            <div
-              className={styles.categoryLabel}
-              style={{ transition: `color ${dur} ease` }}
-            >
-              {CATEGORY_LABELS[category]}
-            </div>
-            <div
-              className={styles.treeContainer}
-              style={{ '--list-hover': theme.listHover } as React.CSSProperties}
-            >
+            <div className={styles.categoryLabel}>{CATEGORY_LABELS[category]}</div>
+            <div className={styles.treeContainer}>
               {nodes.map((node) => {
                 if (node.kind === 'leaf') {
                   return (

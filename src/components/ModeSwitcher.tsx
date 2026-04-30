@@ -1,12 +1,10 @@
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/ModeSwitcher.module.css';
-import { useActiveTheme } from '../hooks/useActiveTheme';
 import { enterSeedStarting } from '../utils/enterSeedStarting';
 
 export function ModeSwitcher() {
   const appMode = useUiStore((s) => s.appMode);
   const setAppMode = useUiStore((s) => s.setAppMode);
-  const { theme } = useActiveTheme();
 
   return (
     <div className={styles.switcher} role="group" aria-label="App mode">
@@ -14,7 +12,6 @@ export function ModeSwitcher() {
         type="button"
         aria-pressed={appMode === 'garden'}
         className={`${styles.tab} ${appMode === 'garden' ? styles.active : ''}`}
-        style={{ background: appMode === 'garden' ? theme.listHover : 'transparent' }}
         data-label="Garden"
         onClick={() => setAppMode('garden')}
       >
@@ -24,7 +21,6 @@ export function ModeSwitcher() {
         type="button"
         aria-pressed={appMode === 'seed-starting'}
         className={`${styles.tab} ${appMode === 'seed-starting' ? styles.active : ''}`}
-        style={{ background: appMode === 'seed-starting' ? theme.listHover : 'transparent' }}
         data-label="Seed Starting"
         onClick={enterSeedStarting}
       >

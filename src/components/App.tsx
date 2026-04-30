@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasStack } from '../canvas/CanvasStack';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
 import { hitTestDragSpreadAffordance, hitTestCell } from '../canvas/seedStartingHitTest';
+import { getTrayViewport } from '../canvas/hooks/useTrayViewport';
 import { createDragGhost } from '../utils/dragGhost';
+import { startThresholdDrag } from '../utils/thresholdDrag';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { createPlanting, createStructure, createZone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
@@ -78,13 +80,6 @@ export function App() {
 
   const handlePaletteDragBegin = useCallback(
     (entry: PaletteEntry, e: React.PointerEvent) => {
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const target = e.currentTarget as HTMLElement;
-      target.setPointerCapture(e.pointerId);
-
-      const THRESHOLD = 4;
-      let dragging = false;
       let transientObj: ReturnType<typeof createStructure> | ReturnType<typeof createZone> | ReturnType<typeof createPlanting> | null = null;
 
       function getCanvasRect() {
@@ -220,24 +215,10 @@ export function App() {
         }
       }
 
-      function onPointerMove(ev: PointerEvent) {
-        if (!dragging) {
-          const dx = ev.clientX - startX;
-          const dy = ev.clientY - startY;
-          if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
-          dragging = true;
-          createTransientObject(ev.clientX, ev.clientY);
-        }
-        updateOverlayPosition(ev.clientX, ev.clientY);
-      }
-
-      function onPointerUp(ev: PointerEvent) {
-        document.removeEventListener('pointermove', onPointerMove);
-        document.removeEventListener('pointerup', onPointerUp);
-        target.releasePointerCapture(ev.pointerId);
-
-        if (!dragging) return;
-
+      startThresholdDrag(e, {
+        onActivate: (ev) => createTransientObject(ev.clientX, ev.clientY),
+        onMove: (ev) => updateOverlayPosition(ev.clientX, ev.clientY),
+        onCommit: (ev) => {
         // Commit the drop
         const rect = getCanvasRect();
         if (rect) {
@@ -299,10 +280,9 @@ export function App() {
         }
 
         useUiStore.getState().clearDragOverlay();
-      }
-
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
+        },
+        onCancel: () => useUiStore.getState().clearDragOverlay(),
+      });
     },
     [],
   );
@@ -310,33 +290,15 @@ export function App() {
   const handleSeedDragBegin = useCallback(
     (entry: PaletteEntry, e: React.PointerEvent) => {
       if (entry.category !== 'plantings') return;
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const target = e.currentTarget as HTMLElement;
-      target.setPointerCapture(e.pointerId);
-      const THRESHOLD = 4;
-      let dragging = false;
-
-      function currentViewport(rect: DOMRect) {
-        const ui = useUiStore.getState();
-        const garden = useGardenStore.getState().garden;
-        const tray = garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
-        if (!tray) return null;
-        const trayPxW = tray.widthIn * ui.seedStartingZoom;
-        const trayPxH = tray.heightIn * ui.seedStartingZoom;
-        return {
-          tray,
-          pxPerInch: ui.seedStartingZoom,
-          originX: (rect.width - trayPxW) / 2 + ui.seedStartingPanX,
-          originY: (rect.height - trayPxH) / 2 + ui.seedStartingPanY,
-        };
-      }
+      let lastClientX = e.clientX;
+      let lastClientY = e.clientY;
+      let shiftHeld = false;
 
       function viewport() {
         const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
         const rect = el?.getBoundingClientRect();
         if (!rect) return null;
-        const vp = currentViewport(rect);
+        const vp = getTrayViewport(rect);
         if (!vp) return null;
         return { rect, vp };
       }
@@ -370,20 +332,12 @@ export function App() {
         ghost = null;
       }
 
-      let lastClientX = startX;
-      let lastClientY = startY;
-      let shiftHeld = false;
-
       function updateFillPreview() {
         const set = useUiStore.getState().setSeedFillPreview;
         const setPreview = (preview: Parameters<typeof set>[0]) => {
           set(preview);
           setGhostHidden(preview != null);
         };
-        if (!dragging) {
-          setPreview(null);
-          return;
-        }
         const v = viewport();
         if (!v) {
           setPreview(null);
@@ -407,7 +361,6 @@ export function App() {
         const cell = hitTestCell(v.vp.tray, v.vp, sx, sy);
         if (cell) {
           const slot = v.vp.tray.slots[cell.row * v.vp.tray.cols + cell.col];
-          // Hovering an occupied cell without shift: no putative will apply, so keep the ghost visible.
           if (slot.state === 'sown' && !replace) {
             setPreview(null);
             return;
@@ -425,63 +378,61 @@ export function App() {
         setPreview(null);
       }
 
-      function onMove(ev: PointerEvent) {
-        lastClientX = ev.clientX;
-        lastClientY = ev.clientY;
-        shiftHeld = ev.shiftKey;
-        if (!dragging) {
-          const dx = ev.clientX - startX;
-          const dy = ev.clientY - startY;
-          if (dx * dx + dy * dy < THRESHOLD * THRESHOLD) return;
-          dragging = true;
-          (target as HTMLElement & { __dragged?: boolean }).__dragged = true;
-          useUiStore.getState().setSeedDragCultivarId(entry.id);
-        }
-        moveGhost(ev.clientX, ev.clientY);
-        updateFillPreview();
-      }
-
       function onKey(ev: KeyboardEvent) {
         if (ev.key !== 'Shift') return;
         shiftHeld = ev.type === 'keydown';
         updateFillPreview();
       }
 
-      function onUp(ev: PointerEvent) {
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-        document.removeEventListener('keydown', onKey);
-        document.removeEventListener('keyup', onKey);
-        target.releasePointerCapture(ev.pointerId);
-        clearGhost();
-        useUiStore.getState().setSeedFillPreview(null);
-        useUiStore.getState().setSeedDragCultivarId(null);
-        if (!dragging) return;
+      startThresholdDrag(e, {
+        onActivate: (ev) => {
+          useUiStore.getState().setSeedDragCultivarId(entry.id);
+          document.addEventListener('keydown', onKey);
+          document.addEventListener('keyup', onKey);
+          moveGhost(ev.clientX, ev.clientY);
+          updateFillPreview();
+        },
+        onMove: (ev) => {
+          lastClientX = ev.clientX;
+          lastClientY = ev.clientY;
+          shiftHeld = ev.shiftKey;
+          moveGhost(ev.clientX, ev.clientY);
+          updateFillPreview();
+        },
+        onCommit: (ev) => {
+          document.removeEventListener('keydown', onKey);
+          document.removeEventListener('keyup', onKey);
+          clearGhost();
+          useUiStore.getState().setSeedFillPreview(null);
+          useUiStore.getState().setSeedDragCultivarId(null);
 
-        const v = viewport();
-        if (!v) return;
-        const sx = ev.clientX - v.rect.left;
-        const sy = ev.clientY - v.rect.top;
+          const v = viewport();
+          if (!v) return;
+          const sx = ev.clientX - v.rect.left;
+          const sy = ev.clientY - v.rect.top;
 
-        const aff = hitTestDragSpreadAffordance(v.vp.tray, v.vp, sx, sy);
-        if (aff) {
-          const replace = ev.shiftKey;
-          if (aff.kind === 'all') useGardenStore.getState().fillTray(v.vp.tray.id, entry.id, { replace });
-          else if (aff.kind === 'row') useGardenStore.getState().fillRow(v.vp.tray.id, aff.row, entry.id, { replace });
-          else useGardenStore.getState().fillColumn(v.vp.tray.id, aff.col, entry.id, { replace });
-          return;
-        }
-        const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
-        if (!hit) return;
-        useGardenStore.getState().sowCell(v.vp.tray.id, hit.row, hit.col, entry.id, {
-          replace: ev.shiftKey,
-        });
-      }
-
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-      document.addEventListener('keydown', onKey);
-      document.addEventListener('keyup', onKey);
+          const aff = hitTestDragSpreadAffordance(v.vp.tray, v.vp, sx, sy);
+          if (aff) {
+            const replace = ev.shiftKey;
+            if (aff.kind === 'all') useGardenStore.getState().fillTray(v.vp.tray.id, entry.id, { replace });
+            else if (aff.kind === 'row') useGardenStore.getState().fillRow(v.vp.tray.id, aff.row, entry.id, { replace });
+            else useGardenStore.getState().fillColumn(v.vp.tray.id, aff.col, entry.id, { replace });
+            return;
+          }
+          const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
+          if (!hit) return;
+          useGardenStore.getState().sowCell(v.vp.tray.id, hit.row, hit.col, entry.id, {
+            replace: ev.shiftKey,
+          });
+        },
+        onCancel: () => {
+          document.removeEventListener('keydown', onKey);
+          document.removeEventListener('keyup', onKey);
+          clearGhost();
+          useUiStore.getState().setSeedFillPreview(null);
+          useUiStore.getState().setSeedDragCultivarId(null);
+        },
+      });
     },
     [],
   );
@@ -534,6 +485,10 @@ export function App() {
       style={{
         gridTemplateColumns: `${leftWidth}px 6px 1fr 6px ${rightWidth}px`,
         ['--left-panel-width' as string]: `${leftWidth + 6}px`,
+        ['--theme-menu-text' as string]: theme.menuBarText,
+        ['--theme-menu-title' as string]: theme.menuBarTitle,
+        ['--theme-list-hover' as string]: theme.listHover,
+        ['--theme-transition' as string]: `${transitionDuration} ease`,
       }}
     >
       <div

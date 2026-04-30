@@ -1,31 +1,34 @@
 import { useRef } from 'react';
 import { useUiStore } from '../../store/uiStore';
 
-export interface PanInteractionOptions {
-  getPan?: () => { x: number; y: number };
-  getSetPan?: () => (x: number, y: number) => void;
+export interface ActivePan {
+  x: number;
+  y: number;
+  setPan: (x: number, y: number) => void;
 }
 
-export function usePanInteraction(
-  setPan: (x: number, y: number) => void,
-  options: PanInteractionOptions = {},
-) {
+/**
+ * Returns the active pan state for the current app mode. Read at pan-start
+ * so the appropriate pan target is captured for the duration of the gesture.
+ */
+export function getActivePan(): ActivePan {
+  const s = useUiStore.getState();
+  if (s.appMode === 'seed-starting') {
+    return { x: s.seedStartingPanX, y: s.seedStartingPanY, setPan: s.setSeedStartingPan };
+  }
+  return { x: s.panX, y: s.panY, setPan: s.setPan };
+}
+
+export function usePanInteraction(getActive: () => ActivePan = getActivePan) {
   const isPanning = useRef(false);
   const panStart = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 });
-  const activeSetPan = useRef<(x: number, y: number) => void>(setPan);
+  const activeSetPan = useRef<(x: number, y: number) => void>(() => {});
 
   function start(e: React.MouseEvent) {
     isPanning.current = true;
-    const cur = options.getPan
-      ? options.getPan()
-      : { x: useUiStore.getState().panX, y: useUiStore.getState().panY };
-    activeSetPan.current = options.getSetPan ? options.getSetPan() : setPan;
-    panStart.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      panX: cur.x,
-      panY: cur.y,
-    };
+    const cur = getActive();
+    activeSetPan.current = cur.setPan;
+    panStart.current = { mouseX: e.clientX, mouseY: e.clientY, panX: cur.x, panY: cur.y };
   }
 
   function move(e: React.MouseEvent) {
