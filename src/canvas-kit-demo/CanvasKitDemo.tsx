@@ -3,6 +3,7 @@ import { MoveDemo, MOVE_DEMO_SOURCE } from './demos/MoveDemo';
 import { ResizeDemo, RESIZE_DEMO_SOURCE } from './demos/ResizeDemo';
 import { InsertDemo, INSERT_DEMO_SOURCE } from './demos/InsertDemo';
 import { CloneDemo, CLONE_DEMO_SOURCE } from './demos/CloneDemo';
+import { ComposeDemo, COMPOSE_DEMO_SOURCE } from './demos/ComposeDemo';
 
 export function CanvasKitDemo() {
   return (
@@ -47,6 +48,14 @@ export function CanvasKitDemo() {
         hint="Hold Alt and drag a rectangle."
         canvas={<CloneDemo />}
         source={CLONE_DEMO_SOURCE}
+      />
+
+      <Card
+        title="Compose"
+        description="Four interactions on one scene — move, resize, insert, area-select all share a single adapter and rect list. A pointer-down dispatcher picks which hook owns the gesture; selection is rendered as outlines and resize handles."
+        hint="Click a rect to select; drag a handle to resize; drag empty space to marquee-select; switch to Insert mode to draw new rects."
+        canvas={<ComposeDemo />}
+        source={COMPOSE_DEMO_SOURCE}
       />
     </div>
   );
