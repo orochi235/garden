@@ -9,6 +9,9 @@ export interface UseMoveInteractionOptions<TPose> {
   behaviors?: MoveBehavior<TPose>[];
   dragThresholdPx?: number;
   moveLabel?: string;
+  /** Reserved for transient gestures (no history entry). Move is never transient
+   *  in practice; accepted for API consistency but ignored. */
+  transient?: boolean;
   onGestureStart?(ids: string[]): void;
   onGestureEnd?(committed: boolean): void;
 }

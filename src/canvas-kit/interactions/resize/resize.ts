@@ -16,6 +16,8 @@ const LERP = 0.35;
 export interface UseResizeInteractionOptions<TPose extends ResizePose> {
   behaviors?: ResizeBehavior<TPose>[];
   resizeLabel?: string;
+  /** Reserved; resize is never transient in practice. Ignored. */
+  transient?: boolean;
   onGestureStart?: (id: string) => void;
   onGestureEnd?: (committed: boolean) => void;
 }

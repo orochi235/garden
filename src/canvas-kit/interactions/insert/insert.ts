@@ -12,6 +12,8 @@ import type {
 export interface UseInsertInteractionOptions<TPose extends { x: number; y: number }> {
   behaviors?: InsertBehavior<TPose>[];
   insertLabel?: string;
+  /** Reserved; insert is never transient in practice. Ignored. */
+  transient?: boolean;
   /** Strictly-greater-than thresholds; bounds with width <= or height <= abort. Default { width: 0, height: 0 }. */
   minBounds?: { width: number; height: number };
   onGestureStart?: () => void;

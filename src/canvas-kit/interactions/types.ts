@@ -46,8 +46,14 @@ export interface SnapStrategy<TPose> {
  * proposed-pose shape (TProposed) and the onMove return shape (TMoveResult).
  * onEnd is uniform: first non-undefined return wins (Op[] = commit those,
  * null = abort, undefined = defer).
+ *
+ * `defaultTransient`: when at least one behavior in a gesture sets this true
+ * AND the hook's `options.transient` is not explicitly set, the gesture
+ * commits its ops via `adapter.applyOps(ops)` (no history entry). When
+ * `options.transient` is set explicitly, that value wins.
  */
 export interface GestureBehavior<TPose, TProposed, TMoveResult> {
+  defaultTransient?: boolean;
   onStart?(ctx: GestureContext<TPose>): void;
   onMove?(ctx: GestureContext<TPose>, proposed: TProposed): TMoveResult | void;
   onEnd?(ctx: GestureContext<TPose>): Op[] | null | void;
