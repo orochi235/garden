@@ -29,6 +29,7 @@ export * from './useCanvasSize';
 export * from './hooks/useLayerEffect';
 export * from './fitToBounds';
 export * from './hooks/usePanInteraction';
+export * from './hooks/useZoomInteraction';
 export * from './hooks/useAutoCenter';
 export * from './wheelHandler';
 export * from './renderLayer';
