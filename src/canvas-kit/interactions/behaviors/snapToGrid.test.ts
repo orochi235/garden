@@ -19,14 +19,14 @@ function ctx(modifiers: Partial<GestureContext<Pose>['modifiers']> = {}): Gestur
 
 describe('snapToGrid', () => {
   it('rounds x and y to the nearest cell', () => {
-    const b = snapToGrid<Pose>({ cellFt: 1 });
+    const b = snapToGrid<Pose>({ cell: 1 });
     const result = b.onMove!(ctx(), { x: 1.4, y: 2.6 });
     expect(result).toEqual({ pose: { x: 1, y: 3 } });
   });
 
   it('preserves extra pose fields', () => {
     interface FullPose { x: number; y: number; widthFt: number }
-    const b = snapToGrid<FullPose>({ cellFt: 0.5 });
+    const b = snapToGrid<FullPose>({ cell: 0.5 });
     const result = b.onMove!(
       ctx() as unknown as GestureContext<FullPose>,
       { x: 0.3, y: 0.7, widthFt: 4 },
@@ -35,13 +35,13 @@ describe('snapToGrid', () => {
   });
 
   it('bypassKey suppresses snapping when held', () => {
-    const b = snapToGrid<Pose>({ cellFt: 1, bypassKey: 'alt' });
+    const b = snapToGrid<Pose>({ cell: 1, bypassKey: 'alt' });
     const result = b.onMove!(ctx({ alt: true }), { x: 1.4, y: 2.6 });
     expect(result).toBeUndefined();
   });
 
   it('bypassKey does not suppress when other modifier held', () => {
-    const b = snapToGrid<Pose>({ cellFt: 1, bypassKey: 'alt' });
+    const b = snapToGrid<Pose>({ cell: 1, bypassKey: 'alt' });
     const result = b.onMove!(ctx({ shift: true }), { x: 1.4, y: 2.6 });
     expect(result).toEqual({ pose: { x: 1, y: 3 } });
   });

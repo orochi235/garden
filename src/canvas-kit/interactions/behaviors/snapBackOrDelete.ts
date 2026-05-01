@@ -3,12 +3,12 @@ import type { Op } from '../../ops/types';
 import type { MoveBehavior } from '../types';
 
 export function snapBackOrDelete<TPose extends { x: number; y: number }>(args: {
-  radiusFt: number;
+  radius: number;
   onFreeRelease: 'snap-back' | 'delete';
   deleteLabel?: string;
 }): MoveBehavior<TPose> {
-  const { radiusFt, onFreeRelease, deleteLabel = 'Delete' } = args;
-  const r2 = radiusFt * radiusFt;
+  const { radius, onFreeRelease, deleteLabel = 'Delete' } = args;
+  const r2 = radius * radius;
 
   return {
     onStart(ctx) {

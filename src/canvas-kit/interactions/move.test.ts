@@ -64,7 +64,7 @@ describe('useMoveInteraction', () => {
   it('snapToGrid behavior rounds the proposed pose', () => {
     const adapter = makeAdapter([{ id: 'a', pose: { x: 0, y: 0 }, parent: null }]);
     const { result } = renderHook(() =>
-      useMoveInteraction(adapter, { translatePose, behaviors: [snapToGrid<Pose>({ cellFt: 1 })] }),
+      useMoveInteraction(adapter, { translatePose, behaviors: [snapToGrid<Pose>({ cell: 1 })] }),
     );
     act(() => result.current.start({ ids: ['a'], worldX: 0, worldY: 0, clientX: 0, clientY: 0 }));
     act(() => result.current.move({ worldX: 5.4, worldY: 5.6, clientX: 100, clientY: 100, modifiers: { alt: false, shift: false, meta: false, ctrl: false } }));
@@ -77,7 +77,7 @@ describe('useMoveInteraction', () => {
     const { result } = renderHook(() =>
       useMoveInteraction(adapter, {
         translatePose,
-        behaviors: [snapBackOrDelete<Pose>({ radiusFt: 1, onFreeRelease: 'delete' })],
+        behaviors: [snapBackOrDelete<Pose>({ radius: 1, onFreeRelease: 'delete' })],
       }),
     );
     act(() => result.current.start({ ids: ['a'], worldX: 0, worldY: 0, clientX: 0, clientY: 0 }));
@@ -91,7 +91,7 @@ describe('useMoveInteraction', () => {
     const { result } = renderHook(() =>
       useMoveInteraction(adapter, {
         translatePose,
-        behaviors: [snapBackOrDelete<Pose>({ radiusFt: 1, onFreeRelease: 'snap-back' })],
+        behaviors: [snapBackOrDelete<Pose>({ radius: 1, onFreeRelease: 'snap-back' })],
       }),
     );
     act(() => result.current.start({ ids: ['a'], worldX: 0, worldY: 0, clientX: 0, clientY: 0 }));
