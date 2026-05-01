@@ -54,7 +54,10 @@ Without these, the kit is essentially "axis-aligned-rectangle kit."
 
 ### Tier 2 — broad reuse
 
-- **Customizable units.** Coordinates are unitless today. A kit-level unit system (px / in / ft / mm / %) that the renderer and snap strategies understand is more reusable than per-app reinvention. CAD, floor plans, garden, PCB design, mapping all need this. Pairs with the mixed-unit-arithmetic note in memory (`50% + 2ft`).
+- **Customizable units.** *Done v1* (`UnitRegistry` / `UnitValue`, bare-number = base unit fallback) — see `src/canvas-kit/units.ts`. Open follow-ups:
+  - **Per-subobject scale.** Today the registry is global per consumer. Real apps want a child object (a tray inside a garden, a sub-assembly in a CAD scene) to declare its own unit/scale, with conversion at the parent boundary. Likely lives on the parent/group node once Tier 1 #2 lands, since "scope of unit" and "scope of grouping" overlap.
+  - **Mixed-unit arithmetic** (`50% + 2ft`) — needs a context to resolve percentages against. Separate design problem.
+  - **Per-axis units** — defer until a concrete use case appears (rare; e.g. timeline charts where x is time, y is value).
 - **Grid overlay.** Promote `renderGrid` to a first-class `RenderLayer` factory with snap-aware visual hints (subdivisions, accent lines, snap-target highlight on hover). Consumes the same `gridSnapStrategy` so visual + behavioral grid agree. Small effort, universal benefit.
 
 ### Tier 3 — specialized but valuable
