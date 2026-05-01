@@ -16,7 +16,7 @@ function makeAdapter(opts?: { commitReturnsNull?: boolean }) {
       const obj: Obj = { id: `obj-${inserts.length}`, x: b.x, y: b.y, width: b.width, height: b.height };
       return obj;
     },
-    commitPaste(_clipboard, _offset) {
+    commitPaste(_clipboard, _offset, _ctx?) {
       return [];
     },
     snapshotSelection(_ids) {

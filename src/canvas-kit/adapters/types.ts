@@ -105,7 +105,11 @@ export interface AreaSelectAdapter {
  */
 export interface InsertAdapter<TObject extends { id: string }> {
   commitInsert(bounds: { x: number; y: number; width: number; height: number }): TObject | null;
-  commitPaste(clipboard: ClipboardSnapshot, offset: { dx: number; dy: number }): TObject[];
+  commitPaste(
+    clipboard: ClipboardSnapshot,
+    offset: { dx: number; dy: number },
+    ctx?: { dropPoint?: { worldX: number; worldY: number } },
+  ): TObject[];
   snapshotSelection(ids: string[]): ClipboardSnapshot;
   getPasteOffset?(clipboard: ClipboardSnapshot): { dx: number; dy: number };
   /** Mutator wired by `insertObject`-using ops (kit-side InsertOp). */

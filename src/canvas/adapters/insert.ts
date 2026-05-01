@@ -60,7 +60,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
       }
       return { items };
     },
-    commitPaste(clipboard: ClipboardSnapshot, offset) {
+    commitPaste(clipboard: ClipboardSnapshot, offset, _ctx?: { dropPoint?: { worldX: number; worldY: number } }) {
       const out: GardenObj[] = [];
       for (const raw of clipboard.items) {
         const item = raw as SnapshotItem;
