@@ -8,3 +8,10 @@ export { createCreateGroupOp } from './createGroup';
 export { createDissolveGroupOp } from './dissolveGroup';
 export { createAddToGroupOp } from './addToGroup';
 export { createRemoveFromGroupOp } from './removeFromGroup';
+export {
+  createBringForwardOp,
+  createSendBackwardOp,
+  createBringToFrontOp,
+  createSendToBackOp,
+  createMoveToIndexOp,
+} from './reorder';
