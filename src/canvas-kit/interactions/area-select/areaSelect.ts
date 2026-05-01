@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import type { Op } from '../../ops/types';
 import type { AreaSelectAdapter } from '../../adapters/types';
 import type {
   AreaSelectBehavior,
@@ -98,16 +99,49 @@ export function useAreaSelectInteraction(
   }, []);
 
   const end = useCallback(() => {
+    const s = stateRef.current;
+    if (!s.active || !s.ctx) {
+      cleanup();
+      onGestureEnd?.(false);
+      return;
+    }
+    const ctx = s.ctx;
+    let collected: Op[] | null | undefined;
+    for (const b of behaviorsRef.current) {
+      const r = b.onEnd?.(ctx);
+      if (r === undefined) continue;
+      collected = r;
+      break;
+    }
+    if (collected === null) {
+      cleanup();
+      onGestureEnd?.(false);
+      return;
+    }
+    if (collected === undefined || collected.length === 0) {
+      cleanup();
+      onGestureEnd?.(false);
+      return;
+    }
+
+    const transient = transientOpt ?? behaviorsRef.current.some((b) => b.defaultTransient === true);
+
+    if (transient) {
+      (adapter as AreaSelectAdapter).applyOps(collected);
+    } else {
+      const adapterWithBatch = adapter as AreaSelectAdapter & {
+        applyBatch?: (ops: Op[], label: string) => void;
+      };
+      adapterWithBatch.applyBatch?.(collected, label);
+    }
     cleanup();
-    onGestureEnd?.(false);
-  }, [cleanup, onGestureEnd]);
+    onGestureEnd?.(true);
+  }, [adapter, cleanup, label, onGestureEnd, transientOpt]);
 
   const cancel = useCallback(() => {
     cleanup();
     onGestureEnd?.(false);
   }, [cleanup, onGestureEnd]);
-
-  void transientOpt; void label;
 
   return { start, move, end, cancel, isAreaSelecting: overlay !== null, overlay };
 }

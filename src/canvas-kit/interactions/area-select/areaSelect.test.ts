@@ -76,3 +76,61 @@ describe('useAreaSelectInteraction — move', () => {
     expect(result.current.overlay).toBeNull();
   });
 });
+
+describe('useAreaSelectInteraction — end', () => {
+  it('default (selectFromMarquee → defaultTransient: true): commits via applyOps, not applyBatch', () => {
+    const { adapter, ops, batches, getSelection } = makeAdapter(['existing']);
+    (adapter as { hitTestArea: (r: unknown) => string[] }).hitTestArea = () => ['x', 'y'];
+    const { result } = renderHook(() =>
+      useAreaSelectInteraction(adapter, { behaviors: [selectFromMarquee()] }),
+    );
+    act(() => { result.current.start(0, 0, NO_MOD); });
+    act(() => { result.current.move(4, 4, NO_MOD); });
+    act(() => { result.current.end(); });
+    expect(ops).toHaveLength(1);
+    expect(batches).toEqual([]);
+    expect(getSelection()).toEqual(['x', 'y']);
+  });
+
+  it('cancel produces no ops even after move', () => {
+    const { adapter, ops } = makeAdapter();
+    (adapter as { hitTestArea: (r: unknown) => string[] }).hitTestArea = () => ['x'];
+    const { result } = renderHook(() =>
+      useAreaSelectInteraction(adapter, { behaviors: [selectFromMarquee()] }),
+    );
+    act(() => { result.current.start(0, 0, NO_MOD); });
+    act(() => { result.current.move(4, 4, NO_MOD); });
+    act(() => { result.current.cancel(); });
+    expect(ops).toEqual([]);
+  });
+
+  it('options.transient = false overrides defaultTransient: routes through applyBatch', () => {
+    const { adapter, ops, batches } = makeAdapter();
+    (adapter as { hitTestArea: (r: unknown) => string[] }).hitTestArea = () => ['x'];
+    const { result } = renderHook(() =>
+      useAreaSelectInteraction(adapter, {
+        behaviors: [selectFromMarquee()],
+        transient: false,
+        label: 'Pick',
+      }),
+    );
+    act(() => { result.current.start(0, 0, NO_MOD); });
+    act(() => { result.current.move(4, 4, NO_MOD); });
+    act(() => { result.current.end(); });
+    expect(ops).toEqual([]);
+    expect(batches).toHaveLength(1);
+    expect(batches[0].label).toBe('Pick');
+  });
+
+  it('end with no behaviors emitting ops produces no commit', () => {
+    const { adapter, ops, batches } = makeAdapter();
+    const { result } = renderHook(() =>
+      useAreaSelectInteraction(adapter, { behaviors: [] }),
+    );
+    act(() => { result.current.start(0, 0, NO_MOD); });
+    act(() => { result.current.move(4, 4, NO_MOD); });
+    act(() => { result.current.end(); });
+    expect(ops).toEqual([]);
+    expect(batches).toEqual([]);
+  });
+});
