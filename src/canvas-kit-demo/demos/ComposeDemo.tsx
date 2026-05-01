@@ -4,9 +4,9 @@ import {
   useResizeInteraction,
   useInsertInteraction,
   useAreaSelectInteraction,
-  screenToWorld,
 } from '@/canvas-kit';
 import { selectFromMarquee } from '@/canvas-kit/area-select';
+import { clientToCanvas } from '../canvasCoords';
 import type {
   MoveAdapter,
   ResizeAdapter,
@@ -90,8 +90,7 @@ export function ComposeDemo() {
   };
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     const mods = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
     e.currentTarget.setPointerCapture(e.pointerId);
 
@@ -137,8 +136,7 @@ export function ComposeDemo() {
       else if (g === 'area') area.cancel();
       return;
     }
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     const mods = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
     if (gesture.current === 'move') move.move({ worldX: wx, worldY: wy, clientX: e.clientX, clientY: e.clientY, modifiers: mods });
     else if (gesture.current === 'resize') resize.move(wx, wy, mods);

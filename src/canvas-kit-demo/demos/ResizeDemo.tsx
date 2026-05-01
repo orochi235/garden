@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useResizeInteraction, screenToWorld } from '@/canvas-kit';
+import { useResizeInteraction } from '@/canvas-kit';
 import type { ResizeAdapter, ResizeAnchor, Op } from '@/canvas-kit';
+import { clientToCanvas } from '../canvasCoords';
 
 interface Rect { id: string; x: number; y: number; width: number; height: number; color: string }
 interface Pose { x: number; y: number; width: number; height: number }
@@ -37,8 +38,7 @@ export function ResizeDemo() {
   ]);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     for (const h of handles(rectRef.current)) {
       if (Math.abs(wx - h.cx) <= HANDLE && Math.abs(wy - h.cy) <= HANDLE) {
         activeAnchor.current = h.anchor;
@@ -51,8 +51,7 @@ export function ResizeDemo() {
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!activeAnchor.current) return;
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     resize.move(wx, wy, { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey });
   }, [resize]);
 

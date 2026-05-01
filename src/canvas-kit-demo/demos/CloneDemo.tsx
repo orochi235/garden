@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useCloneInteraction, cloneByAltDrag, screenToWorld } from '@/canvas-kit';
+import { useCloneInteraction, cloneByAltDrag } from '@/canvas-kit';
 import type { InsertAdapter, Op, ClipboardSnapshot } from '@/canvas-kit';
+import { clientToCanvas } from '../canvasCoords';
 
 interface Rect { id: string; x: number; y: number; width: number; height: number; color: string }
 
@@ -64,8 +65,7 @@ export function CloneDemo() {
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!e.altKey) return;
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     const h = hit(wx, wy);
     if (!h) return;
     dragging.current = true;
@@ -75,8 +75,7 @@ export function CloneDemo() {
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!dragging.current) return;
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     clone.move(wx, wy, { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey });
   }, [clone]);
 

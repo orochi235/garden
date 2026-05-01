@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useInsertInteraction, screenToWorld } from '@/canvas-kit';
+import { useInsertInteraction } from '@/canvas-kit';
 import type { InsertAdapter, Op, ClipboardSnapshot } from '@/canvas-kit';
+import { clientToCanvas } from '../canvasCoords';
 
 interface Rect { id: string; x: number; y: number; width: number; height: number; color: string }
 interface Pose { x: number; y: number }
@@ -35,8 +36,7 @@ export function InsertDemo() {
   const drawing = useRef(false);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     drawing.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
     insert.start(wx, wy, { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey });
@@ -44,8 +44,7 @@ export function InsertDemo() {
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing.current) return;
-    const cr = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     insert.move(wx, wy, { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey });
   }, [insert]);
 

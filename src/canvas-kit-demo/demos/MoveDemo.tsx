@@ -3,8 +3,8 @@ import {
   useMoveInteraction,
   snap,
   gridSnapStrategy,
-  screenToWorld,
 } from '@/canvas-kit';
+import { clientToCanvas } from '../canvasCoords';
 import type { MoveAdapter } from '@/canvas-kit';
 import type { Op } from '@/canvas-kit';
 
@@ -57,8 +57,7 @@ export function MoveDemo() {
   };
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     const h = hit(wx, wy);
     if (!h) return;
     draggingId.current = h.id;
@@ -68,8 +67,7 @@ export function MoveDemo() {
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!draggingId.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const [wx, wy] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX: 0, panY: 0, zoom: 1 });
+    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
     move.move({ worldX: wx, worldY: wy, clientX: e.clientX, clientY: e.clientY,
       modifiers: { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey } });
   }, [move]);
