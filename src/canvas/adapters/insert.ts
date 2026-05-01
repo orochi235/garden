@@ -156,6 +156,9 @@ export function createInsertAdapter(): GardenInsertAdapter {
     setSelection(ids) {
       useUiStore.getState().setSelection(ids);
     },
+    getSelection() {
+      return useUiStore.getState().selectedIds;
+    },
     applyBatch(ops: Op[], _label: string) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter as never);

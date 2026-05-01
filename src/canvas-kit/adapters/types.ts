@@ -117,4 +117,6 @@ export interface InsertAdapter<TObject extends { id: string }> {
   /** Mutator wired by `setSelection` ops batched alongside paste. */
   setSelection(ids: string[]): void;
   applyBatch(ops: Op[], label: string): void;
+  /** Optional: returns the current selection. Used by clone behaviors. */
+  getSelection?: () => string[];
 }
