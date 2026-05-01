@@ -92,6 +92,31 @@ export type {
   UseDeleteActionOptions,
   UseDeleteActionReturn,
 } from './interactions/delete';
+export { useEscapeAction } from './interactions/escape';
+export type {
+  EscapeAdapter,
+  UseEscapeActionOptions,
+  UseEscapeActionReturn,
+} from './interactions/escape';
+export { useSelectAllAction } from './interactions/select-all';
+export type {
+  SelectAllAdapter,
+  UseSelectAllActionOptions,
+  UseSelectAllActionReturn,
+} from './interactions/select-all';
+export { useDuplicateAction } from './interactions/duplicate';
+export type {
+  DuplicateAdapter,
+  UseDuplicateActionOptions,
+  UseDuplicateActionReturn,
+} from './interactions/duplicate';
+export { useNudgeAction } from './interactions/nudge';
+export type {
+  NudgeAdapter,
+  NudgeDirection,
+  UseNudgeActionOptions,
+  UseNudgeActionReturn,
+} from './interactions/nudge';
 export { useCloneInteraction, cloneByAltDrag } from './interactions/clone';
 export type { UseCloneInteractionOptions, UseCloneInteractionReturn } from './interactions/clone';
 export type { ClonePose, CloneLayer, CloneBehavior } from './interactions/types';
