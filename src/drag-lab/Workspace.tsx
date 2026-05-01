@@ -7,6 +7,7 @@ import { ItemPalette } from './ItemPalette';
 import { useDragHandle, useDropZone } from '@/canvas-kit';
 import type { QuadtreeLayerId } from './strategies/quadtreeRenderer';
 import {
+  QUADTREE_LAYER_IDS,
   QUADTREE_LAYER_LABELS,
   QUADTREE_LAYER_CSS,
   LAYER_DEFAULT_OFF,
@@ -84,10 +85,21 @@ function QuadtreeLegend({ state, onSetConfig }: {
     onSetConfig('layerOrder', [...next].reverse());
   };
 
+  const resetLayers = () => {
+    onSetConfig('layerOrder', [...QUADTREE_LAYER_IDS]);
+    for (const layer of QUADTREE_LAYER_IDS) {
+      if (LAYER_ALWAYS_ON.has(layer)) continue;
+      onSetConfig(LAYER_CONFIG_KEY[layer], !LAYER_DEFAULT_OFF.has(layer));
+    }
+  };
+
   return (
     <div className="dl-legend">
       <div className="dl-controls-divider" />
-      <div className="dl-legend-section-label">Render layers — top draws last</div>
+      <div className="dl-legend-section-label">
+        <span>Render layers — top draws last</span>
+        <button type="button" onClick={resetLayers} title="Reset layer order and visibility">Reset</button>
+      </div>
       {displayOrder.map((layer, i) => (
         <LegendRow
           key={layer}

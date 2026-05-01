@@ -280,6 +280,17 @@
   color: #6b6050;
   margin-top: 2px;
   margin-bottom: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dl-legend-section-label button {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
 }
 
 .dl-legend-draggable {
