@@ -1,5 +1,5 @@
 import type { Tray } from '../model/seedStarting';
-import { LayerRenderer } from '@/canvas-kit';
+import { LayerRenderer } from '@orochi235/weasel';
 import { renderTrayBase, type DragSpreadAffordanceHover } from './layers/trayLayers';
 
 export class TrayLayerRenderer extends LayerRenderer {

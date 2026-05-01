@@ -1,7 +1,7 @@
 import { computeSlots, type Arrangement } from '../model/arrangement';
 import type { Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
-import { roundToCell } from '@/canvas-kit';
+import { roundToCell } from '@orochi235/weasel';
 
 /**
  * Determine where to place a new planting inside a parent.

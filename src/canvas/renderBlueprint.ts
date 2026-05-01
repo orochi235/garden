@@ -1,6 +1,6 @@
 import type { Blueprint } from '../model/types';
-import type { ViewTransform } from '@/canvas-kit';
-import { worldToScreen } from '@/canvas-kit';
+import type { ViewTransform } from '@orochi235/weasel';
+import { worldToScreen } from '@orochi235/weasel';
 
 const imageCache = new Map<string, HTMLImageElement>();
 

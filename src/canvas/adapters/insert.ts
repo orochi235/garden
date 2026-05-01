@@ -6,7 +6,7 @@ import {
   createZone,
 } from '../../model/types';
 import type { Planting, Structure, Zone } from '../../model/types';
-import type { ClipboardSnapshot, InsertAdapter, Op } from '@/canvas-kit';
+import type { ClipboardSnapshot, InsertAdapter, Op } from '@orochi235/weasel';
 
 type GardenObj = Structure | Zone | Planting;
 

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
-import { useDragHandle, type DragPayload } from '@/canvas-kit';
+import { useDragHandle, type DragPayload } from '@orochi235/weasel';
 
 function makeCircleGhost(radiusFt: number, color: string): HTMLElement {
   const diamPx = Math.max(Math.round(radiusFt * 2 * 40), 16);

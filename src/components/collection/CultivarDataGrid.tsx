@@ -3,7 +3,7 @@ import type { Cultivar, CultivarCategory } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
 import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
-import { useDragHandle, type DragPayload } from '@/canvas-kit';
+import { useDragHandle, type DragPayload } from '@orochi235/weasel';
 
 interface Props {
   visibleCultivars: Cultivar[];

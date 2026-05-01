@@ -1,7 +1,7 @@
 import { getCultivar } from '../../model/cultivars';
-import { worldToScreen } from '@/canvas-kit';
-import { renderLabel } from '@/canvas-kit';
-import type { RenderLayer } from '@/canvas-kit';
+import { worldToScreen } from '@orochi235/weasel';
+import { renderLabel } from '@orochi235/weasel';
+import type { RenderLayer } from '@orochi235/weasel';
 import type { SystemLayerData } from '../layerData';
 
 export const SELECTION_LAYERS: RenderLayer<SystemLayerData>[] = [

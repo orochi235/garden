@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { useGardenStore, blankGarden } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createInsertAdapter } from './insert';
-import { createInsertOp } from '@/canvas-kit';
+import { createInsertOp } from '@orochi235/weasel';
 import { createPlanting, createStructure } from '../../model/types';
 
 describe('createInsertAdapter', () => {

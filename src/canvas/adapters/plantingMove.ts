@@ -1,7 +1,7 @@
 import { findSnapContainer } from '../findSnapContainer';
 import { useGardenStore } from '../../store/gardenStore';
 import type { Planting } from '../../model/types';
-import type { MoveAdapter, SnapTarget } from '@/canvas-kit';
+import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
 
 export interface PlantingPose { x: number; y: number }
 

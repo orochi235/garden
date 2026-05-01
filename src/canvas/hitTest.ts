@@ -1,7 +1,7 @@
 import { getCultivar } from '../model/cultivars';
 import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';
-import type { ViewTransform } from '@/canvas-kit';
+import type { ViewTransform } from '@orochi235/weasel';
 
 export interface HitResult {
   id: string;

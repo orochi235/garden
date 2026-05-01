@@ -1,7 +1,7 @@
 import type { Arrangement } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
-import { worldToScreen } from '@/canvas-kit';
+import { worldToScreen } from '@orochi235/weasel';
 import type { OverlayRenderOptions } from './renderOptions';
 import { renderPlant } from './plantRenderers';
 

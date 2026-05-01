@@ -9,52 +9,52 @@ import { ViewToolbar } from '../components/ViewToolbar';
 import type { Planting, Structure, Zone } from '../model/types';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { screenToWorld } from '@/canvas-kit';
+import { screenToWorld } from '@orochi235/weasel';
 import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
 import { hitTestCell, hitTestDragSpreadAffordance } from './seedStartingHitTest';
 import { getSeedlingWarnings } from '../model/seedlingWarnings';
 import { resolveGroupMoves } from '../model/seedlingMoveResolver';
-import { useAutoCenter } from '@/canvas-kit';
+import { useAutoCenter } from '@orochi235/weasel';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { cycleLayer } from '../actions/layers/cycleLayer';
-import { useClipboard } from '@/canvas-kit/clipboard';
-import { useLayerEffect } from '@/canvas-kit';
-import { useCloneInteraction, cloneByAltDrag } from '@/canvas-kit/clone';
+import { useClipboard } from '@orochi235/weasel/clipboard';
+import { useLayerEffect } from '@orochi235/weasel';
+import { useCloneInteraction, cloneByAltDrag } from '@orochi235/weasel/clone';
 import {
   useMoveInteraction as useKitMoveInteraction,
   useResizeInteraction as useKitResizeInteraction,
   useInsertInteraction as useKitInsertInteraction,
-} from '@/canvas-kit';
-import { snapToGrid, snapToContainer, snapBackOrDelete } from '@/canvas-kit/move';
-import { snapToGrid as resizeSnapToGrid, clampMinSize } from '@/canvas-kit/resize';
-import { snapToGrid as insertSnapToGrid } from '@/canvas-kit/insert';
+} from '@orochi235/weasel';
+import { snapToGrid, snapToContainer, snapBackOrDelete } from '@orochi235/weasel/move';
+import { snapToGrid as resizeSnapToGrid, clampMinSize } from '@orochi235/weasel/resize';
+import { snapToGrid as insertSnapToGrid } from '@orochi235/weasel/insert';
 import { createPlantingMoveAdapter } from './adapters/plantingMove';
 import { createZoneMoveAdapter } from './adapters/zoneMove';
 import { createStructureMoveAdapter } from './adapters/structureMove';
 import { createZoneResizeAdapter } from './adapters/zoneResize';
 import { createStructureResizeAdapter } from './adapters/structureResize';
 import { createInsertAdapter } from './adapters/insert';
-import { usePanInteraction } from '@/canvas-kit';
-import { useAreaSelectInteraction, selectFromMarquee } from '@/canvas-kit/area-select';
+import { usePanInteraction } from '@orochi235/weasel';
+import { useAreaSelectInteraction, selectFromMarquee } from '@orochi235/weasel/area-select';
 import { createAreaSelectAdapter } from './adapters/areaSelect';
 import type { HandlePosition } from './hitTest';
-import type { ResizeAnchor } from '@/canvas-kit';
+import type { ResizeAnchor } from '@orochi235/weasel';
 import { onIconLoad, renderPlant } from './plantRenderers';
 import { getCultivar } from '../model/cultivars';
-import { createDragGhost } from '@/canvas-kit';
+import { createDragGhost } from '@orochi235/weasel';
 import { PlantingLayerRenderer } from './PlantingLayerRenderer';
 import { renderBlueprint } from './renderBlueprint';
-import { renderGrid } from '@/canvas-kit';
+import { renderGrid } from '@orochi235/weasel';
 import { SystemLayerRenderer } from './SystemLayerRenderer';
 import { StructureLayerRenderer } from './StructureLayerRenderer';
 import { TrayLayerRenderer } from './TrayLayerRenderer';
 import { SeedlingLayerRenderer } from './SeedlingLayerRenderer';
-import { useCanvasSize } from '@/canvas-kit';
-import { computeWheelAction } from '@/canvas-kit';
+import { useCanvasSize } from '@orochi235/weasel';
+import { computeWheelAction } from '@orochi235/weasel';
 import { getActivePan, getActiveViewport } from './viewport';
 import { ZoneLayerRenderer } from './ZoneLayerRenderer';
 import { getTrayViewport, getTrayViewportForSize } from './hooks/useTrayViewport';
-import { fitZoom } from '@/canvas-kit';
+import { fitZoom } from '@orochi235/weasel';
 
 function handlePositionToAnchor(h: HandlePosition): ResizeAnchor {
   // 'min' = the edge AT origin x/y; 'max' = the opposite edge; 'free' = axis not dragged.

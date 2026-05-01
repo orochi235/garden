@@ -1,5 +1,5 @@
 import type { ActionDescriptor } from '@/actions/types';
-import { computeFitView } from '@/canvas-kit';
+import { computeFitView } from '@orochi235/weasel';
 import { useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
 

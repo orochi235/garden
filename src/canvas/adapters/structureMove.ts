@@ -1,6 +1,6 @@
 import { useGardenStore } from '../../store/gardenStore';
 import type { Structure } from '../../model/types';
-import type { MoveAdapter } from '@/canvas-kit';
+import type { MoveAdapter } from '@orochi235/weasel';
 
 export interface StructurePose { x: number; y: number; widthFt: number; heightFt: number }
 

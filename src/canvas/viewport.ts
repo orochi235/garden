@@ -1,5 +1,5 @@
 import { useUiStore } from '../store/uiStore';
-import type { ActivePan } from '@/canvas-kit';
+import type { ActivePan } from '@orochi235/weasel';
 
 export interface ViewportControls {
   zoom: number;
