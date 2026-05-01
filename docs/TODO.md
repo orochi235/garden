@@ -62,7 +62,7 @@ Without these, the kit is essentially "axis-aligned-rectangle kit."
 
 ### Tier 1.5 — small additive hooks (do after groups Phase 3-4)
 
-- **`useZoomInteraction`.** *Spec + plan written; ready to implement.* See `docs/superpowers/specs/2026-05-01-canvas-kit-zoom-interaction-design.md` and `docs/superpowers/plans/2026-05-01-canvas-kit-zoom-interaction.md`. Follow-up flagged during planning: `wheelHandler.ts` uses a percentage-based zoom convention (`MIN_ZOOM=10, MAX_ZOOM=200`) incompatible with the multiplier convention used by `ViewTransform.zoom` and the new hook. The hook inlines its own focal-point math; the future cleanup is to normalize `wheelHandler.ts` onto the multiplier convention or deprecate it.
+- **~~`useZoomInteraction`.~~** *Done (2026-05-01)* (`a7b28a8`..`d6730ef`). Wheel/keyboard/double-click handlers with focal-point math, clamp policy, pinch override, editable-target sniff. Wired into `MoveDemo`. Follow-up: `wheelHandler.ts` uses a percentage-based zoom convention (`MIN_ZOOM=10, MAX_ZOOM=200`) incompatible with the multiplier convention used by `ViewTransform.zoom` and the new hook — normalize or deprecate.
 - **~~`useDeleteAction`~~** *Done* (`660800a`).
 - **Selection-driven action hooks.** Same shape as `useDeleteAction` (read selection → emit ops → `applyBatch`, optional key binding). Strong fits, no new infrastructure needed:
   - `useNudgeAction` — arrow keys translate selection by 1 unit; shift = larger step. Reuses `translatePose`.
