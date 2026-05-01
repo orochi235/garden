@@ -127,3 +127,11 @@ Running list of intended application behaviors.
   coordinates. (Pre-Phase-3, plantings were silently dropped from clipboard
   contents.)
 - Repeated pastes cascade by one grid cell down-right per paste.
+
+## Selection rides on history (2026-05-01)
+
+- The undo/redo stack captures both garden state and the current selection at
+  checkpoint time. Undoing a paste/insert/move/delete restores the selection
+  that was active immediately before the change. Marquee select remains
+  transient: it does not push history, so undo after a marquee returns to
+  whatever selection existed before the marquee started.

@@ -25,7 +25,7 @@ describe('history', () => {
     const current = makeGarden('v2');
     const result = undo(current);
     expect(result).not.toBeNull();
-    expect(result!.name).toBe('v1');
+    expect(result!.garden.name).toBe('v1');
   });
 
   it('can redo after undo', () => {
@@ -38,7 +38,7 @@ describe('history', () => {
     expect(canRedo()).toBe(true);
     const result = redo(g1);
     expect(result).not.toBeNull();
-    expect(result!.name).toBe('v2');
+    expect(result!.garden.name).toBe('v2');
   });
 
   it('clears future on new push', () => {
@@ -70,12 +70,32 @@ describe('history', () => {
 
     const current = makeGarden('v4');
     const r1 = undo(current);
-    expect(r1!.name).toBe('v3');
-    const r2 = undo(r1!);
-    expect(r2!.name).toBe('v2');
-    const r3 = undo(r2!);
-    expect(r3!.name).toBe('v1');
-    const r4 = undo(r3!);
+    expect(r1!.garden.name).toBe('v3');
+    const r2 = undo(r1!.garden);
+    expect(r2!.garden.name).toBe('v2');
+    const r3 = undo(r2!.garden);
+    expect(r3!.garden.name).toBe('v1');
+    const r4 = undo(r3!.garden);
     expect(r4).toBeNull();
+  });
+
+  it('captures selectedIds at push time and restores them on undo', () => {
+    pushHistory(makeGarden('v1'), ['a', 'b']);
+    const result = undo(makeGarden('v2'), ['c']);
+    expect(result!.selectedIds).toEqual(['a', 'b']);
+  });
+
+  it('redo restores the selection that was current at undo time', () => {
+    pushHistory(makeGarden('v1'), ['a']);
+    undo(makeGarden('v2'), ['c', 'd']);
+    const result = redo(makeGarden('v1'), ['a']);
+    expect(result!.garden.name).toBe('v2');
+    expect(result!.selectedIds).toEqual(['c', 'd']);
+  });
+
+  it('defaults selectedIds to [] when omitted (back-compat)', () => {
+    pushHistory(makeGarden('v1'));
+    const result = undo(makeGarden('v2'));
+    expect(result!.selectedIds).toEqual([]);
   });
 });

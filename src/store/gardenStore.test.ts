@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { emptySeedStartingState } from '../model/seedStarting';
 import { blankGarden, useGardenStore } from './gardenStore';
+import { useUiStore } from './uiStore';
 
 describe('gardenStore', () => {
   beforeEach(() => {
@@ -386,6 +387,37 @@ describe('seed-starting actions', () => {
     const t = useGardenStore.getState().garden.seedStarting.trays[0];
     expect(t.slots[0].state).toBe('empty');
     expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+  });
+});
+
+describe('selection rides on history', () => {
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
+    useUiStore.getState().reset();
+  });
+
+  it('undo restores the selection that was active before the change', () => {
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    const z1 = useGardenStore.getState().garden.zones[0].id;
+    useUiStore.getState().setSelection([z1]);
+    // Add a second zone with z1 selected at checkpoint time.
+    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
+    useUiStore.getState().setSelection([]); // simulate a click clearing selection
+    useGardenStore.getState().undo();
+    // Undo restores selection to whatever it was when the second add was checkpointed.
+    expect(useUiStore.getState().selectedIds).toEqual([z1]);
+  });
+
+  it('redo restores the selection that was active just before undo', () => {
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    const z1 = useGardenStore.getState().garden.zones[0].id;
+    useUiStore.getState().setSelection([z1]);
+    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
+    useUiStore.getState().setSelection(['post']);
+    useGardenStore.getState().undo();
+    useGardenStore.getState().redo();
+    expect(useUiStore.getState().selectedIds).toEqual(['post']);
   });
 });
 

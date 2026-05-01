@@ -104,7 +104,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
   /** Push current state to undo stack, then patch. */
   function commitPatch(updates: Partial<Garden>) {
-    pushHistory(get().garden);
+    pushHistory(get().garden, useUiStore.getState().selectedIds);
     patch(updates);
   }
 
@@ -527,17 +527,23 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     // --- History ---
 
     checkpoint: () => {
-      pushHistory(get().garden);
+      pushHistory(get().garden, useUiStore.getState().selectedIds);
     },
 
     undo: () => {
-      const prev = undo(get().garden);
-      if (prev) set({ garden: prev });
+      const prev = undo(get().garden, useUiStore.getState().selectedIds);
+      if (prev) {
+        set({ garden: prev.garden });
+        useUiStore.getState().setSelection(prev.selectedIds);
+      }
     },
 
     redo: () => {
-      const next = redo(get().garden);
-      if (next) set({ garden: next });
+      const next = redo(get().garden, useUiStore.getState().selectedIds);
+      if (next) {
+        set({ garden: next.garden });
+        useUiStore.getState().setSelection(next.selectedIds);
+      }
     },
 
     canUndo,
