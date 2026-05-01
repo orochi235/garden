@@ -34,6 +34,8 @@ export * from './wheelHandler';
 export * from './renderLayer';
 export * from './LayerRenderer';
 export * from './renderGrid';
+export { createGridLayer } from './gridLayer';
+export type { GridLayerOpts } from './gridLayer';
 export {
   composeSelectionPose,
   createSelectionOverlayLayer,

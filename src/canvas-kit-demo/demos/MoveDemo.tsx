@@ -3,9 +3,11 @@ import {
   useMoveInteraction,
   snap,
   gridSnapStrategy,
+  createGridLayer,
+  runLayers,
 } from '@/canvas-kit';
 import { clientToCanvas } from '../canvasCoords';
-import type { MoveAdapter } from '@/canvas-kit';
+import type { MoveAdapter, RenderLayer } from '@/canvas-kit';
 import type { Op } from '@/canvas-kit';
 
 interface Rect { id: string; x: number; y: number; width: number; height: number; color: string }
@@ -84,30 +86,42 @@ export function MoveDemo() {
     if (!c) return;
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, W, H);
-    // grid
-    ctx.strokeStyle = '#2a2018';
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= W; x += CELL) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for (let y = 0; y <= H; y += CELL) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-    // rects (hide dragged ones; overlay draws them)
-    const hide = new Set(overlay?.hideIds ?? []);
-    for (const r of rects) {
-      if (hide.has(r.id)) continue;
-      ctx.fillStyle = r.color;
-      ctx.fillRect(r.x, r.y, r.width, r.height);
-    }
-    // overlay (dragged with snap applied)
-    if (overlay) {
-      for (const id of overlay.draggedIds) {
-        const p = overlay.poses.get(id);
-        const src = rects.find((r) => r.id === id);
-        if (!p || !src) continue;
-        ctx.fillStyle = src.color;
-        ctx.globalAlpha = 0.85;
-        ctx.fillRect(p.x, p.y, p.width, p.height);
-        ctx.globalAlpha = 1;
-      }
-    }
+
+    const gridLayer = createGridLayer({
+      cell: CELL,
+      bounds: () => ({ x: 0, y: 0, width: W, height: H }),
+      accentEvery: 5,
+    });
+
+    const baseLayer: RenderLayer<unknown> = {
+      id: 'base', label: 'Base',
+      draw: (cx) => {
+        const hide = new Set(overlay?.hideIds ?? []);
+        for (const r of rects) {
+          if (hide.has(r.id)) continue;
+          cx.fillStyle = r.color;
+          cx.fillRect(r.x, r.y, r.width, r.height);
+        }
+      },
+    };
+
+    const ghostLayer: RenderLayer<unknown> = {
+      id: 'ghost', label: 'Ghost',
+      draw: (cx) => {
+        if (!overlay) return;
+        cx.globalAlpha = 0.85;
+        for (const id of overlay.draggedIds) {
+          const p = overlay.poses.get(id);
+          const src = rects.find((r) => r.id === id);
+          if (!p || !src) continue;
+          cx.fillStyle = src.color;
+          cx.fillRect(p.x, p.y, p.width, p.height);
+        }
+        cx.globalAlpha = 1;
+      },
+    };
+
+    runLayers(ctx, [gridLayer, baseLayer, ghostLayer], undefined, {});
   }, [rects, overlay]);
 
   return (
@@ -147,6 +161,13 @@ const move = useMoveInteraction<Rect, Pose>(adapter, {
 // onPointerMove: move.move({ worldX, worldY, clientX, clientY, modifiers })
 // onPointerUp:   move.end()
 //
-// Render: overlay = move.overlay carries the live (snapped) poses for
-// dragged ids. Hide originals (overlay.hideIds) and draw poses on top.
+// Render: compose layers with runLayers. createGridLayer draws the
+// background grid; the base layer draws committed rects (hiding overlay.hideIds);
+// a ghost layer draws the live snapped poses on top.
+const gridLayer = createGridLayer({
+  cell: CELL,
+  bounds: () => ({ x: 0, y: 0, width: W, height: H }),
+  accentEvery: 5,
+});
+runLayers(ctx, [gridLayer, baseLayer, ghostLayer], undefined, {});
 `;
