@@ -4,3 +4,7 @@ export { createReparentOp } from './reparent';
 export { createInsertOp, type InsertOp } from './create';
 export { createDeleteOp } from './delete';
 export { createSetSelectionOp } from './selection';
+export { createCreateGroupOp } from './createGroup';
+export { createDissolveGroupOp } from './dissolveGroup';
+export { createAddToGroupOp } from './addToGroup';
+export { createRemoveFromGroupOp } from './removeFromGroup';

@@ -44,6 +44,33 @@ Transient gestures (area-select, marquee) commit via `applyOps(ops)` instead
 of `applyBatch(ops, label)` — they want the selection change but no history
 entry. See "defaultTransient" below.
 
+## Groups (virtual)
+
+A **virtual group** is an organizational lasso around N peer objects,
+distinct from the structural parent/child hierarchy (`getParent` /
+`setParent`). Members do not gain a parent — they remain peers — and the
+group itself has no transform or pose. Bounds, when needed, are derived
+from members on the fly.
+
+Properties:
+
+- **First-class ids.** A group has an id and flows through ops and
+  selection like any other object.
+- **Multi-membership.** An object can belong to several groups at once.
+- **Nestable.** A group's id can appear as a member of another group.
+- **Selection resolves outward.** Clicking a grouped object resolves to
+  the outermost group it belongs to. Use `resolveToOutermostGroup(id,
+  adapter)`. To translate a selection back to leaves for a gesture, use
+  `expandToLeaves(ids, adapter)`. Both are acyclic-safe via a visited set.
+
+Ops: `createCreateGroupOp`, `createDissolveGroupOp`, `createAddToGroupOp`,
+`createRemoveFromGroupOp`. They cast the adapter to `GroupAdapter`, an
+opt-in extension consumers implement when they want groups.
+
+Phase 1 establishes only this foundation — the move/resize/clone gestures
+and rendering layers are unchanged. Wiring selection, gesture expansion,
+and group-aware overlays comes in later phases.
+
 ## Gesture lifecycle
 
 Every interaction hook follows the same shape:

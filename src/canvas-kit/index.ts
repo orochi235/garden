@@ -56,6 +56,8 @@ export * from './renderLabel';
 export * from './markdownText';
 export * from './patterns';
 export * from './ops';
+export type { Group, GroupAdapter } from './groups/types';
+export { resolveToOutermostGroup, expandToLeaves } from './groups/resolve';
 export * from './history';
 export * from './adapters/types';
 export * from './interactions/types';
