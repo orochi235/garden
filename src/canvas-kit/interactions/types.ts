@@ -21,14 +21,14 @@ export interface PointerState {
  * onMove. `scratch` is per-gesture key/value storage that resets at the
  * next gesture start.
  */
-export interface GestureContext<TPose> {
+export interface GestureContext<TPose, TObject extends { id: string } = { id: string }> {
   draggedIds: string[];
   origin: Map<string, TPose>;
   current: Map<string, TPose>;
   snap: SnapTarget<TPose> | null;
   modifiers: ModifierState;
   pointer: PointerState;
-  adapter: MoveAdapter<{ id: string; }, TPose>;
+  adapter: MoveAdapter<TObject, TPose>;
   scratch: Record<string, unknown>;
 }
 

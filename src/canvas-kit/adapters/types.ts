@@ -42,7 +42,8 @@ export interface SceneAdapter<TObject extends { id: string }, TPose> {
  * Narrow adapter for `useMoveInteraction`. Includes optional snap-target
  * lookup; apps without container-snapping leave it out.
  */
-export interface MoveAdapter<_TObject extends { id: string }, TPose> {
+export interface MoveAdapter<TObject extends { id: string }, TPose> {
+  getObject(id: string): TObject | undefined;
   getPose(id: string): TPose;
   getParent(id: string): string | null;
   setPose(id: string, pose: TPose): void;

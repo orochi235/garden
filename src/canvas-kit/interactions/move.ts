@@ -55,7 +55,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
     phase: 'idle' | 'pending' | 'active';
     startWorld: { x: number; y: number };
     startClient: { x: number; y: number };
-    ctx: GestureContext<TPose> | null;
+    ctx: GestureContext<TPose, TObject> | null;
   }>({
     phase: 'idle',
     startWorld: { x: 0, y: 0 },
@@ -85,7 +85,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
         snap: null,
         modifiers: { alt: false, shift: false, meta: false, ctrl: false },
         pointer: { worldX: args.worldX, worldY: args.worldY, clientX: args.clientX, clientY: args.clientY },
-        adapter: adapter as unknown as GestureContext<TPose>['adapter'],
+        adapter,
         scratch: {},
       },
     };
