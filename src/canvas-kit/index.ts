@@ -58,6 +58,8 @@ export * from './patterns';
 export * from './ops';
 export type { Group, GroupAdapter } from './groups/types';
 export { resolveToOutermostGroup, expandToLeaves } from './groups/resolve';
+export { unionBounds } from './groups/unionBounds';
+export type { RectPose } from './groups/unionBounds';
 export * from './history';
 export * from './adapters/types';
 export * from './interactions/types';
