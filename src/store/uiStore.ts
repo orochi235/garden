@@ -26,6 +26,18 @@ export interface DragOverlay {
   snapped: boolean;
 }
 
+export interface ResizeOverlayUi {
+  id: string;
+  layer: 'structures' | 'zones';
+  currentPose: { x: number; y: number; width: number; height: number };
+  targetPose: { x: number; y: number; width: number; height: number };
+}
+
+export interface InsertOverlayUi {
+  start: { x: number; y: number };
+  current: { x: number; y: number };
+}
+
 type LayerRecord<T> = Record<LayerId, T>;
 
 export interface PlottingTool {
@@ -57,6 +69,8 @@ interface UiStore {
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
+  resizeOverlay: ResizeOverlayUi | null;
+  insertOverlay: InsertOverlayUi | null;
   appMode: AppMode;
   currentTrayId: string | null;
   /** Per-mode view state for the seed-starting canvas (pixels per inch). */
@@ -99,6 +113,8 @@ interface UiStore {
   resetAlmanacFilters: () => void;
   setDragOverlay: (overlay: DragOverlay) => void;
   clearDragOverlay: () => void;
+  setResizeOverlay: (overlay: ResizeOverlayUi | null) => void;
+  setInsertOverlay: (overlay: InsertOverlayUi | null) => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
   setRenderLayerVisible: (layerId: string, visible: boolean) => void;
   setRenderLayerOrder: (renderer: string, order: string[]) => void;
@@ -167,6 +183,8 @@ function defaultState() {
     layerFlashCounter: 0,
     viewMode: 'select' as ViewMode,
     dragOverlay: null as DragOverlay | null,
+    resizeOverlay: null as ResizeOverlayUi | null,
+    insertOverlay: null as InsertOverlayUi | null,
     appMode: 'garden' as AppMode,
     currentTrayId: null as string | null,
     seedStartingZoom: 30,
@@ -191,6 +209,8 @@ export const useUiStore = create<UiStore>((set) => ({
   ...defaultState(),
   setDragOverlay: (overlay) => set({ dragOverlay: overlay }),
   clearDragOverlay: () => set({ dragOverlay: null }),
+  setResizeOverlay: (overlay) => set({ resizeOverlay: overlay }),
+  setInsertOverlay: (overlay) => set({ insertOverlay: overlay }),
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
   setRenderLayerVisible: (layerId, visible) =>
     set((state) => ({
