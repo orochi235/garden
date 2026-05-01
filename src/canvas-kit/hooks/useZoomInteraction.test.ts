@@ -193,3 +193,105 @@ describe('useZoomInteraction — wheel', () => {
     expect(e.preventDefault).toHaveBeenCalled();
   });
 });
+
+function makeKeyEvent(over: {
+  key: string; metaKey?: boolean; ctrlKey?: boolean;
+  target?: { tagName?: string; isContentEditable?: boolean } | null;
+}) {
+  const preventDefault = vi.fn();
+  return {
+    key: over.key,
+    metaKey: over.metaKey ?? false,
+    ctrlKey: over.ctrlKey ?? false,
+    target: over.target ?? { tagName: 'CANVAS', isContentEditable: false },
+    preventDefault,
+  } as unknown as KeyboardEvent;
+}
+
+describe('useZoomInteraction — keyboard', () => {
+  it('+ key zooms in by keyStep', () => {
+    const { result, setZoom } = setup({ zoom: 2, keyStep: 1.25 });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '+' })));
+    expect(setZoom).toHaveBeenCalledWith(2.5);
+  });
+
+  it('= key zooms in by keyStep (Shift not required)', () => {
+    const { result, setZoom } = setup({ zoom: 2, keyStep: 1.25 });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '=' })));
+    expect(setZoom).toHaveBeenCalledWith(2.5);
+  });
+
+  it('- key zooms out by keyStep', () => {
+    const { result, setZoom } = setup({ zoom: 2, keyStep: 1.25 });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '-' })));
+    expect(setZoom).toHaveBeenCalledWith(2 / 1.25);
+  });
+
+  it('_ key zooms out by keyStep', () => {
+    const { result, setZoom } = setup({ zoom: 2, keyStep: 1.25 });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '_' })));
+    expect(setZoom).toHaveBeenCalledWith(2 / 1.25);
+  });
+
+  it('Cmd-0 resets zoom and pan', () => {
+    const { result, setZoom, setPan } = setup({ zoom: 5, pan: { x: 100, y: 100 } });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '0', metaKey: true })));
+    expect(setZoom).toHaveBeenCalledWith(1);
+    expect(setPan).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+
+  it('Ctrl-0 resets zoom and pan', () => {
+    const { result, setZoom, setPan } = setup({ zoom: 5, pan: { x: 100, y: 100 } });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '0', ctrlKey: true })));
+    expect(setZoom).toHaveBeenCalledWith(1);
+    expect(setPan).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+
+  it('plain 0 (no modifier) does not reset', () => {
+    const { result, setZoom } = setup({ zoom: 5 });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '0' })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('skips when target is INPUT', () => {
+    const { result, setZoom } = setup({ zoom: 1 });
+    act(() => result.current.onKeyDown(makeKeyEvent({
+      key: '+', target: { tagName: 'INPUT', isContentEditable: false },
+    })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('skips when target is TEXTAREA', () => {
+    const { result, setZoom } = setup({ zoom: 1 });
+    act(() => result.current.onKeyDown(makeKeyEvent({
+      key: '+', target: { tagName: 'TEXTAREA', isContentEditable: false },
+    })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('skips when target is contenteditable', () => {
+    const { result, setZoom } = setup({ zoom: 1 });
+    act(() => result.current.onKeyDown(makeKeyEvent({
+      key: '+', target: { tagName: 'DIV', isContentEditable: true },
+    })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('sources.keys=false disables keyboard', () => {
+    const { result, setZoom } = setup({ zoom: 1, sources: { keys: false } });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '+' })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('focal is viewport center', () => {
+    const { result, setZoom, setPan } = setup({
+      zoom: 1, pan: { x: 0, y: 0 }, viewport: { width: 400, height: 300 }, keyStep: 2,
+    });
+    act(() => result.current.onKeyDown(makeKeyEvent({ key: '+' })));
+    const newZoom = setZoom.mock.calls[0][0] as number;
+    const newPan = setPan.mock.calls[0][0] as { x: number; y: number };
+    // Focal (200, 150). World point under focal before/after must match.
+    expect((200 - newPan.x) / newZoom).toBeCloseTo(200, 5);
+    expect((150 - newPan.y) / newZoom).toBeCloseTo(150, 5);
+  });
+});

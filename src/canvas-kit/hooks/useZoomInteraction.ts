@@ -31,6 +31,14 @@ export interface UseZoomInteractionReturn {
 const clamp = (z: number, min: number, max: number) =>
   Math.min(max, Math.max(min, z));
 
+function isEditableTarget(t: EventTarget | null): boolean {
+  if (!t) return false;
+  const el = t as Partial<{ tagName: string; isContentEditable: boolean }>;
+  if (el.isContentEditable) return true;
+  const tag = (el.tagName ?? '').toUpperCase();
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
 export function useZoomInteraction(
   opts: UseZoomInteractionOptions,
 ): UseZoomInteractionReturn {
@@ -118,12 +126,30 @@ export function useZoomInteraction(
     [applyZoom, opts, sources, wheelStep],
   );
 
-  // Stubbed in Task 1; Tasks 3-4 implement.
-  const onKeyDown = useCallback((_e: KeyboardEvent | React.KeyboardEvent) => {}, []);
-  const onDoubleClick = useCallback((_e: MouseEvent | React.MouseEvent) => {}, []);
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent | React.KeyboardEvent) => {
+      if (!sources.keys) return;
+      const evt = e as KeyboardEvent;
+      if (isEditableTarget(evt.target)) return;
 
-  // suppress "declared but unread" until we wire them
-  void keyStep;
+      if (evt.key === '0' && (evt.metaKey || evt.ctrlKey)) {
+        opts.setZoom(1);
+        opts.setPan({ x: 0, y: 0 });
+        return;
+      }
+
+      let factor = 0;
+      if (evt.key === '+' || evt.key === '=') factor = keyStep;
+      else if (evt.key === '-' || evt.key === '_') factor = 1 / keyStep;
+      if (factor === 0) return;
+
+      applyZoom(opts.zoom * factor, viewportCenter());
+    },
+    [applyZoom, opts, sources, keyStep, viewportCenter],
+  );
+
+  // Stubbed in Task 1; Task 4 implements.
+  const onDoubleClick = useCallback((_e: MouseEvent | React.MouseEvent) => {}, []);
 
   return { onWheel, onKeyDown, onDoubleClick, zoomTo, zoomBy, reset };
 }
