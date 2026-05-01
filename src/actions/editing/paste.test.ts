@@ -10,4 +10,8 @@ describe('pasteAction', () => {
     pasteAction.execute(ctx);
     expect(ctx.clipboard.paste).toHaveBeenCalled();
   });
+
+  it('is transient (clipboard hook owns the history checkpoint)', () => {
+    expect(pasteAction.transient).toBe(true);
+  });
 });

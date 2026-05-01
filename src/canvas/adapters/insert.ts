@@ -91,14 +91,11 @@ export function createInsertAdapter(): GardenInsertAdapter {
           );
         } else {
           const p = item.data as Planting;
-          // Plantings are parent-relative; the offset doesn't apply to their
-          // local x/y. They keep the same parentId — selection-paste-of-planting
-          // creates a sibling under the same parent.
           out.push(
             createPlanting({
               parentId: p.parentId,
-              x: p.x,
-              y: p.y,
+              x: p.x + offset.dx,
+              y: p.y + offset.dy,
               cultivarId: p.cultivarId,
             }),
           );

@@ -115,13 +115,15 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     const a = createInsertAdapter();
     // Snapshot the planting only (parent stays in garden; clone keeps same parentId).
     const snap = a.snapshotSelection([planting.id]);
-    const out = a.commitPaste(snap, { dx: 0, dy: 0 });
+    const out = a.commitPaste(snap, { dx: 0.5, dy: 0.5 });
     expect(out).toHaveLength(1);
     const made = out[0] as { id: string; parentId: string; x: number; y: number };
     expect(made.id).not.toBe(planting.id);
     expect(made.parentId).toBe(sId);
-    expect(made.x).toBe(1);
-    expect(made.y).toBe(1);
+    // Plantings are parent-relative; the offset still applies to local coords
+    // so the paste is visible — otherwise it overlaps the original exactly.
+    expect(made.x).toBe(1.5);
+    expect(made.y).toBe(1.5);
   });
 
   it('getPasteOffset defaults to one grid cell down-right', () => {
