@@ -4,6 +4,7 @@ import {
   useResizeInteraction,
   useInsertInteraction,
   useAreaSelectInteraction,
+  useDeleteAction,
   composeSelectionPose,
   createSelectionOverlayLayer,
   runLayers,
@@ -15,6 +16,7 @@ import type {
   ResizeAdapter,
   InsertAdapter,
   AreaSelectAdapter,
+  DeleteAdapter,
   ResizeAnchor,
   Op,
   ClipboardSnapshot,
@@ -32,7 +34,7 @@ const INITIAL: Rect[] = [
 ];
 
 type Mode = 'select' | 'insert';
-type Adapter = MoveAdapter<Rect, Pose> & ResizeAdapter<Rect, Pose> & InsertAdapter<Rect> & AreaSelectAdapter;
+type Adapter = MoveAdapter<Rect, Pose> & ResizeAdapter<Rect, Pose> & InsertAdapter<Rect> & AreaSelectAdapter & DeleteAdapter;
 
 export function ComposeDemo() {
   const [rects, setRects] = useState<Rect[]>(INITIAL);
@@ -42,7 +44,7 @@ export function ComposeDemo() {
   const selRef = useRef(selection); selRef.current = selection;
   const nextId = useRef(1);
 
-  const adapter: Adapter = {
+  const adapter: Adapter & { removeObject: (id: string) => void } = {
     getObject: (id) => rectsRef.current.find((r) => r.id === id),
     getPose: (id) => {
       const r = rectsRef.current.find((x) => x.id === id)!;
@@ -54,6 +56,7 @@ export function ComposeDemo() {
     getSelection: () => selRef.current,
     setSelection: (ids) => setSelection(ids),
     insertObject: (obj) => setRects((rs) => [...rs, obj]),
+    removeObject: (id: string) => setRects((rs) => rs.filter((r) => r.id !== id)),
     commitInsert: (b) => ({
       id: `r${nextId.current++}`,
       x: b.x, y: b.y, width: b.width, height: b.height,
@@ -74,6 +77,17 @@ export function ComposeDemo() {
   const resize = useResizeInteraction<Rect, Pose>(adapter, {});
   const insert = useInsertInteraction<Rect, Pose>(adapter, { minBounds: { width: 4, height: 4 } });
   const area = useAreaSelectInteraction(adapter, { behaviors: [selectFromMarquee()] });
+  useDeleteAction(
+    {
+      getSelection: () => selRef.current,
+      getObject: (id) => rectsRef.current.find((r) => r.id === id),
+      setSelection,
+      applyBatch: (ops) => {
+        for (const op of ops) op.apply(adapter);
+      },
+    },
+    { bindKeyboard: true },
+  );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gesture = useRef<'move' | 'resize' | 'insert' | 'area' | null>(null);
@@ -262,6 +276,8 @@ const move   = useMoveInteraction(adapter, { translatePose });
 const resize = useResizeInteraction(adapter, {});
 const insert = useInsertInteraction(adapter, { minBounds: { width: 4, height: 4 } });
 const area   = useAreaSelectInteraction(adapter, { behaviors: [selectFromMarquee()] });
+// Delete/Backspace removes the current selection (skipped while typing in inputs).
+useDeleteAction(adapter, { bindKeyboard: true });
 
 // Pointer-down dispatcher picks which hook gets the gesture:
 function onPointerDown(e) {

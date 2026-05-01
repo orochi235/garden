@@ -141,6 +141,33 @@ default `{0,0}`) → `commitPaste` → wrap each new object in `createInsertOp`,
 append `createSetSelectionOp(from → newIds)` → `applyBatch`. After paste, the
 hook re-snapshots the new ids so successive pastes cascade.
 
+## `useDeleteAction`
+
+Imperative selection delete with optional Delete/Backspace keybinding. See
+`src/canvas-kit/interactions/delete/delete.ts`.
+
+**Adapter:** `DeleteAdapter` — `getSelection()`, `applyBatch(ops, label)`,
+optional `getObject(id)` (to capture the deleted object for undo) and
+`setSelection(ids)`.
+
+**Options:**
+- `bindKeyboard?` — auto-bind Delete and Backspace on `document`. Default false.
+- `label?` — history label, default `'Delete'`.
+- `filter?(ids)` — prune the selection before deleting (e.g. protect locked objects).
+
+**Returns:** `deleteSelection(): string[]` — returns the deleted ids, or `[]`.
+Identity is stable across renders.
+
+```ts
+const { deleteSelection } = useDeleteAction(adapter, { bindKeyboard: true });
+```
+
+When `bindKeyboard: true`, the listener ignores keystrokes whose target is an
+`<input>`, `<textarea>`, or `[contenteditable]` element, and ignores any
+modifier-held variant (cmd/ctrl/alt/meta) so browser shortcuts like
+cmd+Backspace ("go back") still work. The hook emits one `createDeleteOp`
+per id plus a `createSetSelectionOp([])` in a single `applyBatch`.
+
 ## `usePanInteraction`
 
 Drag-to-pan a viewport. Lower-level than the gesture hooks above — works on

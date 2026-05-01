@@ -86,6 +86,12 @@ export type {
 } from './interactions/area-select';
 export { useClipboard } from './interactions/clipboard';
 export type { UseClipboardOptions, UseClipboardReturn } from './interactions/clipboard';
+export { useDeleteAction } from './interactions/delete';
+export type {
+  DeleteAdapter,
+  UseDeleteActionOptions,
+  UseDeleteActionReturn,
+} from './interactions/delete';
 export { useCloneInteraction, cloneByAltDrag } from './interactions/clone';
 export type { UseCloneInteractionOptions, UseCloneInteractionReturn } from './interactions/clone';
 export type { ClonePose, CloneLayer, CloneBehavior } from './interactions/types';
