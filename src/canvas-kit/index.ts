@@ -66,5 +66,8 @@ export type {
 } from './interactions/area-select';
 export { useClipboard } from './interactions/clipboard';
 export type { UseClipboardOptions, UseClipboardReturn } from './interactions/clipboard';
+export { useCloneInteraction, cloneByAltDrag } from './interactions/clone';
+export type { UseCloneInteractionOptions, UseCloneInteractionReturn } from './interactions/clone';
+export type { ClonePose, CloneLayer, CloneBehavior } from './interactions/types';
 // snapToGrid / snapToContainer / snapBackOrDelete are NOT re-exported at top level —
 // import from '@/canvas-kit/move' to disambiguate from resize/insert siblings.
