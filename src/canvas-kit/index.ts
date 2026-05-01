@@ -37,6 +37,14 @@ export * from './renderGrid';
 export { createGridLayer } from './gridLayer';
 export type { GridLayerOpts } from './gridLayer';
 export {
+  resolveUnit,
+  formatUnit,
+  IMPERIAL_INCHES,
+  METRIC_MM,
+  PIXELS,
+} from './units';
+export type { Unit, UnitRegistry, UnitValue } from './units';
+export {
   composeSelectionPose,
   createSelectionOverlayLayer,
 } from './selectionOverlay';

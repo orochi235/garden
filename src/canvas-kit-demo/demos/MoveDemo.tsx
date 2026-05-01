@@ -7,13 +7,17 @@ import {
   runLayers,
 } from '@/canvas-kit';
 import { clientToCanvas } from '../canvasCoords';
-import type { MoveAdapter, RenderLayer } from '@/canvas-kit';
+import type { MoveAdapter, RenderLayer, UnitRegistry } from '@/canvas-kit';
 import type { Op } from '@/canvas-kit';
 
 interface Rect { id: string; x: number; y: number; width: number; height: number; color: string }
 interface Pose { x: number; y: number; width: number; height: number }
 
-const W = 400, H = 300, CELL = 20;
+const W = 400, H = 300;
+// Demo registry: base is the pixel, but the demo speaks in "tiles" worth 20px.
+// Passing { value: 1, unit: 'tile' } at API boundaries resolves to 20 internally.
+const REGISTRY: UnitRegistry = { base: 'px', units: { px: 1, tile: 20 } };
+const CELL = { value: 1, unit: 'tile' } as const;
 
 const INITIAL: Rect[] = [
   { id: 'a', x: 40,  y: 40,  width: 60, height: 40, color: '#7fb069' },
@@ -44,7 +48,7 @@ export function MoveDemo() {
 
   const move = useMoveInteraction<Rect, Pose>(adapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
-    behaviors: [snap(gridSnapStrategy<Pose>(CELL))],
+    behaviors: [snap(gridSnapStrategy<Pose>(CELL, REGISTRY))],
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -89,6 +93,7 @@ export function MoveDemo() {
 
     const gridLayer = createGridLayer({
       cell: CELL,
+      registry: REGISTRY,
       bounds: () => ({ x: 0, y: 0, width: W, height: H }),
       accentEvery: 5,
     });
@@ -151,9 +156,14 @@ export const MOVE_DEMO_SOURCE = `const adapter: MoveAdapter<Rect, Pose> = {
   applyBatch: (ops) => { for (const op of ops) op.apply(adapter); },
 };
 
+// Custom unit registry: base is 'px' but APIs can speak in 'tile' (= 20px).
+// Bare numbers are still accepted everywhere — they're treated as base units.
+const REGISTRY: UnitRegistry = { base: 'px', units: { px: 1, tile: 20 } };
+const CELL = { value: 1, unit: 'tile' } as const;
+
 const move = useMoveInteraction<Rect, Pose>(adapter, {
   translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
-  behaviors: [snap(gridSnapStrategy<Pose>(CELL))],
+  behaviors: [snap(gridSnapStrategy<Pose>(CELL, REGISTRY))],
 });
 
 // Pointer wiring (abridged):
@@ -166,6 +176,7 @@ const move = useMoveInteraction<Rect, Pose>(adapter, {
 // a ghost layer draws the live snapped poses on top.
 const gridLayer = createGridLayer({
   cell: CELL,
+  registry: REGISTRY,
   bounds: () => ({ x: 0, y: 0, width: W, height: H }),
   accentEvery: 5,
 });

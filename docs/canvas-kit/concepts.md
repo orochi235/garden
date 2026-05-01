@@ -124,3 +124,34 @@ and stored on `ctx.modifiers`. `PointerState = { worldX, worldY, clientX,
 clientY }` captures the latest pointer position in both world and client
 coordinates. Behaviors read both off `ctx` to react to keys (e.g.
 `bypassKey: 'shift'` for snap, `mods.alt` for clone activation).
+
+## Units
+
+Coordinates inside canvas-kit are bare numbers in a single base unit chosen
+by the consumer app — the kit itself never sees a unit string. To make API
+call sites self-documenting, public APIs accept `UnitValue`: either a bare
+number (interpreted as base units) or a tagged `{ value, unit }` pair that's
+resolved against a `UnitRegistry` at the API boundary.
+
+```ts
+import { createGridLayer, IMPERIAL_INCHES } from '@/canvas-kit';
+
+// base = 'in'. cell is 1 foot = 12 inches in the kit's internal numbers.
+createGridLayer({
+  cell: { value: 1, unit: 'ft' },
+  registry: IMPERIAL_INCHES,
+  bounds,
+});
+
+// Equivalent — bare numbers are always assumed to be base units.
+createGridLayer({ cell: 12, bounds });
+```
+
+A `UnitRegistry` is just `{ base, units }` where `units` maps each unit name
+to its linear factor in base units (`{ in: 1, ft: 12, ... }`). Pre-built
+registries: `IMPERIAL_INCHES`, `METRIC_MM`, `PIXELS`. `formatUnit(36, 'ft',
+IMPERIAL_INCHES)` returns `'3ft'` for display.
+
+A registry is only needed at sites that pass tagged values. Bare numbers
+need no registry. Linear factors only — no per-axis units, no mixed-unit
+arithmetic.

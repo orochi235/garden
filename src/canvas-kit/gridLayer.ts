@@ -11,10 +11,16 @@
  */
 
 import type { RenderLayer } from './renderLayer';
+import { resolveUnit, type UnitRegistry, type UnitValue } from './units';
 
 export interface GridLayerOpts {
-  /** Base cell size in world units. */
-  cell: number;
+  /**
+   * Base cell size, in world (base) units. Accepts a bare number or a tagged
+   * `{ value, unit }`. Tagged values require `registry` to be supplied.
+   */
+  cell: UnitValue;
+  /** Optional unit registry for resolving tagged `cell` values. */
+  registry?: UnitRegistry;
   /** Bounds of the area to cover, in world units. */
   bounds: () => { x: number; y: number; width: number; height: number };
   /** Lines every N cells get the accent style. 0/undef = no accent. */
@@ -68,7 +74,8 @@ export function createGridLayer(opts: GridLayerOpts): RenderLayer<unknown> {
       const b = opts.bounds();
       if (b.width <= 0 || b.height <= 0) return;
 
-      const { cell, accentEvery, subdivisions } = opts;
+      const { accentEvery, subdivisions } = opts;
+      const cell = resolveUnit(opts.cell, opts.registry);
       const x0 = b.x;
       const y0 = b.y;
       const x1 = b.x + b.width;
