@@ -1,14 +1,19 @@
 import { useGardenStore } from '../../store/gardenStore';
 import type { Zone } from '../../model/types';
-import type { MoveAdapter, Op } from '@/canvas-kit';
+import type { MoveAdapter } from '@/canvas-kit';
 
 export interface ZonePose { x: number; y: number; widthFt: number; heightFt: number }
 
-export function createZoneMoveAdapter(): MoveAdapter<Zone, ZonePose> {
+export type ZoneMoveAdapter = MoveAdapter<Zone, ZonePose> & {
+  insertObject(z: Zone): void;
+  removeObject(id: string): void;
+};
+
+export function createZoneMoveAdapter(): ZoneMoveAdapter {
   function getZone(id: string): Zone | undefined {
     return useGardenStore.getState().garden.zones.find((z) => z.id === id);
   }
-  return {
+  const adapter: ZoneMoveAdapter = {
     getObject(id) {
       return getZone(id);
     },
@@ -22,21 +27,17 @@ export function createZoneMoveAdapter(): MoveAdapter<Zone, ZonePose> {
       useGardenStore.getState().updateZone(id, { x: pose.x, y: pose.y });
     },
     setParent: () => {},
-    applyBatch(ops: Op[], label: string) {
+    insertObject(z) {
+      useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [...s.garden.zones, z] } }));
+    },
+    removeObject(id) {
+      useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: s.garden.zones.filter((z) => z.id !== id) } }));
+    },
+    applyBatch(ops, label) {
       useGardenStore.getState().checkpoint();
-      for (const op of ops) op.apply({
-        setPose: (id: string, pose: ZonePose) => {
-          useGardenStore.getState().updateZone(id, { x: pose.x, y: pose.y });
-        },
-        setParent: () => {},
-        insertObject: (z: Zone) => {
-          useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [...s.garden.zones, z] } }));
-        },
-        removeObject: (id: string) => {
-          useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: s.garden.zones.filter((z) => z.id !== id) } }));
-        },
-      });
+      for (const op of ops) op.apply(adapter);
       void label;
     },
   };
+  return adapter;
 }

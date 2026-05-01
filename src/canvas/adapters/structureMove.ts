@@ -1,14 +1,19 @@
 import { useGardenStore } from '../../store/gardenStore';
 import type { Structure } from '../../model/types';
-import type { MoveAdapter, Op } from '@/canvas-kit';
+import type { MoveAdapter } from '@/canvas-kit';
 
 export interface StructurePose { x: number; y: number; widthFt: number; heightFt: number }
 
-export function createStructureMoveAdapter(): MoveAdapter<Structure, StructurePose> {
+export type StructureMoveAdapter = MoveAdapter<Structure, StructurePose> & {
+  insertObject(s: Structure): void;
+  removeObject(id: string): void;
+};
+
+export function createStructureMoveAdapter(): StructureMoveAdapter {
   function getStructure(id: string): Structure | undefined {
     return useGardenStore.getState().garden.structures.find((s) => s.id === id);
   }
-  return {
+  const adapter: StructureMoveAdapter = {
     getObject(id) {
       return getStructure(id);
     },
@@ -24,23 +29,17 @@ export function createStructureMoveAdapter(): MoveAdapter<Structure, StructurePo
     setParent(id, parentId) {
       useGardenStore.getState().updateStructure(id, { parentId: parentId ?? '' });
     },
-    applyBatch(ops: Op[], label: string) {
+    insertObject(s) {
+      useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: [...st.garden.structures, s] } }));
+    },
+    removeObject(id) {
+      useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: st.garden.structures.filter((s) => s.id !== id) } }));
+    },
+    applyBatch(ops, label) {
       useGardenStore.getState().checkpoint();
-      for (const op of ops) op.apply({
-        setPose: (id: string, pose: StructurePose) => {
-          useGardenStore.getState().updateStructure(id, { x: pose.x, y: pose.y });
-        },
-        setParent: (id: string, p: string | null) => {
-          useGardenStore.getState().updateStructure(id, { parentId: p ?? '' });
-        },
-        insertObject: (s: Structure) => {
-          useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: [...st.garden.structures, s] } }));
-        },
-        removeObject: (id: string) => {
-          useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: st.garden.structures.filter((s) => s.id !== id) } }));
-        },
-      });
+      for (const op of ops) op.apply(adapter);
       void label;
     },
   };
+  return adapter;
 }

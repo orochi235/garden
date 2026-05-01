@@ -1,9 +1,14 @@
 import { findSnapContainer } from '../findSnapContainer';
 import { useGardenStore } from '../../store/gardenStore';
 import type { Planting } from '../../model/types';
-import type { MoveAdapter, Op, SnapTarget } from '@/canvas-kit';
+import type { MoveAdapter, SnapTarget } from '@/canvas-kit';
 
 export interface PlantingPose { x: number; y: number }
+
+export type PlantingMoveAdapter = MoveAdapter<Planting, PlantingPose> & {
+  insertObject(p: Planting): void;
+  removeObject(id: string): void;
+};
 
 function getPlanting(id: string): Planting | undefined {
   return useGardenStore.getState().garden.plantings.find((p) => p.id === id);
@@ -14,12 +19,11 @@ function getParent(id: string): { id: string; x: number; y: number } | undefined
   return garden.structures.find((s) => s.id === id) ?? garden.zones.find((z) => z.id === id);
 }
 
-export function createPlantingMoveAdapter(): MoveAdapter<Planting, PlantingPose> & {
-  insertObject(p: Planting): void;
-  removeObject(id: string): void;
-  getObject(id: string): Planting | undefined;
-} {
-  return {
+export function createPlantingMoveAdapter(): PlantingMoveAdapter {
+  const adapter: PlantingMoveAdapter = {
+    getObject(id) {
+      return getPlanting(id);
+    },
     getPose(id) {
       const p = getPlanting(id);
       if (!p) throw new Error(`planting not found: ${id}`);
@@ -28,9 +32,6 @@ export function createPlantingMoveAdapter(): MoveAdapter<Planting, PlantingPose>
     },
     getParent(id) {
       return getPlanting(id)?.parentId ?? null;
-    },
-    getObject(id) {
-      return getPlanting(id);
     },
     setPose(id, pose) {
       const p = getPlanting(id);
@@ -69,32 +70,11 @@ export function createPlantingMoveAdapter(): MoveAdapter<Planting, PlantingPose>
         metadata: { instant: snap.cursorInside && snap.empty, kind: snap.kind, slotX: snap.slotX, slotY: snap.slotY },
       };
     },
-    applyBatch(ops: Op[], label: string) {
-      const checkpoint = useGardenStore.getState().checkpoint;
-      checkpoint();
-      for (const op of ops) op.apply({
-        setPose: (id: string, pose: PlantingPose) => {
-          const p = getPlanting(id);
-          if (!p) return;
-          const parent = p.parentId ? getParent(p.parentId) : undefined;
-          useGardenStore.getState().updatePlanting(id, {
-            x: pose.x - (parent?.x ?? 0),
-            y: pose.y - (parent?.y ?? 0),
-          });
-        },
-        setParent: (id: string, p: string | null) => {
-          useGardenStore.getState().updatePlanting(id, { parentId: p ?? '' });
-        },
-        insertObject: (planting: Planting) => {
-          useGardenStore.setState((s) => ({
-            garden: { ...s.garden, plantings: [...s.garden.plantings, planting] },
-          }));
-        },
-        removeObject: (id: string) => {
-          useGardenStore.getState().removePlanting(id);
-        },
-      });
+    applyBatch(ops, label) {
+      useGardenStore.getState().checkpoint();
+      for (const op of ops) op.apply(adapter);
       void label;
     },
   };
+  return adapter;
 }
