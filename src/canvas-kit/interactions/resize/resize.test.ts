@@ -49,3 +49,52 @@ describe('useResizeInteraction — start / cancel', () => {
     expect(batches).toEqual([]);
   });
 });
+
+describe('useResizeInteraction — move', () => {
+  it('east anchor=min: width grows toward target; currentPose lerps 35%', () => {
+    const { adapter } = makeAdapter();
+    const { result } = renderHook(() => useResizeInteraction<{ id: string }, P>(adapter, {}));
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 10, 0);
+    });
+    act(() => {
+      result.current.move(14, 0, { alt: false, shift: false, meta: false, ctrl: false });
+    });
+    const ov = result.current.overlay!;
+    expect(ov.targetPose).toEqual({ x: 0, y: 0, width: 14, height: 10 });
+    expect(ov.currentPose.width).toBeCloseTo(11.4, 5);
+  });
+
+  it('behaviors compose in order; clampMinSize integrates', () => {
+    const { adapter } = makeAdapter();
+    const { result } = renderHook(() =>
+      useResizeInteraction<{ id: string }, P>(adapter, {
+        behaviors: [clampMinSize<P>({ minWidth: 1, minHeight: 1 })],
+      }),
+    );
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 10, 0);
+    });
+    act(() => {
+      result.current.move(-2, 0, { alt: false, shift: false, meta: false, ctrl: false });
+    });
+    expect(result.current.overlay!.targetPose.width).toBe(1);
+  });
+
+  it('snapToGrid integrates: targetPose snaps; sub-grid origin suspends snap', () => {
+    const { adapter, state } = makeAdapter();
+    state.set('a', { x: 0, y: 0, width: 0.5, height: 10 });
+    const { result } = renderHook(() =>
+      useResizeInteraction<{ id: string }, P>(adapter, {
+        behaviors: [snapToGrid<P>({ cell: 1 })],
+      }),
+    );
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 0.5, 0);
+    });
+    act(() => {
+      result.current.move(0.7, 0, { alt: false, shift: false, meta: false, ctrl: false });
+    });
+    expect(result.current.overlay!.targetPose.width).toBeCloseTo(0.7, 5);
+  });
+});
