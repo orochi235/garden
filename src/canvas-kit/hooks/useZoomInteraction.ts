@@ -92,14 +92,37 @@ export function useZoomInteraction(
     opts.setPan({ x: 0, y: 0 });
   }, [opts]);
 
-  // Stubbed in Task 1; Tasks 3-5 implement.
-  const onWheel = useCallback((_e: WheelEvent | React.WheelEvent) => {}, []);
+  const onWheel = useCallback(
+    (e: WheelEvent | React.WheelEvent) => {
+      const evt = e as WheelEvent;
+      const isPinch = evt.ctrlKey === true;
+
+      if (isPinch) {
+        if (!sources.pinch) return;
+        evt.preventDefault?.();
+      } else {
+        if (!sources.wheel) return;
+        if (opts.wheelRequiresModifier && !evt.metaKey) return;
+      }
+
+      const target = evt.currentTarget as Element | null;
+      const rect = target?.getBoundingClientRect?.();
+      const focal = {
+        x: evt.clientX - (rect?.left ?? 0),
+        y: evt.clientY - (rect?.top ?? 0),
+      };
+
+      const factor = evt.deltaY < 0 ? wheelStep : 1 / wheelStep;
+      applyZoom(opts.zoom * factor, focal);
+    },
+    [applyZoom, opts, sources, wheelStep],
+  );
+
+  // Stubbed in Task 1; Tasks 3-4 implement.
   const onKeyDown = useCallback((_e: KeyboardEvent | React.KeyboardEvent) => {}, []);
   const onDoubleClick = useCallback((_e: MouseEvent | React.MouseEvent) => {}, []);
 
   // suppress "declared but unread" until we wire them
-  void sources;
-  void wheelStep;
   void keyStep;
 
   return { onWheel, onKeyDown, onDoubleClick, zoomTo, zoomBy, reset };

@@ -101,3 +101,95 @@ describe('useZoomInteraction — focal-point invariant', () => {
     expect((focal.y - newPan.y) / newZoom).toBeCloseTo((focal.y - pan.y) / zoom, 5);
   });
 });
+
+function makeWheelEvent(over: Partial<{
+  deltaY: number; clientX: number; clientY: number;
+  ctrlKey: boolean; metaKey: boolean; shiftKey: boolean;
+  rect: { left: number; top: number };
+}> = {}) {
+  const rect = over.rect ?? { left: 0, top: 0 };
+  const preventDefault = vi.fn();
+  return {
+    deltaY: over.deltaY ?? -100,
+    clientX: over.clientX ?? 100,
+    clientY: over.clientY ?? 80,
+    ctrlKey: over.ctrlKey ?? false,
+    metaKey: over.metaKey ?? false,
+    shiftKey: over.shiftKey ?? false,
+    preventDefault,
+    currentTarget: {
+      getBoundingClientRect: () => ({ left: rect.left, top: rect.top, right: 0, bottom: 0, width: 0, height: 0, x: rect.left, y: rect.top, toJSON: () => ({}) }),
+    } as unknown as Element,
+  } as unknown as WheelEvent;
+}
+
+describe('useZoomInteraction — wheel', () => {
+  it('bare wheel zooms in on negative deltaY (default mode)', () => {
+    const { result, setZoom } = setup({ zoom: 1 });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: -100 })));
+    expect(setZoom).toHaveBeenCalled();
+    const next = setZoom.mock.calls[0][0] as number;
+    expect(next).toBeGreaterThan(1);
+  });
+
+  it('bare wheel zooms out on positive deltaY (default mode)', () => {
+    const { result, setZoom } = setup({ zoom: 2 });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: 100 })));
+    const next = setZoom.mock.calls[0][0] as number;
+    expect(next).toBeLessThan(2);
+  });
+
+  it('bare wheel no-ops when wheelRequiresModifier is true', () => {
+    const { result, setZoom } = setup({ zoom: 1, wheelRequiresModifier: true });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: -100 })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('ctrl+wheel zooms even when wheelRequiresModifier is true', () => {
+    const { result, setZoom } = setup({ zoom: 1, wheelRequiresModifier: true });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: -100, ctrlKey: true })));
+    expect(setZoom).toHaveBeenCalled();
+  });
+
+  it('ctrl+wheel (pinch) zooms even in default mode', () => {
+    const { result, setZoom } = setup({ zoom: 1 });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: -10, ctrlKey: true })));
+    expect(setZoom).toHaveBeenCalled();
+  });
+
+  it('sources.wheel=false disables non-pinch wheel', () => {
+    const { result, setZoom } = setup({ zoom: 1, sources: { wheel: false } });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: -100 })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('sources.pinch=false disables ctrlKey wheel', () => {
+    const { result, setZoom } = setup({
+      zoom: 1,
+      sources: { wheel: true, pinch: false },
+    });
+    act(() => result.current.onWheel(makeWheelEvent({ deltaY: -10, ctrlKey: true })));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('focal is event coords minus canvas bounding rect', () => {
+    const { result, setZoom, setPan } = setup({ zoom: 1, pan: { x: 0, y: 0 } });
+    act(() => result.current.onWheel(makeWheelEvent({
+      deltaY: -100, clientX: 250, clientY: 150,
+      rect: { left: 50, top: 50 },
+    })));
+    // focal = (200, 100); world point under focal at zoom=1, pan=0 is (200, 100).
+    // After zoom-in, that world point must still sit at screen (200, 100).
+    const newZoom = setZoom.mock.calls[0][0] as number;
+    const newPan = setPan.mock.calls[0][0] as { x: number; y: number };
+    expect((200 - newPan.x) / newZoom).toBeCloseTo(200, 5);
+    expect((100 - newPan.y) / newZoom).toBeCloseTo(100, 5);
+  });
+
+  it('calls preventDefault on pinch (ctrlKey wheel)', () => {
+    const { result } = setup({ zoom: 1 });
+    const e = makeWheelEvent({ deltaY: -10, ctrlKey: true });
+    act(() => result.current.onWheel(e));
+    expect(e.preventDefault).toHaveBeenCalled();
+  });
+});
