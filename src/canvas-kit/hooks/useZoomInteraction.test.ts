@@ -295,3 +295,61 @@ describe('useZoomInteraction — keyboard', () => {
     expect((150 - newPan.y) / newZoom).toBeCloseTo(150, 5);
   });
 });
+
+function makeMouseEvent(over: {
+  clientX?: number; clientY?: number;
+  shiftKey?: boolean; altKey?: boolean;
+  rect?: { left: number; top: number };
+} = {}) {
+  const rect = over.rect ?? { left: 0, top: 0 };
+  return {
+    clientX: over.clientX ?? 100,
+    clientY: over.clientY ?? 80,
+    shiftKey: over.shiftKey ?? false,
+    altKey: over.altKey ?? false,
+    currentTarget: {
+      getBoundingClientRect: () => ({ left: rect.left, top: rect.top, right: 0, bottom: 0, width: 0, height: 0, x: rect.left, y: rect.top, toJSON: () => ({}) }),
+    } as unknown as Element,
+    preventDefault: vi.fn(),
+  } as unknown as MouseEvent;
+}
+
+describe('useZoomInteraction — double-click', () => {
+  it('off by default', () => {
+    const { result, setZoom } = setup({ zoom: 1 });
+    act(() => result.current.onDoubleClick(makeMouseEvent()));
+    expect(setZoom).not.toHaveBeenCalled();
+  });
+
+  it('zooms in at click point when enabled', () => {
+    const { result, setZoom, setPan } = setup({
+      zoom: 1, pan: { x: 0, y: 0 }, keyStep: 2,
+      sources: { doubleClick: true },
+    });
+    act(() => result.current.onDoubleClick(makeMouseEvent({
+      clientX: 220, clientY: 130, rect: { left: 20, top: 30 },
+    })));
+    expect(setZoom).toHaveBeenCalledWith(2);
+    // Focal (200, 100). World point under focal preserved.
+    const newPan = setPan.mock.calls[0][0] as { x: number; y: number };
+    expect((200 - newPan.x) / 2).toBeCloseTo(200, 5);
+    expect((100 - newPan.y) / 2).toBeCloseTo(100, 5);
+  });
+
+  it('Shift zooms out at click point', () => {
+    const { result, setZoom } = setup({
+      zoom: 4, keyStep: 2, sources: { doubleClick: true },
+    });
+    act(() => result.current.onDoubleClick(makeMouseEvent({ shiftKey: true })));
+    expect(setZoom).toHaveBeenCalledWith(2);
+  });
+
+  it('Alt resets', () => {
+    const { result, setZoom, setPan } = setup({
+      zoom: 5, pan: { x: 99, y: 99 }, sources: { doubleClick: true },
+    });
+    act(() => result.current.onDoubleClick(makeMouseEvent({ altKey: true })));
+    expect(setZoom).toHaveBeenCalledWith(1);
+    expect(setPan).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+});

@@ -148,8 +148,26 @@ export function useZoomInteraction(
     [applyZoom, opts, sources, keyStep, viewportCenter],
   );
 
-  // Stubbed in Task 1; Task 4 implements.
-  const onDoubleClick = useCallback((_e: MouseEvent | React.MouseEvent) => {}, []);
+  const onDoubleClick = useCallback(
+    (e: MouseEvent | React.MouseEvent) => {
+      if (!sources.doubleClick) return;
+      const evt = e as MouseEvent;
+      if (evt.altKey) {
+        opts.setZoom(1);
+        opts.setPan({ x: 0, y: 0 });
+        return;
+      }
+      const target = evt.currentTarget as Element | null;
+      const rect = target?.getBoundingClientRect?.();
+      const focal = {
+        x: evt.clientX - (rect?.left ?? 0),
+        y: evt.clientY - (rect?.top ?? 0),
+      };
+      const factor = evt.shiftKey ? 1 / keyStep : keyStep;
+      applyZoom(opts.zoom * factor, focal);
+    },
+    [applyZoom, opts, sources, keyStep],
+  );
 
   return { onWheel, onKeyDown, onDoubleClick, zoomTo, zoomBy, reset };
 }
