@@ -1,0 +1,1 @@
+export { selectFromMarquee } from './selectFromMarquee';
