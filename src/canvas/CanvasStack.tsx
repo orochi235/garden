@@ -17,7 +17,7 @@ import { resolveGroupMoves } from '../model/seedlingMoveResolver';
 import { useAutoCenter } from '@/canvas-kit';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { cycleLayer } from '../actions/layers/cycleLayer';
-import { useClipboard } from './hooks/useClipboard';
+import { useClipboard } from '@/canvas-kit/clipboard';
 import { useLayerEffect } from '@/canvas-kit';
 import { useCloneInteraction } from './hooks/useCloneInteraction';
 import {
@@ -35,7 +35,8 @@ import { createZoneResizeAdapter } from './adapters/zoneResize';
 import { createStructureResizeAdapter } from './adapters/structureResize';
 import { createInsertAdapter } from './adapters/insert';
 import { usePanInteraction } from '@/canvas-kit';
-import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
+import { useAreaSelectInteraction, selectFromMarquee } from '@/canvas-kit/area-select';
+import { createAreaSelectAdapter } from './adapters/areaSelect';
 import type { HandlePosition } from './hitTest';
 import type { ResizeAnchor } from '@/canvas-kit';
 import { onIconLoad, renderPlant } from './plantRenderers';
@@ -186,7 +187,6 @@ export function CanvasStack() {
 
   // --- Interaction hooks ---
   useAutoCenter(width, height, garden.widthFt, garden.heightFt, setZoom, setPan);
-  const clipboard = useClipboard();
   const setSeedStartingPan = useUiStore((s) => s.setSeedStartingPan);
   const setSeedStartingZoom = useUiStore((s) => s.setSeedStartingZoom);
 
@@ -241,8 +241,6 @@ export function CanvasStack() {
     behaviors: [snapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
   });
 
-  const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
-
   const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
   const structureResizeAdapter = useMemo(() => createStructureResizeAdapter(), []);
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
@@ -262,6 +260,16 @@ export function CanvasStack() {
   const insert = useKitInsertInteraction(insertAdapter, {
     behaviors: [insertSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
     minBounds: { width: 0.01, height: 0.01 },
+  });
+
+  const clipboard = useClipboard(insertAdapter, {
+    getSelection: () => useUiStore.getState().selectedIds,
+    pasteLabel: 'Paste',
+  });
+
+  const areaSelectAdapter = useMemo(() => createAreaSelectAdapter(), []);
+  const areaSelect = useAreaSelectInteraction(areaSelectAdapter, {
+    behaviors: [selectFromMarquee()],
   });
 
   // --- Mirror kit overlay into useUiStore.dragOverlay ---
@@ -323,6 +331,12 @@ export function CanvasStack() {
     const ov = insert.overlay;
     useUiStore.getState().setInsertOverlay(ov ? { start: ov.start, current: ov.current } : null);
   }, [insert.overlay]);
+
+  // --- Mirror kit areaSelect overlay into useUiStore.areaSelectOverlay ---
+  useEffect(() => {
+    const ov = areaSelect.overlay;
+    useUiStore.getState().setAreaSelectOverlay(ov);
+  }, [areaSelect.overlay]);
 
   useKeyboardActionDispatch({ clipboard });
 
@@ -847,7 +861,9 @@ export function CanvasStack() {
         }
 
         if (currentViewMode === 'select-area') {
-          areaSelect.start(worldX, worldY, e.shiftKey);
+          areaSelect.start(worldX, worldY, {
+            alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey,
+          });
           setActiveCursor('crosshair');
           return;
         }
@@ -1003,8 +1019,6 @@ export function CanvasStack() {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (areaSelect.move(e)) return;
-
       // Dispatch to kit hooks (resize/insert/move). kit move() returns true when active.
       {
         const rect = containerRef.current?.getBoundingClientRect();
@@ -1013,6 +1027,7 @@ export function CanvasStack() {
           const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX: px, panY: py, zoom: z });
           const modifiers = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
 
+          if (areaSelect.isAreaSelecting && areaSelect.move(worldX, worldY, modifiers)) return;
           if (structureResize.isResizing && structureResize.move(worldX, worldY, modifiers)) return;
           if (zoneResize.isResizing && zoneResize.move(worldX, worldY, modifiers)) return;
           if (insert.isInserting && insert.move(worldX, worldY, modifiers)) return;
@@ -1085,7 +1100,7 @@ export function CanvasStack() {
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 0) {
-        if (areaSelect.isDragging.current) {
+        if (areaSelect.isAreaSelecting) {
           areaSelect.end();
           setActiveCursor(null);
           return;

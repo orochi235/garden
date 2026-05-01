@@ -38,6 +38,12 @@ export interface InsertOverlayUi {
   current: { x: number; y: number };
 }
 
+export interface AreaSelectOverlayUi {
+  start: { worldX: number; worldY: number };
+  current: { worldX: number; worldY: number };
+  shiftHeld: boolean;
+}
+
 type LayerRecord<T> = Record<LayerId, T>;
 
 export interface PlottingTool {
@@ -71,6 +77,7 @@ interface UiStore {
   dragOverlay: DragOverlay | null;
   resizeOverlay: ResizeOverlayUi | null;
   insertOverlay: InsertOverlayUi | null;
+  areaSelectOverlay: AreaSelectOverlayUi | null;
   appMode: AppMode;
   currentTrayId: string | null;
   /** Per-mode view state for the seed-starting canvas (pixels per inch). */
@@ -115,6 +122,7 @@ interface UiStore {
   clearDragOverlay: () => void;
   setResizeOverlay: (overlay: ResizeOverlayUi | null) => void;
   setInsertOverlay: (overlay: InsertOverlayUi | null) => void;
+  setAreaSelectOverlay: (overlay: AreaSelectOverlayUi | null) => void;
   setLayerSelectorHovered: (hovered: boolean) => void;
   setRenderLayerVisible: (layerId: string, visible: boolean) => void;
   setRenderLayerOrder: (renderer: string, order: string[]) => void;
@@ -185,6 +193,7 @@ function defaultState() {
     dragOverlay: null as DragOverlay | null,
     resizeOverlay: null as ResizeOverlayUi | null,
     insertOverlay: null as InsertOverlayUi | null,
+    areaSelectOverlay: null as AreaSelectOverlayUi | null,
     appMode: 'garden' as AppMode,
     currentTrayId: null as string | null,
     seedStartingZoom: 30,
@@ -211,6 +220,7 @@ export const useUiStore = create<UiStore>((set) => ({
   clearDragOverlay: () => set({ dragOverlay: null }),
   setResizeOverlay: (overlay) => set({ resizeOverlay: overlay }),
   setInsertOverlay: (overlay) => set({ insertOverlay: overlay }),
+  setAreaSelectOverlay: (overlay) => set({ areaSelectOverlay: overlay }),
   setLayerSelectorHovered: (hovered) => set({ layerSelectorHovered: hovered }),
   setRenderLayerVisible: (layerId, visible) =>
     set((state) => ({
