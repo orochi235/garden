@@ -64,5 +64,7 @@ export type {
   UseAreaSelectInteractionOptions,
   UseAreaSelectInteractionReturn,
 } from './interactions/area-select';
+export { useClipboard } from './interactions/clipboard';
+export type { UseClipboardOptions, UseClipboardReturn } from './interactions/clipboard';
 // snapToGrid / snapToContainer / snapBackOrDelete are NOT re-exported at top level —
 // import from '@/canvas-kit/move' to disambiguate from resize/insert siblings.
