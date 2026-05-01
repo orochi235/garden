@@ -1,3 +1,4 @@
+/** Pluggable text-painting strategy. The default fills white at `(x, y)`; markdown renderers replace this. */
 export type TextRenderer = (
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -5,6 +6,7 @@ export type TextRenderer = (
   y: number,
 ) => void;
 
+/** Visual options for `renderLabel`. */
 export interface LabelOptions {
   align?: 'center' | 'left';
   fontSize?: number;
@@ -47,6 +49,7 @@ export function renderLabel(
   ctx.restore();
 }
 
+/** Default `TextRenderer` used by `renderLabel`: white fill, no styling. */
 export const defaultLabelTextRenderer: TextRenderer = (ctx, text, x, y) => {
   ctx.fillStyle = '#FFFFFF';
   ctx.fillText(text, x, y);

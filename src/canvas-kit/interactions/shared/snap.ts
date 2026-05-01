@@ -2,6 +2,7 @@ import type { MoveBehavior, ModifierState, SnapStrategy } from '../types';
 
 type ModKey = keyof ModifierState;
 
+/** Generic snap behavior factory: wraps a `SnapStrategy` and returns a `MoveBehavior`, with optional bypass-key. */
 export function snap<TPose extends { x: number; y: number }>(
   strategy: SnapStrategy<TPose>,
   opts: { bypassKey?: ModKey } = {},

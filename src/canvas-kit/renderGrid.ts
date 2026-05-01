@@ -10,6 +10,7 @@ interface GridOptions {
   canvasHeight: number;
 }
 
+/** Draw an infinite grid plus a highlighted plot rectangle of `widthFt x heightFt` rooted at world origin. */
 export function renderGrid(ctx: CanvasRenderingContext2D, opts: GridOptions): void {
   const { widthFt, heightFt, cellSizeFt, view, canvasWidth, canvasHeight } = opts;
 

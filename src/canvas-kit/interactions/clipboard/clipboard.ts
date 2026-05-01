@@ -5,6 +5,7 @@ import type { Op } from '../../ops/types';
 import type { InsertAdapter } from '../../adapters/types';
 import type { ClipboardSnapshot } from '../types';
 
+/** Options for `useClipboard`. */
 export interface UseClipboardOptions {
   /** How the hook reads "current selection" for copy. The kit doesn't assume
    *  a global selection store; each consumer wires this. */
@@ -15,6 +16,7 @@ export interface UseClipboardOptions {
   pasteLabel?: string;
 }
 
+/** Return shape of `useClipboard`: imperative `copy`, `paste`, and `isEmpty` functions. */
 export interface UseClipboardReturn {
   copy(): void;
   paste(): void;
@@ -23,6 +25,7 @@ export interface UseClipboardReturn {
 
 const EMPTY: ClipboardSnapshot = { items: [] };
 
+/** In-memory copy/paste of selections via `InsertAdapter.snapshotSelection` / `commitPaste`. */
 export function useClipboard<TObject extends { id: string }>(
   adapter: InsertAdapter<TObject>,
   options: UseClipboardOptions,

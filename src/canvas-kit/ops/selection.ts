@@ -4,6 +4,7 @@ interface SelectionAdapter {
   setSelection(ids: string[]): void;
 }
 
+/** Op: replace the current selection with `to`; inverts back to `from`. */
 export function createSetSelectionOp(args: {
   from: string[];
   to: string[];

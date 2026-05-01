@@ -33,6 +33,7 @@ interface RectPose {
   height: number;
 }
 
+/** Options for `composeSelectionPose`. */
 export interface ComposeSelectionPoseOpts<TPose> {
   /** Move overlay; when present its `poses` map wins over everything else. */
   moveOverlay?: { poses: Map<string, TPose> } | null;
@@ -108,6 +109,7 @@ export function composeSelectionPose<TPose>(
   };
 }
 
+/** Options for `createSelectionOverlayLayer`. */
 export interface SelectionOverlayLayerOpts<TPose extends RectPose> {
   getSelection: () => string[];
   /** Return null to skip rendering for an id (e.g. resolved pose unavailable). */

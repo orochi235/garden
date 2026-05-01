@@ -10,8 +10,10 @@
  * Linear factors only. No per-axis units. No mixed-unit arithmetic.
  */
 
+/** A unit name (e.g. `'in'`, `'ft'`, `'mm'`). Looked up in a `UnitRegistry`. */
 export type Unit = string;
 
+/** Conversion table mapping unit names to factors against a base unit. */
 export interface UnitRegistry {
   /** Name of the base unit, e.g. 'in'. All conversions resolve to this. */
   base: Unit;
@@ -19,6 +21,7 @@ export interface UnitRegistry {
   units: Record<Unit, number>;
 }
 
+/** Value at a unit-aware API boundary: bare number (in base units) or `{ value, unit }` tag. */
 export type UnitValue = number | { value: number; unit: Unit };
 
 /**

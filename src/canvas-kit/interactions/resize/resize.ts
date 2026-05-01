@@ -13,6 +13,7 @@ import type {
 
 const LERP = 0.35;
 
+/** Options for `useResizeInteraction`. */
 export interface UseResizeInteractionOptions<TPose extends ResizePose> {
   behaviors?: ResizeBehavior<TPose>[];
   resizeLabel?: string;
@@ -34,6 +35,7 @@ export interface UseResizeInteractionOptions<TPose extends ResizePose> {
   expandIds?: (ids: string[]) => string[];
 }
 
+/** Return shape of `useResizeInteraction`: lifecycle methods plus a live overlay snapshot. */
 export interface UseResizeInteractionReturn<TPose extends ResizePose> {
   start(id: string, anchor: ResizeAnchor, worldX: number, worldY: number): void;
   move(worldX: number, worldY: number, modifiers: ModifierState): boolean;
@@ -98,6 +100,7 @@ function scaleLeafPose<TPose extends ResizePose>(
   };
 }
 
+/** Pointer-driven resize interaction with anchor-relative dragging, optional group expansion, and behavior pipeline. */
 export function useResizeInteraction<TObject extends { id: string }, TPose extends ResizePose>(
   adapter: ResizeAdapter<TObject, TPose>,
   options: UseResizeInteractionOptions<TPose>,

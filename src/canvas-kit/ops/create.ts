@@ -9,6 +9,7 @@ interface InsertAdapter<TObject> {
  *  exists so consumers can name the op type when needed. */
 export type InsertOp = Op;
 
+/** Op: insert `object` into the scene; inverts to a delete of the same id. */
 export function createInsertOp<TObject extends { id: string }>(args: {
   object: TObject;
   label?: string;

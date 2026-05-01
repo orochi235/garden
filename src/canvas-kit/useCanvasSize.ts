@@ -6,6 +6,7 @@ interface CanvasSize {
   dpr: number;
 }
 
+/** Track a container's content-rect size and the current devicePixelRatio via `ResizeObserver`. */
 export function useCanvasSize(containerRef: RefObject<HTMLDivElement | null>): CanvasSize {
   const [size, setSize] = useState<CanvasSize>({ width: 0, height: 0, dpr: 1 });
 

@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef } from 'react';
 import { createTransformOp } from '../../ops/transform';
 import type { Op } from '../../ops/types';
 
+/** Cardinal direction for `useNudgeAction`. */
 export type NudgeDirection = 'up' | 'down' | 'left' | 'right';
 
+/** Adapter for `useNudgeAction`. */
 export interface NudgeAdapter<TPose> {
   /** Read current selection. */
   getSelection(): string[];
@@ -13,6 +15,7 @@ export interface NudgeAdapter<TPose> {
   applyBatch(ops: Op[], label?: string): void;
 }
 
+/** Options for `useNudgeAction`. */
 export interface UseNudgeActionOptions<TPose> {
   /** Required: pure pose translator — same shape as in move. */
   translatePose: (pose: TPose, dx: number, dy: number) => TPose;
@@ -26,6 +29,7 @@ export interface UseNudgeActionOptions<TPose> {
   shiftStep?: number;
 }
 
+/** Return shape of `useNudgeAction`. */
 export interface UseNudgeActionReturn {
   /** Imperative trigger. `large=true` uses `shiftStep`. */
   nudge(direction: NudgeDirection, large?: boolean): void;
@@ -49,6 +53,7 @@ function deltaFor(direction: NudgeDirection, step: number): { dx: number; dy: nu
   }
 }
 
+/** Arrow-key nudge action; binds arrow keys (with optional shift modifier for larger step) by default. */
 export function useNudgeAction<TPose>(
   adapter: NudgeAdapter<TPose>,
   options: UseNudgeActionOptions<TPose>,

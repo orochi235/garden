@@ -1,5 +1,6 @@
 import { type RefObject, useEffect } from 'react';
 
+/** Effect that resizes a canvas to `width x height` (DPR-scaled), then calls `renderFn` (or clears it when `visible` is false). */
 export function useLayerEffect(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   width: number,

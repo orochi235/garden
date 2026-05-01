@@ -5,6 +5,7 @@ interface DeleteAdapter {
   removeObject(id: string): void;
 }
 
+/** Op: remove `object` from the scene; inverts to a re-insert of the captured object. */
 export function createDeleteOp<TObject extends { id: string }>(args: {
   object: TObject;
   label?: string;

@@ -11,6 +11,7 @@ import type {
 
 const GID = 'gesture';
 
+/** Options for `useAreaSelectInteraction`. */
 export interface UseAreaSelectInteractionOptions {
   behaviors?: AreaSelectBehavior[];
   /** When set, overrides any behavior's `defaultTransient`. Default: behaviors decide. */
@@ -21,6 +22,7 @@ export interface UseAreaSelectInteractionOptions {
   onGestureEnd?: (committed: boolean) => void;
 }
 
+/** Return shape of `useAreaSelectInteraction`: lifecycle methods and live marquee overlay. */
 export interface UseAreaSelectInteractionReturn {
   start(worldX: number, worldY: number, modifiers: ModifierState): void;
   move(worldX: number, worldY: number, modifiers: ModifierState): boolean;
@@ -35,6 +37,7 @@ interface State {
   ctx: GestureContext<AreaSelectPose> | null;
 }
 
+/** Drag-rectangle area-select interaction; behaviors decide replace-vs-add semantics from modifiers. */
 export function useAreaSelectInteraction(
   adapter: AreaSelectAdapter,
   options: UseAreaSelectInteractionOptions,

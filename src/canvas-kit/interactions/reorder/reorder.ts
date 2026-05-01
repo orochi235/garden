@@ -7,6 +7,7 @@ import {
 } from '../../ops/reorder';
 import type { Op } from '../../ops/types';
 
+/** Adapter for `useReorderAction`; both order methods optional and the hook no-ops when either is absent. */
 export interface ReorderAdapter {
   getSelection(): string[];
   getParent(id: string): string | null;
@@ -17,6 +18,7 @@ export interface ReorderAdapter {
   applyBatch(ops: Op[], label: string): void;
 }
 
+/** Options for `useReorderAction`. */
 export interface UseReorderActionOptions {
   /** Auto-bind ], [, Shift+], Shift+[ on document. Default true. */
   enableKeyboard?: boolean;
@@ -24,6 +26,7 @@ export interface UseReorderActionOptions {
   filter?: (ids: string[]) => string[];
 }
 
+/** Return shape of `useReorderAction`: imperative bring/send methods. */
 export interface UseReorderActionReturn {
   bringForward(): void;
   sendBackward(): void;
@@ -40,6 +43,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return false;
 }
 
+/** Sibling z-order action; binds `]`/`[` (forward/backward) and Shift-modified variants (front/back) by default. */
 export function useReorderAction(
   adapter: ReorderAdapter,
   options: UseReorderActionOptions = {},

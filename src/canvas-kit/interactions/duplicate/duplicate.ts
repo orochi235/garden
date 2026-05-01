@@ -3,6 +3,7 @@ import { createInsertOp } from '../../ops/create';
 import { createSetSelectionOp } from '../../ops/selection';
 import type { Op } from '../../ops/types';
 
+/** Adapter for `useDuplicateAction`. */
 export interface DuplicateAdapter<TPose> {
   /** Read current selection. */
   getSelection(): string[];
@@ -19,6 +20,7 @@ export interface DuplicateAdapter<TPose> {
   applyBatch(ops: Op[], label?: string): void;
 }
 
+/** Options for `useDuplicateAction`. */
 export interface UseDuplicateActionOptions {
   /** Auto-bind Ctrl/Cmd+D on document. Default true. */
   enableKeyboard?: boolean;
@@ -28,6 +30,7 @@ export interface UseDuplicateActionOptions {
   offset?: { dx: number; dy: number };
 }
 
+/** Return shape of `useDuplicateAction`. */
 export interface UseDuplicateActionReturn {
   /** Imperative trigger — duplicates the current selection. */
   duplicate(): void;
@@ -44,6 +47,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 const DEFAULT_OFFSET = { dx: 8, dy: 8 };
 
+/** Selection-duplication action with offset; binds Ctrl/Cmd+D by default. */
 export function useDuplicateAction<TPose>(
   adapter: DuplicateAdapter<TPose>,
   options: UseDuplicateActionOptions = {},

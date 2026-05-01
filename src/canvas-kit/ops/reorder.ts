@@ -79,22 +79,27 @@ function createPartitionedReorderOp(args: {
   };
 }
 
+/** Op: bump each id one step toward the top of its parent's child order. */
 export function createBringForwardOp(args: { ids: string[]; label?: string }): Op {
   return createPartitionedReorderOp({ ids: args.ids, fn: bringForward, label: args.label ?? 'Bring forward' });
 }
 
+/** Op: bump each id one step toward the bottom of its parent's child order. */
 export function createSendBackwardOp(args: { ids: string[]; label?: string }): Op {
   return createPartitionedReorderOp({ ids: args.ids, fn: sendBackward, label: args.label ?? 'Send backward' });
 }
 
+/** Op: move each id to the top of its parent's child order. */
 export function createBringToFrontOp(args: { ids: string[]; label?: string }): Op {
   return createPartitionedReorderOp({ ids: args.ids, fn: bringToFront, label: args.label ?? 'Bring to front' });
 }
 
+/** Op: move each id to the bottom of its parent's child order. */
 export function createSendToBackOp(args: { ids: string[]; label?: string }): Op {
   return createPartitionedReorderOp({ ids: args.ids, fn: sendToBack, label: args.label ?? 'Send to back' });
 }
 
+/** Op: move all `ids` to a contiguous block starting at `index` within `parentId`'s child order. */
 export function createMoveToIndexOp(args: {
   ids: string[];
   parentId: string | null;

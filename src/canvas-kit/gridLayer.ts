@@ -13,6 +13,7 @@
 import type { RenderLayer } from './renderLayer';
 import { resolveUnit, type UnitRegistry, type UnitValue } from './units';
 
+/** Options for `createGridLayer`. */
 export interface GridLayerOpts {
   /**
    * Base cell size, in world (base) units. Accepts a bare number or a tagged
@@ -63,6 +64,7 @@ function drawHLine(ctx: CanvasRenderingContext2D, y: number, x0: number, x1: num
   ctx.stroke();
 }
 
+/** Build a `RenderLayer` that draws a world-space grid with optional accent lines, subdivisions, and a highlighted cell. */
 export function createGridLayer(opts: GridLayerOpts): RenderLayer<unknown> {
   const style = { ...DEFAULT_STYLE, ...(opts.style ?? {}) };
   const highlightStyle = { ...DEFAULT_HIGHLIGHT_STYLE, ...(opts.highlightStyle ?? {}) };

@@ -9,6 +9,7 @@ import type {
   ModifierState,
 } from '../types';
 
+/** Options for `useInsertInteraction`. */
 export interface UseInsertInteractionOptions<TPose extends { x: number; y: number }> {
   behaviors?: InsertBehavior<TPose>[];
   insertLabel?: string;
@@ -20,6 +21,7 @@ export interface UseInsertInteractionOptions<TPose extends { x: number; y: numbe
   onGestureEnd?: (committed: boolean) => void;
 }
 
+/** Return shape of `useInsertInteraction`: lifecycle methods plus the live drag-rectangle overlay. */
 export interface UseInsertInteractionReturn<TPose extends { x: number; y: number }> {
   start(worldX: number, worldY: number, modifiers: ModifierState): void;
   move(worldX: number, worldY: number, modifiers: ModifierState): boolean;
@@ -31,6 +33,7 @@ export interface UseInsertInteractionReturn<TPose extends { x: number; y: number
 
 const GID = 'gesture';
 
+/** Drag-rectangle insert interaction; the adapter materializes the new object on commit. */
 export function useInsertInteraction<TObject extends { id: string }, TPose extends { x: number; y: number }>(
   adapter: InsertAdapter<TObject>,
   options: UseInsertInteractionOptions<TPose>,

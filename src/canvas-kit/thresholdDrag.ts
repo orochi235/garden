@@ -16,6 +16,7 @@ export interface ThresholdDragHandle {
   isDragging: () => boolean;
 }
 
+/** Begin a threshold-gated drag from a React PointerDown event; returns a handle exposing live state. */
 export function startThresholdDrag(
   e: React.PointerEvent,
   opts: ThresholdDragOptions,

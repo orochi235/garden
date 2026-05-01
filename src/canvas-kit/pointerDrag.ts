@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 
+/** Payload carried by an in-flight pointer drag — `kind` routes to drop zones, `ids` lists the dragged items. */
 export interface DragPayload {
   kind: string;
   ids: string[];
@@ -119,10 +120,12 @@ function beginPointerDrag(
 
 const DRAG_THRESHOLD_PX_SQ = 25;
 
+/** Options for `useDragHandle`; supply `createGhost` to override the default DOM-clone ghost. */
 export interface DragHandleOptions {
   createGhost?: (source: HTMLElement, payload: DragPayload) => HTMLElement;
 }
 
+/** Attach a pointer-driven drag handle: `getPayload` is read at threshold-cross time and a ghost follows the pointer. */
 export function useDragHandle(
   getPayload: () => DragPayload | null,
   options?: DragHandleOptions,
@@ -169,6 +172,7 @@ export function useDragHandle(
   return { onPointerDown, style: { touchAction: 'none' as const } };
 }
 
+/** Options for `useDropZone`; `accepts` filters by `payload.kind`. */
 export interface DropZoneOptions {
   accepts: (kind: string) => boolean;
   onDrop: (payload: DragPayload, clientX: number, clientY: number) => void;
@@ -176,6 +180,7 @@ export interface DropZoneOptions {
   onMove?: (payload: DragPayload, clientX: number, clientY: number) => void;
 }
 
+/** Register an element as a drop zone for `useDragHandle` payloads. Returns a ref-callback. */
 export function useDropZone<T extends HTMLElement>(opts: DropZoneOptions): (el: T | null) => void {
   const optsRef = useRef(opts);
   optsRef.current = opts;

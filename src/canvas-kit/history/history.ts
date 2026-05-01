@@ -5,6 +5,7 @@ interface Entry {
   label: string;
 }
 
+/** Op-batched undo/redo controller returned by `createHistory`. */
 export interface History {
   apply(op: Op, label?: string): void;
   applyBatch(ops: Op[], label: string): void;
@@ -15,6 +16,7 @@ export interface History {
   clear(): void;
 }
 
+/** Build an op-batched undo/redo `History`. The adapter is passed to each op's `apply`/`invert`. */
 export function createHistory(adapter: unknown): History {
   const undoStack: Entry[] = [];
   const redoStack: Entry[] = [];

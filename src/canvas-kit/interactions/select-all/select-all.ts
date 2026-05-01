@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { createSetSelectionOp } from '../../ops/selection';
 import type { Op } from '../../ops/types';
 
+/** Adapter for `useSelectAllAction`. */
 export interface SelectAllAdapter {
   /** Read current selection (used as `from` for the setSelection op). */
   getSelection(): string[];
@@ -11,6 +12,7 @@ export interface SelectAllAdapter {
   applyBatch(ops: Op[], label?: string): void;
 }
 
+/** Options for `useSelectAllAction`. */
 export interface UseSelectAllActionOptions {
   /** Auto-bind Ctrl/Cmd+A on document. Default true. */
   enableKeyboard?: boolean;
@@ -18,6 +20,7 @@ export interface UseSelectAllActionOptions {
   label?: string;
 }
 
+/** Return shape of `useSelectAllAction`. */
 export interface UseSelectAllActionReturn {
   /** Imperative trigger — selects every id from the adapter. */
   selectAll(): void;
@@ -32,6 +35,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return false;
 }
 
+/** Select-all action; binds Ctrl/Cmd+A on document by default. */
 export function useSelectAllAction(
   adapter: SelectAllAdapter,
   options: UseSelectAllActionOptions = {},

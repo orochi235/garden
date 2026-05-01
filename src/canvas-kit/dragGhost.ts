@@ -14,6 +14,7 @@ export interface DragGhost {
   destroy(): void;
 }
 
+/** Construction options for `createDragGhost`. */
 export interface DragGhostOptions {
   /** Visual diameter/side of the ghost in CSS pixels. */
   sizeCss: number;
@@ -23,6 +24,7 @@ export interface DragGhostOptions {
   opacity?: number;
 }
 
+/** Mount a fixed-position canvas drag ghost on `document.body`; returns the controller `DragGhost`. */
 export function createDragGhost(opts: DragGhostOptions): DragGhost {
   const { sizeCss, paint, opacity = 0.85 } = opts;
   const dpr = window.devicePixelRatio || 1;

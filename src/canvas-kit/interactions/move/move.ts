@@ -4,6 +4,7 @@ import type { Op } from '../../ops/types';
 import type { MoveAdapter, SnapTarget } from '../../adapters/types';
 import type { GestureContext, MoveBehavior, MoveOverlay, ModifierState } from '../types';
 
+/** Options for `useMoveInteraction`. */
 export interface UseMoveInteractionOptions<TPose> {
   translatePose: (pose: TPose, dx: number, dy: number) => TPose;
   behaviors?: MoveBehavior<TPose>[];
@@ -23,6 +24,7 @@ export interface UseMoveInteractionOptions<TPose> {
   expandIds?: (ids: string[]) => string[];
 }
 
+/** Arguments passed to `start()` when initiating a move gesture. */
 export interface MoveStartArgs {
   ids: string[];
   worldX: number;
@@ -31,6 +33,7 @@ export interface MoveStartArgs {
   clientY: number;
 }
 
+/** Arguments passed to `move()` on each pointer-move during a live gesture. */
 export interface MoveMoveArgs {
   worldX: number;
   worldY: number;
@@ -39,6 +42,7 @@ export interface MoveMoveArgs {
   modifiers: ModifierState;
 }
 
+/** Return shape of `useMoveInteraction`: lifecycle methods and a live overlay snapshot. */
 export interface UseMoveInteractionReturn<TPose> {
   start(args: MoveStartArgs): void;
   move(args: MoveMoveArgs): boolean;
@@ -48,6 +52,7 @@ export interface UseMoveInteractionReturn<TPose> {
   overlay: MoveOverlay<TPose> | null;
 }
 
+/** Pointer-driven move interaction with composable behaviors (snap, container reparent, snap-back) and op-batched commit. */
 export function useMoveInteraction<TObject extends { id: string }, TPose>(
   adapter: MoveAdapter<TObject, TPose>,
   options: UseMoveInteractionOptions<TPose>,

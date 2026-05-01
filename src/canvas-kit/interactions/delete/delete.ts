@@ -3,6 +3,7 @@ import { createDeleteOp } from '../../ops/delete';
 import { createSetSelectionOp } from '../../ops/selection';
 import type { Op } from '../../ops/types';
 
+/** Adapter for `useDeleteAction`. */
 export interface DeleteAdapter {
   /** Read current selection. */
   getSelection(): string[];
@@ -17,6 +18,7 @@ export interface DeleteAdapter {
   setSelection?(ids: string[]): void;
 }
 
+/** Options for `useDeleteAction`. */
 export interface UseDeleteActionOptions {
   /** Auto-bind Delete and Backspace keys on document. Default false. */
   bindKeyboard?: boolean;
@@ -27,6 +29,7 @@ export interface UseDeleteActionOptions {
   filter?: (ids: string[]) => string[];
 }
 
+/** Return shape of `useDeleteAction`. */
 export interface UseDeleteActionReturn {
   /** Imperative trigger — deletes the current selection. Returns the ids
    *  that were deleted (after filter). Returns [] if nothing was deleted. */
@@ -42,6 +45,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return false;
 }
 
+/** Selection-deletion action; optionally binds Delete/Backspace keys. */
 export function useDeleteAction(
   adapter: DeleteAdapter,
   options: UseDeleteActionOptions = {},

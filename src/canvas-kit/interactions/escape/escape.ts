@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { createSetSelectionOp } from '../../ops/selection';
 import type { Op } from '../../ops/types';
 
+/** Adapter for `useEscapeAction`. */
 export interface EscapeAdapter {
   /** Read current selection. */
   getSelection(): string[];
@@ -9,6 +10,7 @@ export interface EscapeAdapter {
   applyBatch(ops: Op[], label?: string): void;
 }
 
+/** Options for `useEscapeAction`. */
 export interface UseEscapeActionOptions {
   /** Auto-bind Escape on document. Default true. */
   enableKeyboard?: boolean;
@@ -16,6 +18,7 @@ export interface UseEscapeActionOptions {
   label?: string;
 }
 
+/** Return shape of `useEscapeAction`. */
 export interface UseEscapeActionReturn {
   /** Imperative trigger — clears the current selection. */
   clearSelection(): void;
@@ -30,6 +33,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return false;
 }
 
+/** Selection-clearing action; binds Escape on document by default. */
 export function useEscapeAction(
   adapter: EscapeAdapter,
   options: UseEscapeActionOptions = {},

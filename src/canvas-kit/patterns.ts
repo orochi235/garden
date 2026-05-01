@@ -4,8 +4,10 @@
  * To add a new pattern, add an entry to the `patternFactories` map.
  */
 
+/** Identifier of a built-in pattern. */
 export type PatternId = 'hatch' | 'crosshatch' | 'dots' | 'chunks';
 
+/** Per-pattern parameter shape; indexed by `PatternId`. */
 export interface PatternParamMap {
   hatch: { color?: string; size?: number; lineWidth?: number };
   crosshatch: { color?: string; size?: number; lineWidth?: number };
@@ -13,6 +15,7 @@ export interface PatternParamMap {
   chunks: { color?: string; bg?: string; size?: number; density?: number; chunkSize?: number; seed?: number };
 }
 
+/** Region a pattern overlay is clipped to. */
 export interface PatternRegion {
   x: number;
   y: number;
@@ -21,6 +24,7 @@ export interface PatternRegion {
   shape: 'rectangle' | 'circle';
 }
 
+/** Per-call options for `renderPatternOverlay`. */
 export interface PatternOptions<P extends PatternId = PatternId> {
   opacity?: number;
   params?: PatternParamMap[P];

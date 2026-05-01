@@ -1,9 +1,11 @@
+/** Pure viewport state consumed and returned by `computeWheelAction`. */
 export interface WheelState {
   zoom: number;
   panX: number;
   panY: number;
 }
 
+/** Wheel-event input, decoupled from the DOM `WheelEvent` shape for testability. */
 export interface WheelInput {
   deltaX: number;
   deltaY: number;
@@ -16,8 +18,10 @@ export interface WheelInput {
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 200;
 
+/** Inclusive `[min, max]` zoom clamp for `computeWheelAction`. */
 export interface ZoomBounds { min: number; max: number; }
 
+/** Pure reducer: given current viewport state and a wheel input, return the next state (zoom, pan, or scroll). */
 export function computeWheelAction(
   state: WheelState,
   input: WheelInput,

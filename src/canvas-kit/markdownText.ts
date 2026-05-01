@@ -1,3 +1,4 @@
+/** A contiguous styled span of text produced by `parseMarkdownRuns`. */
 export interface StyledRun {
   text: string;
   bold: boolean;
@@ -5,6 +6,7 @@ export interface StyledRun {
   sizeOffset: number;
 }
 
+/** Tokenize a small markdown subset (`*italic*`, `**bold**`, `***both***`, `[bigger]`, `(smaller)`) into styled runs. */
 export function parseMarkdownRuns(input: string): StyledRun[] {
   const runs: StyledRun[] = [];
   let bold = false;
@@ -91,24 +93,29 @@ export function parseMarkdownRuns(input: string): StyledRun[] {
   return runs;
 }
 
+/** Width-measurement strategy for `layoutMarkdown`; canvas-backed default supplied by `createMarkdownRenderer`. */
 export type MeasureFn = (text: string, fontSize: number, bold: boolean, italic: boolean) => number;
 
+/** A `StyledRun` with its computed x-offset relative to the start of its line. */
 export interface PositionedRun extends StyledRun {
   x: number;
 }
 
+/** A single laid-out line of text: its positioned runs, total width, and computed line height. */
 export interface LayoutLine {
   runs: PositionedRun[];
   width: number;
   height: number;
 }
 
+/** Output of `layoutMarkdown`: per-line breakdown plus overall block dimensions. */
 export interface LayoutResult {
   lines: LayoutLine[];
   width: number;
   height: number;
 }
 
+/** Word-wrap parsed runs into lines bounded by `maxWidth`; pass `Infinity` for single-line layout. */
 export function layoutMarkdown(
   runs: StyledRun[],
   maxWidth: number,
@@ -193,6 +200,7 @@ export function layoutMarkdown(
 
 import type { TextRenderer } from './renderLabel';
 
+/** Font styling options threaded through `createMarkdownRenderer`. */
 export interface MarkdownFontOptions {
   /** Font-family spec (e.g. `'"Iowan Old Style", Georgia, serif'`). Defaults to `sans-serif`. */
   family?: string;
@@ -226,6 +234,7 @@ function canvasMeasure(ctx: CanvasRenderingContext2D, opts: MarkdownFontOptions 
   };
 }
 
+/** Build a fill+stroke `TextRenderer` pair for a markdown string at the given size; pre-computes layout once. */
 export function createMarkdownRenderer(
   ctx: CanvasRenderingContext2D,
   text: string,

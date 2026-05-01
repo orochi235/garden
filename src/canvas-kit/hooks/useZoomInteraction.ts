@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
+/** Options for `useZoomInteraction`. `sources` toggles which input devices may trigger zoom. */
 export interface UseZoomInteractionOptions {
   zoom: number;
   setZoom: (next: number) => void;
@@ -19,6 +20,7 @@ export interface UseZoomInteractionOptions {
   wheelRequiresModifier?: boolean;
 }
 
+/** Handlers and imperative actions returned by `useZoomInteraction`. */
 export interface UseZoomInteractionReturn {
   onWheel(e: WheelEvent | React.WheelEvent): void;
   onKeyDown(e: KeyboardEvent | React.KeyboardEvent): void;
@@ -39,6 +41,7 @@ function isEditableTarget(t: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
 
+/** Wheel/key/double-click zoom with focal-point preservation; returns event handlers and `zoomTo`/`zoomBy`/`reset`. */
 export function useZoomInteraction(
   opts: UseZoomInteractionOptions,
 ): UseZoomInteractionReturn {

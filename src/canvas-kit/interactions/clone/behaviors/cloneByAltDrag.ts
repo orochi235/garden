@@ -2,6 +2,7 @@ import { createInsertOp } from '../../../ops/create';
 import { createSetSelectionOp } from '../../../ops/selection';
 import type { CloneBehavior } from '../../types';
 
+/** Clone-on-alt-drag behavior for `useCloneInteraction`; activates when Alt/Option is held at drag start. */
 export function cloneByAltDrag(): CloneBehavior {
   return {
     id: 'cloneByAltDrag',

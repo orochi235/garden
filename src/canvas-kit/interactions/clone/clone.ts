@@ -3,6 +3,7 @@ import type { InsertAdapter } from '../../adapters/types';
 import type { Op } from '../../ops/types';
 import type { CloneBehavior, CloneLayer, ModifierState } from '../types';
 
+/** Options for `useCloneInteraction`. */
 export interface UseCloneInteractionOptions {
   behaviors: CloneBehavior[];
   setOverlay: (layer: CloneLayer, objects: unknown[]) => void;
@@ -14,6 +15,7 @@ export interface UseCloneInteractionOptions {
   expandIds?: (ids: string[]) => string[];
 }
 
+/** Return shape of `useCloneInteraction`: lifecycle methods plus the `isCloning` flag. */
 export interface UseCloneInteractionReturn {
   start(worldX: number, worldY: number, ids: string[], layer: CloneLayer, mods: ModifierState): void;
   move(worldX: number, worldY: number, mods: ModifierState): boolean;
@@ -53,6 +55,7 @@ function normalizeItem(raw: unknown): { id: string; x: number; y: number } {
   return { id: item.id, x: item.x ?? 0, y: item.y ?? 0 };
 }
 
+/** Drag-to-clone interaction; behavior decides which modifiers activate cloning vs plain move. */
 export function useCloneInteraction<T extends { id: string }>(
   adapter: InsertAdapter<T>,
   options: UseCloneInteractionOptions,
