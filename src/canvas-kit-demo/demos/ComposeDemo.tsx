@@ -175,13 +175,18 @@ export function ComposeDemo() {
         if (!p || !src) continue;
         ctx.fillStyle = src.color; ctx.globalAlpha = 0.85;
         ctx.fillRect(p.x, p.y, p.width, p.height); ctx.globalAlpha = 1;
+        if (selection.includes(id)) {
+          ctx.strokeStyle = '#f0e0a8'; ctx.lineWidth = 2;
+          ctx.strokeRect(p.x - 1, p.y - 1, p.width + 2, p.height + 2);
+        }
       }
     }
-    // resize handles only for selected rects
+    // resize handles only for selected rects (follow move/resize overlays)
     ctx.fillStyle = '#d4c4a8'; ctx.strokeStyle = '#1a130d'; ctx.lineWidth = 1;
     for (const id of selection) {
       const r = rects.find((x) => x.id === id); if (!r) continue;
-      const p = resizeOv && id === resizeOv.id ? resizeOv.currentPose : r;
+      const p = (moveOv?.poses.get(id))
+        ?? (resizeOv && id === resizeOv.id ? resizeOv.currentPose : r);
       for (const h of handlesOf({ ...r, ...p })) {
         ctx.fillRect(h.cx - HANDLE / 2, h.cy - HANDLE / 2, HANDLE, HANDLE);
         ctx.strokeRect(h.cx - HANDLE / 2, h.cy - HANDLE / 2, HANDLE, HANDLE);
