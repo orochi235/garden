@@ -353,3 +353,14 @@ describe('useZoomInteraction — double-click', () => {
     expect(setPan).toHaveBeenCalledWith({ x: 0, y: 0 });
   });
 });
+
+describe('useZoomInteraction — reset', () => {
+  it('sets zoom to 1 and pan to {0,0}', () => {
+    const { result, setZoom, setPan } = setup({
+      zoom: 7, pan: { x: 123, y: 456 },
+    });
+    act(() => result.current.reset());
+    expect(setZoom).toHaveBeenCalledWith(1);
+    expect(setPan).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+});
