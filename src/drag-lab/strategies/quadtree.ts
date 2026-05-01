@@ -291,6 +291,17 @@ function findFootprintCells(bounds: Rect, depth: number, items: LabItem[]): Rect
   return out;
 }
 
+/** Deepest depth any of the given items would resolve to in a fresh tree. */
+export function resolvedDepth(bounds: Rect, items: LabItem[], maxDepth: number): number {
+  if (items.length === 0) return 0;
+  let max = 0;
+  for (const item of items) {
+    const d = depthForRadius(item.radiusFt, bounds, maxDepth);
+    if (d > max) max = d;
+  }
+  return max;
+}
+
 export const quadtreeStrategy: LayoutStrategy = {
   name: 'Quadtree',
 

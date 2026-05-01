@@ -13,6 +13,7 @@ import {
   LAYER_ALWAYS_ON,
   LAYER_CONFIG_KEY,
   getLayerOrder,
+  resolvedDepth,
 } from './strategies/quadtree';
 
 function LegendRow({
@@ -323,8 +324,25 @@ export function Workspace({
 
           <div className="dl-controls-divider" />
 
-          {schema.map((field) => (
-            <label key={field.key} className={`dl-control-row${field.type === 'checkbox' ? ' dl-checkbox-row' : ''}`}>
+          {(() => {
+            const isQuadtree = strategy.name === 'Quadtree';
+            const resolved = isQuadtree
+              ? resolvedDepth({ x: 0, y: 0, width: state.containerWidth, height: state.containerHeight }, state.items, 8)
+              : 0;
+            const limitOn = state.config.limitToResolved !== false;
+            return schema.map((field) => {
+              const sliderMax = isQuadtree && field.key === 'maxDepth' && limitOn && resolved > 0
+                ? Math.max(field.min ?? 1, resolved)
+                : field.max;
+              const rawValue = (state.config[field.key] as number) ?? field.default;
+              const sliderValue = isQuadtree && field.key === 'maxDepth' && limitOn && resolved > 0
+                ? Math.min(rawValue, resolved)
+                : rawValue;
+              const labelText = isQuadtree && field.key === 'limitToResolved'
+                ? `${field.label} (${resolved})`
+                : field.label;
+              return (
+                <label key={field.key} className={`dl-control-row${field.type === 'checkbox' ? ' dl-checkbox-row' : ''}`}>
               {field.type === 'checkbox' && (
                 <input
                   type="checkbox"
@@ -333,16 +351,16 @@ export function Workspace({
                 />
               )}
               <span>
-                {field.label}
-                {field.type === 'slider' && `: ${(state.config[field.key] as number)?.toFixed(field.step != null && field.step % 1 === 0 ? 0 : 2) ?? field.default}`}
+                {labelText}
+                {field.type === 'slider' && `: ${sliderValue?.toFixed(field.step != null && field.step % 1 === 0 ? 0 : 2) ?? field.default}`}
               </span>
               {field.type === 'slider' && (
                 <input
                   type="range"
                   min={field.min}
-                  max={field.max}
+                  max={sliderMax}
                   step={field.step}
-                  value={(state.config[field.key] as number) ?? field.default}
+                  value={sliderValue}
                   onChange={(e) => onSetConfig(field.key, Number(e.target.value))}
                 />
               )}
@@ -357,7 +375,9 @@ export function Workspace({
                 </select>
               )}
             </label>
-          ))}
+              );
+            });
+          })()}
 
           <div className="dl-controls-divider" />
 
