@@ -19,7 +19,7 @@ import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch'
 import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from '@/canvas-kit/clipboard';
 import { useLayerEffect } from '@/canvas-kit';
-import { useCloneInteraction } from './hooks/useCloneInteraction';
+import { useCloneInteraction, cloneByAltDrag } from '@/canvas-kit/clone';
 import {
   useMoveInteraction as useKitMoveInteraction,
   useResizeInteraction as useKitResizeInteraction,
@@ -212,7 +212,6 @@ export function CanvasStack() {
     setSeedStartingPan(0, 0);
   }, [appMode, currentTrayId, width, height, garden.seedStarting.trays, setSeedStartingZoom, setSeedStartingPan]);
   const pan = usePanInteraction(getActivePan);
-  const moveInteraction = useCloneInteraction(containerRef, invalidate);
 
   // --- Kit move interactions (per-adapter) ---
   const plantingMoveAdapter = useMemo(() => createPlantingMoveAdapter(), []);
@@ -245,6 +244,19 @@ export function CanvasStack() {
   const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
   const structureResizeAdapter = useMemo(() => createStructureResizeAdapter(), []);
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
+
+  const clone = useCloneInteraction(insertAdapter, {
+    behaviors: [cloneByAltDrag()],
+    setOverlay: (layer, objects) => {
+      useUiStore.getState().setDragOverlay({
+        layer,
+        objects: objects as (import('../model/types').Planting | import('../model/types').Structure | import('../model/types').Zone)[],
+        hideIds: [],
+        snapped: false,
+      });
+    },
+    clearOverlay: () => useUiStore.getState().clearDragOverlay(),
+  });
 
   const zoneResize = useKitResizeInteraction(zoneResizeAdapter, {
     behaviors: [
@@ -348,7 +360,7 @@ export function CanvasStack() {
         structureResize.cancel();
         zoneResize.cancel();
         areaSelect.cancel();
-        moveInteraction.cancel();
+        clone.cancel();
         plantingMove.cancel();
         zoneMove.cancel();
         structureMove.cancel();
@@ -357,7 +369,7 @@ export function CanvasStack() {
     }
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [insert, structureResize, zoneResize, areaSelect, moveInteraction, plantingMove, zoneMove, structureMove]);
+  }, [insert, structureResize, zoneResize, areaSelect, clone, plantingMove, zoneMove, structureMove]);
 
   // --- Layer rendering ---
   useLayerEffect(
@@ -942,87 +954,48 @@ export function CanvasStack() {
         }
         if (hit) {
           if (e.altKey) {
-            // Clone the object and drag the clone
-            if (hit.layer === 'plantings') {
-              const planting = garden.plantings.find((p) => p.id === hit.id);
-              if (planting) {
-                const parent = garden.structures.find((s) => s.id === planting.parentId)
-                  ?? garden.zones.find((z) => z.id === planting.parentId);
-                if (parent) {
-                  // Defer clone creation until drag threshold is exceeded
-                  select(hit.id);
-                  moveInteraction.start(worldX, worldY, hit.id, hit.layer, parent.x + planting.x, parent.y + planting.y, false, {
-                    parentId: planting.parentId,
-                    x: planting.x,
-                    y: planting.y,
-                    cultivarId: planting.cultivarId,
-                    parentWorldX: parent.x,
-                    parentWorldY: parent.y,
-                  });
-                  setActiveCursor('copy');
-                }
-              }
-            } else {
-              const obj =
-                hit.layer === 'structures'
-                  ? garden.structures.find((s) => s.id === hit.id)
-                  : garden.zones.find((z) => z.id === hit.id);
-              if (obj) {
-                const { addStructure, addZone } = useGardenStore.getState();
-                if (hit.layer === 'structures') {
-                  addStructure({ type: (obj as typeof garden.structures[0]).type, x: obj.x, y: obj.y, width: obj.width, height: obj.height });
-                  const newStructures = useGardenStore.getState().garden.structures;
-                  const clone = newStructures[newStructures.length - 1];
-                  select(clone.id);
-                  moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
-                } else {
-                  addZone({ x: obj.x, y: obj.y, width: obj.width, height: obj.height });
-                  const newZones = useGardenStore.getState().garden.zones;
-                  const clone = newZones[newZones.length - 1];
-                  select(clone.id);
-                  moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
-                }
-                setActiveCursor('copy');
-              }
-            }
+            select(hit.id);
+            clone.start(worldX, worldY, [hit.id], hit.layer as 'plantings' | 'structures' | 'zones', {
+              alt: true, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey,
+            });
+            setActiveCursor('copy');
+            return;
           } else if (e.shiftKey) {
             addToSelection(hit.id);
           } else {
             select(hit.id);
           }
-          if (!e.altKey) {
-            if (hit.layer === 'plantings') {
-              plantingMove.start({
-                ids: [hit.id],
-                worldX,
-                worldY,
-                clientX: e.clientX,
-                clientY: e.clientY,
-              });
-              setActiveCursor('move');
-            } else if (hit.layer === 'structures') {
-              const primary = garden.structures.find((s) => s.id === hit.id);
-              const childIds = primary
-                ? garden.structures.filter((s) => s.parentId === primary.id).map((s) => s.id)
-                : [];
-              structureMove.start({
-                ids: [hit.id, ...childIds],
-                worldX,
-                worldY,
-                clientX: e.clientX,
-                clientY: e.clientY,
-              });
-              setActiveCursor('move');
-            } else if (hit.layer === 'zones') {
-              zoneMove.start({
-                ids: [hit.id],
-                worldX,
-                worldY,
-                clientX: e.clientX,
-                clientY: e.clientY,
-              });
-              setActiveCursor('move');
-            }
+          if (hit.layer === 'plantings') {
+            plantingMove.start({
+              ids: [hit.id],
+              worldX,
+              worldY,
+              clientX: e.clientX,
+              clientY: e.clientY,
+            });
+            setActiveCursor('move');
+          } else if (hit.layer === 'structures') {
+            const primary = garden.structures.find((s) => s.id === hit.id);
+            const childIds = primary
+              ? garden.structures.filter((s) => s.parentId === primary.id).map((s) => s.id)
+              : [];
+            structureMove.start({
+              ids: [hit.id, ...childIds],
+              worldX,
+              worldY,
+              clientX: e.clientX,
+              clientY: e.clientY,
+            });
+            setActiveCursor('move');
+          } else if (hit.layer === 'zones') {
+            zoneMove.start({
+              ids: [hit.id],
+              worldX,
+              worldY,
+              clientX: e.clientX,
+              clientY: e.clientY,
+            });
+            setActiveCursor('move');
           }
         } else {
           clearSelection();
@@ -1033,7 +1006,7 @@ export function CanvasStack() {
         setActiveCursor('grabbing');
       }
     },
-    [select, addToSelection, clearSelection, pan, moveInteraction, plantingMove, zoneMove, structureMove, insert, structureResize, zoneResize, areaSelect],
+    [select, addToSelection, clearSelection, pan, clone, plantingMove, zoneMove, structureMove, insert, structureResize, zoneResize, areaSelect],
   );
 
   const handleMouseMove = useCallback(
@@ -1047,6 +1020,7 @@ export function CanvasStack() {
           const modifiers = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
 
           if (areaSelect.isAreaSelecting && areaSelect.move(worldX, worldY, modifiers)) return;
+          if (clone.isCloning && clone.move(worldX, worldY, modifiers)) return;
           if (structureResize.isResizing && structureResize.move(worldX, worldY, modifiers)) return;
           if (zoneResize.isResizing && zoneResize.move(worldX, worldY, modifiers)) return;
           if (insert.isInserting && insert.move(worldX, worldY, modifiers)) return;
@@ -1058,7 +1032,6 @@ export function CanvasStack() {
         }
       }
 
-      if (moveInteraction.move(e)) return;
       if (pan.move(e)) return;
 
       // Seed-starting: tooltip when hovering a seedling with warnings
@@ -1113,7 +1086,7 @@ export function CanvasStack() {
         setActiveCursor(hit ? 'pointer' : null);
       }
     },
-    [structureResize, zoneResize, insert, areaSelect, plantingMove, zoneMove, structureMove, moveInteraction, pan],
+    [structureResize, zoneResize, insert, areaSelect, clone, plantingMove, zoneMove, structureMove, pan],
   );
 
   const handleMouseUp = useCallback(
@@ -1139,12 +1112,16 @@ export function CanvasStack() {
           setActiveCursor(null);
           return;
         }
+        if (clone.isCloning) {
+          clone.end();
+          setActiveCursor(null);
+          return;
+        }
         pan.end();
         // End kit move hooks (non-clone path)
         plantingMove.end();
         zoneMove.end();
         structureMove.end();
-        moveInteraction.end(e);
         setActiveCursor(null);
       }
       if (e.button === 2) {
@@ -1152,7 +1129,7 @@ export function CanvasStack() {
         setActiveCursor(null);
       }
     },
-    [areaSelect, insert, structureResize, zoneResize, plantingMove, zoneMove, structureMove, moveInteraction, pan],
+    [areaSelect, insert, structureResize, zoneResize, clone, plantingMove, zoneMove, structureMove, pan],
   );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
