@@ -1,6 +1,6 @@
 import { useGardenStore } from '../../store/gardenStore';
 import type { Zone } from '../../model/types';
-import type { MoveAdapter } from '@/canvas-kit';
+import type { MoveAdapter } from '@orochi235/weasel';
 
 export interface ZonePose { x: number; y: number; widthFt: number; heightFt: number }
 

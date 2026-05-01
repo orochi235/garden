@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createMarkdownRenderer } from '@/canvas-kit';
+import { createMarkdownRenderer } from '@orochi235/weasel';
 import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
-import { useDragHandle, type DragPayload } from '@/canvas-kit';
+import { useDragHandle, type DragPayload } from '@orochi235/weasel';
 
 interface Props {
   visibleCultivars: Cultivar[];

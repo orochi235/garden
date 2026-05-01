@@ -1,1 +1,0 @@
-export { cloneByAltDrag } from './cloneByAltDrag';

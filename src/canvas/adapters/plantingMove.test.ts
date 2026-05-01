@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPlantingMoveAdapter } from './plantingMove';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
-import { createTransformOp } from '@/canvas-kit';
+import { createTransformOp } from '@orochi235/weasel';
 
 describe('plantingMoveAdapter', () => {
   beforeEach(() => {

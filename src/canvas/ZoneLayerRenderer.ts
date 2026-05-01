@@ -1,10 +1,10 @@
 import type { Zone } from '../model/types';
 import type { LabelMode } from '../store/uiStore';
-import { LayerRenderer } from '@/canvas-kit';
+import { LayerRenderer } from '@orochi235/weasel';
 import { renderZones } from './renderZones';
 import type { ZoneLayerData } from './layerData';
 import { ZONE_LAYERS } from './layers/zoneLayers';
-import { runLayers } from '@/canvas-kit';
+import { runLayers } from '@orochi235/weasel';
 
 export class ZoneLayerRenderer extends LayerRenderer {
   zones: Zone[] = [];

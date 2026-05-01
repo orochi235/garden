@@ -1,8 +1,8 @@
 import type { Planting, Structure, Zone } from '../model/types';
 import type { LabelMode } from '../store/uiStore';
-import { LayerRenderer } from '@/canvas-kit';
+import { LayerRenderer } from '@orochi235/weasel';
 import { buildPlantingLayerData, PLANTING_LAYERS } from './layers/plantingLayers';
-import { runLayers } from '@/canvas-kit';
+import { runLayers } from '@orochi235/weasel';
 import { renderOverlayPlantings } from './renderPlantings';
 
 export class PlantingLayerRenderer extends LayerRenderer {

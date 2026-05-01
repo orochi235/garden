@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createZoneResizeAdapter } from './zoneResize';
-import { createTransformOp } from '@/canvas-kit';
+import { createTransformOp } from '@orochi235/weasel';
 
 describe('createZoneResizeAdapter', () => {
   beforeEach(() => {

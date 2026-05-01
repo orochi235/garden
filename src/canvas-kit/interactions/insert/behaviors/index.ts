@@ -1,1 +1,0 @@
-export { snapToGrid } from './snapToGrid';

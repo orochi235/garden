@@ -1,8 +1,8 @@
 import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
-import { worldToScreen } from '@/canvas-kit';
-import { renderLabel } from '@/canvas-kit';
-import { renderPatternOverlay } from '@/canvas-kit';
+import { worldToScreen } from '@orochi235/weasel';
+import { renderLabel } from '@orochi235/weasel';
+import { renderPatternOverlay } from '@orochi235/weasel';
 import type { StructureRenderOptions } from './renderOptions';
 
 /** Render a single ungrouped structure with fill, stroke, and decorations. */

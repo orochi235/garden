@@ -1,6 +1,6 @@
 import { useGardenStore } from '../../store/gardenStore';
 import type { Structure } from '../../model/types';
-import type { ResizeAdapter } from '@/canvas-kit';
+import type { ResizeAdapter } from '@orochi235/weasel';
 
 export interface StructureResizePose { x: number; y: number; width: number; height: number }
 

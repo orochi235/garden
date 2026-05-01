@@ -4,7 +4,7 @@ import type { WorkspaceState, SavedState } from './types';
 import { getStrategy, strategyNames } from './strategies';
 import { CanvasRenderer } from './CanvasRenderer';
 import { ItemPalette } from './ItemPalette';
-import { useDragHandle, useDropZone } from '@/canvas-kit';
+import { useDragHandle, useDropZone } from '@orochi235/weasel';
 import type { QuadtreeLayerId } from './strategies/quadtreeRenderer';
 import {
   QUADTREE_LAYER_IDS,

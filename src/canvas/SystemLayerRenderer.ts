@@ -1,8 +1,8 @@
 import type { Planting, Structure, Zone } from '../model/types';
-import { LayerRenderer } from '@/canvas-kit';
+import { LayerRenderer } from '@orochi235/weasel';
 import type { SystemLayerData } from './layerData';
 import { SELECTION_LAYERS } from './layers/selectionLayers';
-import { runLayers } from '@/canvas-kit';
+import { runLayers } from '@orochi235/weasel';
 
 export class SystemLayerRenderer extends LayerRenderer {
   selectedIds: string[] = [];

@@ -1,9 +1,9 @@
-import type { RenderLayer } from '@/canvas-kit';
+import type { RenderLayer } from '@orochi235/weasel';
 import type { ZoneLayerData } from '../layerData';
-import { worldToScreen } from '@/canvas-kit';
-import { renderLabel } from '@/canvas-kit';
-import type { PatternId } from '@/canvas-kit';
-import { renderPatternOverlay } from '@/canvas-kit';
+import { worldToScreen } from '@orochi235/weasel';
+import { renderLabel } from '@orochi235/weasel';
+import type { PatternId } from '@orochi235/weasel';
+import { renderPatternOverlay } from '@orochi235/weasel';
 
 export const ZONE_LAYERS: RenderLayer<ZoneLayerData>[] = [
   {
