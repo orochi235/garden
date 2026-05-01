@@ -1,7 +1,7 @@
 import { computeSlots, type Arrangement } from '../model/arrangement';
 import type { Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
-import { snapToGrid } from '@/canvas-kit';
+import { roundToCell } from '@/canvas-kit';
 
 /**
  * Determine where to place a new planting inside a parent.
@@ -18,8 +18,8 @@ export function getPlantingPosition(
   const arrangement = parent.arrangement;
   if (!arrangement || arrangement.type === 'free') {
     return {
-      x: snapToGrid(worldX - parent.x, cellSize),
-      y: snapToGrid(worldY - parent.y, cellSize),
+      x: roundToCell(worldX - parent.x, cellSize),
+      y: roundToCell(worldY - parent.y, cellSize),
     };
   }
 
@@ -39,7 +39,7 @@ export function getPlantingPosition(
 
   // All slots full — place at drop position
   return {
-    x: snapToGrid(worldX - parent.x, cellSize),
-    y: snapToGrid(worldY - parent.y, cellSize),
+    x: roundToCell(worldX - parent.x, cellSize),
+    y: roundToCell(worldY - parent.y, cellSize),
   };
 }

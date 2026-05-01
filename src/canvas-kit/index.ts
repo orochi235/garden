@@ -7,7 +7,7 @@
  * future apps without a unifying domain underneath.
  *
  * Currently exposed (Tier 1 — verbatim moves from `utils/` and `canvas/`):
- *   - View transform: `ViewTransform`, `worldToScreen`, `screenToWorld`, `snapToGrid`
+ *   - View transform: `ViewTransform`, `worldToScreen`, `screenToWorld`, `roundToCell`
  *   - Pointer drag: `useDragHandle`, `useDropZone`, `DragPayload`, threshold helpers
  *   - Drag ghost: `createDragGhost`
  *   - Canvas plumbing: `useCanvasSize`, `useLayerEffect`, `fitZoom`
@@ -35,8 +35,7 @@ export * from './ops';
 export * from './history';
 export * from './adapters/types';
 export * from './interactions/types';
-export { snapToContainer, snapBackOrDelete, snap, gridSnapStrategy } from './interactions/behaviors';
-export { snapToGrid as snapToGridBehavior } from './interactions/behaviors/snapToGrid';
+export { snapToGrid, snapToContainer, snapBackOrDelete, snap, gridSnapStrategy } from './interactions/behaviors';
 export { useMoveInteraction } from './interactions/move';
 export type {
   UseMoveInteractionOptions,

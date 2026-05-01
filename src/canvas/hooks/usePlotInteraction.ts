@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { screenToWorld, snapToGrid } from '@/canvas-kit';
+import { screenToWorld, roundToCell } from '@/canvas-kit';
 
 interface PlotDeps {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -25,8 +25,8 @@ export function usePlotInteraction({
   function start(worldX: number, worldY: number, altKey: boolean) {
     const { garden } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
-    const snappedX = altKey ? worldX : snapToGrid(worldX, cellSize);
-    const snappedY = altKey ? worldY : snapToGrid(worldY, cellSize);
+    const snappedX = altKey ? worldX : roundToCell(worldX, cellSize);
+    const snappedY = altKey ? worldY : roundToCell(worldY, cellSize);
     isPlotting.current = true;
     plotStart.current = { worldX: snappedX, worldY: snappedY };
     plotCurrent.current = { worldX: snappedX, worldY: snappedY };
@@ -45,8 +45,8 @@ export function usePlotInteraction({
     const { garden } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
     plotCurrent.current = {
-      worldX: e.altKey ? worldX : snapToGrid(worldX, cellSize),
-      worldY: e.altKey ? worldY : snapToGrid(worldY, cellSize),
+      worldX: e.altKey ? worldX : roundToCell(worldX, cellSize),
+      worldY: e.altKey ? worldY : roundToCell(worldY, cellSize),
     };
 
     // Render preview on selection canvas

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { screenToWorld, snapToGrid } from '@/canvas-kit';
+import { screenToWorld, roundToCell } from '@/canvas-kit';
 import type { HandlePosition } from '../hitTest';
 
 export function useResizeInteraction(containerRef: React.RefObject<HTMLDivElement | null>) {
@@ -42,7 +42,7 @@ export function useResizeInteraction(containerRef: React.RefObject<HTMLDivElemen
     });
     const { garden, updateStructure, updateZone } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
-    const snap = (v: number) => (e.altKey ? v : snapToGrid(v, cellSize));
+    const snap = (v: number) => (e.altKey ? v : roundToCell(v, cellSize));
 
     const orig = resizeOriginal.current;
     const handle = resizeHandle.current;

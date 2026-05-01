@@ -4,7 +4,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createPlanting } from '../../model/types';
 import type { Planting, Structure } from '../../model/types';
-import { screenToWorld, snapToGrid } from '@/canvas-kit';
+import { screenToWorld, roundToCell } from '@/canvas-kit';
 import { structuresCollide } from '../../utils/collision';
 
 // Clone-only hook: handles drag-from-palette for plantings, structures, and zones.
@@ -203,8 +203,8 @@ export function useCloneInteraction(
     const { garden } = useGardenStore.getState();
     const cellSize = garden.gridCellSizeFt;
     const freeMove = e.altKey && !forceSnap.current;
-    const snappedX = freeMove ? newX : snapToGrid(newX, cellSize);
-    const snappedY = freeMove ? newY : snapToGrid(newY, cellSize);
+    const snappedX = freeMove ? newX : roundToCell(newX, cellSize);
+    const snappedY = freeMove ? newY : roundToCell(newY, cellSize);
 
     const overlay = useUiStore.getState().dragOverlay;
     if (!overlay) return true;

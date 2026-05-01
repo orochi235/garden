@@ -4,7 +4,7 @@ export interface ViewTransform {
   zoom: number;
 }
 
-export function snapToGrid(value: number, cellSize: number): number {
+export function roundToCell(value: number, cellSize: number): number {
   return Math.round(value / cellSize) * cellSize || 0;
 }
 

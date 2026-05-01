@@ -22,10 +22,10 @@ import { useLayerEffect } from '@/canvas-kit';
 import { useCloneInteraction } from './hooks/useCloneInteraction';
 import {
   useMoveInteraction as useKitMoveInteraction,
+  snapToGrid,
   snapToContainer,
   snapBackOrDelete,
 } from '@/canvas-kit';
-import { snapToGridBehavior } from '@/canvas-kit';
 import { createPlantingMoveAdapter } from './adapters/plantingMove';
 import { createZoneMoveAdapter } from './adapters/zoneMove';
 import { createStructureMoveAdapter } from './adapters/structureMove';
@@ -200,7 +200,7 @@ export function CanvasStack() {
   const plantingMove = useKitMoveInteraction(plantingMoveAdapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
     behaviors: [
-      snapToGridBehavior({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      snapToGrid({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' }),
       snapToContainer({
         dwellMs: 500,
         findTarget: plantingMoveAdapter.findSnapTarget!,
@@ -212,12 +212,12 @@ export function CanvasStack() {
 
   const zoneMove = useKitMoveInteraction(zoneMoveAdapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
-    behaviors: [snapToGridBehavior({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' })],
+    behaviors: [snapToGrid({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' })],
   });
 
   const structureMove = useKitMoveInteraction(structureMoveAdapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
-    behaviors: [snapToGridBehavior({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' })],
+    behaviors: [snapToGrid({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' })],
   });
 
   const resize = useResizeInteraction(containerRef);

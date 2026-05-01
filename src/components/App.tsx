@@ -14,7 +14,7 @@ import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { autosave, loadPersistedCollection } from '../utils/file';
 import type { Cultivar } from '../model/cultivars';
 import { WelcomeModal } from './WelcomeModal';
-import { screenToWorld, snapToGrid } from '@/canvas-kit';
+import { screenToWorld, roundToCell } from '@/canvas-kit';
 import { getPlantingPosition } from '../utils/planting';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
@@ -150,8 +150,8 @@ export function App() {
         const cellSize = garden.gridCellSizeFt;
 
         if (entry.category === 'structures') {
-          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
           transientObj = createStructure({
             type: entry.type,
             x: snappedX,
@@ -166,8 +166,8 @@ export function App() {
             snapped: false,
           });
         } else if (entry.category === 'zones') {
-          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
           transientObj = createZone({
             x: snappedX,
             y: snappedY,
@@ -230,8 +230,8 @@ export function App() {
         if (!currentOverlay) return;
 
         if (entry.category === 'structures' || entry.category === 'zones') {
-          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
           const updated = { ...transientObj, x: snappedX, y: snappedY };
           transientObj = updated;
           useUiStore.getState().setDragOverlay({ ...currentOverlay, objects: [updated] });
@@ -289,8 +289,8 @@ export function App() {
           );
           const { garden, addStructure, addZone, addPlanting } = useGardenStore.getState();
           const cellSize = garden.gridCellSizeFt;
-          const snappedX = snapToGrid(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = snapToGrid(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
 
           if (entry.category === 'structures') {
             addStructure({
