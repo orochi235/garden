@@ -343,6 +343,20 @@ export const quadtreeStrategy: LayoutStrategy = {
     return {
       hide: snap ? 'ghost' as const : 'preview' as const,
       render(ctx: CanvasRenderingContext2D) {
+        // When snapping, draw the dragged circle at the target center so the
+        // user sees what they're placing (the renderer hides its own ghost).
+        if (snap && target) {
+          const cx = target.x + target.w / 2;
+          const cy = target.y + target.h / 2;
+          ctx.save();
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          ctx.arc(cx, cy, dragRadius, 0, Math.PI * 2);
+          ctx.fillStyle = '#7fb069';
+          ctx.fill();
+          ctx.restore();
+        }
+
         // Bottom layer: gray — all possible subdivisions at target depth
         for (const cell of putativeCells) {
           ctx.strokeStyle = 'rgba(180,180,180,0.3)';
