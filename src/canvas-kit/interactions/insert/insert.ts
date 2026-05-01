@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { createCreateOp } from '../../ops/create';
+import { createInsertOp } from '../../ops/create';
 import type { Op } from '../../ops/types';
 import type { InsertAdapter } from '../../adapters/types';
 import type {
@@ -123,7 +123,7 @@ export function useInsertInteraction<TObject extends { id: string }, TPose exten
       onGestureEnd?.(false);
       return;
     }
-    const ops: Op[] = [createCreateOp({ object: created, label: insertLabel })];
+    const ops: Op[] = [createInsertOp({ object: created, label: insertLabel })];
     adapter.applyBatch(ops, insertLabel);
     cleanup();
     onGestureEnd?.(true);

@@ -74,7 +74,7 @@ describe('useInsertInteraction — move + end', () => {
     expect(result.current.overlay).toEqual({ start: { x: 1, y: 0 }, current: { x: 5, y: 2 } });
   });
 
-  it('end emits one CreateOp on happy path', () => {
+  it('end emits one InsertOp on happy path', () => {
     const { adapter, batches, inserts } = makeAdapter();
     const { result } = renderHook(() => useInsertInteraction<Obj, { x: number; y: number }>(adapter, {}));
     act(() => {

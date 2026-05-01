@@ -1,5 +1,5 @@
 import type { Op } from './types';
-import { createCreateOp } from './create';
+import { createInsertOp } from './create';
 
 interface DeleteAdapter {
   removeObject(id: string): void;
@@ -16,7 +16,7 @@ export function createDeleteOp<TObject extends { id: string }>(args: {
       (adapter as DeleteAdapter).removeObject(object.id);
     },
     invert() {
-      return createCreateOp({ object, label });
+      return createInsertOp({ object, label });
     },
   };
 }

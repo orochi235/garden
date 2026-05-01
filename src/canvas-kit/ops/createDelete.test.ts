@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCreateOp } from './create';
+import { createInsertOp } from './create';
 import { createDeleteOp } from './delete';
 
 interface Obj { id: string; value: number }
@@ -15,18 +15,18 @@ function makeAdapter() {
   };
 }
 
-describe('createCreateOp / createDeleteOp', () => {
+describe('createInsertOp / createDeleteOp', () => {
   it('createOp applies as insert', () => {
     const obj: Obj = { id: 'a', value: 1 };
     const adapter = makeAdapter();
-    createCreateOp<Obj>({ object: obj }).apply(adapter as any);
+    createInsertOp<Obj>({ object: obj }).apply(adapter as any);
     expect(adapter.inserts).toEqual([obj]);
   });
 
   it('createOp inverts to deleteOp', () => {
     const obj: Obj = { id: 'a', value: 1 };
     const adapter = makeAdapter();
-    createCreateOp<Obj>({ object: obj }).invert().apply(adapter as any);
+    createInsertOp<Obj>({ object: obj }).invert().apply(adapter as any);
     expect(adapter.removes).toEqual(['a']);
   });
 
