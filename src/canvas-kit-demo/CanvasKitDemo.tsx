@@ -4,6 +4,8 @@ import { ResizeDemo, RESIZE_DEMO_SOURCE } from './demos/ResizeDemo';
 import { InsertDemo, INSERT_DEMO_SOURCE } from './demos/InsertDemo';
 import { CloneDemo, CLONE_DEMO_SOURCE } from './demos/CloneDemo';
 import { ComposeDemo, COMPOSE_DEMO_SOURCE } from './demos/ComposeDemo';
+import { ActionsDemo, ACTIONS_DEMO_SOURCE } from './demos/ActionsDemo';
+import { GroupsDemo, GROUPS_DEMO_SOURCE } from './demos/GroupsDemo';
 
 export function CanvasKitDemo() {
   return (
@@ -48,6 +50,22 @@ export function CanvasKitDemo() {
         hint="Hold Alt and drag a rectangle."
         canvas={<CloneDemo />}
         source={CLONE_DEMO_SOURCE}
+      />
+
+      <Card
+        title="Groups"
+        description="A virtual group around three rectangles. Clicking any member selects the whole group; dragging moves all members together; corner handles resize the group's union AABB and scale each member proportionally. Selection overlay uses the optional groupAdapter to draw a single rectangle around the group."
+        hint="Click a green rect to select the group, then drag or grab a corner."
+        canvas={<GroupsDemo />}
+        source={GROUPS_DEMO_SOURCE}
+      />
+
+      <Card
+        title="Actions"
+        description="Four selection-driven action hooks — useEscapeAction, useSelectAllAction, useDuplicateAction, useNudgeAction — wired with their default keybindings. Click the canvas to focus, then try the shortcuts."
+        hint="Click to select, then press Esc / Cmd-A / Cmd-D / arrows."
+        canvas={<ActionsDemo />}
+        source={ACTIONS_DEMO_SOURCE}
       />
 
       <Card
