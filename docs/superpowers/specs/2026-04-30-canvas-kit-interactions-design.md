@@ -191,6 +191,35 @@ Other hooks follow the same pattern with their own behavior interfaces:
 - `usePlotInteraction` — usually one behavior: `snapToGrid` for plot handles.
 - `useClipboard` — no overlay; `copy/cut/paste` methods emit `CreateOp[]` / `DeleteOp[]` batches.
 
+## Gesture handling
+
+The kit handles **pointer gestures**; the app handles **keyboard shortcuts**. The boundary is:
+
+- **App-side: keystroke → action.** `useKeyboardActionDispatch` (already in `src/actions/`) owns the single `window` `keydown` listener. Actions are declarative descriptors with `Shortcut` + `scope` + `execute`. Discrete keystrokes (cmd-Z, delete, escape, cmd-0) flow through this. The kit ships no shortcut system; an editing app brings its own.
+- **Kit-side: pointer + modifiers → gesture.** Modifier-key state during a gesture (alt/shift/meta/ctrl) is sampled from the in-flight `PointerEvent` and exposed on `GestureContext.modifiers`. Behaviors read modifiers from the context — no subscription to keydown/keyup. Examples: `snapToGrid({ bypassKey: 'alt' })` checks `ctx.modifiers.alt`; `axisLockWithModifier({ key: 'shift' })` checks `ctx.modifiers.shift`.
+
+**`GestureContext` shape (relevant fields):**
+
+```ts
+interface GestureContext<TPose> {
+  draggedIds: string[];
+  origin: Map<string, TPose>;        // poses captured at gesture start
+  current: Map<string, TPose>;       // running pose (mutated by behaviors in onMove)
+  snap: SnapTarget | null;
+  modifiers: { alt: boolean; shift: boolean; meta: boolean; ctrl: boolean };
+  pointer: { worldX: number; worldY: number; clientX: number; clientY: number };
+  adapter: SceneAdapter<unknown, TPose>;
+  // Scratch storage for behaviors. Stable across one gesture; reset on next gesture.
+  scratch: Record<string, unknown>;
+}
+```
+
+**Limitations:**
+
+- Modifier changes that occur *without* a pointer event do not re-run behaviors. If the user starts a drag and then taps shift without moving the mouse, axis-lock will not engage until the next pointermove. Today's hooks have the same limitation. v1 preserves it; a future enhancement can add `keydown`/`keyup` listeners inside the hook to refresh `ctx.modifiers` and re-run `onMove` with the last pointer position.
+- Pointer capture is set on `pointerdown` so a gesture continues to receive events when the cursor leaves the bound element. Hooks set capture; behaviors don't manage it.
+- Right-click/context menus are not gesture-handled by the kit. Apps that need right-click drag (e.g., the garden's right-click pan) bind their own handlers; the kit's `bind` only wires left-button gestures.
+
 ## File layout
 
 ### Kit
