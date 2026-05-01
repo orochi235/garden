@@ -12,23 +12,9 @@ export function ThemeDebugPanel() {
     <LayerSection title="Theme (debug)" defaultOpen={false}>
       <div className={styles.themeGrid}>
         <button
-          className={`${styles.themeSwatch} ${themeOverride === 'live' ? styles.themeSwatchActive : ''}`}
-          onClick={() => setThemeOverride('live')}
-          title="Live (geolocation-based)"
-        >
-          <span
-            className={styles.themeSwatchColor}
-            style={{
-              background:
-                'conic-gradient(#E8A868, #58A0B0, #60C8E8, #D4B888, #3E2E60, #1A2744, #101828, #E8A868)',
-            }}
-          />
-          <span className={styles.themeSwatchLabel}>Live</span>
-        </button>
-        <button
           className={`${styles.themeSwatch} ${themeOverride === null ? styles.themeSwatchActive : ''}`}
           onClick={() => setThemeOverride(null)}
-          title="Cycle (clock-based)"
+          title="Live (clock-based)"
         >
           <span
             className={styles.themeSwatchColor}
@@ -37,7 +23,7 @@ export function ThemeDebugPanel() {
                 'conic-gradient(from 90deg, #E8A868, #60C8E8, #48C0E0, #804878, #1A2744, #E8A868)',
             }}
           />
-          <span className={styles.themeSwatchLabel}>Cycle</span>
+          <span className={styles.themeSwatchLabel}>Live</span>
         </button>
         <button
           className={`${styles.themeSwatch} ${themeOverride === 'slow-cycle' ? styles.themeSwatchActive : ''}`}

@@ -258,23 +258,3 @@ export const CYCLE_PERIODS: TimePeriod[] = [
   'midnight',
 ];
 
-/**
- * Map the current time to a theme period using actual solar times.
- * dawn → sunrise theme, sunrise → morning, noon ± 1h → noon,
- * afternoon until sunset, sunset → sunset, dusk → twilight,
- * night until midnight region, then midnight.
- */
-export function getSolarTimePeriod(
-  hour: number,
-  solar: { dawn: number; sunrise: number; solarNoon: number; sunset: number; dusk: number },
-): TimePeriod {
-  if (hour < solar.dawn) return 'midnight';
-  if (hour < solar.sunrise) return 'sunrise';
-  if (hour < solar.solarNoon - 1) return 'morning';
-  if (hour < solar.solarNoon + 1) return 'noon';
-  if (hour < solar.sunset - 1) return 'afternoon';
-  if (hour < solar.sunset) return 'sunset';
-  if (hour < solar.dusk) return 'twilight';
-  if (hour < solar.dusk + 3) return 'night';
-  return 'midnight';
-}

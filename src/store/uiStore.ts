@@ -58,7 +58,7 @@ interface UiStore {
   panX: number;
   panY: number;
   plottingTool: PlottingTool | null;
-  themeOverride: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null;
+  themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
   renderLayerVisibility: Record<string, boolean>;
   renderLayerOrder: Record<string, string[]>;
@@ -124,7 +124,7 @@ interface UiStore {
   setPlantIconScale: (scale: number) => void;
   setViewMode: (mode: ViewMode) => void;
   setPlottingTool: (tool: PlottingTool | null) => void;
-  setThemeOverride: (period: TimePeriod | 'live' | 'cycle' | 'slow-cycle' | null) => void;
+  setThemeOverride: (period: TimePeriod | 'cycle' | 'slow-cycle' | null) => void;
   setActiveLayer: (layer: LayerId, flash?: boolean) => void;
   setLayerVisible: (layer: LayerId, visible: boolean) => void;
   setLayerOpacity: (layer: LayerId, opacity: number) => void;
@@ -166,7 +166,7 @@ function defaultState() {
     panX: 0,
     panY: 0,
     plottingTool: null as PlottingTool | null,
-    themeOverride: 'live' as UiStore['themeOverride'],
+    themeOverride: null as UiStore['themeOverride'],
     layerSelectorHovered: false,
     renderLayerVisibility: {
       'structure-surfaces': false,
