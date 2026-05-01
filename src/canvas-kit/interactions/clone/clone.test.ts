@@ -91,6 +91,58 @@ describe('useCloneInteraction', () => {
     expect(result.current.isCloning).toBe(false);
   });
 
+  it('expandIds expands a group id into leaves; overlay + commit reflect leaves', () => {
+    const overlays: Array<{ layer: string; objects: unknown[] }> = [];
+    const applied: Array<{ ops: Op[]; label: string }> = [];
+    const snapshotCalls: string[][] = [];
+    const adapter: InsertAdapter<Obj> = {
+      commitInsert: () => null,
+      commitPaste: (snap: { items: { id: string }[] }) =>
+        snap.items.map((it, i) => ({ id: `new-${it.id}-${i}` } as Obj)),
+      snapshotSelection: (ids) => {
+        snapshotCalls.push(ids);
+        return { items: ids.map((id) => ({ id })) };
+      },
+      insertObject: () => {},
+      setSelection: () => {},
+      applyBatch: (ops, label) => { applied.push({ ops, label }); },
+      getSelection: () => [],
+    };
+    const setOverlay = (layer: string, objects: unknown[]) => { overlays.push({ layer, objects }); };
+    const clearOverlay = () => {};
+    const expandIds = (ids: string[]) => (ids.includes('G') ? ['a', 'b', 'c'] : ids);
+    const { result } = renderHook(() =>
+      useCloneInteraction(adapter, {
+        behaviors: [cloneByAltDrag()],
+        setOverlay,
+        clearOverlay,
+        expandIds,
+      }),
+    );
+    act(() => { result.current.start(0, 0, ['G'], 'structures', mods(true)); });
+    expect(overlays[0].objects).toHaveLength(3);
+    act(() => { result.current.move(3, 4, mods(true)); });
+    act(() => { result.current.end(); });
+    expect(applied).toHaveLength(1);
+    // 3 inserts + 1 setSelection = 4 ops
+    expect(applied[0].ops.length).toBe(4);
+  });
+
+  it('expandIds returning [] aborts start cleanly', () => {
+    const h = makeAdapter();
+    const { result } = renderHook(() =>
+      useCloneInteraction(h.adapter, {
+        behaviors: [cloneByAltDrag()],
+        setOverlay: h.setOverlay,
+        clearOverlay: h.clearOverlay,
+        expandIds: () => [],
+      }),
+    );
+    act(() => { result.current.start(0, 0, ['a'], 'structures', mods(true)); });
+    expect(result.current.isCloning).toBe(false);
+    expect(h.overlays).toEqual([]);
+  });
+
   it('cancel clears overlay without committing', () => {
     const h = makeAdapter();
     const { result } = renderHook(() =>

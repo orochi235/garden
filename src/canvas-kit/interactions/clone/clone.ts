@@ -7,6 +7,11 @@ export interface UseCloneInteractionOptions {
   behaviors: CloneBehavior[];
   setOverlay: (layer: CloneLayer, objects: unknown[]) => void;
   clearOverlay: () => void;
+  /** Optional: expand the incoming id list before snapshot. Used for
+   *  virtual-group expansion (groups have no pose; their leaves do).
+   *  Called once at `start()`. Returning `[]` aborts the gesture cleanly.
+   *  Default: identity. */
+  expandIds?: (ids: string[]) => string[];
 }
 
 export interface UseCloneInteractionReturn {
@@ -69,10 +74,13 @@ export function useCloneInteraction<T extends { id: string }>(
     (worldX: number, worldY: number, ids: string[], layer: CloneLayer, mods: ModifierState) => {
       const behavior = optsRef.current.behaviors.find((b) => b.activates(mods));
       if (!behavior) return;
-      const snap = adapterRef.current.snapshotSelection(ids);
+      const expand = optsRef.current.expandIds;
+      const expandedIds = expand ? expand(ids) : ids;
+      if (expandedIds.length === 0) return;
+      const snap = adapterRef.current.snapshotSelection(expandedIds);
       const snapshotItems = snap.items.map(normalizeItem);
       const s: ActiveState = {
-        ids,
+        ids: expandedIds,
         layer,
         startWorldX: worldX,
         startWorldY: worldY,

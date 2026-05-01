@@ -116,6 +116,43 @@ describe('useMoveInteraction', () => {
     expect(adapter.batches[0].ops.length).toBe(2);
   });
 
+  it('expandIds is called once with input ids and its result drives draggedIds + poses', () => {
+    const adapter = makeAdapter([
+      { id: 'a', pose: { x: 0, y: 0 }, parent: null },
+      { id: 'b', pose: { x: 10, y: 10 }, parent: null },
+    ]);
+    const calls: string[][] = [];
+    const expandIds = (ids: string[]) => {
+      calls.push(ids);
+      return ids.includes('G') ? ['a', 'b'] : ids;
+    };
+    const { result } = renderHook(() => useMoveInteraction(adapter, { translatePose, expandIds }));
+    act(() => result.current.start({ ids: ['G'], worldX: 0, worldY: 0, clientX: 0, clientY: 0 }));
+    act(() => result.current.move({ worldX: 5, worldY: 5, clientX: 100, clientY: 100, modifiers: { alt: false, shift: false, meta: false, ctrl: false } }));
+    expect(calls).toEqual([['G']]);
+    expect(result.current.overlay!.draggedIds).toEqual(['a', 'b']);
+    expect(result.current.overlay!.poses.get('a')).toEqual({ x: 5, y: 5 });
+    expect(result.current.overlay!.poses.get('b')).toEqual({ x: 15, y: 15 });
+    act(() => result.current.end());
+    expect(adapter.store.get('a')!.pose).toEqual({ x: 5, y: 5 });
+    expect(adapter.store.get('b')!.pose).toEqual({ x: 15, y: 15 });
+    expect(adapter.batches[0].ops.length).toBe(2);
+  });
+
+  it('expandIds returning [] aborts the gesture cleanly', () => {
+    const adapter = makeAdapter([{ id: 'a', pose: { x: 0, y: 0 }, parent: null }]);
+    const { result } = renderHook(() =>
+      useMoveInteraction(adapter, { translatePose, expandIds: () => [] }),
+    );
+    act(() => result.current.start({ ids: ['a'], worldX: 0, worldY: 0, clientX: 0, clientY: 0 }));
+    expect(
+      result.current.move({ worldX: 5, worldY: 5, clientX: 100, clientY: 100, modifiers: { alt: false, shift: false, meta: false, ctrl: false } }),
+    ).toBe(false);
+    act(() => result.current.end());
+    expect(adapter.batches).toEqual([]);
+    expect(result.current.overlay).toBeNull();
+  });
+
   it('overlay reflects in-flight pose; cleared on end', () => {
     const adapter = makeAdapter([{ id: 'a', pose: { x: 0, y: 0 }, parent: null }]);
     const { result } = renderHook(() => useMoveInteraction(adapter, { translatePose }));

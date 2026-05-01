@@ -14,6 +14,13 @@ export interface UseMoveInteractionOptions<TPose> {
   transient?: boolean;
   onGestureStart?(ids: string[]): void;
   onGestureEnd?(committed: boolean): void;
+  /** Optional: expand the incoming id list before pose lookups. Used for
+   *  virtual-group expansion (groups have no pose; their leaves do).
+   *  Called once at `start()`. The returned list flows through ctx,
+   *  overlay (`overlay.draggedIds` is the **expanded** leaves), and op
+   *  generation. Returning `[]` aborts the gesture cleanly.
+   *  Default: identity. */
+  expandIds?: (ids: string[]) => string[];
 }
 
 export interface MoveStartArgs {
@@ -52,6 +59,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
     moveLabel = 'Move',
     onGestureStart,
     onGestureEnd,
+    expandIds,
   } = options;
 
   const behaviorsRef = useRef(behaviors);
@@ -78,14 +86,20 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
   }, []);
 
   const start = useCallback((args: MoveStartArgs) => {
+    const ids = expandIds ? expandIds(args.ids) : args.ids;
+    if (ids.length === 0) {
+      stateRef.current.phase = 'idle';
+      stateRef.current.ctx = null;
+      return;
+    }
     const origin = new Map<string, TPose>();
-    for (const id of args.ids) origin.set(id, adapter.getPose(id));
+    for (const id of ids) origin.set(id, adapter.getPose(id));
     stateRef.current = {
       phase: 'pending',
       startWorld: { x: args.worldX, y: args.worldY },
       startClient: { x: args.clientX, y: args.clientY },
       ctx: {
-        draggedIds: args.ids,
+        draggedIds: ids,
         origin,
         current: new Map(origin),
         snap: null,
@@ -95,7 +109,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
         scratch: {},
       },
     };
-  }, [adapter]);
+  }, [adapter, expandIds]);
 
   const move = useCallback((args: MoveMoveArgs): boolean => {
     const s = stateRef.current;

@@ -71,6 +71,14 @@ Phase 1 establishes only this foundation — the move/resize/clone gestures
 and rendering layers are unchanged. Wiring selection, gesture expansion,
 and group-aware overlays comes in later phases.
 
+Phase 2 wires group expansion into `useMoveInteraction` and
+`useCloneInteraction` via an opt-in `expandIds(ids)` option. Consumers pass
+`(ids) => expandToLeaves(ids, groupAdapter)` to make a group-id selection
+drag every leaf member by the same delta (move) or clone every leaf with
+the same offset (clone). The kit itself stays decoupled from
+`GroupAdapter` — omit `expandIds` for identity behavior. Resize,
+area-select, insert, and selection-overlay rendering are Phase 3+.
+
 ## Gesture lifecycle
 
 Every interaction hook follows the same shape:

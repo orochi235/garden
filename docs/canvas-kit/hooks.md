@@ -20,6 +20,10 @@ Drag one or more objects. See `src/canvas-kit/interactions/move/move.ts`.
 - `dragThresholdPx?` — default 4.
 - `moveLabel?` — history label, default `'Move'`.
 - `onGestureStart(ids)` / `onGestureEnd(committed)`.
+- `expandIds?(ids)` — optional id-list expansion called once at `start()`.
+  Pass `(ids) => expandToLeaves(ids, groupAdapter)` for virtual-group
+  expansion; the returned leaves drive `overlay.draggedIds`, pose lookups,
+  and op generation. Returning `[]` aborts the gesture cleanly.
 
 **Returns:** `start({ ids, worldX, worldY, clientX, clientY })`,
 `move({ worldX, worldY, clientX, clientY, modifiers })`, `end()`, `cancel()`,
@@ -113,6 +117,9 @@ Modifier-gated clone of a selection (e.g. alt-drag). See
 - `setOverlay(layer, objects)` / `clearOverlay()` — the hook's overlay is
   push-based: it calls these so the consumer renders the ghost copy on the
   appropriate layer (`'structures' | 'zones' | 'plantings'`).
+- `expandIds?(ids)` — optional id-list expansion called once at `start()`.
+  Pass `(ids) => expandToLeaves(ids, groupAdapter)` to clone every leaf of
+  a virtual group with the same offset. Returning `[]` aborts.
 
 **Returns:** `start(worldX, worldY, ids, layer, mods)`, `move`, `end`,
 `cancel`, `isCloning`.
