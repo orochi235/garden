@@ -102,6 +102,8 @@ export function CanvasStack() {
   const plantIconScale = useUiStore((s) => s.plantIconScale);
   const viewMode = useUiStore((s) => s.viewMode);
   const overlay = useUiStore((s) => s.dragOverlay);
+  const resizeOverlayUi = useUiStore((s) => s.resizeOverlay);
+  const insertOverlayUi = useUiStore((s) => s.insertOverlay);
   const appMode = useUiStore((s) => s.appMode);
   const currentTrayId = useUiStore((s) => s.currentTrayId);
   const seedStartingZoom = useUiStore((s) => s.seedStartingZoom);
@@ -510,11 +512,37 @@ export function CanvasStack() {
     zoneRenderer.current.overlaySnapped = false;
   }
 
+  // Resize overlay: hide source object, draw at currentPose. Layered after the
+  // dragOverlay block so resize-specific overrides apply when active.
+  if (resizeOverlayUi) {
+    const id = resizeOverlayUi.id;
+    const cp = resizeOverlayUi.currentPose;
+    if (resizeOverlayUi.layer === 'structures') {
+      const src = garden.structures.find((s) => s.id === id);
+      if (src) {
+        structureRenderer.current.hideIds = [id];
+        structureRenderer.current.overlayStructures = [
+          { ...src, x: cp.x, y: cp.y, width: cp.width, height: cp.height },
+        ];
+        structureRenderer.current.overlaySnapped = false;
+      }
+    } else {
+      const src = garden.zones.find((z) => z.id === id);
+      if (src) {
+        zoneRenderer.current.hideIds = [id];
+        zoneRenderer.current.overlayZones = [
+          { ...src, x: cp.x, y: cp.y, width: cp.width, height: cp.height },
+        ];
+        zoneRenderer.current.overlaySnapped = false;
+      }
+    }
+  }
+
   useLayerEffect(
     structureCanvasRef, width, height, dpr,
     appMode === 'garden' && layerVisibility.structures,
     (ctx) => structureRenderer.current.render(ctx),
-    [appMode, garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, renderLayerVisibility, renderLayerOrder, debugOverlappingLabels, labelMode, labelFontSize, structureRenderer.current.highlight, overlay],
+    [appMode, garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, renderLayerVisibility, renderLayerOrder, debugOverlappingLabels, labelMode, labelFontSize, structureRenderer.current.highlight, overlay, resizeOverlayUi],
   );
 
   const trayParams = trayRenderer.current;
@@ -533,7 +561,7 @@ export function CanvasStack() {
     [
       appMode,
       // garden zones
-      garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, labelMode, labelFontSize, zoneRenderer.current.highlight, overlay, renderLayerVisibility, renderLayerOrder,
+      garden.zones, zoom, panX, panY, layerOpacity.zones, activeLayer, labelMode, labelFontSize, zoneRenderer.current.highlight, overlay, resizeOverlayUi, renderLayerVisibility, renderLayerOrder,
       // seed-starting tray params (capture full param set as one object)
       trayParams.tray, trayParams.pxPerInch, trayParams.originX, trayParams.originY,
       trayParams.showGrid, trayParams.showDragSpreadAffordances, trayParams.dragSpreadAffordanceHover,
@@ -565,8 +593,30 @@ export function CanvasStack() {
     selectionCanvasRef,
     width, height, dpr,
     appMode === 'garden',
-    (ctx) => systemRenderer.current.render(ctx),
-    [appMode, selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY],
+    (ctx) => {
+      systemRenderer.current.render(ctx);
+      const insertOv = useUiStore.getState().insertOverlay;
+      const tool = useUiStore.getState().plottingTool;
+      if (insertOv && tool) {
+        const x = Math.min(insertOv.start.x, insertOv.current.x);
+        const y = Math.min(insertOv.start.y, insertOv.current.y);
+        const w = Math.abs(insertOv.current.x - insertOv.start.x);
+        const h = Math.abs(insertOv.current.y - insertOv.start.y);
+        const sx = panX + x * zoom;
+        const sy = panY + y * zoom;
+        const sw = w * zoom;
+        const sh = h * zoom;
+        const color = tool.color ?? '#8B6914';
+        ctx.fillStyle = `${color}66`;
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(sx, sy, sw, sh);
+        ctx.setLineDash([]);
+      }
+    },
+    [appMode, selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY, insertOverlayUi],
   );
 
   // --- Seedling drag (in-tray move; multi-select moves group; drag-out removes) ---
