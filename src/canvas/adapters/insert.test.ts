@@ -3,7 +3,7 @@ import { useGardenStore, blankGarden } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createInsertAdapter } from './insert';
 import { createInsertOp } from '@/canvas-kit';
-import { createPlanting } from '../../model/types';
+import { createPlanting, createStructure } from '../../model/types';
 
 describe('createInsertAdapter', () => {
   beforeEach(() => {
@@ -131,5 +131,61 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     const cell = useGardenStore.getState().garden.gridCellSizeFt;
     const off = a.getPasteOffset!({ items: [] });
     expect(off).toEqual({ dx: cell, dy: cell });
+  });
+});
+
+describe('createInsertAdapter — commitPaste with dropPoint', () => {
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
+  });
+
+  it('with dropPoint over a container, planting reparents and uses local coords', () => {
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 6, width: 4, height: 4 });
+    useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
+    const sId = useGardenStore.getState().garden.structures[0].id;
+    // Source planting under a different (nonexistent) parent — proves reparenting
+    const planting = createPlanting({ parentId: 'orig', x: 0, y: 0, cultivarId: 'tomato' });
+    const a = createInsertAdapter();
+    const snap = { items: [{ kind: 'planting', data: planting }] };
+    const out = a.commitPaste(snap, { dx: 0, dy: 0 }, {
+      dropPoint: { worldX: 7, worldY: 8 },
+    }) as Array<{ parentId: string; x: number; y: number }>;
+    expect(out).toHaveLength(1);
+    expect(out[0].parentId).toBe(sId);
+    expect(out[0].x).toBe(2); // 7 - 5
+    expect(out[0].y).toBe(2); // 8 - 6
+  });
+
+  it('with dropPoint outside any container, planting is silently dropped', () => {
+    const planting = createPlanting({ parentId: 'orig', x: 0, y: 0, cultivarId: 'tomato' });
+    const a = createInsertAdapter();
+    const snap = { items: [{ kind: 'planting', data: planting }] };
+    const out = a.commitPaste(snap, { dx: 0, dy: 0 }, {
+      dropPoint: { worldX: 999, worldY: 999 },
+    });
+    expect(out).toHaveLength(0);
+  });
+
+  it('without dropPoint, planting keeps original parent (paste behavior preserved)', () => {
+    const planting = createPlanting({ parentId: 'orig', x: 1, y: 1, cultivarId: 'tomato' });
+    const a = createInsertAdapter();
+    const snap = { items: [{ kind: 'planting', data: planting }] };
+    const out = a.commitPaste(snap, { dx: 0.5, dy: 0.5 }) as Array<{ parentId: string; x: number; y: number }>;
+    expect(out).toHaveLength(1);
+    expect(out[0].parentId).toBe('orig');
+    expect(out[0].x).toBe(1.5);
+    expect(out[0].y).toBe(1.5);
+  });
+
+  it('with dropPoint, structure offset path unaffected', () => {
+    const structure = createStructure({ type: 'pot', x: 5, y: 6, width: 1, height: 1 });
+    const a = createInsertAdapter();
+    const snap = { items: [{ kind: 'structure', data: structure }] };
+    const out = a.commitPaste(snap, { dx: 1, dy: 2 }, {
+      dropPoint: { worldX: 999, worldY: 999 },
+    }) as Array<{ x: number; y: number }>;
+    expect(out[0].x).toBe(6);
+    expect(out[0].y).toBe(8);
   });
 });

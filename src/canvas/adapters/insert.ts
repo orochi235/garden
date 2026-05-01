@@ -60,7 +60,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
       }
       return { items };
     },
-    commitPaste(clipboard: ClipboardSnapshot, offset, _ctx?: { dropPoint?: { worldX: number; worldY: number } }) {
+    commitPaste(clipboard: ClipboardSnapshot, offset, ctx?: { dropPoint?: { worldX: number; worldY: number } }) {
       const out: GardenObj[] = [];
       for (const raw of clipboard.items) {
         const item = raw as SnapshotItem;
@@ -91,14 +91,35 @@ export function createInsertAdapter(): GardenInsertAdapter {
           );
         } else {
           const p = item.data as Planting;
-          out.push(
-            createPlanting({
-              parentId: p.parentId,
-              x: p.x + offset.dx,
-              y: p.y + offset.dy,
-              cultivarId: p.cultivarId,
-            }),
-          );
+          if (ctx?.dropPoint) {
+            const { worldX, worldY } = ctx.dropPoint;
+            const { garden } = useGardenStore.getState();
+            const container =
+              garden.structures.find(
+                (s) => worldX >= s.x && worldX <= s.x + s.width && worldY >= s.y && worldY <= s.y + s.height,
+              ) ??
+              garden.zones.find(
+                (z) => worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.height,
+              );
+            if (!container) continue; // silent drop
+            out.push(
+              createPlanting({
+                parentId: container.id,
+                x: worldX - container.x,
+                y: worldY - container.y,
+                cultivarId: p.cultivarId,
+              }),
+            );
+          } else {
+            out.push(
+              createPlanting({
+                parentId: p.parentId,
+                x: p.x + offset.dx,
+                y: p.y + offset.dy,
+                cultivarId: p.cultivarId,
+              }),
+            );
+          }
         }
       }
       return out;
