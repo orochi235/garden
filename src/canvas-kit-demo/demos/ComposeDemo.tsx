@@ -4,6 +4,9 @@ import {
   useResizeInteraction,
   useInsertInteraction,
   useAreaSelectInteraction,
+  composeSelectionPose,
+  createSelectionOverlayLayer,
+  runLayers,
 } from '@/canvas-kit';
 import { selectFromMarquee } from '@/canvas-kit/area-select';
 import { clientToCanvas } from '../canvasCoords';
@@ -15,6 +18,7 @@ import type {
   ResizeAnchor,
   Op,
   ClipboardSnapshot,
+  RenderLayer,
 } from '@/canvas-kit';
 
 interface Rect { id: string; x: number; y: number; width: number; height: number; color: string }
@@ -158,52 +162,70 @@ export function ComposeDemo() {
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, W, H);
-    const hide = new Set(moveOv?.hideIds ?? []);
-    for (const r of rects) {
-      if (hide.has(r.id)) continue;
-      const p = resizeOv && r.id === resizeOv.id ? resizeOv.currentPose : r;
-      ctx.fillStyle = r.color;
-      ctx.fillRect(p.x, p.y, p.width, p.height);
-      if (selection.includes(r.id)) {
-        ctx.strokeStyle = '#f0e0a8'; ctx.lineWidth = 2;
-        ctx.strokeRect(p.x - 1, p.y - 1, p.width + 2, p.height + 2);
-      }
-    }
-    if (moveOv) {
-      for (const id of moveOv.draggedIds) {
-        const p = moveOv.poses.get(id); const src = rects.find((r) => r.id === id);
-        if (!p || !src) continue;
-        ctx.fillStyle = src.color; ctx.globalAlpha = 0.85;
-        ctx.fillRect(p.x, p.y, p.width, p.height); ctx.globalAlpha = 1;
-        if (selection.includes(id)) {
-          ctx.strokeStyle = '#f0e0a8'; ctx.lineWidth = 2;
-          ctx.strokeRect(p.x - 1, p.y - 1, p.width + 2, p.height + 2);
+
+    const byId = (id: string) => rects.find((r) => r.id === id);
+    const resolvePose = composeSelectionPose<Pose>({
+      moveOverlay: moveOv,
+      resizeOverlay: resizeOv,
+      getStoredPose: (id) => {
+        const r = byId(id)!;
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      },
+    });
+
+    const baseLayer: RenderLayer<unknown> = {
+      id: 'base', label: 'Base',
+      draw: (cx) => {
+        const hide = new Set(moveOv?.hideIds ?? []);
+        for (const r of rects) {
+          if (hide.has(r.id)) continue;
+          const p = resizeOv && r.id === resizeOv.id ? resizeOv.currentPose : r;
+          cx.fillStyle = r.color;
+          cx.fillRect(p.x, p.y, p.width, p.height);
         }
-      }
-    }
-    // resize handles only for selected rects (follow move/resize overlays)
-    ctx.fillStyle = '#d4c4a8'; ctx.strokeStyle = '#1a130d'; ctx.lineWidth = 1;
-    for (const id of selection) {
-      const r = rects.find((x) => x.id === id); if (!r) continue;
-      const p = (moveOv?.poses.get(id))
-        ?? (resizeOv && id === resizeOv.id ? resizeOv.currentPose : r);
-      for (const h of handlesOf({ ...r, ...p })) {
-        ctx.fillRect(h.cx - HANDLE / 2, h.cy - HANDLE / 2, HANDLE, HANDLE);
-        ctx.strokeRect(h.cx - HANDLE / 2, h.cy - HANDLE / 2, HANDLE, HANDLE);
-      }
-    }
-    if (insOv) {
-      const x = Math.min(insOv.start.x, insOv.current.x), y = Math.min(insOv.start.y, insOv.current.y);
-      const w = Math.abs(insOv.current.x - insOv.start.x), h = Math.abs(insOv.current.y - insOv.start.y);
-      ctx.fillStyle = 'rgba(127,176,105,0.25)'; ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = '#7fb069'; ctx.setLineDash([4, 4]); ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
-    }
-    if (areaOv) {
-      const x = Math.min(areaOv.start.worldX, areaOv.current.worldX), y = Math.min(areaOv.start.worldY, areaOv.current.worldY);
-      const w = Math.abs(areaOv.current.worldX - areaOv.start.worldX), h = Math.abs(areaOv.current.worldY - areaOv.start.worldY);
-      ctx.fillStyle = 'rgba(164,139,212,0.18)'; ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = '#a48bd4'; ctx.setLineDash([3, 3]); ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
-    }
+      },
+    };
+
+    const ghostLayer: RenderLayer<unknown> = {
+      id: 'ghost', label: 'Ghost',
+      draw: (cx) => {
+        if (!moveOv) return;
+        cx.globalAlpha = 0.85;
+        for (const id of moveOv.draggedIds) {
+          const p = moveOv.poses.get(id); const src = byId(id);
+          if (!p || !src) continue;
+          cx.fillStyle = src.color;
+          cx.fillRect(p.x, p.y, p.width, p.height);
+        }
+        cx.globalAlpha = 1;
+      },
+    };
+
+    const selectionLayer = createSelectionOverlayLayer<Pose>({
+      getSelection: () => selection,
+      getPose: (id) => (byId(id) ? resolvePose(id) : null),
+      handles: { size: HANDLE },
+    });
+
+    const marqueeLayer: RenderLayer<unknown> = {
+      id: 'marquee', label: 'Marquee',
+      draw: (cx) => {
+        if (insOv) {
+          const x = Math.min(insOv.start.x, insOv.current.x), y = Math.min(insOv.start.y, insOv.current.y);
+          const w = Math.abs(insOv.current.x - insOv.start.x), h = Math.abs(insOv.current.y - insOv.start.y);
+          cx.fillStyle = 'rgba(127,176,105,0.25)'; cx.fillRect(x, y, w, h);
+          cx.strokeStyle = '#7fb069'; cx.setLineDash([4, 4]); cx.strokeRect(x, y, w, h); cx.setLineDash([]);
+        }
+        if (areaOv) {
+          const x = Math.min(areaOv.start.worldX, areaOv.current.worldX), y = Math.min(areaOv.start.worldY, areaOv.current.worldY);
+          const w = Math.abs(areaOv.current.worldX - areaOv.start.worldX), h = Math.abs(areaOv.current.worldY - areaOv.start.worldY);
+          cx.fillStyle = 'rgba(164,139,212,0.18)'; cx.fillRect(x, y, w, h);
+          cx.strokeStyle = '#a48bd4'; cx.setLineDash([3, 3]); cx.strokeRect(x, y, w, h); cx.setLineDash([]);
+        }
+      },
+    };
+
+    runLayers(ctx, [baseLayer, ghostLayer, selectionLayer, marqueeLayer], undefined, {});
   }, [rects, selection, moveOv, resizeOv, insOv, areaOv]);
 
   return (
@@ -255,7 +277,16 @@ function onPointerDown(e) {
   return mode === 'insert' ? insert.start(wx, wy, mods) : area.start(wx, wy, mods);
 }
 
-// onPointerMove / onPointerUp route to whichever hook owns gesture.current.
-// Selection lives on the adapter; the renderer reads it to decide which rects
-// get a highlight outline and resize handles.
+// Render: compose live poses from move/resize overlays, then run a stack of
+// small layers. Selection outlines + handles come from canvas-kit's
+// createSelectionOverlayLayer — no hand-drawn rects per id.
+const resolvePose = composeSelectionPose({
+  moveOverlay: move.overlay, resizeOverlay: resize.overlay,
+  getStoredPose: (id) => byId(id),
+});
+const selectionLayer = createSelectionOverlayLayer({
+  getSelection: () => selection,
+  getPose: (id) => (byId(id) ? resolvePose(id) : null),
+});
+runLayers(ctx, [baseLayer, ghostLayer, selectionLayer, marqueeLayer], undefined, {});
 `;

@@ -34,6 +34,14 @@ export * from './wheelHandler';
 export * from './renderLayer';
 export * from './LayerRenderer';
 export * from './renderGrid';
+export {
+  composeSelectionPose,
+  createSelectionOverlayLayer,
+} from './selectionOverlay';
+export type {
+  ComposeSelectionPoseOpts,
+  SelectionOverlayLayerOpts,
+} from './selectionOverlay';
 export * from './renderLabel';
 export * from './markdownText';
 export * from './patterns';
