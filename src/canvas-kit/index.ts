@@ -54,5 +54,10 @@ export type {
   UseResizeInteractionOptions,
   UseResizeInteractionReturn,
 } from './interactions/resize';
+export { useInsertInteraction } from './interactions/insert';
+export type {
+  UseInsertInteractionOptions,
+  UseInsertInteractionReturn,
+} from './interactions/insert';
 // snapToGrid / snapToContainer / snapBackOrDelete are NOT re-exported at top level —
 // import from '@/canvas-kit/move' to disambiguate from resize/insert siblings.
