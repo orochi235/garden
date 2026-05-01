@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node 20+, TypeScript, tsup, Vitest, changesets, GitHub Actions, npm, ESM.
 
-**Spec:** `docs/superpowers/specs/2026-05-01-canvas-kit-extraction-design.md`.
+**Spec:** `docs/canvas-kit/specs/2026-05-01-canvas-kit-extraction-design.md`.
 
 **Open issues encountered while writing this plan (read once):**
 - Spec says "no runtime deps if possible" but garden has `clipper2-ts` and `zustand` as deps. The kit currently does not import either at the source level (verified by spec's import-audit checkbox), so this plan declares **no runtime dependencies** and only `react` as a peerDep. Step 13 includes a verification grep before the package.json is finalized — if a runtime dep does turn up, add it as an explicit `dependencies` entry.
