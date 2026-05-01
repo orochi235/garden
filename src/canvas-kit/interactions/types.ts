@@ -1,5 +1,5 @@
 import type { Op } from '../ops/types';
-import type { MoveAdapter, SnapTarget } from '../adapters/types';
+import type { InsertAdapter, MoveAdapter, SnapTarget } from '../adapters/types';
 
 export interface ModifierState {
   alt: boolean;
@@ -178,4 +178,28 @@ export interface AreaSelectOverlay {
  */
 export interface ClipboardSnapshot {
   items: unknown[];
+}
+
+// ----- clone -----
+
+export interface ClonePose {
+  ids: string[];
+  offset: { dx: number; dy: number };
+  worldX: number;
+  worldY: number;
+}
+
+export type CloneLayer = 'structures' | 'zones' | 'plantings';
+
+export interface CloneBehavior {
+  id: string;
+  /** Default true. */
+  defaultTransient?: boolean;
+  /** Decides whether this gesture should activate at start. */
+  activates: (modifiers: ModifierState) => boolean;
+  /** On end, returns ops to commit (or [] for no-op). */
+  onEnd: (
+    pose: ClonePose,
+    ctx: { adapter: InsertAdapter<{ id: string }> },
+  ) => Op[];
 }
