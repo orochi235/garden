@@ -5,6 +5,7 @@ import {
   gridSnapStrategy,
   createGridLayer,
   runLayers,
+  useZoomInteraction,
 } from '@/canvas-kit';
 import { clientToCanvas } from '../canvasCoords';
 import type { MoveAdapter, RenderLayer, UnitRegistry } from '@/canvas-kit';
@@ -27,6 +28,8 @@ const INITIAL: Rect[] = [
 
 export function MoveDemo() {
   const [rects, setRects] = useState<Rect[]>(INITIAL);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const rectsRef = useRef(rects);
   rectsRef.current = rects;
 
@@ -51,6 +54,18 @@ export function MoveDemo() {
     behaviors: [snap(gridSnapStrategy<Pose>(CELL, REGISTRY))],
   });
 
+  const zoomCtl = useZoomInteraction({
+    zoom, setZoom, pan, setPan,
+    viewport: { width: W, height: H },
+    sources: { wheel: true, keys: true, doubleClick: true, pinch: true },
+  });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => zoomCtl.onKeyDown(e);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [zoomCtl]);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const draggingId = useRef<string | null>(null);
 
@@ -63,20 +78,24 @@ export function MoveDemo() {
   };
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
+    const [cx, cy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
+    const wx = (cx - pan.x) / zoom;
+    const wy = (cy - pan.y) / zoom;
     const h = hit(wx, wy);
     if (!h) return;
     draggingId.current = h.id;
     e.currentTarget.setPointerCapture(e.pointerId);
     move.start({ ids: [h.id], worldX: wx, worldY: wy, clientX: e.clientX, clientY: e.clientY });
-  }, [move]);
+  }, [move, pan, zoom]);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!draggingId.current) return;
-    const [wx, wy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
+    const [cx, cy] = clientToCanvas(e.currentTarget, e.clientX, e.clientY);
+    const wx = (cx - pan.x) / zoom;
+    const wy = (cy - pan.y) / zoom;
     move.move({ worldX: wx, worldY: wy, clientX: e.clientX, clientY: e.clientY,
       modifiers: { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey } });
-  }, [move]);
+  }, [move, pan, zoom]);
 
   const onPointerUp = useCallback(() => {
     if (!draggingId.current) return;
@@ -126,8 +145,12 @@ export function MoveDemo() {
       },
     };
 
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(zoom, zoom);
     runLayers(ctx, [gridLayer, baseLayer, ghostLayer], undefined, {});
-  }, [rects, overlay]);
+    ctx.restore();
+  }, [rects, overlay, zoom, pan]);
 
   return (
     <canvas
@@ -139,6 +162,8 @@ export function MoveDemo() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onWheel={(e) => zoomCtl.onWheel(e)}
+      onDoubleClick={(e) => zoomCtl.onDoubleClick(e)}
     />
   );
 }
