@@ -20,15 +20,24 @@ import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from '@/canvas-kit';
 import { useCloneInteraction } from './hooks/useCloneInteraction';
-import { useMoveInteraction as useKitMoveInteraction } from '@/canvas-kit';
+import {
+  useMoveInteraction as useKitMoveInteraction,
+  useResizeInteraction as useKitResizeInteraction,
+  useInsertInteraction as useKitInsertInteraction,
+} from '@/canvas-kit';
 import { snapToGrid, snapToContainer, snapBackOrDelete } from '@/canvas-kit/move';
+import { snapToGrid as resizeSnapToGrid, clampMinSize } from '@/canvas-kit/resize';
+import { snapToGrid as insertSnapToGrid } from '@/canvas-kit/insert';
 import { createPlantingMoveAdapter } from './adapters/plantingMove';
 import { createZoneMoveAdapter } from './adapters/zoneMove';
 import { createStructureMoveAdapter } from './adapters/structureMove';
+import { createZoneResizeAdapter } from './adapters/zoneResize';
+import { createStructureResizeAdapter } from './adapters/structureResize';
+import { createInsertAdapter } from './adapters/insert';
 import { usePanInteraction } from '@/canvas-kit';
 import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
-import { usePlotInteraction } from './hooks/usePlotInteraction';
-import { useResizeInteraction } from './hooks/useResizeInteraction';
+import type { HandlePosition } from './hitTest';
+import type { ResizeAnchor } from '@/canvas-kit';
 import { onIconLoad, renderPlant } from './plantRenderers';
 import { getCultivar } from '../model/cultivars';
 import { createDragGhost } from '@/canvas-kit';
@@ -45,6 +54,20 @@ import { getActivePan, getActiveViewport } from './viewport';
 import { ZoneLayerRenderer } from './ZoneLayerRenderer';
 import { getTrayViewport, getTrayViewportForSize } from './hooks/useTrayViewport';
 import { fitZoom } from '@/canvas-kit';
+
+function handlePositionToAnchor(h: HandlePosition): ResizeAnchor {
+  // 'min' = the edge AT origin x/y; 'max' = the opposite edge; 'free' = axis not dragged.
+  // Dragging east edge ('e') means west is anchor → x.min anchors.
+  const x: ResizeAnchor['x'] =
+    h === 'e' || h === 'ne' || h === 'se' ? 'min'
+    : h === 'w' || h === 'nw' || h === 'sw' ? 'max'
+    : 'free';
+  const y: ResizeAnchor['y'] =
+    h === 's' || h === 'se' || h === 'sw' ? 'min'
+    : h === 'n' || h === 'ne' || h === 'nw' ? 'max'
+    : 'free';
+  return { x, y };
+}
 
 export function CanvasStack() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -216,9 +239,28 @@ export function CanvasStack() {
     behaviors: [snapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
   });
 
-  const resize = useResizeInteraction(containerRef);
   const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
-  const plot = usePlotInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
+
+  const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
+  const structureResizeAdapter = useMemo(() => createStructureResizeAdapter(), []);
+  const insertAdapter = useMemo(() => createInsertAdapter(), []);
+
+  const zoneResize = useKitResizeInteraction(zoneResizeAdapter, {
+    behaviors: [
+      resizeSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      clampMinSize({ minWidth: 0.25, minHeight: 0.25 }),
+    ],
+  });
+  const structureResize = useKitResizeInteraction(structureResizeAdapter, {
+    behaviors: [
+      resizeSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      clampMinSize({ minWidth: 0.25, minHeight: 0.25 }),
+    ],
+  });
+  const insert = useKitInsertInteraction(insertAdapter, {
+    behaviors: [insertSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
+    minBounds: { width: 0.01, height: 0.01 },
+  });
 
   // --- Mirror kit overlay into useUiStore.dragOverlay ---
   useEffect(() => {
@@ -258,12 +300,36 @@ export function CanvasStack() {
     });
   }, [plantingMove.overlay, zoneMove.overlay, structureMove.overlay]);
 
+  // --- Mirror kit resize overlay into useUiStore.resizeOverlay ---
+  useEffect(() => {
+    const ov = structureResize.overlay ?? zoneResize.overlay;
+    if (!ov) {
+      useUiStore.getState().setResizeOverlay(null);
+      return;
+    }
+    const layer: 'structures' | 'zones' = structureResize.overlay ? 'structures' : 'zones';
+    useUiStore.getState().setResizeOverlay({
+      id: ov.id,
+      layer,
+      currentPose: ov.currentPose,
+      targetPose: ov.targetPose,
+    });
+  }, [structureResize.overlay, zoneResize.overlay]);
+
+  // --- Mirror kit insert overlay into useUiStore.insertOverlay ---
+  useEffect(() => {
+    const ov = insert.overlay;
+    useUiStore.getState().setInsertOverlay(ov ? { start: ov.start, current: ov.current } : null);
+  }, [insert.overlay]);
+
   useKeyboardActionDispatch({ clipboard });
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        plot.cancel();
+        insert.cancel();
+        structureResize.cancel();
+        zoneResize.cancel();
         areaSelect.cancel();
         moveInteraction.cancel();
         plantingMove.cancel();
@@ -274,7 +340,7 @@ export function CanvasStack() {
     }
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [plot, areaSelect, moveInteraction, plantingMove, zoneMove, structureMove]);
+  }, [insert, structureResize, zoneResize, areaSelect, moveInteraction, plantingMove, zoneMove, structureMove]);
 
   // --- Layer rendering ---
   useLayerEffect(
@@ -723,7 +789,9 @@ export function CanvasStack() {
         });
 
         if (currentViewMode === 'draw' && plottingTool) {
-          plot.start(worldX, worldY, e.altKey);
+          insert.start(worldX, worldY, {
+            alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey,
+          });
           setActiveCursor('crosshair');
           return;
         }
@@ -756,14 +824,13 @@ export function CanvasStack() {
           { panX, panY, zoom },
         );
         if (handleHit) {
-          const obj =
-            handleHit.layer === 'structures'
-              ? garden.structures.find((s) => s.id === handleHit.id)
-              : garden.zones.find((z) => z.id === handleHit.id);
-          if (obj) {
-            resize.start(handleHit.handle, handleHit.id, handleHit.layer, obj, worldX, worldY);
-            setActiveCursor(handleCursor(handleHit.handle));
+          const anchor = handlePositionToAnchor(handleHit.handle);
+          if (handleHit.layer === 'structures') {
+            structureResize.start(handleHit.id, anchor, worldX, worldY);
+          } else {
+            zoneResize.start(handleHit.id, anchor, worldX, worldY);
           }
+          setActiveCursor(handleCursor(handleHit.handle));
           return;
         }
 
@@ -881,23 +948,25 @@ export function CanvasStack() {
         setActiveCursor('grabbing');
       }
     },
-    [select, addToSelection, clearSelection, pan, moveInteraction, plantingMove, zoneMove, structureMove, resize, plot, areaSelect],
+    [select, addToSelection, clearSelection, pan, moveInteraction, plantingMove, zoneMove, structureMove, insert, structureResize, zoneResize, areaSelect],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (resize.move(e)) return;
       if (areaSelect.move(e)) return;
-      if (plot.move(e)) return;
 
-      // Dispatch to kit move hooks (non-clone path).
-      // kit move() returns true when the hook is pending or active (not idle).
+      // Dispatch to kit hooks (resize/insert/move). kit move() returns true when active.
       {
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
           const { panX: px, panY: py, zoom: z } = useUiStore.getState();
           const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX: px, panY: py, zoom: z });
           const modifiers = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
+
+          if (structureResize.isResizing && structureResize.move(worldX, worldY, modifiers)) return;
+          if (zoneResize.isResizing && zoneResize.move(worldX, worldY, modifiers)) return;
+          if (insert.isInserting && insert.move(worldX, worldY, modifiers)) return;
+
           const args = { worldX, worldY, clientX: e.clientX, clientY: e.clientY, modifiers };
           if (plantingMove.move(args)) return;
           if (zoneMove.move(args)) return;
@@ -960,7 +1029,7 @@ export function CanvasStack() {
         setActiveCursor(hit ? 'pointer' : null);
       }
     },
-    [resize, areaSelect, plot, plantingMove, zoneMove, structureMove, moveInteraction, pan],
+    [structureResize, zoneResize, insert, areaSelect, plantingMove, zoneMove, structureMove, moveInteraction, pan],
   );
 
   const handleMouseUp = useCallback(
@@ -971,13 +1040,22 @@ export function CanvasStack() {
           setActiveCursor(null);
           return;
         }
-        if (plot.isPlotting.current) {
-          plot.end();
+        if (insert.isInserting) {
+          insert.end();
+          setActiveCursor(null);
+          return;
+        }
+        if (structureResize.isResizing) {
+          structureResize.end();
+          setActiveCursor(null);
+          return;
+        }
+        if (zoneResize.isResizing) {
+          zoneResize.end();
           setActiveCursor(null);
           return;
         }
         pan.end();
-        resize.end();
         // End kit move hooks (non-clone path)
         plantingMove.end();
         zoneMove.end();
@@ -990,7 +1068,7 @@ export function CanvasStack() {
         setActiveCursor(null);
       }
     },
-    [areaSelect, plot, resize, plantingMove, zoneMove, structureMove, moveInteraction, pan],
+    [areaSelect, insert, structureResize, zoneResize, plantingMove, zoneMove, structureMove, moveInteraction, pan],
   );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
