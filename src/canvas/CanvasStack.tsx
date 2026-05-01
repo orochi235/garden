@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayerSelector } from '../components/LayerSelector';
 import { ReturnToGarden } from '../components/ReturnToGarden';
 import { SeedWarningsToggle } from '../components/SeedWarningsToggle';
@@ -20,6 +20,15 @@ import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from '@/canvas-kit';
 import { useMoveInteraction } from './hooks/useMoveInteraction';
+import {
+  useMoveInteraction as useKitMoveInteraction,
+  snapToContainer,
+  snapBackOrDelete,
+} from '@/canvas-kit';
+import { snapToGridBehavior } from '@/canvas-kit';
+import { createPlantingMoveAdapter } from './adapters/plantingMove';
+import { createZoneMoveAdapter } from './adapters/zoneMove';
+import { createStructureMoveAdapter } from './adapters/structureMove';
 import { usePanInteraction } from '@/canvas-kit';
 import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
 import { usePlotInteraction } from './hooks/usePlotInteraction';
@@ -182,9 +191,76 @@ export function CanvasStack() {
   }, [appMode, currentTrayId, width, height, garden.seedStarting.trays, setSeedStartingZoom, setSeedStartingPan]);
   const pan = usePanInteraction(getActivePan);
   const moveInteraction = useMoveInteraction(containerRef, invalidate);
+
+  // --- Kit move interactions (per-adapter) ---
+  const plantingMoveAdapter = useMemo(() => createPlantingMoveAdapter(), []);
+  const zoneMoveAdapter = useMemo(() => createZoneMoveAdapter(), []);
+  const structureMoveAdapter = useMemo(() => createStructureMoveAdapter(), []);
+
+  const plantingMove = useKitMoveInteraction(plantingMoveAdapter, {
+    translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
+    behaviors: [
+      snapToGridBehavior({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      snapToContainer({
+        dwellMs: 500,
+        findTarget: plantingMoveAdapter.findSnapTarget!,
+        isInstant: (t) => (t.metadata as { instant?: boolean } | undefined)?.instant === true,
+      }),
+      snapBackOrDelete({ radiusFt: garden.gridCellSizeFt, onFreeRelease: 'delete' }),
+    ],
+  });
+
+  const zoneMove = useKitMoveInteraction(zoneMoveAdapter, {
+    translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
+    behaviors: [snapToGridBehavior({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' })],
+  });
+
+  const structureMove = useKitMoveInteraction(structureMoveAdapter, {
+    translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
+    behaviors: [snapToGridBehavior({ cellFt: garden.gridCellSizeFt, bypassKey: 'alt' })],
+  });
+
   const resize = useResizeInteraction(containerRef);
   const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
   const plot = usePlotInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
+
+  // --- Mirror kit overlay into useUiStore.dragOverlay ---
+  useEffect(() => {
+    const ov = plantingMove.overlay ?? zoneMove.overlay ?? structureMove.overlay;
+    if (!ov) {
+      useUiStore.getState().clearDragOverlay();
+      return;
+    }
+    const layer: 'plantings' | 'zones' | 'structures' = plantingMove.overlay
+      ? 'plantings'
+      : zoneMove.overlay
+        ? 'zones'
+        : 'structures';
+    const objects = ov.draggedIds.map((id) => {
+      const pose = ov.poses.get(id)!;
+      if (layer === 'plantings') {
+        const p = useGardenStore.getState().garden.plantings.find((x) => x.id === id)!;
+        // The kit getPose already returns world coords; overlay poses are world coords too.
+        // The renderer expects plantings with world x/y in the overlay (same as old hook).
+        const tp = pose as { x: number; y: number };
+        return { ...p, x: tp.x, y: tp.y };
+      }
+      if (layer === 'zones') {
+        const z = useGardenStore.getState().garden.zones.find((x) => x.id === id)!;
+        const tp = pose as { x: number; y: number };
+        return { ...z, x: tp.x, y: tp.y };
+      }
+      const s = useGardenStore.getState().garden.structures.find((x) => x.id === id)!;
+      const tp = pose as { x: number; y: number };
+      return { ...s, x: tp.x, y: tp.y };
+    });
+    useUiStore.getState().setDragOverlay({
+      layer,
+      objects: objects as (import('../model/types').Planting | import('../model/types').Structure | import('../model/types').Zone)[],
+      hideIds: ov.hideIds,
+      snapped: ov.snapped !== null,
+    });
+  }, [plantingMove.overlay, zoneMove.overlay, structureMove.overlay]);
 
   useKeyboardActionDispatch({ clipboard });
 
@@ -194,12 +270,15 @@ export function CanvasStack() {
         plot.cancel();
         areaSelect.cancel();
         moveInteraction.cancel();
+        plantingMove.cancel();
+        zoneMove.cancel();
+        structureMove.cancel();
         setActiveCursor(null);
       }
     }
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [plot, areaSelect, moveInteraction]);
+  }, [plot, areaSelect, moveInteraction, plantingMove, zoneMove, structureMove]);
 
   // --- Layer rendering ---
   useLayerEffect(
@@ -724,6 +803,8 @@ export function CanvasStack() {
                 if (parent) {
                   // Defer clone creation until drag threshold is exceeded
                   select(hit.id);
+                  // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
+                  // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
                   moveInteraction.start(worldX, worldY, hit.id, hit.layer, parent.x + planting.x, parent.y + planting.y, false, {
                     parentId: planting.parentId,
                     x: planting.x,
@@ -747,12 +828,16 @@ export function CanvasStack() {
                   const newStructures = useGardenStore.getState().garden.structures;
                   const clone = newStructures[newStructures.length - 1];
                   select(clone.id);
+                  // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
+                  // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
                   moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
                 } else {
                   addZone({ x: obj.x, y: obj.y, width: obj.width, height: obj.height });
                   const newZones = useGardenStore.getState().garden.zones;
                   const clone = newZones[newZones.length - 1];
                   select(clone.id);
+                  // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
+                  // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
                   moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
                 }
                 setActiveCursor('copy');
@@ -764,23 +849,36 @@ export function CanvasStack() {
             select(hit.id);
           }
           if (!e.altKey) {
-            let obj: { x: number; y: number } | undefined;
             if (hit.layer === 'plantings') {
-              const planting = garden.plantings.find((p) => p.id === hit.id);
-              if (planting) {
-                const parent = garden.structures.find((s) => s.id === planting.parentId)
-                  ?? garden.zones.find((z) => z.id === planting.parentId);
-                if (parent) {
-                  obj = { x: parent.x + planting.x, y: parent.y + planting.y };
-                }
-              }
-            } else {
-              obj = hit.layer === 'structures'
-                ? garden.structures.find((s) => s.id === hit.id)
-                : garden.zones.find((z) => z.id === hit.id);
-            }
-            if (obj) {
-              moveInteraction.start(worldX, worldY, hit.id, hit.layer, obj.x, obj.y);
+              plantingMove.start({
+                ids: [hit.id],
+                worldX,
+                worldY,
+                clientX: e.clientX,
+                clientY: e.clientY,
+              });
+              setActiveCursor('move');
+            } else if (hit.layer === 'structures') {
+              const primary = garden.structures.find((s) => s.id === hit.id);
+              const childIds = primary
+                ? garden.structures.filter((s) => s.parentId === primary.id).map((s) => s.id)
+                : [];
+              structureMove.start({
+                ids: [hit.id, ...childIds],
+                worldX,
+                worldY,
+                clientX: e.clientX,
+                clientY: e.clientY,
+              });
+              setActiveCursor('move');
+            } else if (hit.layer === 'zones') {
+              zoneMove.start({
+                ids: [hit.id],
+                worldX,
+                worldY,
+                clientX: e.clientX,
+                clientY: e.clientY,
+              });
               setActiveCursor('move');
             }
           }
@@ -793,7 +891,7 @@ export function CanvasStack() {
         setActiveCursor('grabbing');
       }
     },
-    [select, addToSelection, clearSelection, pan, moveInteraction, resize, plot, areaSelect],
+    [select, addToSelection, clearSelection, pan, moveInteraction, plantingMove, zoneMove, structureMove, resize, plot, areaSelect],
   );
 
   const handleMouseMove = useCallback(
@@ -801,6 +899,24 @@ export function CanvasStack() {
       if (resize.move(e)) return;
       if (areaSelect.move(e)) return;
       if (plot.move(e)) return;
+
+      // Dispatch to kit move hooks (non-clone path).
+      // kit move() returns true when the hook is pending or active (not idle).
+      {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const { panX: px, panY: py, zoom: z } = useUiStore.getState();
+          const [worldX, worldY] = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, { panX: px, panY: py, zoom: z });
+          const modifiers = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
+          const args = { worldX, worldY, clientX: e.clientX, clientY: e.clientY, modifiers };
+          if (plantingMove.move(args)) return;
+          if (zoneMove.move(args)) return;
+          if (structureMove.move(args)) return;
+        }
+      }
+
+      // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
+      // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
       if (moveInteraction.move(e)) return;
       if (pan.move(e)) return;
 
@@ -856,7 +972,7 @@ export function CanvasStack() {
         setActiveCursor(hit ? 'pointer' : null);
       }
     },
-    [resize, areaSelect, plot, moveInteraction, pan],
+    [resize, areaSelect, plot, plantingMove, zoneMove, structureMove, moveInteraction, pan],
   );
 
   const handleMouseUp = useCallback(
@@ -874,6 +990,12 @@ export function CanvasStack() {
         }
         pan.end();
         resize.end();
+        // End kit move hooks (non-clone path)
+        plantingMove.end();
+        zoneMove.end();
+        structureMove.end();
+        // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
+        // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
         moveInteraction.end(e);
         setActiveCursor(null);
       }
@@ -882,7 +1004,7 @@ export function CanvasStack() {
         setActiveCursor(null);
       }
     },
-    [areaSelect, plot, resize, moveInteraction, pan],
+    [areaSelect, plot, resize, plantingMove, zoneMove, structureMove, moveInteraction, pan],
   );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
