@@ -105,6 +105,7 @@ export function CanvasStack() {
   const overlay = useUiStore((s) => s.dragOverlay);
   const resizeOverlayUi = useUiStore((s) => s.resizeOverlay);
   const insertOverlayUi = useUiStore((s) => s.insertOverlay);
+  const areaSelectOverlayUi = useUiStore((s) => s.areaSelectOverlay);
   const appMode = useUiStore((s) => s.appMode);
   const currentTrayId = useUiStore((s) => s.currentTrayId);
   const seedStartingZoom = useUiStore((s) => s.seedStartingZoom);
@@ -629,8 +630,26 @@ export function CanvasStack() {
         ctx.strokeRect(sx, sy, sw, sh);
         ctx.setLineDash([]);
       }
+      const areaOv = useUiStore.getState().areaSelectOverlay;
+      if (areaOv) {
+        const x = Math.min(areaOv.start.worldX, areaOv.current.worldX);
+        const y = Math.min(areaOv.start.worldY, areaOv.current.worldY);
+        const w = Math.abs(areaOv.current.worldX - areaOv.start.worldX);
+        const h = Math.abs(areaOv.current.worldY - areaOv.start.worldY);
+        const sx = panX + x * zoom;
+        const sy = panY + y * zoom;
+        const sw = w * zoom;
+        const sh = h * zoom;
+        ctx.fillStyle = 'rgba(91, 164, 207, 0.15)';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.strokeStyle = '#5BA4CF';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(sx, sy, sw, sh);
+        ctx.setLineDash([]);
+      }
     },
-    [appMode, selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY, insertOverlayUi],
+    [appMode, selectedIds, garden.structures, garden.zones, garden.plantings, zoom, panX, panY, insertOverlayUi, areaSelectOverlayUi],
   );
 
   // --- Seedling drag (in-tray move; multi-select moves group; drag-out removes) ---
