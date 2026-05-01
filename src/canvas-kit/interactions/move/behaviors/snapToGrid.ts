@@ -1,6 +1,6 @@
-import type { ModifierState, MoveBehavior } from '../types';
-import { snap } from './snap';
-import { gridSnapStrategy } from './strategies/grid';
+import type { ModifierState, MoveBehavior } from '../../types';
+import { snap } from '../../shared/snap';
+import { gridSnapStrategy } from '../../shared/strategies/grid';
 
 type ModKey = keyof ModifierState;
 

@@ -1,8 +1,8 @@
 import { useRef, useState, useCallback } from 'react';
-import { createTransformOp } from '../ops/transform';
-import type { Op } from '../ops/types';
-import type { MoveAdapter, SnapTarget } from '../adapters/types';
-import type { GestureContext, MoveBehavior, MoveOverlay, ModifierState } from './types';
+import { createTransformOp } from '../../ops/transform';
+import type { Op } from '../../ops/types';
+import type { MoveAdapter, SnapTarget } from '../../adapters/types';
+import type { GestureContext, MoveBehavior, MoveOverlay, ModifierState } from '../types';
 
 export interface UseMoveInteractionOptions<TPose> {
   translatePose: (pose: TPose, dx: number, dy: number) => TPose;

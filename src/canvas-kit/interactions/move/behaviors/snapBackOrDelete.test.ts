@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { snapBackOrDelete } from './snapBackOrDelete';
-import type { GestureContext } from '../types';
+import type { GestureContext } from '../../types';
 
 interface Pose { x: number; y: number }
 

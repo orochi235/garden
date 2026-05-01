@@ -1,6 +1,6 @@
-import { createDeleteOp } from '../../ops/delete';
-import type { Op } from '../../ops/types';
-import type { MoveBehavior } from '../types';
+import { createDeleteOp } from '../../../ops/delete';
+import type { Op } from '../../../ops/types';
+import type { MoveBehavior } from '../../types';
 
 export function snapBackOrDelete<TPose extends { x: number; y: number }>(args: {
   radius: number;

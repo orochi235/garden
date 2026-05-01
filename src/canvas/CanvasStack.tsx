@@ -20,12 +20,8 @@ import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from '@/canvas-kit';
 import { useCloneInteraction } from './hooks/useCloneInteraction';
-import {
-  useMoveInteraction as useKitMoveInteraction,
-  snapToGrid,
-  snapToContainer,
-  snapBackOrDelete,
-} from '@/canvas-kit';
+import { useMoveInteraction as useKitMoveInteraction } from '@/canvas-kit';
+import { snapToGrid, snapToContainer, snapBackOrDelete } from '@/canvas-kit/move';
 import { createPlantingMoveAdapter } from './adapters/plantingMove';
 import { createZoneMoveAdapter } from './adapters/zoneMove';
 import { createStructureMoveAdapter } from './adapters/structureMove';

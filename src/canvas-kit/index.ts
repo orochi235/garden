@@ -13,6 +13,12 @@
  *   - Canvas plumbing: `useCanvasSize`, `useLayerEffect`, `fitZoom`
  *   - Layer composition: `RenderLayer`, `runLayers`, `LayerRenderer`
  *   - Renderers: `renderGrid`, `renderLabel`, markdown text utilities, pattern cache
+ *
+ * Per-hook subpath imports: `snapToGrid` exists for move, resize, and insert
+ * with different return shapes. Import from the hook-specific subpath:
+ *   import { snapToGrid } from '@/canvas-kit/move';
+ *   import { snapToGrid, clampMinSize } from '@/canvas-kit/resize';
+ *   import { snapToGrid } from '@/canvas-kit/insert';
  */
 
 export * from './grid';
@@ -35,7 +41,7 @@ export * from './ops';
 export * from './history';
 export * from './adapters/types';
 export * from './interactions/types';
-export { snapToGrid, snapToContainer, snapBackOrDelete, snap, gridSnapStrategy } from './interactions/behaviors';
+export { snap, gridSnapStrategy } from './interactions/shared';
 export { useMoveInteraction } from './interactions/move';
 export type {
   UseMoveInteractionOptions,
@@ -43,3 +49,5 @@ export type {
   MoveStartArgs,
   MoveMoveArgs,
 } from './interactions/move';
+// snapToGrid / snapToContainer / snapBackOrDelete are NOT re-exported at top level —
+// import from '@/canvas-kit/move' to disambiguate from resize/insert siblings.
