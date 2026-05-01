@@ -14,13 +14,13 @@ import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTest
 import { hitTestCell } from './seedStartingHitTest';
 import { getSeedlingWarnings } from '../model/seedlingWarnings';
 import { resolveGroupMoves } from '../model/seedlingMoveResolver';
-import { useAutoCenter } from './hooks/useAutoCenter';
+import { useAutoCenter } from '@/canvas-kit';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from '@/canvas-kit';
 import { useMoveInteraction } from './hooks/useMoveInteraction';
-import { usePanInteraction } from './hooks/usePanInteraction';
+import { usePanInteraction } from '@/canvas-kit';
 import { useAreaSelectInteraction } from './hooks/useAreaSelectInteraction';
 import { usePlotInteraction } from './hooks/usePlotInteraction';
 import { useResizeInteraction } from './hooks/useResizeInteraction';
@@ -35,8 +35,8 @@ import { StructureLayerRenderer } from './StructureLayerRenderer';
 import { TrayLayerRenderer } from './TrayLayerRenderer';
 import { SeedlingLayerRenderer } from './SeedlingLayerRenderer';
 import { useCanvasSize } from '@/canvas-kit';
-import { computeWheelAction } from './wheelHandler';
-import { getActiveViewport } from './viewport';
+import { computeWheelAction } from '@/canvas-kit';
+import { getActivePan, getActiveViewport } from './viewport';
 import { ZoneLayerRenderer } from './ZoneLayerRenderer';
 import { getTrayViewport, getTrayViewportForSize } from './hooks/useTrayViewport';
 import { fitZoom } from '@/canvas-kit';
@@ -155,7 +155,7 @@ export function CanvasStack() {
   const view = { panX, panY, zoom };
 
   // --- Interaction hooks ---
-  useAutoCenter(width, height, garden.widthFt, garden.heightFt, setPan);
+  useAutoCenter(width, height, garden.widthFt, garden.heightFt, setZoom, setPan);
   const clipboard = useClipboard();
   const setSeedStartingPan = useUiStore((s) => s.setSeedStartingPan);
   const setSeedStartingZoom = useUiStore((s) => s.setSeedStartingZoom);
@@ -180,7 +180,7 @@ export function CanvasStack() {
     setSeedStartingZoom(z);
     setSeedStartingPan(0, 0);
   }, [appMode, currentTrayId, width, height, garden.seedStarting.trays, setSeedStartingZoom, setSeedStartingPan]);
-  const pan = usePanInteraction();
+  const pan = usePanInteraction(getActivePan);
   const moveInteraction = useMoveInteraction(containerRef, invalidate);
   const resize = useResizeInteraction(containerRef);
   const areaSelect = useAreaSelectInteraction({ containerRef, selectionCanvasRef, width, height, dpr });
@@ -979,7 +979,6 @@ export function CanvasStack() {
 
       const vp = getActiveViewport();
       const result = computeWheelAction(
-        useUiStore.getState().viewMode,
         { zoom: vp.zoom, panX: vp.panX, panY: vp.panY },
         {
           deltaX: e.deltaX,

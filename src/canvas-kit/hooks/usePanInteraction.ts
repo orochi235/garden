@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { useUiStore } from '../../store/uiStore';
 
 export interface ActivePan {
   x: number;
@@ -8,18 +7,12 @@ export interface ActivePan {
 }
 
 /**
- * Returns the active pan state for the current app mode. Read at pan-start
- * so the appropriate pan target is captured for the duration of the gesture.
+ * Pan-on-drag interaction. The caller supplies `getActive`, which is read
+ * at pan-start so the appropriate viewport is captured for the duration of
+ * the gesture (useful when the app has multiple viewports — e.g. a main
+ * canvas plus a separate seed-starting view).
  */
-export function getActivePan(): ActivePan {
-  const s = useUiStore.getState();
-  if (s.appMode === 'seed-starting') {
-    return { x: s.seedStartingPanX, y: s.seedStartingPanY, setPan: s.setSeedStartingPan };
-  }
-  return { x: s.panX, y: s.panY, setPan: s.setPan };
-}
-
-export function usePanInteraction(getActive: () => ActivePan = getActivePan) {
+export function usePanInteraction(getActive: () => ActivePan) {
   const isPanning = useRef(false);
   const panStart = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 });
   const activeSetPan = useRef<(x: number, y: number) => void>(() => {});

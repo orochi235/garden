@@ -1,5 +1,3 @@
-import type { ViewMode } from '../store/uiStore';
-
 export interface WheelState {
   zoom: number;
   panX: number;
@@ -21,7 +19,6 @@ const MAX_ZOOM = 200;
 export interface ZoomBounds { min: number; max: number; }
 
 export function computeWheelAction(
-  _mode: ViewMode,
   state: WheelState,
   input: WheelInput,
   bounds: ZoomBounds = { min: MIN_ZOOM, max: MAX_ZOOM },

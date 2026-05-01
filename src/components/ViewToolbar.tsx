@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { computeFitView } from '../canvas/hooks/useAutoCenter';
+import { computeFitView } from '@/canvas-kit';
 import { useGardenStore } from '../store/gardenStore';
 import type { ViewMode } from '../store/uiStore';
 import { useUiStore } from '../store/uiStore';

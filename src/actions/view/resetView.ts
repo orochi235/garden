@@ -1,5 +1,5 @@
 import type { ActionDescriptor } from '@/actions/types';
-import { computeFitView } from '@/canvas/hooks/useAutoCenter';
+import { computeFitView } from '@/canvas-kit';
 import { useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
 
