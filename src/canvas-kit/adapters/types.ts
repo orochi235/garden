@@ -120,3 +120,28 @@ export interface InsertAdapter<TObject extends { id: string }> {
   /** Optional: returns the current selection. Used by clone behaviors. */
   getSelection?: () => string[];
 }
+
+/**
+ * Optional adapter mixin for sibling z-order.
+ *
+ * Both methods are optional. Reorder ops and `useReorderAction` no-op when
+ * either is absent — adopt z-order incrementally without breaking existing
+ * adapters.
+ *
+ * **Convention:** array order IS z-order. Index 0 is the bottom of the
+ * stack, the last index is the top. Hit-testing should iterate the returned
+ * list in REVERSE (top to bottom). Render layers iterate FORWARD (bottom to
+ * top).
+ *
+ * For groups, `parentId` may be a group id; the group adapter routes
+ * `getChildren`/`setChildOrder` to the group's `members[]` array.
+ */
+export interface OrderedAdapter {
+  /** Ordered children of `parentId` (or root siblings if null), in z-order:
+   *  index 0 is bottom, last index is top. */
+  getChildren?(parentId: string | null): string[];
+
+  /** Rewrite the order of `parentId`'s children. Length and contents must
+   *  match the existing children — reorder only, no add/remove. */
+  setChildOrder?(parentId: string | null, ids: string[]): void;
+}
