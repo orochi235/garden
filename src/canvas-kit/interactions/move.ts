@@ -51,6 +51,9 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
     onGestureEnd,
   } = options;
 
+  const behaviorsRef = useRef(behaviors);
+  behaviorsRef.current = behaviors;
+
   const stateRef = useRef<{
     phase: 'idle' | 'pending' | 'active';
     startWorld: { x: number; y: number };
@@ -101,7 +104,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
       if (dxs * dxs + dys * dys < dragThresholdPx * dragThresholdPx) return true;
       s.phase = 'active';
       onGestureStart?.(s.ctx.draggedIds);
-      for (const b of behaviors) b.onStart?.(s.ctx);
+      for (const b of behaviorsRef.current) b.onStart?.(s.ctx);
     }
 
     const ctx = s.ctx;
@@ -120,7 +123,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
       // Behaviors run only against the primary id (first in the array).
       // For multi-select group drag, secondary ids share the same delta.
       if (id === ctx.draggedIds[0]) {
-        for (const b of behaviors) {
+        for (const b of behaviorsRef.current) {
           const r = b.onMove?.(ctx, proposed);
           if (!r) continue;
           if (r.pose !== undefined) proposed = r.pose;
@@ -134,7 +137,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
     ctx.snap = snap;
     setOverlay({ draggedIds: ctx.draggedIds, poses: newPoses, snapped: snap, hideIds: ctx.draggedIds });
     return true;
-  }, [adapter, behaviors, dragThresholdPx, onGestureStart, translatePose]);
+  }, [adapter, dragThresholdPx, onGestureStart, translatePose]);
 
   const end = useCallback(() => {
     const s = stateRef.current;
@@ -146,7 +149,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
     const ctx = s.ctx;
 
     let ops: Op[] | null | undefined;
-    for (const b of behaviors) {
+    for (const b of behaviorsRef.current) {
       const r = b.onEnd?.(ctx);
       if (r === undefined) continue;
       ops = r;
@@ -175,7 +178,7 @@ export function useMoveInteraction<TObject extends { id: string }, TPose>(
     }
     cleanup();
     onGestureEnd?.(true);
-  }, [adapter, behaviors, cleanup, moveLabel, onGestureEnd]);
+  }, [adapter, cleanup, moveLabel, onGestureEnd]);
 
   const cancel = useCallback(() => {
     cleanup();
