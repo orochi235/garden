@@ -21,6 +21,7 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         'drag-lab': path.resolve(__dirname, 'drag-lab.html'),
         'geometry-demos': path.resolve(__dirname, 'geometry-demos.html'),
+        'canvas-kit-demo': path.resolve(__dirname, 'canvas-kit-demo.html'),
       },
     },
   },

@@ -1,0 +1,113 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: #1e1610;
+  color: #d4c4a8;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.ckd-root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ckd-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #d4c4a8;
+  margin: 0 0 8px;
+}
+
+.ckd-header p {
+  color: #a59685;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.ckd-card {
+  background: #2a2018;
+  border: 1px solid #4a3c2e;
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ckd-card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #7fb069;
+  margin: 0;
+}
+
+.ckd-card p.ckd-desc {
+  color: #a59685;
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ckd-body {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.ckd-canvas-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ckd-canvas {
+  background: #1a130d;
+  border: 1px solid #4a3c2e;
+  border-radius: 4px;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.ckd-hint {
+  font-size: 11px;
+  color: #8a7c6c;
+  font-style: italic;
+}
+
+.ckd-source {
+  flex: 1 1 auto;
+  background: #14100b;
+  border: 1px solid #3a2f24;
+  border-radius: 4px;
+  padding: 12px;
+  overflow: auto;
+  max-height: 360px;
+}
+
+.ckd-source pre,
+.ckd-source code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #c8b89a;
+  white-space: pre;
+}
+
+@media (max-width: 880px) {
+  .ckd-body {
+    flex-direction: column;
+  }
+  .ckd-source {
+    max-height: 280px;
+  }
+}
