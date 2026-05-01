@@ -32,6 +32,14 @@ export interface GestureContext<TPose, TObject extends { id: string } = { id: st
   scratch: Record<string, unknown>;
 }
 
+export interface SnapStrategy<TPose> {
+  /**
+   * Maps a proposed pose to a snapped pose, or returns null to defer
+   * (no snap from this strategy; pipeline continues with the original).
+   */
+  snap(pose: TPose, ctx: GestureContext<TPose, { id: string }>): TPose | null;
+}
+
 export interface BehaviorMoveResult<TPose> {
   pose?: TPose;
   snap?: SnapTarget<TPose> | null;

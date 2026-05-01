@@ -35,7 +35,7 @@ export * from './ops';
 export * from './history';
 export * from './adapters/types';
 export * from './interactions/types';
-export { snapToContainer, snapBackOrDelete } from './interactions/behaviors';
+export { snapToContainer, snapBackOrDelete, snap, gridSnapStrategy } from './interactions/behaviors';
 export { snapToGrid as snapToGridBehavior } from './interactions/behaviors/snapToGrid';
 export { useMoveInteraction } from './interactions/move';
 export type {
