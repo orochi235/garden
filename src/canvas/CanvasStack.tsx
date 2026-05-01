@@ -11,7 +11,7 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { screenToWorld } from '@/canvas-kit';
 import { handleCursor, hitTestAllLayers, hitTestCascade, hitTestHandles, hitTestObjects, hitTestPlantings } from './hitTest';
-import { hitTestCell } from './seedStartingHitTest';
+import { hitTestCell, hitTestDragSpreadAffordance } from './seedStartingHitTest';
 import { getSeedlingWarnings } from '../model/seedlingWarnings';
 import { resolveGroupMoves } from '../model/seedlingMoveResolver';
 import { useAutoCenter } from '@/canvas-kit';
@@ -722,6 +722,21 @@ export function CanvasStack() {
       if (!r) return;
       const sx = clientX - r.left;
       const sy = clientY - r.top;
+      if (!isGroup) {
+        const aff = hitTestDragSpreadAffordance(tray!, { pxPerInch, originX, originY }, sx, sy);
+        if (aff) {
+          const base = { trayId, cultivarId: anchorSeedling!.cultivarId, replace: true };
+          useUiStore.getState().setSeedFillPreview(
+            aff.kind === 'all'
+              ? { ...base, scope: 'all' }
+              : aff.kind === 'row'
+                ? { ...base, scope: 'row', index: aff.row }
+                : { ...base, scope: 'col', index: aff.col },
+          );
+          ghost?.setHidden(true);
+          return;
+        }
+      }
       const hit = hitTestCell(tray!, { pxPerInch, originX, originY }, sx, sy);
       if (!hit) {
         useUiStore.getState().setSeedFillPreview(null);
@@ -779,6 +794,8 @@ export function CanvasStack() {
         ensureGhost();
         // Hide every dragged seedling so the canvas shows movement, not stale copies.
         useUiStore.getState().setHiddenSeedlingIds(groupSeedlings.map((s) => s.id));
+        // Light up the row/col/all gutter affordances (single-item drag only).
+        if (!isGroup) useUiStore.getState().setSeedDragCultivarId(anchorSeedling!.cultivarId);
       }
       ghost?.move(ev.clientX, ev.clientY);
       updatePreview(ev.clientX, ev.clientY);
@@ -792,6 +809,7 @@ export function CanvasStack() {
       useUiStore.getState().setSeedFillPreview(null);
       useUiStore.getState().setSeedMovePreview(null);
       useUiStore.getState().setHiddenSeedlingIds([]);
+      useUiStore.getState().setSeedDragCultivarId(null);
     }
 
     function onUp(ev: PointerEvent) {
@@ -838,6 +856,16 @@ export function CanvasStack() {
             toCol: m.finalCol,
           })),
         );
+        return;
+      }
+      const aff = hitTestDragSpreadAffordance(tray!, { pxPerInch, originX, originY }, sx, sy);
+      if (aff) {
+        // Spread the cultivar across the row/col/all; remove the source seedling.
+        const gs = useGardenStore.getState();
+        gs.clearCell(trayId, anchorFromRow, anchorFromCol);
+        if (aff.kind === 'all') gs.fillTray(trayId, anchorSeedling!.cultivarId, { replace: true });
+        else if (aff.kind === 'row') gs.fillRow(trayId, aff.row, anchorSeedling!.cultivarId, { replace: true });
+        else gs.fillColumn(trayId, aff.col, anchorSeedling!.cultivarId, { replace: true });
         return;
       }
       if (!hit) {
