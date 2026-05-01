@@ -27,7 +27,7 @@ export * from './thresholdDrag';
 export * from './pointerDrag';
 export * from './useCanvasSize';
 export * from './hooks/useLayerEffect';
-export * from './hooks/fitToBounds';
+export * from './fitToBounds';
 export * from './hooks/usePanInteraction';
 export * from './hooks/useAutoCenter';
 export * from './wheelHandler';

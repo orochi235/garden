@@ -63,7 +63,9 @@ Without these, the kit is essentially "axis-aligned-rectangle kit."
 ### Tier 1.5 — small additive hooks (do after groups Phase 3-4)
 
 - **`useZoomInteraction`.** Math already exists (`ViewTransform.zoom`, `wheelHandler`, `screenToWorld`/`worldToScreen` all zoom-aware). Gap is a hook that owns current zoom level + min/max clamps + zoom-to-focal-point + sources (wheel, pinch, +/- keys, double-click). Parallel shape to `usePanInteraction`. Brief design pass first (clamp policy, focal-point convention, gesture-source enumeration).
-- **`useDeleteAction`.** Pure userland glue today: `createDeleteOp` exists but no hook wraps "selected ids → emit DeleteOps → commit." Tiny: `useDeleteAction(adapter, options?) => { deleteSelection() }`, optional auto-binding to Delete/Backspace. Same shape would later cover ⌘C/⌘V binding for the existing `useClipboard`.
+- **~~`useDeleteAction`~~** *Done* (`660800a`).
+- **Test coverage gap pass.** Audit every source file under `src/canvas-kit/` and ensure each has a sibling `.test.ts`. Some files (e.g. `wheelHandler.ts`, `markdownText.ts`, `patterns.ts`, `dragGhost.ts`, `pointerDrag.ts`, `useCanvasSize.ts`, `renderLayer.ts`, `LayerRenderer.ts`, `renderGrid.ts`, `renderLabel.ts`, `useLayerEffect.ts`, `useAutoCenter.ts`, `usePanInteraction.ts`, `thresholdDrag.ts`, `fitToBounds.ts`, `grid.ts`) may not have full coverage today. List the missing files first, then fill in tests in order of public-API exposure (anything in the barrel first).
+- **Parallax plugin.** Multi-layer canvas where layers translate at different rates relative to the viewport pan. Useful for sketch/concept-canvas backgrounds, depth illusions, mapping (terrain shading layers), and game-style scenes. Likely a `RenderLayer` factory or a thin wrapper over `usePanInteraction` that exposes a `parallaxFactor` per layer (0 = locked to viewport, 1 = moves with content, fractions = depth). Plugin form keeps it out of the core. Open question: does it warp `screenToWorld` for hit-testing on the parallaxed layer, or is parallax purely cosmetic?
 
 ### Tier 3 — specialized but valuable
 
