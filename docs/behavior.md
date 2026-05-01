@@ -135,3 +135,15 @@ Running list of intended application behaviors.
   that was active immediately before the change. Marquee select remains
   transient: it does not push history, so undo after a marquee returns to
   whatever selection existed before the marquee started.
+
+## Clone (Phase 4 canvas-kit migration, 2026-05-01)
+
+- Alt-click-drag duplicates the clicked object at the drop position.
+- Clone is a single undo step: one history entry containing the new object's
+  insert plus the selection change (was 2 steps for structures/zones in the
+  legacy hook — it eagerly added then moved).
+- Plantings: the new planting attaches to whichever container the cursor is
+  over at drop time. If the cursor isn't over any container, the drop is
+  silent (no new planting created).
+- Snap-dwell (the 500 ms hover-into-container UX from legacy) is not yet
+  ported. Container resolution is immediate based on cursor position.
