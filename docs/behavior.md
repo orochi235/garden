@@ -12,6 +12,8 @@ Running list of intended application behaviors.
 - If a planting is dragged and then returned within `DRAG_THRESHOLD_PX` of its original arrangement position, the drag is undone entirely — no undo history entry is created
 - When dragging a planting near an empty or partially-filled container for 500ms (configurable via `SNAP_DWELL_MS`), show a ghosted preview of the planting at the container's next available arrangement slot; releasing commits the re-parent (or clone if alt is held); moving away cancels
 - Container snap proximity is based on the planting's footprint radius × `SNAP_RADIUS_MULTIPLIER`, with a spatial cull buffer of `CULL_BUFFER_FT`; when multiple containers are candidates, the nearest one wins
+- When a planting is dragged out of its container without snapping to a new one, it renders as a free agent: detached from the former parent's walls (no clipping) and positioned freely under the cursor
+- Releasing a free-agent planting within one grid cell of its original position snaps it back with no undo entry; releasing it over empty space removes it (undoable); releasing it over a different container's snap target re-parents it (undoable)
 
 ## Cursor
 
