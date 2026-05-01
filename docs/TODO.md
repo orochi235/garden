@@ -40,12 +40,24 @@ Watch out for:
 
 ## canvas-kit future capabilities
 
-Backlog for the canvas-kit framework. Each is its own design exercise — listed here so they aren't forgotten.
+Backlog for the canvas-kit framework. The kit aims to be a generic 2D
+scene-graph foundation (used by drag-lab, garden, and future apps) — items
+are evaluated for cross-app reuse, not just garden value.
 
-- **Paths and compound shapes.** Today `TPose` is implicitly axis-aligned rect-shaped (`{x, y, width, height}`) for resize/insert. Generalize to arbitrary paths: polygons, polylines, holes, boolean composition. Move + hit-testing + selection overlay all need a path-aware contract.
-- **Groupable objects.** First-class group node: select-as-one, move-as-one, transform children relative to group origin. Adapter needs a parent/children model and a way to express "this object is the group, those are its members." Touches selection, area-select, clone, history.
-- **Text rendering.** Editable text labels as scene objects. Layout (single-line, wrapping, alignment), font handling, hit-testing on glyphs, in-place edit gesture. Probably its own interaction hook (`useTextEditInteraction`).
-- **Bezier curves / splines.** Smooth path objects with control handles. New interaction for editing control points (a specialized resize-like hook with non-corner anchors). Renderer needs curve sampling and hit-testing.
-- **d3 integration (likely as a plugin).** Bridge canvas-kit's adapter/op model to d3 selections so consumers can drive scene updates from data joins. Plugin form: a thin layer that maps d3 enter/update/exit to InsertOp/setPose/DeleteOp. Keep d3 out of the core.
-- **Customizable units.** Today everything is in unitless world coordinates. Support a unit system (px / in / ft / %) per scene, with conversion at the rendering boundary. Pairs with the broader unit-arithmetic note in memory (mixed-unit values like `50% + 2ft`).
-- **Grid overlay.** Pull `renderGrid`'s ad-hoc usage into a first-class layer factory with snap-aware visual hints (subdivisions, accent lines, snap target highlight on hover). Probably consumes the same `gridSnapStrategy` so visual + behavioral grid agree.
+### Tier 1 — foundational genericity gaps
+
+Without these, the kit is essentially "axis-aligned-rectangle kit."
+
+- **Paths and compound shapes.** `TPose` is generic at the type level but resize/insert/area-select/selection-overlay all bake in `{x, y, width, height}` math. Generalize to arbitrary paths: polygons, polylines, holes, boolean composition. Move + hit-testing + selection overlay all need a path-aware contract. Foundational for any non-rect editor (diagrams, schematics, illustration, mapping).
+- **Groupable objects.** First-class group node: select-as-one, move-as-one, transform children relative to group origin. Adapter has `getParent`/`setParent` already; the gap is gesture semantics. Touches selection, area-select, clone, history. Universal across diagramming and illustration tools.
+- **Text rendering.** `renderLabel` + `markdownText` cover static labels; the gap is editable text as a first-class scene object. Layout (single-line, wrapping, alignment), font handling, glyph hit-testing, in-place edit gesture (likely a new `useTextEditInteraction`). Separates "viewer" from "editor."
+
+### Tier 2 — broad reuse
+
+- **Customizable units.** Coordinates are unitless today. A kit-level unit system (px / in / ft / mm / %) that the renderer and snap strategies understand is more reusable than per-app reinvention. CAD, floor plans, garden, PCB design, mapping all need this. Pairs with the mixed-unit-arithmetic note in memory (`50% + 2ft`).
+- **Grid overlay.** Promote `renderGrid` to a first-class `RenderLayer` factory with snap-aware visual hints (subdivisions, accent lines, snap-target highlight on hover). Consumes the same `gridSnapStrategy` so visual + behavioral grid agree. Small effort, universal benefit.
+
+### Tier 3 — specialized but valuable
+
+- **Bezier curves / splines (control-point editing gesture).** A path-capable kit (Tier 1 #1) gives the data shape; what's genuinely new here is the interaction pattern: editing handles on a curve. Specialized resize-like hook with non-corner anchors, plus curve sampling and hit-testing in the renderer. Useful for routing edges in node graphs, illustration, motion paths.
+- **d3 integration plugin.** Bridge the adapter/op model to d3 selections so consumers can drive scene updates from data joins (enter → InsertOp, update → setPose, exit → DeleteOp). Strict plugin form — d3 stays out of the core. Real audience: dashboards, network graphs, force-directed layouts, scientific viz.
