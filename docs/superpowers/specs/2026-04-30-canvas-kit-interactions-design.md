@@ -1,6 +1,6 @@
 # canvas-kit Interactions Design
 
-**Status:** Phase 1 (foundation + move) implemented in `docs/superpowers/plans/2026-04-30-canvas-kit-foundation-and-move.md`. Resize/plot/area-select/clipboard ports remain in follow-on plans.
+**Status:** Phases 1 (foundation + move) and 2 (resize + insert) implemented. Phase 1: `docs/superpowers/plans/2026-04-30-canvas-kit-foundation-and-move.md`. Phase 2: `docs/superpowers/plans/2026-04-30-canvas-kit-resize-and-insert.md`. Area-select and clipboard ports remain in follow-on plans.
 **Date:** 2026-04-30
 **Authors:** Mike
 
