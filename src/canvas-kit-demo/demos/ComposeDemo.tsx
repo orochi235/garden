@@ -128,6 +128,15 @@ export function ComposeDemo() {
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!gesture.current) return;
+    if (e.buttons === 0) {
+      const g = gesture.current;
+      gesture.current = null;
+      if (g === 'move') move.cancel();
+      else if (g === 'resize') resize.cancel();
+      else if (g === 'insert') insert.cancel();
+      else if (g === 'area') area.cancel();
+      return;
+    }
     const cr = e.currentTarget.getBoundingClientRect();
     const [wx, wy] = screenToWorld(e.clientX - cr.left, e.clientY - cr.top, { panX: 0, panY: 0, zoom: 1 });
     const mods = { alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey };
