@@ -204,3 +204,63 @@ return <div ref={dropRef}>...</div>;
 Threshold is fixed at 5px (squared = 25). Drag is canceled if the source
 unmounts. Click events are swallowed for one tick after a drag, so click
 handlers on the source don't fire spuriously.
+
+## useZoomInteraction
+
+Stateless coordinator that owns clamp policy + focal-point dispatch across
+wheel, keyboard, double-click, and trackpad pinch. Mirrors
+`usePanInteraction` in shape: the caller owns `useState` for `zoom` and
+`pan`; the hook returns handlers wired onto the canvas.
+
+```ts
+const [zoom, setZoom] = useState(1);
+const [pan, setPan] = useState({ x: 0, y: 0 });
+
+const zoomCtl = useZoomInteraction({
+  zoom, setZoom, pan, setPan,
+  viewport: { width: 800, height: 600 },
+  min: 0.1, max: 10,            // defaults shown
+  sources: {
+    wheel: true,                 // default
+    keys: true,                  // default ('+', '=', '-', '_', Cmd/Ctrl-0)
+    doubleClick: false,          // default — opt in for click-to-zoom
+    pinch: true,                 // default — macOS trackpad pinch
+  },
+  // wheelRequiresModifier: false (default). Set true for Figma-style
+  // bare-wheel-pans, modifier-wheel-zooms.
+});
+
+return (
+  <canvas
+    onWheel={(e) => zoomCtl.onWheel(e)}
+    onDoubleClick={(e) => zoomCtl.onDoubleClick(e)}
+    // attach onKeyDown to window in a useEffect — most apps want canvas-zoom
+    // keys to work regardless of canvas focus.
+  />
+);
+```
+
+### Composition
+
+`useAutoCenter` writes initial zoom/pan once. `usePanInteraction` updates
+pan only. `useZoomInteraction` updates both (focal-aware zoom moves pan to
+keep the world point under the cursor stationary).
+
+### Imperative
+
+```ts
+zoomCtl.zoomTo(2);                         // viewport center
+zoomCtl.zoomTo(2, { x: 100, y: 50 });      // arbitrary focal
+zoomCtl.zoomBy(1.25);
+zoomCtl.reset();                           // zoom = 1, pan = {0, 0}
+```
+
+### Pinch / modifier policy
+
+macOS trackpad pinch arrives as a `WheelEvent` with `ctrlKey: true`. The
+hook treats `wheel + ctrlKey` as zoom unconditionally so trackpad pinch
+works without per-app event sniffing. `sources.pinch = false` disables it.
+
+`wheelRequiresModifier = true` switches to Figma-style: bare wheel is
+ignored (the consumer pans with it); only modifier+wheel zooms. Pinch
+still works.
