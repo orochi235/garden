@@ -107,3 +107,21 @@ adds a real history entry inside `applyBatch` (e.g. `pushHistory(garden,
 selection)` before mutating). For an op-based history, use
 `createHistory(adapter)` and route `applyBatch` through it; for snapshot
 history (this repo's pattern), capture state, apply ops in place, and push.
+
+## `OrderedAdapter` (optional mixin)
+
+Opt into sibling z-order by implementing two methods on your scene adapter:
+
+| Method | Purpose |
+|---|---|
+| `getChildren?(parentId)` | Ordered child ids of `parentId` (or root siblings if null). Index 0 = bottom, last = top. |
+| `setChildOrder?(parentId, ids)` | Rewrite the order of `parentId`'s children. Reorder only — no add/remove. |
+
+Both are **optional**. Reorder ops and `useReorderAction` no-op when either
+is absent.
+
+**Convention:** hit-tests iterate `getChildren` in REVERSE (top first);
+render layers iterate FORWARD (bottom first).
+
+For groups, `parentId === <groupId>` routes to the group's `members[]`.
+Use `withGroupOrdering(scene, groupAdapter)` to compose.

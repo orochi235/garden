@@ -124,3 +124,18 @@ export type { UseCloneInteractionOptions, UseCloneInteractionReturn } from './in
 export type { ClonePose, CloneLayer, CloneBehavior } from './interactions/types';
 // snapToGrid / snapToContainer / snapBackOrDelete are NOT re-exported at top level —
 // import from '@/canvas-kit/move' to disambiguate from resize/insert siblings.
+export {
+  createBringForwardOp,
+  createSendBackwardOp,
+  createBringToFrontOp,
+  createSendToBackOp,
+  createMoveToIndexOp,
+} from './ops/reorder';
+export {
+  useReorderAction,
+  type ReorderAdapter,
+  type UseReorderActionOptions,
+  type UseReorderActionReturn,
+} from './interactions/reorder';
+export type { OrderedAdapter } from './adapters/types';
+export { withGroupOrdering } from './groups/orderedGroups';

@@ -190,3 +190,40 @@ IMPERIAL_INCHES)` returns `'3ft'` for display.
 A registry is only needed at sites that pass tagged values. Bare numbers
 need no registry. Linear factors only — no per-axis units, no mixed-unit
 arithmetic.
+
+## Sibling z-order
+
+Adapters that opt into `OrderedAdapter` expose ordered children:
+
+```ts
+interface OrderedAdapter {
+  getChildren?(parentId: string | null): string[];
+  setChildOrder?(parentId: string | null, ids: string[]): void;
+}
+```
+
+**Convention:** array order **is** z-order. Index 0 is the bottom, last
+index is the top.
+
+- **Hit-test** iterates `getChildren(...)` in **reverse** (top → bottom) so
+  the topmost visible object wins.
+- **Render layers** iterate **forward** (bottom → top) so the bottom paints
+  first and the top paints over it.
+
+The kit doesn't enforce these rules — they're documentation. Every utility
+that calls `getChildren` (area-select hit-tests, the future
+`renderChildrenLayer` factory) follows them; consumer adapters should too.
+
+For groups, `parentId === <groupId>` routes to the group's `members[]`
+array. `withGroupOrdering(scene, groupAdapter)` composes the two so a single
+`OrderedAdapter` mixin handles both leaf siblings and group members.
+
+Reorder ops: `createBringForwardOp`, `createSendBackwardOp`,
+`createBringToFrontOp`, `createSendToBackOp`, `createMoveToIndexOp`. Each
+records before-state per affected parent so undo is exact. Multi-id
+selections preserve relative order; cross-parent selections process per
+parent.
+
+`useReorderAction` exposes imperative methods and optional keyboard
+binding: `]` / `[` for forward / backward; `Shift+]` / `Shift+[` for to-
+front / to-back.
