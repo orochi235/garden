@@ -31,3 +31,16 @@ export * from './renderGrid';
 export * from './renderLabel';
 export * from './markdownText';
 export * from './patterns';
+export * from './ops';
+export * from './history';
+export * from './adapters/types';
+export * from './interactions/types';
+export { snapToContainer, snapBackOrDelete } from './interactions/behaviors';
+export { snapToGrid as snapToGridBehavior } from './interactions/behaviors/snapToGrid';
+export { useMoveInteraction } from './interactions/move';
+export type {
+  UseMoveInteractionOptions,
+  UseMoveInteractionReturn,
+  MoveStartArgs,
+  MoveMoveArgs,
+} from './interactions/move';
