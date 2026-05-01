@@ -19,7 +19,7 @@ import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch'
 import { cycleLayer } from '../actions/layers/cycleLayer';
 import { useClipboard } from './hooks/useClipboard';
 import { useLayerEffect } from '@/canvas-kit';
-import { useMoveInteraction } from './hooks/useMoveInteraction';
+import { useCloneInteraction } from './hooks/useCloneInteraction';
 import {
   useMoveInteraction as useKitMoveInteraction,
   snapToContainer,
@@ -190,7 +190,7 @@ export function CanvasStack() {
     setSeedStartingPan(0, 0);
   }, [appMode, currentTrayId, width, height, garden.seedStarting.trays, setSeedStartingZoom, setSeedStartingPan]);
   const pan = usePanInteraction(getActivePan);
-  const moveInteraction = useMoveInteraction(containerRef, invalidate);
+  const moveInteraction = useCloneInteraction(containerRef, invalidate);
 
   // --- Kit move interactions (per-adapter) ---
   const plantingMoveAdapter = useMemo(() => createPlantingMoveAdapter(), []);
@@ -803,8 +803,6 @@ export function CanvasStack() {
                 if (parent) {
                   // Defer clone creation until drag threshold is exceeded
                   select(hit.id);
-                  // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
-                  // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
                   moveInteraction.start(worldX, worldY, hit.id, hit.layer, parent.x + planting.x, parent.y + planting.y, false, {
                     parentId: planting.parentId,
                     x: planting.x,
@@ -828,16 +826,12 @@ export function CanvasStack() {
                   const newStructures = useGardenStore.getState().garden.structures;
                   const clone = newStructures[newStructures.length - 1];
                   select(clone.id);
-                  // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
-                  // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
                   moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
                 } else {
                   addZone({ x: obj.x, y: obj.y, width: obj.width, height: obj.height });
                   const newZones = useGardenStore.getState().garden.zones;
                   const clone = newZones[newZones.length - 1];
                   select(clone.id);
-                  // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
-                  // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
                   moveInteraction.start(worldX, worldY, clone.id, hit.layer, clone.x, clone.y, true);
                 }
                 setActiveCursor('copy');
@@ -915,8 +909,6 @@ export function CanvasStack() {
         }
       }
 
-      // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
-      // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
       if (moveInteraction.move(e)) return;
       if (pan.move(e)) return;
 
@@ -994,8 +986,6 @@ export function CanvasStack() {
         plantingMove.end();
         zoneMove.end();
         structureMove.end();
-        // TODO(canvas-kit-clone): Clone-from-palette still uses the old useMoveInteraction
-        // hook. Migrate in the follow-on plan once the kit grows useDragInsertion.
         moveInteraction.end(e);
         setActiveCursor(null);
       }

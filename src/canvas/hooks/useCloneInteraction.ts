@@ -7,6 +7,8 @@ import type { Planting, Structure } from '../../model/types';
 import { screenToWorld, snapToGrid } from '@/canvas-kit';
 import { structuresCollide } from '../../utils/collision';
 
+// Clone-only hook: handles drag-from-palette for plantings, structures, and zones.
+
 /** How long the cursor must dwell over a container before snapping (ms). */
 export const SNAP_DWELL_MS = 500;
 
@@ -21,7 +23,7 @@ export interface PutativeSnap {
   slotY: number;
 }
 
-export function useMoveInteraction(
+export function useCloneInteraction(
   containerRef: React.RefObject<HTMLDivElement | null>,
   onSnapChange?: () => void,
 ) {
@@ -33,7 +35,7 @@ export function useMoveInteraction(
   const moveObjectLayer = useRef<string | null>(null);
   const forceSnap = useRef(false);
 
-  // Clone data replaces old pendingClone + isClone refs
+  // Clone data for planting palette drags
   const cloneData = useRef<{
     parentId: string;
     x: number;
@@ -43,7 +45,7 @@ export function useMoveInteraction(
     parentWorldY: number;
   } | null>(null);
 
-  // Map of child ID -> {dx, dy} offset from primary object
+  // Map of child ID -> {dx, dy} offset from primary object (used for structure clones with children)
   const childOffsets = useRef<Map<string, { dx: number; dy: number }>>(new Map());
 
   // Container snap state
@@ -82,7 +84,7 @@ export function useMoveInteraction(
     const layer = moveObjectLayer.current;
 
     if (cloneData.current) {
-      // Clone: create a transient planting for the overlay (not added to garden)
+      // Planting clone: create a transient planting for the overlay (not yet added to garden)
       const clone = cloneData.current;
       const transient = createPlanting({
         parentId: clone.parentId,
@@ -104,11 +106,11 @@ export function useMoveInteraction(
       useUiStore.getState().select(transient.id);
       cloneData.current = null;
     } else if (layer === 'structures') {
+      // Structure clone: object already added to garden, just start overlay drag
       const primary = garden.structures.find(s => s.id === moveObjectId.current);
       if (!primary) return;
 
       const children = garden.structures.filter(s => s.parentId === primary.id);
-      // Store child offsets relative to primary
       childOffsets.current.clear();
       for (const child of children) {
         childOffsets.current.set(child.id, {
@@ -127,6 +129,7 @@ export function useMoveInteraction(
         snapped: false,
       });
     } else if (layer === 'zones') {
+      // Zone clone: object already added to garden, just start overlay drag
       const zone = garden.zones.find(z => z.id === moveObjectId.current);
       if (!zone) return;
 
@@ -134,25 +137,6 @@ export function useMoveInteraction(
         layer: 'zones',
         objects: [{ ...zone }],
         hideIds: [zone.id],
-        snapped: false,
-      });
-    } else if (layer === 'plantings') {
-      const planting = garden.plantings.find(p => p.id === moveObjectId.current);
-      if (!planting) return;
-
-      // Convert planting position to world coords for overlay
-      const parent = garden.structures.find(s => s.id === planting.parentId)
-        ?? garden.zones.find(z => z.id === planting.parentId);
-      const worldPlanting: Planting = {
-        ...planting,
-        x: parent ? parent.x + planting.x : planting.x,
-        y: parent ? parent.y + planting.y : planting.y,
-      };
-
-      useUiStore.getState().setDragOverlay({
-        layer: 'plantings',
-        objects: [worldPlanting],
-        hideIds: [planting.id],
         snapped: false,
       });
     }
@@ -254,28 +238,12 @@ export function useMoveInteraction(
       });
       useUiStore.getState().setDragOverlay({ ...overlay, objects: updatedObjects });
     } else if (moveObjectLayer.current === 'plantings') {
+      // Planting clone drag: overlay.hideIds is empty (original stays visible)
       const planting = overlay.objects.find(o => o.id === moveObjectId.current) as Planting | undefined;
       if (planting) {
-        // Create a fake planting with parent-relative coords for findSnapContainer
-        // The overlay planting has world coords, so we need to create something compatible
-        const fakePlanting: Planting = {
-          ...planting,
-          // findSnapContainer uses parent.x + planting.x to compute world pos
-          // and checks if it's inside parent. For a planting being dragged freely,
-          // set parentId to empty so it won't match any parent exclusion.
-          parentId: overlay.hideIds.length > 0 ? overlay.hideIds[0] : '',
-        };
-        // For the parent-relative check in findSnapContainer, we need to find
-        // the original parent and compute relative coords
-        const origParent = garden.structures.find(s => s.id === fakePlanting.parentId)
-          ?? garden.zones.find(z => z.id === fakePlanting.parentId);
-        if (origParent) {
-          fakePlanting.x = snappedX - origParent.x;
-          fakePlanting.y = snappedY - origParent.y;
-        } else {
-          fakePlanting.x = snappedX;
-          fakePlanting.y = snappedY;
-        }
+        // Build a fake planting for findSnapContainer (needs parent-relative coords).
+        // Since this is always a clone, there's no original parent to exclude.
+        const fakePlanting: Planting = { ...planting, parentId: '', x: snappedX, y: snappedY };
 
         // If we have an active putative snap, check whether cursor moved away
         if (putativeSnap.current) {
@@ -380,10 +348,10 @@ export function useMoveInteraction(
       return;
     }
 
-    const { garden, checkpoint, updateStructure, updateZone, updatePlanting, addPlanting } =
+    const { garden, checkpoint, updateStructure, updateZone, addPlanting } =
       useGardenStore.getState();
 
-    // If this is a move (not a clone/palette drop), check if position actually changed
+    // For structure/zone clones: check if position actually changed
     if (overlay.hideIds.length > 0) {
       if (overlay.layer === 'structures') {
         const original = garden.structures.find(s => s.id === overlay.hideIds[0]);
@@ -398,30 +366,6 @@ export function useMoveInteraction(
         if (original && original.x === moved.x && original.y === moved.y) {
           cancel();
           return;
-        }
-      } else if (overlay.layer === 'plantings') {
-        const original = garden.plantings.find(p => p.id === overlay.hideIds[0]);
-        if (original) {
-          if (putativeSnap.current) {
-            // Snapped: compare target container/slot with original
-            const snap = putativeSnap.current;
-            if (snap.containerId === original.parentId && snap.slotX === original.x && snap.slotY === original.y) {
-              cancel();
-              return;
-            }
-          } else {
-            // Free drag, no snap target: snap back if released near the
-            // original position; the actual remove happens below after
-            // checkpoint so it lands in the undo stack.
-            const moved = overlay.objects[0] as Planting;
-            const dx = moved.x - moveStart.current.objX;
-            const dy = moved.y - moveStart.current.objY;
-            const snapBackRadius = garden.gridCellSizeFt;
-            if (dx * dx + dy * dy <= snapBackRadius * snapBackRadius) {
-              cancel();
-              return;
-            }
-          }
         }
       }
     }
@@ -438,52 +382,36 @@ export function useMoveInteraction(
         updateZone(obj.id, { x: obj.x, y: obj.y });
       }
     } else if (moveObjectLayer.current === 'plantings') {
+      // Planting clone: hideIds is empty, so always the clone/palette path
       const overlayPlanting = overlay.objects[0] as Planting;
 
       if (putativeSnap.current) {
         const snap = putativeSnap.current;
-        if (overlay.hideIds.length > 0) {
-          // Move: re-parent planting to snap container
-          updatePlanting(overlay.hideIds[0], {
-            parentId: snap.containerId,
-            x: snap.slotX,
-            y: snap.slotY,
-          });
-        } else {
-          // Clone/palette: add new planting in target container
-          addPlanting({
-            parentId: snap.containerId,
-            x: snap.slotX,
-            y: snap.slotY,
-            cultivarId: overlayPlanting.cultivarId,
-          });
-        }
+        // Clone/palette: add new planting in target container
+        addPlanting({
+          parentId: snap.containerId,
+          x: snap.slotX,
+          y: snap.slotY,
+          cultivarId: overlayPlanting.cultivarId,
+        });
       } else {
-        // Free drag — no snap target.
-        if (overlay.hideIds.length > 0) {
-          // Move: dropped into empty space — remove the planting. (Snap-back
-          // near the original position was already handled before checkpoint.)
-          useGardenStore.getState().removePlanting(overlay.hideIds[0]);
-        } else {
-          // Clone: find container under world coords and add planting
-          // For now, find any container that contains the point
-          const containers = [
-            ...garden.structures.filter(s => s.container),
-            ...garden.zones,
-          ];
-          for (const c of containers) {
-            if (
-              overlayPlanting.x >= c.x && overlayPlanting.x <= c.x + c.width &&
-              overlayPlanting.y >= c.y && overlayPlanting.y <= c.y + c.height
-            ) {
-              addPlanting({
-                parentId: c.id,
-                x: overlayPlanting.x - c.x,
-                y: overlayPlanting.y - c.y,
-                cultivarId: overlayPlanting.cultivarId,
-              });
-              break;
-            }
+        // Free drag — no snap target: find container under world coords
+        const containers = [
+          ...garden.structures.filter(s => s.container),
+          ...garden.zones,
+        ];
+        for (const c of containers) {
+          if (
+            overlayPlanting.x >= c.x && overlayPlanting.x <= c.x + c.width &&
+            overlayPlanting.y >= c.y && overlayPlanting.y <= c.y + c.height
+          ) {
+            addPlanting({
+              parentId: c.id,
+              x: overlayPlanting.x - c.x,
+              y: overlayPlanting.y - c.y,
+              cultivarId: overlayPlanting.cultivarId,
+            });
+            break;
           }
         }
       }
