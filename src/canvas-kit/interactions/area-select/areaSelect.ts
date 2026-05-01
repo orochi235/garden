@@ -73,8 +73,28 @@ export function useAreaSelectInteraction(
     });
   }, [adapter, onGestureStart]);
 
-  const move = useCallback((_wx: number, _wy: number, _mods: ModifierState): boolean => {
-    return stateRef.current.active;
+  const move = useCallback((worldX: number, worldY: number, modifiers: ModifierState): boolean => {
+    const s = stateRef.current;
+    if (!s.active || !s.ctx) return false;
+    const ctx = s.ctx;
+    ctx.modifiers = modifiers;
+    ctx.pointer = { worldX, worldY, clientX: 0, clientY: 0 };
+    const start = ctx.origin.get(GID)!;
+    const current: AreaSelectPose = { worldX, worldY, shiftHeld: start.shiftHeld };
+    ctx.current.set(GID, current);
+    for (const b of behaviorsRef.current) {
+      b.onMove?.(ctx, {
+        start: { worldX: start.worldX, worldY: start.worldY },
+        current: { worldX, worldY },
+        shiftHeld: start.shiftHeld,
+      });
+    }
+    setOverlay({
+      start: { worldX: start.worldX, worldY: start.worldY },
+      current: { worldX, worldY },
+      shiftHeld: start.shiftHeld,
+    });
+    return true;
   }, []);
 
   const end = useCallback(() => {

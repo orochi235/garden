@@ -49,3 +49,30 @@ describe('useAreaSelectInteraction — start / cancel', () => {
     expect(ops).toEqual([]);
   });
 });
+
+describe('useAreaSelectInteraction — move', () => {
+  it('move updates overlay.current; preserves shiftHeld from start', () => {
+    const { adapter } = makeAdapter();
+    const { result } = renderHook(() =>
+      useAreaSelectInteraction(adapter, { behaviors: [selectFromMarquee()] }),
+    );
+    act(() => { result.current.start(1, 2, { ...NO_MOD, shift: true }); });
+    act(() => { result.current.move(5, 7, NO_MOD); });
+    expect(result.current.overlay).toEqual({
+      start: { worldX: 1, worldY: 2 },
+      current: { worldX: 5, worldY: 7 },
+      shiftHeld: true,
+    });
+  });
+
+  it('move while inactive returns false and does not set overlay', () => {
+    const { adapter } = makeAdapter();
+    const { result } = renderHook(() =>
+      useAreaSelectInteraction(adapter, { behaviors: [selectFromMarquee()] }),
+    );
+    let returned = true;
+    act(() => { returned = result.current.move(1, 1, NO_MOD); });
+    expect(returned).toBe(false);
+    expect(result.current.overlay).toBeNull();
+  });
+});
