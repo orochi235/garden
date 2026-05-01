@@ -29,6 +29,12 @@ export interface GestureContext<TPose, TObject extends { id: string } = { id: st
   modifiers: ModifierState;
   pointer: PointerState;
   adapter: MoveAdapter<TObject, TPose>;
+  /**
+   * Per-gesture mutable store. Keys should be namespaced by behavior name to avoid
+   * collisions: `'behaviorName'` for a single value, `'behaviorName.field'` for
+   * sub-keys (e.g. `'snapBackOrDelete.snapshots'`). Two behaviors sharing a key
+   * will silently clobber each other.
+   */
   scratch: Record<string, unknown>;
 }
 
@@ -53,6 +59,12 @@ export interface MoveBehavior<TPose> {
    * Called on every pointermove past the threshold. Receives the proposed
    * pose (after earlier behaviors). Return `{ pose }` to override, `{ snap }`
    * to set snap state, both, or void to no-op.
+   *
+   * During a group drag, behaviors run only against `ctx.draggedIds[0]` (the
+   * primary). Secondary ids inherit the same translation delta without running
+   * through behaviors. Snap behaviors therefore only quantize the primary's
+   * pose; secondaries are snapped only if they were already grid-aligned at
+   * gesture start.
    */
   onMove?(
     ctx: GestureContext<TPose>,
