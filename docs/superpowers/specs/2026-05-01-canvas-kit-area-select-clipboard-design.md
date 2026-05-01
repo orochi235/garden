@@ -1,6 +1,6 @@
 # canvas-kit Area-Select + Clipboard Design (Phase 3)
 
-**Status:** Draft.
+**Status:** Phase 3 implemented.
 **Date:** 2026-05-01
 **Authors:** Mike
 **Predecessors:**

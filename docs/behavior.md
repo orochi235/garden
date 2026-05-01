@@ -114,3 +114,16 @@ Running list of intended application behaviors.
 - Seedlings with warnings (e.g., placed in a tray whose cell size doesn't match the cultivar's preferred size) are highlighted with a goldenrod outline ring around the icon
 - Existing seedlings can be dragged within the tray: dropping on an empty cell moves the seedling, dropping on an occupied cell swaps the two, and dropping outside the tray removes the seedling
 - Clicking a seedling selects it; shift- or cmd-clicking another seedling adds/removes it from the selection (multiselect). Clicking an empty cell or the background clears the selection. Selected seedlings render with a dashed blue ring
+
+## Selection and clipboard (Phase 3 canvas-kit migration, 2026-05-01)
+
+- Area-select (marquee) is transient: completing a marquee selection does NOT
+  add a history entry. Undo immediately after marquee select is a no-op (or
+  restores whatever the previous garden-mutating action was).
+- Paste is a single undo step. Pasting N objects produces one history entry
+  containing N inserts plus the selection change.
+- Plantings paste. Selecting a planting, copying, and pasting now creates a
+  sibling planting under the same parent at the same parent-relative
+  coordinates. (Pre-Phase-3, plantings were silently dropped from clipboard
+  contents.)
+- Repeated pastes cascade by one grid cell down-right per paste.
