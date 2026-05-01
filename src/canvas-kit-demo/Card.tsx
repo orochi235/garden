@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Highlight, themes } from 'prism-react-renderer';
 
 interface CardProps {
   title: string;
@@ -19,7 +20,23 @@ export function Card({ title, description, hint, canvas, source }: CardProps) {
           {hint && <span className="ckd-hint">{hint}</span>}
         </div>
         <div className="ckd-source">
-          <pre><code>{source}</code></pre>
+          <Highlight code={source.trim()} language="tsx" theme={themes.vsDark}>
+            {({ className, style, tokens, getLineProps, getTokenProps }) => (
+              <pre className={className} style={{ ...style, background: 'transparent', margin: 0 }}>
+                {tokens.map((line, i) => {
+                  const { key: _lk, ...lineProps } = getLineProps({ line });
+                  return (
+                    <div key={i} {...lineProps}>
+                      {line.map((token, j) => {
+                        const { key: _tk, ...tokenProps } = getTokenProps({ token });
+                        return <span key={j} {...tokenProps} />;
+                      })}
+                    </div>
+                  );
+                })}
+              </pre>
+            )}
+          </Highlight>
         </div>
       </div>
     </section>
