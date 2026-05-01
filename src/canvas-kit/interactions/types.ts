@@ -133,3 +133,49 @@ export interface InsertOverlay<TPose extends { x: number; y: number }> {
   start: TPose;
   current: TPose;
 }
+
+// ----- area-select -----
+
+/** Pose carried through area-select gestures: the world point under the
+ *  cursor at gesture start, plus the shift-key state at start. */
+export interface AreaSelectPose {
+  worldX: number;
+  worldY: number;
+  shiftHeld: boolean;
+}
+
+export interface AreaSelectProposed {
+  start: { worldX: number; worldY: number };
+  current: { worldX: number; worldY: number };
+  shiftHeld: boolean;
+}
+
+/** onMove for area-select doesn't shape ops; behaviors only need to react in
+ *  onEnd. We return void from onMove. */
+export type AreaSelectMoveResult = void;
+
+export type AreaSelectBehavior = GestureBehavior<
+  AreaSelectPose,
+  AreaSelectProposed,
+  AreaSelectMoveResult
+>;
+
+export interface AreaSelectOverlay {
+  start: { worldX: number; worldY: number };
+  current: { worldX: number; worldY: number };
+  shiftHeld: boolean;
+}
+
+// ----- clipboard -----
+
+/**
+ * Opaque clipboard payload. `items` is `unknown[]` so each app's clipboard
+ * adapter stores whatever shape it wants; the kit never inspects entries.
+ *
+ * The adapter is responsible for both producing snapshots
+ * (`snapshotSelection`) and consuming them (`commitPaste`). Type safety lives
+ * at that boundary, not in the kit.
+ */
+export interface ClipboardSnapshot {
+  items: unknown[];
+}

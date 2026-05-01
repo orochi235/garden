@@ -16,6 +16,16 @@ function makeAdapter(opts?: { commitReturnsNull?: boolean }) {
       const obj: Obj = { id: `obj-${inserts.length}`, x: b.x, y: b.y, width: b.width, height: b.height };
       return obj;
     },
+    commitPaste(_clipboard, _offset) {
+      return [];
+    },
+    snapshotSelection(_ids) {
+      return { items: [] };
+    },
+    insertObject(o) {
+      inserts.push(o);
+    },
+    setSelection(_ids) {},
     applyBatch(ops, label) {
       batches.push({ ops, label });
       // Simulate insertObject side-effect by recording.

@@ -1,4 +1,5 @@
 import type { Op } from '../ops/types';
+import type { ClipboardSnapshot } from '../interactions/types';
 
 /**
  * SnapTarget — where a dragged object would re-parent to if released.
@@ -73,11 +74,43 @@ export interface ResizeAdapter<
 }
 
 /**
- * Narrow adapter for `useInsertInteraction`. The kit knows nothing about
- * what tool is active or what shape to construct; it asks the adapter to
- * produce an object given the gesture bounds. Returning `null` aborts.
+ * Narrow adapter for `useAreaSelectInteraction`. Transient: no checkpoint, no
+ * history. The hook calls `applyOps(ops)` instead of `applyBatch(ops, label)`.
+ */
+export interface AreaSelectAdapter {
+  /** Returns ids of objects intersecting the world-space rect. */
+  hitTestArea(rect: { x: number; y: number; width: number; height: number }): string[];
+  /** Current selection — read by behaviors to compute additive merges. */
+  getSelection(): string[];
+  /** Mutator wired by `setSelection` op. */
+  setSelection(ids: string[]): void;
+  /** Apply ops without checkpointing or pushing a history entry. */
+  applyOps(ops: Op[]): void;
+}
+
+/**
+ * Narrow adapter for `useInsertInteraction` and `useClipboard`. The kit knows
+ * nothing about what tool is active or what shape to construct; it asks the
+ * adapter to produce object(s) given gesture or paste inputs.
+ *
+ * Drag-rectangle path: `commitInsert(bounds)` returns one new object or null.
+ * Clipboard paste path: `commitPaste(clipboard, offset)` returns the array of
+ *   newly-materialized objects (in order). Both empty array and array of
+ *   length N are valid; the kit wraps each entry in an `InsertOp`.
+ *
+ * `snapshotSelection(ids)` builds the payload that paste later consumes.
+ * `getPasteOffset` is optional; the kit defaults to a fixed grid-cell offset
+ * supplied by the consumer (passed to `useClipboard` options if needed; see
+ * the hook for resolution order).
  */
 export interface InsertAdapter<TObject extends { id: string }> {
   commitInsert(bounds: { x: number; y: number; width: number; height: number }): TObject | null;
+  commitPaste(clipboard: ClipboardSnapshot, offset: { dx: number; dy: number }): TObject[];
+  snapshotSelection(ids: string[]): ClipboardSnapshot;
+  getPasteOffset?(clipboard: ClipboardSnapshot): { dx: number; dy: number };
+  /** Mutator wired by `insertObject`-using ops (kit-side InsertOp). */
+  insertObject(object: TObject): void;
+  /** Mutator wired by `setSelection` ops batched alongside paste. */
+  setSelection(ids: string[]): void;
   applyBatch(ops: Op[], label: string): void;
 }

@@ -57,6 +57,15 @@ export function createInsertAdapter(): GardenInsertAdapter {
         },
       }));
     },
+    commitPaste(_clipboard, _offset) {
+      return [];
+    },
+    snapshotSelection(_ids) {
+      return { items: [] };
+    },
+    setSelection(ids) {
+      useUiStore.getState().setSelection(ids);
+    },
     applyBatch(ops: Op[], _label: string) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);
