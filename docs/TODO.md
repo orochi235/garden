@@ -64,6 +64,15 @@ Without these, the kit is essentially "axis-aligned-rectangle kit."
 
 - **`useZoomInteraction`.** Math already exists (`ViewTransform.zoom`, `wheelHandler`, `screenToWorld`/`worldToScreen` all zoom-aware). Gap is a hook that owns current zoom level + min/max clamps + zoom-to-focal-point + sources (wheel, pinch, +/- keys, double-click). Parallel shape to `usePanInteraction`. Brief design pass first (clamp policy, focal-point convention, gesture-source enumeration).
 - **~~`useDeleteAction`~~** *Done* (`660800a`).
+- **Selection-driven action hooks.** Same shape as `useDeleteAction` (read selection → emit ops → `applyBatch`, optional key binding). Strong fits, no new infrastructure needed:
+  - `useNudgeAction` — arrow keys translate selection by 1 unit; shift = larger step. Reuses `translatePose`.
+  - `useDuplicateAction` — Ctrl+D, clones selection at offset via the existing clone op pipeline.
+  - `useSelectAllAction` — Ctrl+A, emits `setSelection(allIds)`. Adapter needs `listAll()`.
+  - `useEscapeAction` — Esc clears selection. Trivial but symmetric.
+  - Clipboard key wrappers (Ctrl+C/X/V) — `useClipboard` is logic-only today; an action-level wrapper that binds keys mirrors `useDeleteAction`.
+  - `useGroupAction` / `useUngroupAction` (Ctrl+G / Ctrl+Shift+G) — wraps `createGroupOp` / `dissolveGroupOp`; ships alongside groups Phase 3+.
+  - `useUndoRedoAction` (Ctrl+Z / Ctrl+Shift+Z) — depends on history-stack design; defer until that lands.
+- **Sibling z-order.** First-class concept of ordering among siblings. Recommendation: implicit array order via adapter (`getChildren(parentId)` returns ids in z-order), not a per-object `zIndex` field — matches DOM/SVG/most scene graphs and rides on the same parent→children contract groups already need. Adds reorder ops (`bringForward`, `sendBackward`, `bringToFront`, `sendToBack`, `moveToIndex`) that splice the array. Unlocks a `useReorderAction` hook (`]` / `[` and bracket-with-shift).
 - **Test coverage gap pass.** Audit every source file under `src/canvas-kit/` and ensure each has a sibling `.test.ts`. Some files (e.g. `wheelHandler.ts`, `markdownText.ts`, `patterns.ts`, `dragGhost.ts`, `pointerDrag.ts`, `useCanvasSize.ts`, `renderLayer.ts`, `LayerRenderer.ts`, `renderGrid.ts`, `renderLabel.ts`, `useLayerEffect.ts`, `useAutoCenter.ts`, `usePanInteraction.ts`, `thresholdDrag.ts`, `fitToBounds.ts`, `grid.ts`) may not have full coverage today. List the missing files first, then fill in tests in order of public-API exposure (anything in the barrel first).
 - **Parallax plugin.** Multi-layer canvas where layers translate at different rates relative to the viewport pan. Useful for sketch/concept-canvas backgrounds, depth illusions, mapping (terrain shading layers), and game-style scenes. Likely a `RenderLayer` factory or a thin wrapper over `usePanInteraction` that exposes a `parallaxFactor` per layer (0 = locked to viewport, 1 = moves with content, fractions = depth). Plugin form keeps it out of the core. Open question: does it warp `screenToWorld` for hit-testing on the parallaxed layer, or is parallax purely cosmetic?
 
