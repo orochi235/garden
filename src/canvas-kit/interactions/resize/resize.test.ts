@@ -98,3 +98,79 @@ describe('useResizeInteraction — move', () => {
     expect(result.current.overlay!.targetPose.width).toBeCloseTo(0.7, 5);
   });
 });
+
+describe('useResizeInteraction — end', () => {
+  it('emits one TransformOp using targetPose (not lerped currentPose)', () => {
+    const { adapter, batches, state } = makeAdapter();
+    const { result } = renderHook(() => useResizeInteraction<{ id: string }, P>(adapter, {}));
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 10, 0);
+    });
+    act(() => {
+      result.current.move(14, 0, { alt: false, shift: false, meta: false, ctrl: false });
+    });
+    act(() => {
+      result.current.end();
+    });
+    expect(batches).toHaveLength(1);
+    expect(batches[0].label).toBe('Resize');
+    expect(batches[0].ops).toHaveLength(1);
+    expect(state.get('a')).toEqual({ x: 0, y: 0, width: 14, height: 10 });
+  });
+
+  it('end with no move emits no batch', () => {
+    const { adapter, batches } = makeAdapter();
+    const { result } = renderHook(() => useResizeInteraction<{ id: string }, P>(adapter, {}));
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 10, 0);
+    });
+    act(() => {
+      result.current.end();
+    });
+    expect(batches).toEqual([]);
+  });
+
+  it('behavior onEnd returning Op[] overrides default', () => {
+    const { adapter, batches } = makeAdapter();
+    const customOp: Op = {
+      apply() {},
+      invert() { return customOp; },
+      label: 'Custom',
+    };
+    const { result } = renderHook(() =>
+      useResizeInteraction<{ id: string }, P>(adapter, {
+        behaviors: [{ onEnd: () => [customOp] }],
+      }),
+    );
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 10, 0);
+    });
+    act(() => {
+      result.current.move(14, 0, { alt: false, shift: false, meta: false, ctrl: false });
+    });
+    act(() => {
+      result.current.end();
+    });
+    expect(batches).toHaveLength(1);
+    expect(batches[0].ops[0]).toBe(customOp);
+  });
+
+  it('behavior onEnd returning null aborts (no batch)', () => {
+    const { adapter, batches } = makeAdapter();
+    const { result } = renderHook(() =>
+      useResizeInteraction<{ id: string }, P>(adapter, {
+        behaviors: [{ onEnd: () => null }],
+      }),
+    );
+    act(() => {
+      result.current.start('a', { x: 'min', y: 'free' }, 10, 0);
+    });
+    act(() => {
+      result.current.move(14, 0, { alt: false, shift: false, meta: false, ctrl: false });
+    });
+    act(() => {
+      result.current.end();
+    });
+    expect(batches).toEqual([]);
+  });
+});
