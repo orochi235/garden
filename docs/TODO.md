@@ -60,6 +60,11 @@ Without these, the kit is essentially "axis-aligned-rectangle kit."
   - **Per-axis units** — defer until a concrete use case appears (rare; e.g. timeline charts where x is time, y is value).
 - **Grid overlay.** Promote `renderGrid` to a first-class `RenderLayer` factory with snap-aware visual hints (subdivisions, accent lines, snap-target highlight on hover). Consumes the same `gridSnapStrategy` so visual + behavioral grid agree. Small effort, universal benefit.
 
+### Tier 1.5 — small additive hooks (do after groups Phase 3-4)
+
+- **`useZoomInteraction`.** Math already exists (`ViewTransform.zoom`, `wheelHandler`, `screenToWorld`/`worldToScreen` all zoom-aware). Gap is a hook that owns current zoom level + min/max clamps + zoom-to-focal-point + sources (wheel, pinch, +/- keys, double-click). Parallel shape to `usePanInteraction`. Brief design pass first (clamp policy, focal-point convention, gesture-source enumeration).
+- **`useDeleteAction`.** Pure userland glue today: `createDeleteOp` exists but no hook wraps "selected ids → emit DeleteOps → commit." Tiny: `useDeleteAction(adapter, options?) => { deleteSelection() }`, optional auto-binding to Delete/Backspace. Same shape would later cover ⌘C/⌘V binding for the existing `useClipboard`.
+
 ### Tier 3 — specialized but valuable
 
 - **Bezier curves / splines (control-point editing gesture).** A path-capable kit (Tier 1 #1) gives the data shape; what's genuinely new here is the interaction pattern: editing handles on a curve. Specialized resize-like hook with non-corner anchors, plus curve sampling and hit-testing in the renderer. Useful for routing edges in node graphs, illustration, motion paths.
