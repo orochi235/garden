@@ -32,60 +32,98 @@ export interface GestureContext<TPose, TObject extends { id: string } = { id: st
   /**
    * Per-gesture mutable store. Keys should be namespaced by behavior name to avoid
    * collisions: `'behaviorName'` for a single value, `'behaviorName.field'` for
-   * sub-keys (e.g. `'snapBackOrDelete.snapshots'`). Two behaviors sharing a key
-   * will silently clobber each other.
+   * sub-keys. Two behaviors sharing a key will silently clobber each other.
    */
   scratch: Record<string, unknown>;
 }
 
 export interface SnapStrategy<TPose> {
-  /**
-   * Maps a proposed pose to a snapped pose, or returns null to defer
-   * (no snap from this strategy; pipeline continues with the original).
-   */
   snap(pose: TPose, ctx: GestureContext<TPose, { id: string }>): TPose | null;
 }
+
+/**
+ * Generalized base behavior. Each hook defines an alias that pins the
+ * proposed-pose shape (TProposed) and the onMove return shape (TMoveResult).
+ * onEnd is uniform: first non-undefined return wins (Op[] = commit those,
+ * null = abort, undefined = defer).
+ */
+export interface GestureBehavior<TPose, TProposed, TMoveResult> {
+  onStart?(ctx: GestureContext<TPose>): void;
+  onMove?(ctx: GestureContext<TPose>, proposed: TProposed): TMoveResult | void;
+  onEnd?(ctx: GestureContext<TPose>): Op[] | null | void;
+}
+
+// ----- move -----
 
 export interface BehaviorMoveResult<TPose> {
   pose?: TPose;
   snap?: SnapTarget<TPose> | null;
 }
 
-export interface MoveBehavior<TPose> {
-  /** Called once at gesture start. */
-  onStart?(ctx: GestureContext<TPose>): void;
+export type MoveBehavior<TPose> = GestureBehavior<TPose, TPose, BehaviorMoveResult<TPose>>;
 
-  /**
-   * Called on every pointermove past the threshold. Receives the proposed
-   * pose (after earlier behaviors). Return `{ pose }` to override, `{ snap }`
-   * to set snap state, both, or void to no-op.
-   *
-   * During a group drag, behaviors run only against `ctx.draggedIds[0]` (the
-   * primary). Secondary ids inherit the same translation delta without running
-   * through behaviors. Snap behaviors therefore only quantize the primary's
-   * pose; secondaries are snapped only if they were already grid-aligned at
-   * gesture start.
-   */
-  onMove?(
-    ctx: GestureContext<TPose>,
-    proposed: TPose,
-  ): BehaviorMoveResult<TPose> | void;
-
-  /**
-   * Called at gesture end. First non-undefined return wins:
-   *   - Op[] → commit those ops (skip default)
-   *   - null → abort gesture (no batch, no history entry)
-   *   - undefined → defer to next behavior or default
-   */
-  onEnd?(ctx: GestureContext<TPose>): Op[] | null | void;
-}
-
-/**
- * Transient gesture state for renderers. `null` when no gesture is in flight.
- */
 export interface MoveOverlay<TPose> {
   draggedIds: string[];
   poses: Map<string, TPose>;
   snapped: SnapTarget<TPose> | null;
   hideIds: string[];
+}
+
+// ----- resize -----
+
+export type ResizeAnchor = {
+  x: 'min' | 'max' | 'free';
+  y: 'min' | 'max' | 'free';
+};
+
+export interface ResizePose {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ResizeProposed<TPose extends ResizePose> {
+  pose: TPose;
+  anchor: ResizeAnchor;
+}
+
+export interface ResizeMoveResult<TPose extends ResizePose> {
+  pose?: TPose;
+}
+
+export type ResizeBehavior<TPose extends ResizePose> = GestureBehavior<
+  TPose,
+  ResizeProposed<TPose>,
+  ResizeMoveResult<TPose>
+>;
+
+export interface ResizeOverlay<TPose extends ResizePose> {
+  id: string;
+  currentPose: TPose;
+  targetPose: TPose;
+  anchor: ResizeAnchor;
+}
+
+// ----- insert -----
+
+export interface InsertProposed<TPose extends { x: number; y: number }> {
+  start: TPose;
+  current: TPose;
+}
+
+export interface InsertMoveResult<TPose extends { x: number; y: number }> {
+  start?: TPose;
+  current?: TPose;
+}
+
+export type InsertBehavior<TPose extends { x: number; y: number }> = GestureBehavior<
+  TPose,
+  InsertProposed<TPose>,
+  InsertMoveResult<TPose>
+>;
+
+export interface InsertOverlay<TPose extends { x: number; y: number }> {
+  start: TPose;
+  current: TPose;
 }

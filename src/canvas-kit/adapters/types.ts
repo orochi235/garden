@@ -55,3 +55,29 @@ export interface MoveAdapter<TObject extends { id: string }, TPose> {
     worldY: number,
   ): SnapTarget<TPose> | null;
 }
+
+/**
+ * Narrow adapter for `useResizeInteraction`. Mirrors `MoveAdapter`'s shape
+ * minus reparenting and snap-target lookup.
+ * TPose is constrained to { x, y, width, height } inline to avoid a circular
+ * import with interactions/types.ts.
+ */
+export interface ResizeAdapter<
+  TObject extends { id: string },
+  TPose extends { x: number; y: number; width: number; height: number },
+> {
+  getObject(id: string): TObject | undefined;
+  getPose(id: string): TPose;
+  setPose(id: string, pose: TPose): void;
+  applyBatch(ops: Op[], label: string): void;
+}
+
+/**
+ * Narrow adapter for `useInsertInteraction`. The kit knows nothing about
+ * what tool is active or what shape to construct; it asks the adapter to
+ * produce an object given the gesture bounds. Returning `null` aborts.
+ */
+export interface InsertAdapter<TObject extends { id: string }> {
+  commitInsert(bounds: { x: number; y: number; width: number; height: number }): TObject | null;
+  applyBatch(ops: Op[], label: string): void;
+}
