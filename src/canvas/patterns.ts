@@ -61,6 +61,6 @@ export function renderPatternOverlay<P extends PatternId>(
   const merged = { ...DEFAULTS[id], ...(opts.params ?? {}) } as Record<string, unknown>;
   const pattern = build(ctx, id, merged);
   if (!pattern) return;
-  const paint: Paint = { kind: 'pattern', pattern, opacity: opts.opacity };
+  const paint: Paint = { fill: 'pattern', pattern, opacity: opts.opacity };
   renderFilledRegion(ctx, paint, region);
 }
