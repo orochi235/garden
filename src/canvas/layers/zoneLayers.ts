@@ -2,8 +2,7 @@ import type { RenderLayer } from '@orochi235/weasel';
 import type { ZoneLayerData } from '../layerData';
 import { worldToScreen } from '@orochi235/weasel';
 import { renderLabel } from '@orochi235/weasel';
-import type { PatternId } from '@orochi235/weasel';
-import { renderPatternOverlay } from '@orochi235/weasel';
+import { renderPatternOverlay, type PatternId } from '../patterns';
 
 export const ZONE_LAYERS: RenderLayer<ZoneLayerData>[] = [
   {

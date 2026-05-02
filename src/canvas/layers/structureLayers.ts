@@ -4,7 +4,7 @@ import type { RenderLayer } from '@orochi235/weasel';
 import type { StructureLayerData, StructureRenderItem } from '../layerData';
 import { worldToScreen } from '@orochi235/weasel';
 import { renderLabel } from '@orochi235/weasel';
-import { renderPatternOverlay } from '@orochi235/weasel';
+import { renderPatternOverlay } from '../patterns';
 
 /** Sort structures, separate grouped vs ungrouped, and build an interleaved render queue. */
 export function buildStructureRenderQueue(structures: Structure[]): {

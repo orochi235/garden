@@ -1,8 +1,7 @@
 import type { Zone } from '../model/types';
 import { worldToScreen } from '@orochi235/weasel';
 import { renderLabel } from '@orochi235/weasel';
-import type { PatternId } from '@orochi235/weasel';
-import { renderPatternOverlay } from '@orochi235/weasel';
+import { renderPatternOverlay, type PatternId } from './patterns';
 import type { ZoneRenderOptions } from './renderOptions';
 
 export function renderZones(

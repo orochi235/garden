@@ -2,7 +2,7 @@ import { FILL_COLORS } from '../model/types';
 import type { Structure } from '../model/types';
 import { worldToScreen } from '@orochi235/weasel';
 import { renderLabel } from '@orochi235/weasel';
-import { renderPatternOverlay } from '@orochi235/weasel';
+import { renderPatternOverlay } from './patterns';
 import type { StructureRenderOptions } from './renderOptions';
 
 /** Render a single ungrouped structure with fill, stroke, and decorations. */

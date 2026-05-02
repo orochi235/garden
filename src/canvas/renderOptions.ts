@@ -1,6 +1,6 @@
 import type { LabelMode } from '../store/uiStore';
 import type { ViewTransform } from '@orochi235/weasel';
-import type { PatternId } from '@orochi235/weasel';
+import type { PatternId } from './patterns';
 
 /** Common rendering options shared across all layer render functions. */
 export interface RenderOptions {

@@ -221,7 +221,7 @@ export function CanvasStack() {
   const plantingMove = useKitMoveInteraction(plantingMoveAdapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
     behaviors: [
-      snapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      snapToGrid({ spacing: garden.gridCellSizeFt, bypassKey: 'alt' }),
       snapToContainer({
         dwellMs: 500,
         findTarget: plantingMoveAdapter.findSnapTarget!,
@@ -233,12 +233,12 @@ export function CanvasStack() {
 
   const zoneMove = useKitMoveInteraction(zoneMoveAdapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
-    behaviors: [snapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
+    behaviors: [snapToGrid({ spacing: garden.gridCellSizeFt, bypassKey: 'alt' })],
   });
 
   const structureMove = useKitMoveInteraction(structureMoveAdapter, {
     translatePose: (p, dx, dy) => ({ ...p, x: p.x + dx, y: p.y + dy }),
-    behaviors: [snapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
+    behaviors: [snapToGrid({ spacing: garden.gridCellSizeFt, bypassKey: 'alt' })],
   });
 
   const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
@@ -260,18 +260,18 @@ export function CanvasStack() {
 
   const zoneResize = useKitResizeInteraction(zoneResizeAdapter, {
     behaviors: [
-      resizeSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      resizeSnapToGrid({ spacing: garden.gridCellSizeFt, bypassKey: 'alt' }),
       clampMinSize({ minWidth: 0.25, minHeight: 0.25 }),
     ],
   });
   const structureResize = useKitResizeInteraction(structureResizeAdapter, {
     behaviors: [
-      resizeSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' }),
+      resizeSnapToGrid({ spacing: garden.gridCellSizeFt, bypassKey: 'alt' }),
       clampMinSize({ minWidth: 0.25, minHeight: 0.25 }),
     ],
   });
   const insert = useKitInsertInteraction(insertAdapter, {
-    behaviors: [insertSnapToGrid({ cell: garden.gridCellSizeFt, bypassKey: 'alt' })],
+    behaviors: [insertSnapToGrid({ spacing: garden.gridCellSizeFt, bypassKey: 'alt' })],
     minBounds: { width: 0.01, height: 0.01 },
   });
 
