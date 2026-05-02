@@ -44,7 +44,7 @@ import { getCultivar } from '../model/cultivars';
 import { createDragGhost } from '@orochi235/weasel';
 import { PlantingLayerRenderer } from './PlantingLayerRenderer';
 import { renderBlueprint } from './renderBlueprint';
-import { renderGrid } from '@orochi235/weasel';
+import { renderGrid } from './renderGrid';
 import { SystemLayerRenderer } from './SystemLayerRenderer';
 import { StructureLayerRenderer } from './StructureLayerRenderer';
 import { TrayLayerRenderer } from './TrayLayerRenderer';
