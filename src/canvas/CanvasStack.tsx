@@ -78,7 +78,7 @@ export function CanvasStack() {
   const zoneCanvasRef = useRef<HTMLCanvasElement>(null);
   const plantingCanvasRef = useRef<HTMLCanvasElement>(null);
   const selectionCanvasRef = useRef<HTMLCanvasElement>(null);
-  const { width, height, dpr } = useCanvasSize(containerRef);
+  const { width, height } = useCanvasSize(containerRef);
 
   const garden = useGardenStore((s) => s.garden);
   const groundColor = garden.groundColor;
@@ -376,7 +376,6 @@ export function CanvasStack() {
     gridCanvasRef,
     width,
     height,
-    dpr,
     appMode === 'garden',
     (ctx) =>
       renderGrid(ctx, {
@@ -394,7 +393,6 @@ export function CanvasStack() {
     blueprintCanvasRef,
     width,
     height,
-    dpr,
     appMode === 'garden' && layerVisibility.blueprint,
     (ctx) => renderBlueprint(ctx, garden.blueprint, view, width, height, layerOpacity.blueprint),
     [appMode, garden.blueprint, zoom, panX, panY, layerOpacity.blueprint],
@@ -566,7 +564,7 @@ export function CanvasStack() {
   }
 
   useLayerEffect(
-    structureCanvasRef, width, height, dpr,
+    structureCanvasRef, width, height,
     appMode === 'garden' && layerVisibility.structures,
     (ctx) => structureRenderer.current.render(ctx),
     [appMode, garden.structures, zoom, panX, panY, layerOpacity.structures, activeLayer, renderLayerVisibility, renderLayerOrder, debugOverlappingLabels, labelMode, labelFontSize, structureRenderer.current.highlight, overlay, resizeOverlayUi],
@@ -576,7 +574,7 @@ export function CanvasStack() {
   const seedlingParams = seedlingRenderer.current;
 
   useLayerEffect(
-    zoneCanvasRef, width, height, dpr,
+    zoneCanvasRef, width, height,
     appMode === 'garden' ? layerVisibility.zones : appMode === 'seed-starting',
     (ctx) => {
       if (appMode === 'seed-starting') {
@@ -596,7 +594,7 @@ export function CanvasStack() {
   );
 
   useLayerEffect(
-    plantingCanvasRef, width, height, dpr,
+    plantingCanvasRef, width, height,
     appMode === 'garden' ? layerVisibility.plantings : appMode === 'seed-starting',
     (ctx) => {
       if (appMode === 'seed-starting') {
@@ -618,7 +616,7 @@ export function CanvasStack() {
 
   useLayerEffect(
     selectionCanvasRef,
-    width, height, dpr,
+    width, height,
     appMode === 'garden',
     (ctx) => {
       systemRenderer.current.render(ctx);
