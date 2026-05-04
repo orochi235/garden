@@ -5,8 +5,9 @@ import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantingParent, plantingWorldPose, worldToLocalForParent } from '../../utils/plantingPose';
 import { hitTestStack, hitTestArea, type HitResult, type WorldRect } from '../hitTest';
 import { getCultivar } from '../../model/cultivars';
+import { plantingLayoutFor } from './plantingLayout';
 import type { Op } from '@orochi235/weasel';
-import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
+import type { MoveAdapter, SnapTarget, LayoutStrategy } from '@orochi235/weasel';
 
 export interface ScenePose { x: number; y: number }
 
@@ -18,6 +19,8 @@ export type SceneNode = StructureNode | ZoneNode | PlantingNode;
 export interface SceneBounds { x: number; y: number; width: number; height: number }
 
 export type GardenSceneAdapter = MoveAdapter<SceneNode, ScenePose> & {
+  /** Layout strategy for a container id, or null for non-containers. */
+  getLayout(id: string): LayoutStrategy<ScenePose> | null;
   /** Top-most hit at world point, or null. */
   hitTest(worldX: number, worldY: number): SceneNode | null;
   /** All overlapping hits at world point, top-most first. Powers alt-cycle. */
@@ -130,6 +133,12 @@ export function createGardenSceneAdapter(): GardenSceneAdapter {
           store.updateZone(id, { parentId: parentId ?? null });
           return;
       }
+    },
+    getLayout(id): LayoutStrategy<ScenePose> | null {
+      // Only containers (and zones) carry an arrangement; plantingLayoutFor
+      // returns null for everything else, in which case useMove falls through
+      // to free-space pose commit.
+      return plantingLayoutFor(() => useGardenStore.getState().garden, id);
     },
     findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
       const node = findNode(draggedId);
