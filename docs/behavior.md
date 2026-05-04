@@ -16,6 +16,7 @@ Running list of intended application behaviors.
 - Releasing a free-agent planting within one grid cell of its original position snaps it back with no undo entry; releasing it over empty space removes it (undoable); releasing it over a different container's snap target re-parents it (undoable)
 - In Draw mode, clicking a structure/zone palette item arms an insert tool: the next drag on the canvas materializes the object at the drag-rect bounds, and the palette tool clears on commit (single-shot)
 - Holding Alt/Option while dragging a selection clones the selection at the drop point: originals stay in place, copies are inserted as new objects (undoable). A dim ghost of each prospective clone tracks the cursor during the gesture
+- Structure and zone moves snap to the garden's grid cell size; holding Alt while moving bypasses the snap. Plantings ignore this snap (their pose comes from the container's layout strategy)
 
 ## Cursor
 

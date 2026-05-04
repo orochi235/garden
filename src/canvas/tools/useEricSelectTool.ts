@@ -17,6 +17,7 @@ import {
   type MoveBehavior,
   type InsertAdapter,
 } from '@orochi235/weasel';
+import { snapToGrid as moveSnapToGrid } from '@orochi235/weasel/move';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
@@ -62,6 +63,26 @@ function trackPlantingSnap(adapter: GardenSceneAdapter): MoveBehavior<ScenePose>
 }
 
 /**
+ * Grid-snap structure/zone moves to the garden's gridCellSizeFt. Plantings
+ * skip this — their pose comes from the container's layout strategy, which
+ * has its own slot-based snapping. The Alt key bypasses snap.
+ */
+function snapStructureZoneToGrid(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
+  return {
+    onMove(ctx, proposed) {
+      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      if (!obj || obj.kind === 'planting') return;
+      // Re-read spacing each move; the garden grid cell size is editable.
+      const inner = moveSnapToGrid<ScenePose>({
+        spacing: useGardenStore.getState().garden.gridCellSizeFt,
+        bypassKey: 'alt',
+      });
+      return inner.onMove?.(ctx, proposed);
+    },
+  };
+}
+
+/**
  * Snap-back: if a planting is released over no snap target, cancel the
  * gesture instead of letting `useMove` free-commit a transform op (which
  * would orphan the plant in nowhere-land).
@@ -91,7 +112,7 @@ export function useEricSelectTool(
   },
 ): Tool<SelectScratch> {
   const moveBehaviors = useMemo<MoveBehavior<ScenePose>[]>(
-    () => [trackPlantingSnap(adapter), requirePlantingDrop(adapter)],
+    () => [snapStructureZoneToGrid(adapter), trackPlantingSnap(adapter), requirePlantingDrop(adapter)],
     [adapter],
   );
   const move = useMove<SceneNode, ScenePose>(adapter, {
