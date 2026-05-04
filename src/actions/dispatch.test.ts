@@ -67,7 +67,7 @@ describe('resolveAction', () => {
 
     const event = new KeyboardEvent('keydown', { key: 'Backspace' });
     const activePath = ['structures', 'canvas', 'global'];
-    const ctx = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true } };
+    const ctx = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
 
     const result = resolveAction(event, activePath, [structuresDelete, canvasDelete], ctx);
     expect(result?.id).toBe('structures.delete');
@@ -88,7 +88,7 @@ describe('resolveAction', () => {
 
     const event = new KeyboardEvent('keydown', { key: 'Backspace' });
     const activePath = ['structures', 'canvas', 'global'];
-    const ctx = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true } };
+    const ctx = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
 
     const result = resolveAction(event, activePath, [structuresDelete, canvasDelete], ctx);
     expect(result?.id).toBe('editing.delete');
@@ -97,7 +97,7 @@ describe('resolveAction', () => {
   it('returns null when no action matches', () => {
     const event = new KeyboardEvent('keydown', { key: 'q' });
     const activePath = ['canvas', 'global'];
-    const ctx = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true } };
+    const ctx = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
 
     const result = resolveAction(event, activePath, [undoAction], ctx);
     expect(result).toBeNull();

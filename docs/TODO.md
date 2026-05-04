@@ -104,5 +104,4 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## Editing
 
-- `Cmd+X` cut is not implemented. `App.tsx` uses `useClipboardOps` which only exposes `copy` and `paste`; switch to `useClipboard` (with `bindKeyboard: false` if we keep the action-registry routing) to gain `cut`, then add `src/actions/editing/cut.ts` and register it in the keyboard action dispatch.
 - Edge-collision / containment for structure & zone drags: nothing currently prevents a structure from being dragged off the garden bounds or overlapping another structure. Grid-snap was added but no clamping. Pick a policy (clamp to bounds vs. allow-and-show-warning) and add a behavior to `useEricSelectTool`'s move pipeline.

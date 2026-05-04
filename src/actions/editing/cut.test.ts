@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { copyAction } from './copy';
+import { cutAction } from './cut';
 import type { ActionContext } from '../types';
 
-describe('copyAction', () => {
-  it('copy calls clipboard.copy', () => {
+describe('cutAction', () => {
+  it('cut calls clipboard.cut', () => {
     const ctx: ActionContext = {
       clipboard: { copy: vi.fn(), cut: vi.fn(), paste: vi.fn(), isEmpty: vi.fn(() => false) },
     };
-    copyAction.execute(ctx);
-    expect(ctx.clipboard.copy).toHaveBeenCalled();
+    cutAction.execute(ctx);
+    expect(ctx.clipboard.cut).toHaveBeenCalled();
   });
 });

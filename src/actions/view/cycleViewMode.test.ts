@@ -3,7 +3,7 @@ import { useUiStore } from '../../store/uiStore';
 import { cycleViewModeAction } from './cycleViewMode';
 import type { ActionContext } from '../types';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true } };
+const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
 
 describe('cycleViewModeAction', () => {
   beforeEach(() => { useUiStore.getState().reset(); });

@@ -4,7 +4,7 @@ import { useUiStore } from '../../store/uiStore';
 import { undoAction } from './undo';
 import type { ActionContext } from '../types';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true } };
+const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
 
 describe('undoAction', () => {
   beforeEach(() => {

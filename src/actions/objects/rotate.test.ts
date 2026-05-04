@@ -4,7 +4,7 @@ import { useUiStore } from '../../store/uiStore';
 import { rotateCwAction } from './rotate';
 import type { ActionContext } from '../types';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true }, target: { kind: 'selection' } };
+const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true }, target: { kind: 'selection' } };
 
 describe('rotate actions', () => {
   beforeEach(() => {

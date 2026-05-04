@@ -4,7 +4,7 @@ import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
 import { createInsertAdapter } from '../canvas/adapters/insert';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
 import { hitTestDragSpreadAffordanceInches, hitTestCellInches } from '../canvas/seedStartingHitTest';
-import { createDragGhost, useClipboardOps } from '@orochi235/weasel';
+import { createDragGhost, useClipboard } from '@orochi235/weasel';
 import { startThresholdDrag } from '@orochi235/weasel';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { createPlanting, createStructure, createZone } from '../model/types';
@@ -95,7 +95,7 @@ export function App() {
   }, [garden]);
 
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
-  const clipboard = useClipboardOps(insertAdapter, {
+  const clipboard = useClipboard(insertAdapter, {
     getSelection: () => useUiStore.getState().selectedIds,
     onPaste: (newIds) => useUiStore.getState().setSelection(newIds),
   });

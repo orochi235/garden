@@ -13,7 +13,7 @@ export type ActionTarget =
   | { kind: 'none' };
 
 export interface ActionContext {
-  clipboard: { copy: () => void; paste: () => void; isEmpty: () => boolean };
+  clipboard: { copy: () => void; cut: () => void; paste: () => void; isEmpty: () => boolean };
   target?: ActionTarget;
 }
 

@@ -4,7 +4,7 @@ import { useUiStore } from '../../store/uiStore';
 import { selectAllAction } from './selectAll';
 import type { ActionContext } from '../types';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, paste: () => {}, isEmpty: () => true }, target: { kind: 'none' } };
+const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true }, target: { kind: 'none' } };
 
 describe('selectAllAction', () => {
   beforeEach(() => {

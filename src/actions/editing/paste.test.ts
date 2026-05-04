@@ -5,7 +5,7 @@ import type { ActionContext } from '../types';
 describe('pasteAction', () => {
   it('paste calls clipboard.paste', () => {
     const ctx: ActionContext = {
-      clipboard: { copy: vi.fn(), paste: vi.fn(), isEmpty: vi.fn(() => false) },
+      clipboard: { copy: vi.fn(), cut: vi.fn(), paste: vi.fn(), isEmpty: vi.fn(() => false) },
     };
     pasteAction.execute(ctx);
     expect(ctx.clipboard.paste).toHaveBeenCalled();

@@ -9,7 +9,7 @@ function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {
 }
 
 describe('useKeyboardActionDispatch', () => {
-  const mockClipboard = { copy: vi.fn(), paste: vi.fn(), isEmpty: vi.fn(() => false) };
+  const mockClipboard = { copy: vi.fn(), cut: vi.fn(), paste: vi.fn(), isEmpty: vi.fn(() => false) };
 
   beforeEach(() => {
     useGardenStore.getState().reset();
