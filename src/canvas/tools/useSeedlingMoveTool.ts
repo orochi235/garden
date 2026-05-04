@@ -6,9 +6,12 @@ import {
   DRAG_SPREAD_GUTTER_RATIO,
   findSeedlingsInRect,
   hitTestCellInches,
-  hitTestDragSpreadAffordanceInches,
-  type DragSpreadAffordanceHit,
 } from '../seedStartingHitTest';
+import {
+  getTrayDropTargets,
+  hitTrayDropTarget,
+  type TrayGutterMeta,
+} from '../layouts/trayDropTargets';
 import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/seedStarting';
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
 import type { SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
@@ -23,7 +26,7 @@ export interface SeedlingMoveScratch {
   anchorFromCol: number;
   startWorld: { x: number; y: number };
   currentWorld: { x: number; y: number };
-  affordance: DragSpreadAffordanceHit | null;
+  affordance: TrayGutterMeta | null;
   /** Cultivar id of the dragged anchor — used to render gutter markers. */
   cultivarId: string | null;
   /** Active marquee gesture (drag from empty space). World inches. */
@@ -303,7 +306,9 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             if (!tray) return 'claim';
 
             if (!ctx.scratch.isGroup) {
-              const aff = hitTestDragSpreadAffordanceInches(tray, ctx.worldX, ctx.worldY);
+              const hit = hitTrayDropTarget(getTrayDropTargets(tray), { x: ctx.worldX, y: ctx.worldY });
+              const aff: TrayGutterMeta | null =
+                hit && hit.meta.kind !== 'cell' ? hit.meta : null;
               ctx.scratch.affordance = aff;
               if (aff) {
                 const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId!, replace: true };
