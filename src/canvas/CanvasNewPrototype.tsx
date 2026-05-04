@@ -172,7 +172,7 @@ function GardenCanvasNewPrototype() {
   };
 
   // --- Tools ---
-  const selectTool = useEricSelectTool(adapter);
+  const selectTool = useEricSelectTool(adapter, { insertAdapter });
   const cycleTool = useEricCycleTool(adapter);
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();

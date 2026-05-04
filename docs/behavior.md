@@ -15,6 +15,7 @@ Running list of intended application behaviors.
 - When a planting is dragged out of its container without snapping to a new one, it renders as a free agent: detached from the former parent's walls (no clipping) and positioned freely under the cursor
 - Releasing a free-agent planting within one grid cell of its original position snaps it back with no undo entry; releasing it over empty space removes it (undoable); releasing it over a different container's snap target re-parents it (undoable)
 - In Draw mode, clicking a structure/zone palette item arms an insert tool: the next drag on the canvas materializes the object at the drag-rect bounds, and the palette tool clears on commit (single-shot)
+- Holding Alt/Option while dragging a selection clones the selection at the drop point: originals stay in place, copies are inserted as new objects (undoable). A dim ghost of each prospective clone tracks the cursor during the gesture
 
 ## Cursor
 

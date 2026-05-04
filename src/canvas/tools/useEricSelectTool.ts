@@ -1,9 +1,11 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   defineTool,
   useMove,
   useResize,
   useAreaSelect,
+  useClone,
+  cloneByAltDrag,
   cornerResizeHandles,
   hitCornerHandle,
   selectFromMarquee,
@@ -13,6 +15,7 @@ import {
   type UseMoveOptions,
   type UseResizeOptions,
   type MoveBehavior,
+  type InsertAdapter,
 } from '@orochi235/weasel';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
@@ -29,6 +32,7 @@ import { createZoneResizeAdapter } from '../adapters/zoneResize';
 export type SelectScratch =
   | { kind: 'idle' }
   | { kind: 'move'; ids: string[] }
+  | { kind: 'clone'; ids: string[] }
   | { kind: 'resize'; targetId: string; layer: 'structures' | 'zones'; anchor: ResizeAnchor }
   | { kind: 'area' };
 
@@ -77,9 +81,14 @@ function requirePlantingDrop(adapter: GardenSceneAdapter): MoveBehavior<ScenePos
   };
 }
 
+interface CloneOverlayItem { id: string; x: number; y: number }
+
 export function useEricSelectTool(
   adapter: GardenSceneAdapter,
-  opts?: { moveOptions?: UseMoveOptions<ScenePose> },
+  opts?: {
+    moveOptions?: UseMoveOptions<ScenePose>;
+    insertAdapter?: InsertAdapter<{ id: string }>;
+  },
 ): Tool<SelectScratch> {
   const moveBehaviors = useMemo<MoveBehavior<ScenePose>[]>(
     () => [trackPlantingSnap(adapter), requirePlantingDrop(adapter)],
@@ -99,6 +108,27 @@ export function useEricSelectTool(
 
   const areaSelect = useAreaSelect(adapter, {
     behaviors: [selectFromMarquee()],
+  });
+
+  // Clone-on-alt-drag. Wires through the optional insertAdapter; if none is
+  // provided (legacy callsites) the gesture silently no-ops.
+  const [cloneOverlay, setCloneOverlay] = useState<CloneOverlayItem[]>([]);
+  const cloneAdapter = opts?.insertAdapter;
+  // useClone requires an adapter unconditionally; pass a stub when none is wired.
+  const cloneStubAdapter = useMemo<InsertAdapter<{ id: string }>>(() => ({
+    snapshotSelection: () => ({ items: [] }),
+    commitInsert: () => null,
+    commitPaste: () => [],
+    getPasteOffset: () => ({ dx: 0, dy: 0 }),
+    insertObject: () => {},
+    setSelection: () => {},
+    getSelection: () => [],
+    applyBatch: () => {},
+  }), []);
+  const clone = useClone<{ id: string }>(cloneAdapter ?? cloneStubAdapter, {
+    behaviors: [cloneByAltDrag()],
+    setOverlay: (_layer, objects) => setCloneOverlay(objects as CloneOverlayItem[]),
+    clearOverlay: () => setCloneOverlay([]),
   });
 
   // Stable ref to currently active resize so `drag.onEnd` can route correctly
@@ -186,9 +216,31 @@ export function useEricSelectTool(
             ctx.restore();
           }
         }
+
+        // Clone overlay: dashed dim ghosts of the selection at offset positions
+        // while alt-drag is in flight. The originals stay rendered in their
+        // normal layers, so this just draws the prospective copies.
+        if (cloneOverlay.length > 0) {
+          const garden = useGardenStore.getState().garden;
+          for (const item of cloneOverlay) {
+            const planting = garden.plantings.find((p) => p.id === item.id);
+            if (!planting) continue;
+            const cultivar = getCultivar(planting.cultivarId);
+            if (!cultivar) continue;
+            const footprintFt = cultivar.footprintFt ?? 0.5;
+            const sx = (item.x - view.x) * view.scale;
+            const sy = (item.y - view.y) * view.scale;
+            const radiusPx = (footprintFt / 2) * view.scale;
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.translate(sx, sy);
+            renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
+            ctx.restore();
+          }
+        }
       },
     }),
-    [areaSelect, move],
+    [areaSelect, move, cloneOverlay],
   );
 
   return useMemo(
@@ -240,7 +292,7 @@ export function useEricSelectTool(
               }
             }
 
-            // 2. Body hit → select + prepare move
+            // 2. Body hit → select + prepare move (or clone if alt-held & insert adapter present)
             const hit = adapter.hitTest(ctx.worldX, ctx.worldY);
             if (hit) {
               const ui = useUiStore.getState();
@@ -250,7 +302,11 @@ export function useEricSelectTool(
                 if (!ui.selectedIds.includes(hit.id)) ui.select(hit.id);
               }
               const ids = useUiStore.getState().selectedIds;
-              ctx.scratch = { kind: 'move', ids: ids.length > 0 ? ids : [hit.id] };
+              const dragIds = ids.length > 0 ? ids : [hit.id];
+              const altClone = ctx.modifiers.alt && !!cloneAdapter;
+              ctx.scratch = altClone
+                ? { kind: 'clone', ids: dragIds }
+                : { kind: 'move', ids: dragIds };
               return 'claim';
             }
 
@@ -273,6 +329,9 @@ export function useEricSelectTool(
                   clientX: e.clientX,
                   clientY: e.clientY,
                 });
+                return 'claim';
+              case 'clone':
+                clone.start(ctx.worldX, ctx.worldY, s.ids, 'plantings', ctx.modifiers);
                 return 'claim';
               case 'resize':
                 if (s.layer === 'structures') {
@@ -302,6 +361,9 @@ export function useEricSelectTool(
                   modifiers: ctx.modifiers,
                 });
                 return 'claim';
+              case 'clone':
+                clone.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+                return 'claim';
               case 'resize':
                 if (activeResize.current === 'structures') structureResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
                 else if (activeResize.current === 'zones') zoneResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
@@ -319,6 +381,9 @@ export function useEricSelectTool(
             switch (s.kind) {
               case 'move':
                 move.end();
+                return 'claim';
+              case 'clone':
+                clone.end();
                 return 'claim';
               case 'resize':
                 if (activeResize.current === 'structures') structureResize.end();
@@ -347,6 +412,7 @@ export function useEricSelectTool(
 
           onCancel: () => {
             move.cancel();
+            clone.cancel();
             structureResize.cancel();
             zoneResize.cancel();
             areaSelect.cancel();
@@ -364,6 +430,6 @@ export function useEricSelectTool(
           },
         },
       }),
-    [adapter, move, structureResize, zoneResize, areaSelect, overlay],
+    [adapter, move, clone, cloneAdapter, structureResize, zoneResize, areaSelect, overlay],
   );
 }
