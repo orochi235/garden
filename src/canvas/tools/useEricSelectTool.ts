@@ -1,0 +1,297 @@
+import { useMemo, useRef } from 'react';
+import {
+  defineTool,
+  useMove,
+  useResize,
+  useAreaSelect,
+  cornerResizeHandles,
+  hitCornerHandle,
+  selectFromMarquee,
+  type Tool,
+  type RenderLayer,
+  type ResizeAnchor,
+  type UseMoveOptions,
+  type UseResizeOptions,
+} from '@orochi235/weasel';
+import { useUiStore } from '../../store/uiStore';
+import { useGardenStore } from '../../store/gardenStore';
+import { getCultivar } from '../../model/cultivars';
+import { renderPlant } from '../plantRenderers';
+import {
+  type GardenSceneAdapter,
+  type ScenePose,
+  type SceneNode,
+} from '../adapters/gardenScene';
+import { createStructureResizeAdapter, type StructureResizePose } from '../adapters/structureResize';
+import { createZoneResizeAdapter } from '../adapters/zoneResize';
+
+export type SelectScratch =
+  | { kind: 'idle' }
+  | { kind: 'move'; ids: string[] }
+  | { kind: 'resize'; targetId: string; layer: 'structures' | 'zones'; anchor: ResizeAnchor }
+  | { kind: 'area' };
+
+const HANDLE_HIT_RADIUS_PX = 8;
+
+function getStructure(id: string) {
+  return useGardenStore.getState().garden.structures.find((s) => s.id === id);
+}
+function getZone(id: string) {
+  return useGardenStore.getState().garden.zones.find((z) => z.id === id);
+}
+
+export function useEricSelectTool(
+  adapter: GardenSceneAdapter,
+  opts?: { moveOptions?: UseMoveOptions<ScenePose> },
+): Tool<SelectScratch> {
+  const move = useMove<SceneNode, ScenePose>(adapter, opts?.moveOptions ?? {});
+
+  const structureResizeAdapter = useMemo(() => createStructureResizeAdapter(), []);
+  const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
+  const structureResizeOpts: UseResizeOptions<StructureResizePose> = {};
+  const zoneResizeOpts: UseResizeOptions<StructureResizePose> = {};
+  const structureResize = useResize(structureResizeAdapter, structureResizeOpts);
+  const zoneResize = useResize(zoneResizeAdapter, zoneResizeOpts);
+
+  const areaSelect = useAreaSelect(adapter, {
+    behaviors: [selectFromMarquee()],
+  });
+
+  // Stable ref to currently active resize so `drag.onEnd` can route correctly
+  // even after scratch has been mutated by intervening events.
+  const activeResize = useRef<'structures' | 'zones' | null>(null);
+
+  const overlay = useMemo<RenderLayer<unknown>>(
+    () => ({
+      id: 'eric-select-overlay',
+      label: 'Select Overlay (eric)',
+      space: 'screen',
+      draw(ctx, _data, view) {
+        // Marquee rectangle.
+        const aov = areaSelect.overlay;
+        if (aov) {
+          const x = Math.min(aov.start.worldX, aov.current.worldX);
+          const y = Math.min(aov.start.worldY, aov.current.worldY);
+          const w = Math.abs(aov.current.worldX - aov.start.worldX);
+          const h = Math.abs(aov.current.worldY - aov.start.worldY);
+          const sx = (x - view.x) * view.scale;
+          const sy = (y - view.y) * view.scale;
+          const sw = w * view.scale;
+          const sh = h * view.scale;
+          ctx.save();
+          ctx.fillStyle = 'rgba(91, 164, 207, 0.15)';
+          ctx.strokeStyle = '#5BA4CF';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.fillRect(sx, sy, sw, sh);
+          ctx.strokeRect(sx, sy, sw, sh);
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        // Drag ghosts: render translucent plant icons at the live overlay
+        // poses. `useMove` doesn't write through to the store during a drag,
+        // so the source planting stays put; this layer is the only visible
+        // feedback that the drag is active.
+        const mov = move.overlay;
+        if (mov && mov.draggedIds.length > 0) {
+          const garden = useGardenStore.getState().garden;
+          for (const id of mov.draggedIds) {
+            const pose = mov.poses.get(id);
+            if (!pose) continue;
+            const planting = garden.plantings.find((p) => p.id === id);
+            if (!planting) continue;
+            const cultivar = getCultivar(planting.cultivarId);
+            if (!cultivar) continue;
+            const footprintFt = cultivar.footprintFt ?? 0.5;
+            const sx = (pose.x - view.x) * view.scale;
+            const sy = (pose.y - view.y) * view.scale;
+            const radiusPx = (footprintFt / 2) * view.scale;
+            ctx.save();
+            ctx.globalAlpha = 0.65;
+            ctx.translate(sx, sy);
+            renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
+            ctx.restore();
+          }
+        }
+      },
+    }),
+    [areaSelect, move],
+  );
+
+  return useMemo(
+    () =>
+      defineTool<SelectScratch>({
+        id: 'eric-select',
+        cursor: 'default',
+        overlay,
+        initScratch: () => ({ kind: 'idle' }),
+
+        pointer: {
+          onClick: (_e, ctx) => {
+            // No-drag click: if scratch landed in 'area' (empty hit) and no
+            // shift, clear selection. drag.onEnd only fires when a drag
+            // actually started.
+            if (ctx.scratch.kind === 'area' && !ctx.modifiers.shift) {
+              useUiStore.getState().clearSelection();
+            }
+            ctx.scratch = { kind: 'idle' };
+            return 'claim';
+          },
+          onDown: (e, ctx) => {
+            if (e.button !== 0) return 'pass';
+
+            // 1. Resize-handle hit (only when exactly one structure/zone is selected)
+            const sel = useUiStore.getState().selectedIds;
+            const radiusWorld = HANDLE_HIT_RADIUS_PX / Math.max(0.0001, ctx.view.scale);
+            if (sel.length === 1) {
+              const id = sel[0];
+              const s = getStructure(id);
+              if (s) {
+                const bounds = { x: s.x, y: s.y, width: s.width, height: s.height };
+                for (const h of cornerResizeHandles(bounds)) {
+                  if (hitCornerHandle(h, ctx.worldX, ctx.worldY, radiusWorld)) {
+                    ctx.scratch = { kind: 'resize', targetId: id, layer: 'structures', anchor: h.anchor };
+                    return 'claim';
+                  }
+                }
+              }
+              const z = getZone(id);
+              if (z) {
+                const bounds = { x: z.x, y: z.y, width: z.width, height: z.height };
+                for (const h of cornerResizeHandles(bounds)) {
+                  if (hitCornerHandle(h, ctx.worldX, ctx.worldY, radiusWorld)) {
+                    ctx.scratch = { kind: 'resize', targetId: id, layer: 'zones', anchor: h.anchor };
+                    return 'claim';
+                  }
+                }
+              }
+            }
+
+            // 2. Body hit → select + prepare move
+            const hit = adapter.hitTest(ctx.worldX, ctx.worldY);
+            if (hit) {
+              const ui = useUiStore.getState();
+              if (ctx.modifiers.shift) {
+                if (!ui.selectedIds.includes(hit.id)) ui.addToSelection(hit.id);
+              } else {
+                if (!ui.selectedIds.includes(hit.id)) ui.select(hit.id);
+              }
+              const ids = useUiStore.getState().selectedIds;
+              ctx.scratch = { kind: 'move', ids: ids.length > 0 ? ids : [hit.id] };
+              return 'claim';
+            }
+
+            // 3. Empty → area select; clear selection on a click that doesn't
+            //    grow into a drag (handled in onEnd when we observe no movement).
+            ctx.scratch = { kind: 'area' };
+            return 'claim';
+          },
+        },
+
+        drag: {
+          onStart: (e, ctx) => {
+            const s = ctx.scratch;
+            switch (s.kind) {
+              case 'move':
+                move.start({
+                  ids: s.ids,
+                  worldX: ctx.worldX,
+                  worldY: ctx.worldY,
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                });
+                return 'claim';
+              case 'resize':
+                if (s.layer === 'structures') {
+                  structureResize.start(s.targetId, s.anchor, ctx.worldX, ctx.worldY);
+                } else {
+                  zoneResize.start(s.targetId, s.anchor, ctx.worldX, ctx.worldY);
+                }
+                activeResize.current = s.layer;
+                return 'claim';
+              case 'area':
+                areaSelect.start(ctx.worldX, ctx.worldY, ctx.modifiers);
+                return 'claim';
+              default:
+                return 'pass';
+            }
+          },
+
+          onMove: (e, ctx) => {
+            const s = ctx.scratch;
+            switch (s.kind) {
+              case 'move':
+                move.move({
+                  worldX: ctx.worldX,
+                  worldY: ctx.worldY,
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                  modifiers: ctx.modifiers,
+                });
+                return 'claim';
+              case 'resize':
+                if (activeResize.current === 'structures') structureResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+                else if (activeResize.current === 'zones') zoneResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+                return 'claim';
+              case 'area':
+                areaSelect.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+                return 'claim';
+              default:
+                return 'pass';
+            }
+          },
+
+          onEnd: (_e, ctx) => {
+            const s = ctx.scratch;
+            switch (s.kind) {
+              case 'move':
+                move.end();
+                return 'claim';
+              case 'resize':
+                if (activeResize.current === 'structures') structureResize.end();
+                else if (activeResize.current === 'zones') zoneResize.end();
+                activeResize.current = null;
+                return 'claim';
+              case 'area': {
+                const overlay = areaSelect.overlay;
+                const dragged = overlay
+                  && (Math.abs(overlay.current.worldX - overlay.start.worldX) > 0.0001
+                    || Math.abs(overlay.current.worldY - overlay.start.worldY) > 0.0001);
+                if (dragged) {
+                  areaSelect.end();
+                } else {
+                  areaSelect.cancel();
+                  // Click-on-empty-with-no-drag: clear selection unless
+                  // shift-extending (legacy parity).
+                  if (!ctx.modifiers.shift) useUiStore.getState().clearSelection();
+                }
+                return 'claim';
+              }
+              default:
+                return 'pass';
+            }
+          },
+
+          onCancel: () => {
+            move.cancel();
+            structureResize.cancel();
+            zoneResize.cancel();
+            areaSelect.cancel();
+            activeResize.current = null;
+          },
+        },
+
+        keyboard: {
+          onDown: (e, _ctx) => {
+            if (e.key === 'Escape') {
+              useUiStore.getState().clearSelection();
+              return 'claim';
+            }
+            return 'pass';
+          },
+        },
+      }),
+    [adapter, move, structureResize, zoneResize, areaSelect, overlay],
+  );
+}

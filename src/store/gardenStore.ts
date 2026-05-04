@@ -8,6 +8,7 @@ import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../m
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
 import { persistCollection } from '../utils/file';
+import { worldToLocalForParent } from '../utils/plantingPose';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
 
@@ -171,9 +172,11 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     const children = plantings.filter((p) => p.parentId === parentId);
     const others = plantings.filter((p) => p.parentId !== parentId);
 
-    const rearranged = children.map((p, i) =>
-      i < slots.length ? { ...p, x: slots[i].x - parent.x, y: slots[i].y - parent.y } : p,
-    );
+    const rearranged = children.map((p, i) => {
+      if (i >= slots.length) return p;
+      const local = worldToLocalForParent(parent, slots[i].x, slots[i].y);
+      return { ...p, x: local.x, y: local.y };
+    });
     return [...others, ...rearranged];
   }
 
@@ -206,7 +209,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     },
 
     setCollection: (collection) => {
-      commitPatch({ collection });
+      // Collection edits are catalog-level, not garden-state — keep them out
+      // of the undo stack so undo only rewinds garden changes.
+      patch({ collection });
       persistCollection(collection);
     },
 

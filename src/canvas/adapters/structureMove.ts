@@ -17,6 +17,9 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
     getObject(id) {
       return getStructure(id);
     },
+    getObjects() {
+      return useGardenStore.getState().garden.structures;
+    },
     getPose(id) {
       const s = getStructure(id);
       if (!s) throw new Error(`structure not found: ${id}`);

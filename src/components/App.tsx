@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { CanvasStack } from '../canvas/CanvasStack';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
+import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
+import { createInsertAdapter } from '../canvas/adapters/insert';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
-import { hitTestDragSpreadAffordance, hitTestCell } from '../canvas/seedStartingHitTest';
-import { getTrayViewport } from '../canvas/hooks/useTrayViewport';
-import { createDragGhost } from '@orochi235/weasel';
+import { hitTestDragSpreadAffordanceInches, hitTestCellInches } from '../canvas/seedStartingHitTest';
+import { createDragGhost, useClipboardOps } from '@orochi235/weasel';
 import { startThresholdDrag } from '@orochi235/weasel';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { createPlanting, createStructure, createZone } from '../model/types';
@@ -22,6 +23,8 @@ import type { PaletteEntry } from './palette/paletteData';
 import { SeedStartingPalette } from './palette/SeedStartingPalette';
 import { StatusBar } from './StatusBar';
 import { Sidebar } from './sidebar/Sidebar';
+import { ViewToolbar } from './ViewToolbar';
+import { LayerSelector } from './LayerSelector';
 
 const MIN_PANEL = 160;
 const MAX_PANEL = 400;
@@ -90,6 +93,14 @@ export function App() {
   useEffect(() => {
     autosave(garden);
   }, [garden]);
+
+  const insertAdapter = useMemo(() => createInsertAdapter(), []);
+  const clipboard = useClipboardOps(insertAdapter, {
+    getSelection: () => useUiStore.getState().selectedIds,
+    onPaste: (newIds) => useUiStore.getState().setSelection(newIds),
+  });
+  const actionCtx = useMemo(() => ({ clipboard }), [clipboard]);
+  useKeyboardActionDispatch(actionCtx);
 
   const handlePaletteDragBegin = useCallback(
     (entry: PaletteEntry, e: React.PointerEvent) => {
@@ -356,13 +367,25 @@ export function App() {
       let lastClientY = e.clientY;
       let shiftHeld = false;
 
+      // Returns the current tray plus a function that maps client coords to
+      // tray-local inches via the same view math as SeedStartingCanvasNewPrototype.
       function viewport() {
         const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
         const rect = el?.getBoundingClientRect();
         if (!rect) return null;
-        const vp = getTrayViewport(rect);
-        if (!vp) return null;
-        return { rect, vp };
+        const ui = useUiStore.getState();
+        if (ui.appMode !== 'seed-starting') return null;
+        const garden = useGardenStore.getState().garden;
+        const tray = garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
+        if (!tray) return null;
+        const ppi = ui.seedStartingZoom;
+        const originX = (rect.width - tray.widthIn * ppi) / 2 + ui.seedStartingPanX;
+        const originY = (rect.height - tray.heightIn * ppi) / 2 + ui.seedStartingPanY;
+        const toWorld = (clientX: number, clientY: number) => ({
+          x: (clientX - rect.left - originX) / ppi,
+          y: (clientY - rect.top - originY) / ppi,
+        });
+        return { rect, tray, toWorld };
       }
 
       let ghost: ReturnType<typeof createDragGhost> | null = null;
@@ -405,30 +428,29 @@ export function App() {
           setPreview(null);
           return;
         }
-        const sx = lastClientX - v.rect.left;
-        const sy = lastClientY - v.rect.top;
+        const w = v.toWorld(lastClientX, lastClientY);
 
         const replace = shiftHeld;
-        const aff = hitTestDragSpreadAffordance(v.vp.tray, v.vp, sx, sy);
+        const aff = hitTestDragSpreadAffordanceInches(v.tray, w.x, w.y);
         if (aff) {
           if (aff.kind === 'all') {
-            setPreview({ trayId: v.vp.tray.id, cultivarId: entry.id, scope: 'all', replace });
+            setPreview({ trayId: v.tray.id, cultivarId: entry.id, scope: 'all', replace });
           } else if (aff.kind === 'row') {
-            setPreview({ trayId: v.vp.tray.id, cultivarId: entry.id, scope: 'row', index: aff.row, replace });
+            setPreview({ trayId: v.tray.id, cultivarId: entry.id, scope: 'row', index: aff.row, replace });
           } else {
-            setPreview({ trayId: v.vp.tray.id, cultivarId: entry.id, scope: 'col', index: aff.col, replace });
+            setPreview({ trayId: v.tray.id, cultivarId: entry.id, scope: 'col', index: aff.col, replace });
           }
           return;
         }
-        const cell = hitTestCell(v.vp.tray, v.vp, sx, sy);
+        const cell = hitTestCellInches(v.tray, w.x, w.y);
         if (cell) {
-          const slot = v.vp.tray.slots[cell.row * v.vp.tray.cols + cell.col];
+          const slot = v.tray.slots[cell.row * v.tray.cols + cell.col];
           if (slot.state === 'sown' && !replace) {
             setPreview(null);
             return;
           }
           setPreview({
-            trayId: v.vp.tray.id,
+            trayId: v.tray.id,
             cultivarId: entry.id,
             scope: 'cell',
             row: cell.row,
@@ -470,20 +492,19 @@ export function App() {
 
           const v = viewport();
           if (!v) return;
-          const sx = ev.clientX - v.rect.left;
-          const sy = ev.clientY - v.rect.top;
+          const w = v.toWorld(ev.clientX, ev.clientY);
 
-          const aff = hitTestDragSpreadAffordance(v.vp.tray, v.vp, sx, sy);
+          const aff = hitTestDragSpreadAffordanceInches(v.tray, w.x, w.y);
           if (aff) {
             const replace = ev.shiftKey;
-            if (aff.kind === 'all') useGardenStore.getState().fillTray(v.vp.tray.id, entry.id, { replace });
-            else if (aff.kind === 'row') useGardenStore.getState().fillRow(v.vp.tray.id, aff.row, entry.id, { replace });
-            else useGardenStore.getState().fillColumn(v.vp.tray.id, aff.col, entry.id, { replace });
+            if (aff.kind === 'all') useGardenStore.getState().fillTray(v.tray.id, entry.id, { replace });
+            else if (aff.kind === 'row') useGardenStore.getState().fillRow(v.tray.id, aff.row, entry.id, { replace });
+            else useGardenStore.getState().fillColumn(v.tray.id, aff.col, entry.id, { replace });
             return;
           }
-          const hit = hitTestCell(v.vp.tray, v.vp, sx, sy);
+          const hit = hitTestCellInches(v.tray, w.x, w.y);
           if (!hit) return;
-          useGardenStore.getState().sowCell(v.vp.tray.id, hit.row, hit.col, entry.id, {
+          useGardenStore.getState().sowCell(v.tray.id, hit.row, hit.col, entry.id, {
             replace: ev.shiftKey,
           });
         },
@@ -585,7 +606,9 @@ export function App() {
         onMouseDown={(e) => handleResizeStart('left', e)}
       />
       <div className={styles.canvas}>
-        <CanvasStack />
+        <CanvasNewPrototype />
+        <ViewToolbar />
+        <LayerSelector />
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.rightHandle}`}

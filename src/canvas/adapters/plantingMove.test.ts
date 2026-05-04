@@ -36,7 +36,7 @@ describe('plantingMoveAdapter', () => {
     // from a known-empty undo stack and can verify applyBatch adds an entry.
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const before = useGardenStore.getState().canUndo();
-    a.applyBatch(
+    a.applyBatch!(
       [createTransformOp<{ x: number; y: number }>({ id: planting.id, from: { x: 0, y: 0 }, to: { x: 10, y: 10 } })],
       'Move',
     );

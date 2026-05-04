@@ -1,6 +1,7 @@
 import { computeSlots, type Arrangement } from '../model/arrangement';
 import type { Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
+import { worldToLocalForParent } from './plantingPose';
 import { roundToCell } from '@orochi235/weasel';
 
 /**
@@ -17,9 +18,10 @@ export function getPlantingPosition(
 ): { x: number; y: number } {
   const arrangement = parent.arrangement;
   if (!arrangement || arrangement.type === 'free') {
+    const local = worldToLocalForParent(parent, worldX, worldY);
     return {
-      x: roundToCell(worldX - parent.x, cellSize),
-      y: roundToCell(worldY - parent.y, cellSize),
+      x: roundToCell(local.x, cellSize),
+      y: roundToCell(local.y, cellSize),
     };
   }
 
@@ -30,16 +32,16 @@ export function getPlantingPosition(
 
   // Find first open slot
   for (const slot of slots) {
-    const relX = slot.x - parent.x;
-    const relY = slot.y - parent.y;
-    if (!occupiedSet.has(`${relX},${relY}`)) {
-      return { x: relX, y: relY };
+    const local = worldToLocalForParent(parent, slot.x, slot.y);
+    if (!occupiedSet.has(`${local.x},${local.y}`)) {
+      return local;
     }
   }
 
   // All slots full — place at drop position
+  const local = worldToLocalForParent(parent, worldX, worldY);
   return {
-    x: roundToCell(worldX - parent.x, cellSize),
-    y: roundToCell(worldY - parent.y, cellSize),
+    x: roundToCell(local.x, cellSize),
+    y: roundToCell(local.y, cellSize),
   };
 }

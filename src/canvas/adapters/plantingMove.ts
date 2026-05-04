@@ -1,7 +1,9 @@
 import { findSnapContainer } from '../findSnapContainer';
 import { useGardenStore } from '../../store/gardenStore';
 import type { Planting } from '../../model/types';
-import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
+import { getPlantingParent, plantingWorldPose, worldToLocalForParent } from '../../utils/plantingPose';
+import type { MoveAdapter, SnapTarget, LayoutStrategy } from '@orochi235/weasel';
+import { plantingLayoutFor } from './plantingLayout';
 
 export interface PlantingPose { x: number; y: number }
 
@@ -15,8 +17,7 @@ function getPlanting(id: string): Planting | undefined {
 }
 
 function getParent(id: string): { id: string; x: number; y: number } | undefined {
-  const garden = useGardenStore.getState().garden;
-  return garden.structures.find((s) => s.id === id) ?? garden.zones.find((z) => z.id === id);
+  return getPlantingParent(useGardenStore.getState().garden, id);
 }
 
 export function createPlantingMoveAdapter(): PlantingMoveAdapter {
@@ -24,22 +25,26 @@ export function createPlantingMoveAdapter(): PlantingMoveAdapter {
     getObject(id) {
       return getPlanting(id);
     },
+    getObjects() {
+      return useGardenStore.getState().garden.plantings;
+    },
     getPose(id) {
       const p = getPlanting(id);
       if (!p) throw new Error(`planting not found: ${id}`);
-      const parent = p.parentId ? getParent(p.parentId) : undefined;
-      return { x: (parent?.x ?? 0) + p.x, y: (parent?.y ?? 0) + p.y };
+      return plantingWorldPose(useGardenStore.getState().garden, p);
     },
     getParent(id) {
       return getPlanting(id)?.parentId ?? null;
+    },
+    getChildren(parentId) {
+      return useGardenStore.getState().garden.plantings.filter((p) => p.parentId === parentId).map((p) => p.id);
     },
     setPose(id, pose) {
       const p = getPlanting(id);
       if (!p) return;
       const parent = p.parentId ? getParent(p.parentId) : undefined;
-      const localX = pose.x - (parent?.x ?? 0);
-      const localY = pose.y - (parent?.y ?? 0);
-      useGardenStore.getState().updatePlanting(id, { x: localX, y: localY });
+      const local = worldToLocalForParent(parent ?? { x: 0, y: 0 }, pose.x, pose.y);
+      useGardenStore.getState().updatePlanting(id, { x: local.x, y: local.y });
     },
     setParent(id, parentId) {
       useGardenStore.getState().updatePlanting(id, { parentId: parentId ?? '' });
@@ -55,6 +60,9 @@ export function createPlantingMoveAdapter(): PlantingMoveAdapter {
     },
     removeObject(id) {
       useGardenStore.getState().removePlanting(id);
+    },
+    getLayout(containerId): LayoutStrategy<PlantingPose> | null {
+      return plantingLayoutFor(() => useGardenStore.getState().garden, containerId);
     },
     findSnapTarget(draggedId, worldX, worldY): SnapTarget<PlantingPose> | null {
       const planting = getPlanting(draggedId);

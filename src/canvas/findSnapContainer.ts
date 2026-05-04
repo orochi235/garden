@@ -2,6 +2,7 @@ import { computeSlots } from '../model/arrangement';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
+import { plantingWorldPose } from '../utils/plantingPose';
 
 /** Multiplier applied to planting footprint radius for attraction distance. */
 export const SNAP_RADIUS_MULTIPLIER = 2.0;
@@ -41,8 +42,7 @@ export function findSnapContainer(
     const parent = garden.structures.find((s) => s.id === planting.parentId)
       ?? garden.zones.find((z) => z.id === planting.parentId);
     if (!parent) return planting.parentId;
-    const pw = parent.x + planting.x;
-    const ph = parent.y + planting.y;
+    const { x: pw, y: ph } = plantingWorldPose(garden, planting);
     const inside = 'shape' in parent && parent.shape === 'circle'
       ? pointInEllipse(pw, ph, parent.x, parent.y, parent.width, parent.height)
       : pointInRect(pw, ph, parent.x, parent.y, parent.width, parent.height);

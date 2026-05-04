@@ -44,7 +44,7 @@ describe('createInsertAdapter', () => {
     } as never);
     const a = createInsertAdapter();
     const obj = a.commitInsert({ x: 0, y: 0, width: 2, height: 2 })!;
-    a.applyBatch([createInsertOp({ object: obj })], 'Insert');
+    a.applyBatch!([createInsertOp({ object: obj })], 'Insert');
     expect(useGardenStore.getState().garden.zones).toHaveLength(1);
     useGardenStore.getState().undo();
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);

@@ -27,7 +27,7 @@ describe('createZoneResizeAdapter', () => {
     const z = useGardenStore.getState().garden.zones[0];
     const a = createZoneResizeAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    a.applyBatch(
+    a.applyBatch!(
       [createTransformOp({ id: z.id, from: { x: z.x, y: z.y, width: z.width, height: z.height }, to: { x: z.x, y: z.y, width: 10, height: 10 } })],
       'Resize',
     );

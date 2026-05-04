@@ -35,7 +35,7 @@ describe('zoneMoveAdapter', () => {
     const z = setup();
     const a = createZoneMoveAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    a.applyBatch(
+    a.applyBatch!(
       [createTransformOp({ id: z.id, from: { x: 0, y: 0, widthFt: 5, heightFt: 5 }, to: { x: 3, y: 3, widthFt: 5, heightFt: 5 } })],
       'Move',
     );

@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@orochi235/weasel": "github:orochi235/weasel#67e7219",
+    "@orochi235/weasel": "file:../weasel",
     "clipper2-ts": "^2.0.1-15",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.4",

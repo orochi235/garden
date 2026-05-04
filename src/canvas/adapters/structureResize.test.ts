@@ -27,7 +27,7 @@ describe('createStructureResizeAdapter', () => {
     const s = useGardenStore.getState().garden.structures[0];
     const a = createStructureResizeAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    a.applyBatch(
+    a.applyBatch!(
       [createTransformOp({
         id: s.id,
         from: { x: s.x, y: s.y, width: s.width, height: s.height },

@@ -225,11 +225,12 @@ describe('setCollection', () => {
     expect(useGardenStore.getState().garden.collection.map((c) => c.id)).toEqual([a.id, b.id]);
   });
 
-  it('is undoable', () => {
+  it('is not in undo (collection is catalog-level, not garden state)', () => {
     const [a] = getAllCultivars();
     useGardenStore.getState().setCollection([snapshotCultivar(a)]);
     useGardenStore.getState().undo();
-    expect(useGardenStore.getState().garden.collection).toEqual([]);
+    // Collection persists across undo — it isn't part of the garden timeline.
+    expect(useGardenStore.getState().garden.collection).toHaveLength(1);
   });
 
   it('survives load of a garden missing a collection key', () => {

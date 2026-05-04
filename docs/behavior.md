@@ -147,3 +147,20 @@ Running list of intended application behaviors.
   silent (no new planting created).
 - Snap-dwell (the 500 ms hover-into-container UX from legacy) is not yet
   ported. Container resolution is immediate based on cursor position.
+
+## Canvas redesign default + debug overlays (Phase 5, 2026-05-03)
+
+- The canvas pipeline rewritten on the weasel `<Canvas>` + Tool primitive is
+  now the default and only pipeline; the legacy `?canvas=new` opt-in flag is
+  gone, and the legacy `CanvasStack` + `*LayerRenderer` files have been
+  deleted. Behavior at the canvas level is intended to be unchanged.
+- Click on empty space inside the seed-starting tray view (no seedling under
+  the cursor) clears the current selection. Shift-click on empty space leaves
+  the current selection alone (legacy parity).
+- The URL accepts a `?debug=` query param whose value is a comma-separated
+  set of overlay tokens. Tokens supported today: `hitboxes` (red 0.3-alpha
+  bbox wireframes around each scene node), `bounds` (cyan dashed rectangle
+  around the overall scene), `axes` (red +x / green +y axis lines from the
+  origin with `(0,0)` label), `grid` (yellow grid at the model's grid step).
+  Tokens are parsed once at page load; reload to change them. Multiple
+  tokens combine, e.g. `?debug=hitboxes,axes`.

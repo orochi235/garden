@@ -17,6 +17,9 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
     getObject(id) {
       return getZone(id);
     },
+    getObjects() {
+      return useGardenStore.getState().garden.zones;
+    },
     getPose(id) {
       const z = getZone(id);
       if (!z) throw new Error(`zone not found: ${id}`);

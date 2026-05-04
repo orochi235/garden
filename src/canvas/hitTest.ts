@@ -1,6 +1,7 @@
 import { getCultivar } from '../model/cultivars';
 import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';
+import { plantingWorldPose } from '../utils/plantingPose';
 import type { ViewTransform } from '@orochi235/weasel';
 
 export interface HitResult {
@@ -126,8 +127,7 @@ export function hitTestPlantings(
       : (cultivar?.footprintFt ?? 0.5) / 2;
     const isCircle = isSingleFill && 'shape' in parent && parent.shape === 'circle';
 
-    const cx = parent.x + p.x;
-    const cy = parent.y + p.y;
+    const { x: cx, y: cy } = plantingWorldPose({ structures, zones }, p);
     const dx = worldX - cx;
     const dy = worldY - cy;
     const hit = isCircle
@@ -273,8 +273,7 @@ export function hitTestArea(
     for (const p of plantings) {
       const parent = parentMap.get(p.parentId);
       if (!parent) continue;
-      const cx = parent.x + p.x;
-      const cy = parent.y + p.y;
+      const { x: cx, y: cy } = plantingWorldPose({ structures, zones }, p);
       if (cx >= rect.x && cx <= rect.x + rect.width &&
           cy >= rect.y && cy <= rect.y + rect.height) {
         results.push({ id: p.id, layer: 'plantings' });
@@ -283,6 +282,71 @@ export function hitTestArea(
   }
 
   return results;
+}
+
+/**
+ * Return all hits at (worldX, worldY) ordered top-most first across plantings,
+ * zones, and structures. Respects layer locks. Used by alt-click cycling.
+ */
+export function hitTestStack(
+  worldX: number,
+  worldY: number,
+  plantings: Planting[],
+  structures: Structure[],
+  zones: Zone[],
+): HitResult[] {
+  const locked = useUiStore.getState().layerLocked;
+  const out: HitResult[] = [];
+
+  if (!locked.plantings) {
+    const parentMap = new Map<string, Structure | Zone>();
+    for (const z of zones) parentMap.set(z.id, z);
+    for (const s of structures) {
+      if (s.container) parentMap.set(s.id, s);
+    }
+    const childCount = new Map<string, number>();
+    for (const p of plantings) {
+      childCount.set(p.parentId, (childCount.get(p.parentId) ?? 0) + 1);
+    }
+    for (const p of plantings) {
+      const parent = parentMap.get(p.parentId);
+      if (!parent) continue;
+      const cultivar = getCultivar(p.cultivarId);
+      const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+      const half = isSingleFill
+        ? Math.min(parent.width, parent.height) / 2
+        : (cultivar?.footprintFt ?? 0.5) / 2;
+      const isCircle = isSingleFill && 'shape' in parent && parent.shape === 'circle';
+      const { x: cx, y: cy } = plantingWorldPose({ structures, zones }, p);
+      const dx = worldX - cx;
+      const dy = worldY - cy;
+      const hit = isCircle
+        ? dx * dx + dy * dy <= half * half
+        : Math.abs(dx) <= half && Math.abs(dy) <= half;
+      if (hit) out.push({ id: p.id, layer: 'plantings' });
+    }
+  }
+
+  if (!locked.zones) {
+    const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
+    for (const z of sorted) {
+      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
+        out.push({ id: z.id, layer: 'zones' });
+      }
+    }
+  }
+
+  if (!locked.structures) {
+    const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
+    for (const s of sorted) {
+      const hit = s.shape === 'circle'
+        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
+        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+      if (hit) out.push({ id: s.id, layer: 'structures' });
+    }
+  }
+
+  return out;
 }
 
 /**
