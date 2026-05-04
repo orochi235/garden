@@ -99,5 +99,9 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 ## ViewToolbar wire-up deferrals
 
 - `viewMode === 'zoom'` is not wired to a canvas tool. Toolbar button is visually selectable but produces only a one-time console warning. Design a click-to-zoom-in / shift-click-to-zoom-out tool (cursor: zoom-in / zoom-out) and register it under id `'zoom'` in `CanvasNewPrototype.tsx`. Double-click-on-button already triggers `computeFitView` reset via `ViewToolbar.handleZoomReset`.
-- `viewMode === 'select-area'` falls back to the regular select tool. The existing `useEricSelectTool` already supports drag-marquee selection in empty space; if "select area" is meant to be a distinct mode (e.g. forces marquee even when starting on an object), add a separate tool or a flag on the select tool.
-- `viewMode === 'draw'` has no corresponding tool yet. Plan: a freehand / polygon draw tool that emits a new zone or annotation. Currently falls back to select with a one-time console warning.
+- `viewMode === 'select-area'` aliases to the regular select tool (no warning); `useEricSelectTool` already supports drag-marquee in empty space. If "select area" is meant to be a distinct mode (e.g. forces marquee even when starting on an object), add a separate tool or a flag on the select tool.
+- `viewMode === 'draw'` aliases to select unless a plotting tool is picked from the palette, at which point `useInsertTool` activates. A freehand / polygon draw tool that emits a new zone or annotation is still TODO.
+
+## Editing
+
+- `Cmd+X` cut is not implemented. `App.tsx` uses `useClipboardOps` which only exposes `copy` and `paste`; switch to `useClipboard` (with `bindKeyboard: false` if we keep the action-registry routing) to gain `cut`, then add `src/actions/editing/cut.ts` and register it in the keyboard action dispatch.

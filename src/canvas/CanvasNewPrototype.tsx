@@ -35,7 +35,7 @@ function warnUnwiredViewMode(mode: string) {
   if (warnedViewModes.has(mode)) return;
   warnedViewModes.add(mode);
   // eslint-disable-next-line no-console
-  console.warn(`[CanvasNewPrototype] viewMode '${mode}' is not yet wired to a canvas tool; falling back to select.`);
+  console.warn(`[CanvasNewPrototype] viewMode '${mode}' has no dedicated canvas tool yet; falling back to select.`);
 }
 
 export function CanvasNewPrototype() {
@@ -189,10 +189,13 @@ function GardenCanvasNewPrototype() {
       case 'pan':
         return leftDragPan.id;
       case 'select':
+      case 'select-area': // marquee is built into selectTool's empty-drag behavior
+      case 'draw': // insertTool activates above when plottingTool is set; bare draw = select
         return selectTool.id;
       case 'zoom':
-      case 'select-area':
-      case 'draw':
+        // No drag-to-zoom-rect tool yet; double-click on the toolbar zoom button
+        // triggers fit-view. Wheel-zoom is always-on. Falling back to select keeps
+        // click-selection working while in this mode.
         warnUnwiredViewMode(viewMode);
         return selectTool.id;
       default:
