@@ -118,6 +118,7 @@ Running list of intended application behaviors.
 - Seedlings with warnings (e.g., placed in a tray whose cell size doesn't match the cultivar's preferred size) are highlighted with a goldenrod outline ring around the icon
 - Existing seedlings can be dragged within the tray: dropping on an empty cell moves the seedling, dropping on an occupied cell swaps the two, and dropping outside the tray removes the seedling
 - Clicking a seedling selects it; shift- or cmd-clicking another seedling adds/removes it from the selection (multiselect). Clicking an empty cell or the background clears the selection. Selected seedlings render with a dashed blue ring
+- Drag from any empty space (between cells, in gutters, outside the tray) draws a marquee rectangle; release selects every seedling whose cell center falls inside. Shift extends the existing selection instead of replacing it. Mirrors the garden-mode marquee style
 
 ## Selection and clipboard (Phase 3 canvas-kit migration, 2026-05-01)
 

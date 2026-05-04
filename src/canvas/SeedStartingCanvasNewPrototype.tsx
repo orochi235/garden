@@ -18,7 +18,6 @@ import {
 import { createTrayLayers } from './layers/trayLayersWorld';
 import { createSeedlingLayers, type SeedlingLayerUi } from './layers/seedlingLayersWorld';
 import type { View } from './layers/worldLayerData';
-import { useEricSelectTool } from './tools/useEricSelectTool';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
 import { useSowCellTool } from './tools/useSowCellTool';
@@ -119,18 +118,16 @@ export function SeedStartingCanvasNewPrototype() {
   };
 
   // --- Tools ---
-  const selectTool = useEricSelectTool(adapter as never);
   const moveTool = useSeedlingMoveTool(adapter);
   const sowTool = useSowCellTool();
   const fillTool = useFillTrayTool();
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();
 
-  // Use moveTool as the primary active tool (handles seedling drag + click-to-select).
-  // Sow tool runs alongside (claims only when seedDragCultivarId is set).
-  // Fill tool occupies the shift modifier slot.
-  // Select tool kept available for area-select on empty space (alwaysOn).
-  void selectTool;
+  // moveTool is the primary active tool: it handles seedling drag,
+  // click-to-select, and marquee area-select on empty space. Sow tool runs
+  // alongside (claims only when seedDragCultivarId is set); fill tool
+  // occupies the shift modifier slot.
   const tools = useTools({
     active: moveTool.id,
     registry: {

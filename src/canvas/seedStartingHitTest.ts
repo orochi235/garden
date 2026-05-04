@@ -1,4 +1,4 @@
-import type { Tray } from '../model/seedStarting';
+import type { Seedling, Tray } from '../model/seedStarting';
 import { trayInteriorOffsetIn } from '../model/seedStarting';
 
 export interface CellHit {
@@ -59,4 +59,30 @@ export function hitTestDragSpreadAffordanceInches(
   if (inGutterY && lx >= 0 && lx < totalW) return { kind: 'col', col: Math.floor(lx / p) };
   if (inGutterX && ly >= 0 && ly < totalH) return { kind: 'row', row: Math.floor(ly / p) };
   return null;
+}
+
+export interface WorldRect { x: number; y: number; width: number; height: number }
+
+/** Returns the ids of all seedlings whose cell center falls inside the given
+ *  world-space rect. Tray world origin is treated as (0,0) (matching
+ *  `seedStartingScene` adapter). */
+export function findSeedlingsInRect(
+  trays: Tray[],
+  seedlings: Seedling[],
+  rect: WorldRect,
+): string[] {
+  const x0 = Math.min(rect.x, rect.x + rect.width);
+  const x1 = Math.max(rect.x, rect.x + rect.width);
+  const y0 = Math.min(rect.y, rect.y + rect.height);
+  const y1 = Math.max(rect.y, rect.y + rect.height);
+  const out: string[] = [];
+  const trayById = new Map(trays.map((t) => [t.id, t]));
+  for (const s of seedlings) {
+    if (!s.trayId || s.row == null || s.col == null) continue;
+    const tray = trayById.get(s.trayId);
+    if (!tray) continue;
+    const c = cellCenterInches(tray, s.row, s.col);
+    if (c.x >= x0 && c.x <= x1 && c.y >= y0 && c.y <= y1) out.push(s.id);
+  }
+  return out;
 }

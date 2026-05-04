@@ -4,6 +4,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
   DRAG_SPREAD_GUTTER_RATIO,
+  findSeedlingsInRect,
   hitTestCellInches,
   hitTestDragSpreadAffordanceInches,
   type DragSpreadAffordanceHit,
@@ -25,6 +26,8 @@ export interface SeedlingMoveScratch {
   affordance: DragSpreadAffordanceHit | null;
   /** Cultivar id of the dragged anchor — used to render gutter markers. */
   cultivarId: string | null;
+  /** Active marquee gesture (drag from empty space). World inches. */
+  marquee: { startX: number; startY: number; x: number; y: number; shift: boolean } | null;
 }
 
 const initScratch = (): SeedlingMoveScratch => ({
@@ -39,6 +42,7 @@ const initScratch = (): SeedlingMoveScratch => ({
   currentWorld: { x: 0, y: 0 },
   affordance: null,
   cultivarId: null,
+  marquee: null,
 });
 
 function findSeedlingAt(worldX: number, worldY: number): { tray: Tray; seedling: Seedling } | null {
@@ -99,6 +103,27 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
       space: 'screen',
       draw(ctx, _data, view) {
         const s = scratchRef.current;
+        // Marquee rectangle in screen space (mirrors garden eric-select-overlay).
+        if (s.marquee) {
+          const m = s.marquee;
+          const x = Math.min(m.startX, m.x);
+          const y = Math.min(m.startY, m.y);
+          const w = Math.abs(m.x - m.startX);
+          const h = Math.abs(m.y - m.startY);
+          const sx = (x - view.x) * view.scale;
+          const sy = (y - view.y) * view.scale;
+          const sw = w * view.scale;
+          const sh = h * view.scale;
+          ctx.save();
+          ctx.fillStyle = 'rgba(91, 164, 207, 0.15)';
+          ctx.strokeStyle = '#5BA4CF';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.fillRect(sx, sy, sw, sh);
+          ctx.strokeRect(sx, sy, sw, sh);
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
         const ui = useUiStore.getState();
         // Two ways to activate the gutter overlay:
         //  1. seedling-drag scratch (existing seedling being relocated)
@@ -201,12 +226,26 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             const hit = findSeedlingAt(ctx.worldX, ctx.worldY);
             if (hit) return 'pass';
             if (!ctx.modifiers.shift) useUiStore.getState().clearSelection();
+            ctx.scratch.marquee = null;
+            scratchRef.current = ctx.scratch;
             return 'claim';
           },
           onDown: (e, ctx) => {
             if (e.button !== 0) return 'pass';
+            // A palette drag-to-sow is active; defer to sow tool.
+            if (useUiStore.getState().seedDragCultivarId) return 'pass';
             const hit = findSeedlingAt(ctx.worldX, ctx.worldY);
-            if (!hit) return 'pass';
+            if (!hit) {
+              ctx.scratch.marquee = {
+                startX: ctx.worldX,
+                startY: ctx.worldY,
+                x: ctx.worldX,
+                y: ctx.worldY,
+                shift: ctx.modifiers.shift,
+              };
+              scratchRef.current = ctx.scratch;
+              return 'claim';
+            }
 
             const ui = useUiStore.getState();
             // Update selection like legacy: shift extends, plain click selects
@@ -239,6 +278,10 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
 
         drag: {
           onStart: (_e, ctx) => {
+            if (ctx.scratch.marquee) {
+              scratchRef.current = ctx.scratch;
+              return 'claim';
+            }
             if (!ctx.scratch.draggedId) return 'pass';
             ctx.scratch.active = true;
             // Hide every dragged seedling so the canvas shows movement.
@@ -247,6 +290,12 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             return 'claim';
           },
           onMove: (_e, ctx) => {
+            if (ctx.scratch.marquee) {
+              ctx.scratch.marquee.x = ctx.worldX;
+              ctx.scratch.marquee.y = ctx.worldY;
+              scratchRef.current = ctx.scratch;
+              return 'claim';
+            }
             if (!ctx.scratch.active) return 'pass';
             ctx.scratch.currentWorld = { x: ctx.worldX, y: ctx.worldY };
             const ss = useGardenStore.getState().garden.seedStarting;
@@ -326,6 +375,27 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             return 'claim';
           },
           onEnd: (_e, ctx) => {
+            if (ctx.scratch.marquee) {
+              const m = ctx.scratch.marquee;
+              const ss = useGardenStore.getState().garden.seedStarting;
+              const rect = {
+                x: m.startX,
+                y: m.startY,
+                width: m.x - m.startX,
+                height: m.y - m.startY,
+              };
+              const ids = findSeedlingsInRect(ss.trays, ss.seedlings, rect);
+              const ui = useUiStore.getState();
+              if (m.shift) {
+                const merged = Array.from(new Set([...ui.selectedIds, ...ids]));
+                ui.setSelection(merged);
+              } else {
+                ui.setSelection(ids);
+              }
+              ctx.scratch.marquee = null;
+              scratchRef.current = ctx.scratch;
+              return 'claim';
+            }
             if (!ctx.scratch.active) return 'pass';
             const trayId = ctx.scratch.trayId!;
             const ss = useGardenStore.getState().garden.seedStarting;
@@ -421,6 +491,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             useUiStore.getState().setHiddenSeedlingIds([]);
             ctx.scratch.active = false;
             ctx.scratch.affordance = null;
+            ctx.scratch.marquee = null;
             scratchRef.current = ctx.scratch;
           },
         },
