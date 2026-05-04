@@ -4,11 +4,13 @@ import {
   Canvas,
   computeFitView,
   useCanvasSize,
+  useInsertTool,
   useTools,
 } from '@orochi235/weasel';
 import type { GridSlotConfig } from '@orochi235/weasel';
 import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
 import type { RenderLayer } from '@orochi235/weasel';
+import { createInsertAdapter } from './adapters/insert';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
@@ -62,6 +64,7 @@ function GardenCanvasNewPrototype() {
   useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
 
   const adapter = useMemo(() => createGardenSceneAdapter(), []);
+  const insertAdapter = useMemo(() => createInsertAdapter(), []);
 
   const didFitRef = useRef(false);
   useEffect(() => {
@@ -174,9 +177,14 @@ function GardenCanvasNewPrototype() {
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();
+  const insertTool = useInsertTool(insertAdapter, {
+    onGestureEnd: () => useUiStore.getState().setPlottingTool(null),
+  });
 
   const viewMode = useUiStore((s) => s.viewMode);
+  const plottingTool = useUiStore((s) => s.plottingTool);
   const activeToolId = useMemo(() => {
+    if (plottingTool) return insertTool.id;
     switch (viewMode) {
       case 'pan':
         return leftDragPan.id;
@@ -190,7 +198,7 @@ function GardenCanvasNewPrototype() {
       default:
         return selectTool.id;
     }
-  }, [viewMode, leftDragPan.id, selectTool.id]);
+  }, [viewMode, plottingTool, leftDragPan.id, selectTool.id, insertTool.id]);
 
   const tools = useTools({
     active: activeToolId,
@@ -198,6 +206,7 @@ function GardenCanvasNewPrototype() {
       [selectTool.id]: selectTool,
       [cycleTool.id]: cycleTool,
       [leftDragPan.id]: leftDragPan,
+      [insertTool.id]: insertTool,
     },
     alwaysOn: [rightDragPan, wheelZoom],
   });
