@@ -105,3 +105,17 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 ## Editing
 
 - Edge-collision / containment for structure & zone drags: nothing currently prevents a structure from being dragged off the garden bounds or overlapping another structure. Grid-snap was added but no clamping. Pick a policy (clamp to bounds vs. allow-and-show-warning) and add a behavior to `useEricSelectTool`'s move pipeline.
+
+## Phase 5 audit punch list — remaining
+
+Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed the rest). Roughly ordered by user-visible impact.
+
+- **Seed-starting marquee area-select.** `SeedStartingCanvasNewPrototype` doesn't register a marquee tool on the tray background; only per-seedling click selection works. The existing `useEricSelectTool` is typed against `GardenSceneAdapter` and conflicts with `useSeedlingMoveTool` over click semantics. Path: build a tray-aware select tool (or generalize `useEricSelectTool`) so empty-tray drag draws a marquee and selects intersecting seedlings. Cross-reference: the same item is also logged under "Phase 4 deferrals" / "Phase 5 deferrals" above.
+- **Drag-spread "gutter" affordance.** Pulling a planting onto the seed-starting tray gutter should let the user spread seedlings across a row/column/all-cells in one gesture. Lives partway between Tool-primitive and overlay-affordance schemas in canvas-kit. See the matching memory entry "Gutter affordance refactor" for the design tension.
+- **Group outlines.** Selecting one member of a structure group should draw a group-bounds outline so the user can see the implicit selection extent. Needs a design pass: outline as separate render layer? handle hit-testing? does dragging one member move the group?
+- **Wheel-zoom verification.** `useEricWheelZoomTool` is wired as `alwaysOn` in `CanvasNewPrototype`. Confirm it actually fires on the seed-starting canvas as well (`SeedStartingCanvasNewPrototype` does its own wiring), and that pinch-zoom on trackpads works. Suspected drift, not confirmed.
+- **Per-id selection-flash opacity.** `CanvasNewPrototype` aggregates all selected ids into a single `highlightOpacity` via max(); the layer protocol takes one number rather than a per-id getter. Migrate `EricSceneUi.highlightOpacity` to a `getOpacity(id)` callback and update each `*LayersWorld.ts` highlight branch. Touches every layer file plus their tests.
+- **Selection-rides-on-history.** Undo/redo currently leaves `useUiStore.selectedIds` untouched, so undoing a paste leaves the (now-deleted) ids selected. Need to either snapshot selection into history checkpoints or scrub stale ids on every history transition.
+- **Click-to-zoom tool for `viewMode === 'zoom'`.** Toolbar button currently warns once on activation; wire a tool with cursor `zoom-in`/`zoom-out` (shift inverts) that increments/decrements `useUiStore.zoom` around the click point. Double-click-on-button already resets to fit-view.
+- **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.
+- **`?debug=handles` overlay.** Documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
