@@ -12,6 +12,7 @@ import {
   type ResizeAnchor,
   type UseMoveOptions,
   type UseResizeOptions,
+  type MoveBehavior,
 } from '@orochi235/weasel';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
@@ -40,11 +41,54 @@ function getZone(id: string) {
   return useGardenStore.getState().garden.zones.find((z) => z.id === id);
 }
 
+/**
+ * Mirror `findSnapTarget` into `ctx.snap` for the planting being dragged.
+ * Lets `requirePlantingDrop` decide whether to cancel a free-space release.
+ * Skips non-plantings (structures/zones move freely with no snap requirement).
+ */
+function trackPlantingSnap(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
+  return {
+    onMove(ctx) {
+      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      if (!obj || obj.kind !== 'planting') return;
+      const t = adapter.findSnapTarget?.(ctx.draggedIds[0], ctx.pointer.worldX, ctx.pointer.worldY);
+      return { snap: t ?? null };
+    },
+  };
+}
+
+/**
+ * Snap-back: if a planting is released over no snap target, cancel the
+ * gesture instead of letting `useMove` free-commit a transform op (which
+ * would orphan the plant in nowhere-land).
+ *
+ * Why: legacy behavior reverted plant drops to origin when no container
+ * accepted. The layout pass handles successful drops; this behavior gates
+ * the "no container under pointer" case.
+ */
+function requirePlantingDrop(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
+  return {
+    onEnd(ctx) {
+      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      if (!obj || obj.kind !== 'planting') return;
+      if (ctx.snap) return;
+      return null;
+    },
+  };
+}
+
 export function useEricSelectTool(
   adapter: GardenSceneAdapter,
   opts?: { moveOptions?: UseMoveOptions<ScenePose> },
 ): Tool<SelectScratch> {
-  const move = useMove<SceneNode, ScenePose>(adapter, opts?.moveOptions ?? {});
+  const moveBehaviors = useMemo<MoveBehavior<ScenePose>[]>(
+    () => [trackPlantingSnap(adapter), requirePlantingDrop(adapter)],
+    [adapter],
+  );
+  const move = useMove<SceneNode, ScenePose>(adapter, {
+    behaviors: moveBehaviors,
+    ...(opts?.moveOptions ?? {}),
+  });
 
   const structureResizeAdapter = useMemo(() => createStructureResizeAdapter(), []);
   const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
@@ -96,6 +140,34 @@ export function useEricSelectTool(
         const mov = move.overlay;
         if (mov && mov.draggedIds.length > 0) {
           const garden = useGardenStore.getState().garden;
+
+          // Snap-target highlight: if the layout pass has accepted a
+          // destination container, outline it so the user can see where the
+          // drop will land.
+          if (mov.accepted && mov.destContainerId) {
+            const c = garden.structures.find((s) => s.id === mov.destContainerId)
+              ?? garden.zones.find((z) => z.id === mov.destContainerId);
+            if (c) {
+              const sx = (c.x - view.x) * view.scale;
+              const sy = (c.y - view.y) * view.scale;
+              const sw = c.width * view.scale;
+              const sh = c.height * view.scale;
+              ctx.save();
+              ctx.strokeStyle = '#5BA4CF';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([6, 4]);
+              if ((c as { shape?: string }).shape === 'circle') {
+                ctx.beginPath();
+                ctx.ellipse(sx + sw / 2, sy + sh / 2, sw / 2, sh / 2, 0, 0, Math.PI * 2);
+                ctx.stroke();
+              } else {
+                ctx.strokeRect(sx, sy, sw, sh);
+              }
+              ctx.setLineDash([]);
+              ctx.restore();
+            }
+          }
+
           for (const id of mov.draggedIds) {
             const pose = mov.poses.get(id);
             if (!pose) continue;
