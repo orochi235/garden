@@ -5,7 +5,7 @@ import type { Garden, Structure } from '../../model/types';
 function makeGarden(): Garden {
   return {
     widthFt: 100,
-    heightFt: 100,
+    lengthFt: 100,
     gridCellSizeFt: 1,
     groundColor: '#000',
     structures: [

@@ -51,7 +51,7 @@ function unionDraggedAABB(
 
 /**
  * Hard-clamp the dragging set's union AABB to garden bounds
- * `[0, widthFt] × [0, heightFt]`. The kit's `MoveBehavior.onMove` only runs
+ * `[0, widthFt] × [0, lengthFt]`. The kit's `MoveBehavior.onMove` only runs
  * on the primary id, so we clamp the *delta* applied to the primary; the kit
  * applies the same translation to secondaries (group-drag), so the same
  * clamp transitively keeps secondaries in bounds.
