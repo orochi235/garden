@@ -7,7 +7,7 @@ export function useGardenOffscreen(canvasWidth: number, canvasHeight: number): b
   const panY = useUiStore((s) => s.panY);
   const zoom = useUiStore((s) => s.zoom);
   const widthFt = useGardenStore((s) => s.garden.widthFt);
-  const heightFt = useGardenStore((s) => s.garden.heightFt);
+  const heightFt = useGardenStore((s) => s.garden.lengthFt);
 
   const gardenRight = panX + widthFt * zoom;
   const gardenBottom = panY + heightFt * zoom;

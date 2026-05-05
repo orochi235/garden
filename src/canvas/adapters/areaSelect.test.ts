@@ -12,8 +12,8 @@ describe('createAreaSelectAdapter', () => {
   });
 
   it('hitTestArea returns ids of zones intersecting the rect', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addZone({ x: 100, y: 100, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addZone({ x: 100, y: 100, width: 4, length: 4 });
     const a = createAreaSelectAdapter();
     const ids = a.hitTestArea({ x: -1, y: -1, width: 6, height: 6 });
     const z0 = useGardenStore.getState().garden.zones[0].id;
@@ -35,7 +35,7 @@ describe('createAreaSelectAdapter', () => {
   });
 
   it('applyOps runs the SetSelectionOp without producing a garden history entry', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     // Drain addZone's history entry so undo only reflects applyOps (or lack thereof).
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const before = useGardenStore.getState().garden;

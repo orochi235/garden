@@ -24,7 +24,7 @@ describe('createInsertAdapter', () => {
     } as never);
     const a = createInsertAdapter();
     const obj = a.commitInsert({ x: 1, y: 2, width: 3, height: 4 });
-    expect(obj).toMatchObject({ x: 1, y: 2, width: 3, height: 4 });
+    expect(obj).toMatchObject({ x: 1, y: 2, width: 3, length: 4 });
     expect((obj as { type: string }).type).toBe('bed');
     expect(typeof obj!.id).toBe('string');
   });
@@ -35,7 +35,7 @@ describe('createInsertAdapter', () => {
     } as never);
     const a = createInsertAdapter();
     const obj = a.commitInsert({ x: 1, y: 2, width: 3, height: 4 });
-    expect(obj).toMatchObject({ x: 1, y: 2, width: 3, height: 4 });
+    expect(obj).toMatchObject({ x: 1, y: 2, width: 3, length: 4 });
   });
 
   it('applyBatch checkpoints + applies InsertOp; undo restores', () => {
@@ -58,9 +58,9 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
   });
 
   it('snapshotSelection captures structures, zones, plantings matching ids', () => {
-    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 1, height: 1 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 1, length: 1 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    useGardenStore.getState().addZone({ x: 2, y: 2, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 2, y: 2, width: 4, length: 4 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const sId = useGardenStore.getState().garden.structures[0].id;
     const zId = useGardenStore.getState().garden.zones[0].id;
@@ -76,7 +76,7 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
   });
 
   it('commitPaste materializes a structure with a new id and offset coords', () => {
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 6, width: 1, height: 1 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 6, width: 1, length: 1 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const sId = useGardenStore.getState().garden.structures[0].id;
     const a = createInsertAdapter();
@@ -90,7 +90,7 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
   });
 
   it('commitPaste materializes a zone with a new id and offset coords', () => {
-    useGardenStore.getState().addZone({ x: 5, y: 6, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 5, y: 6, width: 4, length: 4 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const zId = useGardenStore.getState().garden.zones[0].id;
     const a = createInsertAdapter();
@@ -104,7 +104,7 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
   });
 
   it('commitPaste materializes plantings (behavior change: legacy useClipboard dropped them)', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const sId = useGardenStore.getState().garden.structures[0].id;
     // Insert a planting via direct setState (no addPlanting helper assumed).
@@ -141,7 +141,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
   });
 
   it('with dropPoint over a container, planting reparents and uses local coords', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 6, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 6, width: 4, length: 4 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const sId = useGardenStore.getState().garden.structures[0].id;
     // Source planting under a different (nonexistent) parent — proves reparenting
@@ -179,7 +179,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
   });
 
   it('with dropPoint, structure offset path unaffected', () => {
-    const structure = createStructure({ type: 'pot', x: 5, y: 6, width: 1, height: 1 });
+    const structure = createStructure({ type: 'pot', x: 5, y: 6, width: 1, length: 1 });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'structure', data: structure }] };
     const out = a.commitPaste(snap, { dx: 1, dy: 2 }, {

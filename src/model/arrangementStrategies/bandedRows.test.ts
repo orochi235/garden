@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeBandedRows } from './bandedRows';
 import type { ParentBounds } from '../arrangement';
 
-const rect: ParentBounds = { x: 0, y: 0, width: 6, height: 4, shape: 'rectangle' };
+const rect: ParentBounds = { x: 0, y: 0, width: 6, length: 4, shape: 'rectangle' };
 
 describe('computeBandedRows', () => {
   it('honors per-band pitch', () => {
@@ -36,6 +36,6 @@ describe('computeBandedRows', () => {
       rect,
       [],
     );
-    expect(slots.every((s) => s.y >= rect.y && s.y <= rect.y + rect.height)).toBe(true);
+    expect(slots.every((s) => s.y >= rect.y && s.y <= rect.y + rect.length)).toBe(true);
   });
 });

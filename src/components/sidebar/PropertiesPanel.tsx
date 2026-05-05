@@ -218,9 +218,9 @@ export function PropertiesPanel() {
           type="number"
           step="0.1"
           min="0.1"
-          value={parseFloat(feetToDisplay(obj.height, unit).toFixed(2))}
+          value={parseFloat(feetToDisplay(obj.length, unit).toFixed(2))}
           onChange={(e) =>
-            updateObj({ height: displayToFeet(parseFloat(e.target.value) || 0.1, unit) })
+            updateObj({ length: displayToFeet(parseFloat(e.target.value) || 0.1, unit) })
           }
         />
 

@@ -60,8 +60,8 @@ describe('useEricCycleTool — alt+click cycling (regression)', () => {
 
   it('claims and cycles through objects at the cursor on repeated alt+clicks', () => {
     // Place two structures overlapping at (1, 1).
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    const b = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    const b = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a, b] },
     }));
@@ -89,7 +89,7 @@ describe('useEricCycleTool — alt+click cycling (regression)', () => {
   });
 
   it('passes when alt is not held', () => {
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a] },
     }));
@@ -125,7 +125,7 @@ describe('useEricCycleTool — alt+drag clone', () => {
   });
 
   it('drag.onStart claims after a cycle-click even without insertAdapter', () => {
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a] },
     }));
@@ -145,7 +145,7 @@ describe('useEricCycleTool — alt+drag clone', () => {
 
   it('alt+drag commits a clone: original is not moved, duplicate appears', async () => {
     // Set up a structure at (0,0) so we can alt+drag it.
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a] },
     }));
@@ -193,7 +193,7 @@ describe('useEricCycleTool — alt+drag clone', () => {
   });
 
   it('plain drag (no alt cycle) still calls through to pass — no clone', () => {
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a] },
     }));

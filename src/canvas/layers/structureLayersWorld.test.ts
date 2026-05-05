@@ -6,7 +6,7 @@ import type { GetUi } from './worldLayerData';
 function makeStructure(over: Partial<Structure> = {}): Structure {
   return {
     id: 's1',
-    x: 0, y: 0, width: 4, height: 4,
+    x: 0, y: 0, width: 4, length: 4,
     color: '#888',
     zIndex: 0,
     label: '',
@@ -70,7 +70,7 @@ describe('createStructureLayers (world)', () => {
 
   it('structure-bodies draws fillRect at world coords (no scale baked in)', () => {
     const ctx = makeCtx();
-    const s = makeStructure({ x: 3, y: 4, width: 2, height: 2 });
+    const s = makeStructure({ x: 3, y: 4, width: 2, length: 2 });
     const layer = createStructureLayers(() => [s], () => baseUi).find((l) => l.id === 'structure-bodies')!;
     layer.draw(ctx, {}, view);
     // fillRect should be called with raw world coords; transform is applied
@@ -80,7 +80,7 @@ describe('createStructureLayers (world)', () => {
 
   it('structure-bodies sets stroke width inversely scaled (1px screen → 1/scale world)', () => {
     const ctx = makeCtx();
-    const s = makeStructure({ x: 0, y: 0, width: 1, height: 1 });
+    const s = makeStructure({ x: 0, y: 0, width: 1, length: 1 });
     const layer = createStructureLayers(() => [s], () => baseUi).find((l) => l.id === 'structure-bodies')!;
     layer.draw(ctx, {}, { x: 0, y: 0, scale: 10 });
     expect(ctx.lineWidth).toBeCloseTo(0.1);

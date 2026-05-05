@@ -39,13 +39,13 @@ function pointInEllipse(
 }
 
 function getHandleScreenPositions(
-  obj: { x: number; y: number; width: number; height: number },
+  obj: { x: number; y: number; width: number; length: number },
   view: ViewTransform,
 ) {
   const sx = view.panX + obj.x * view.zoom;
   const sy = view.panY + obj.y * view.zoom;
   const sw = obj.width * view.zoom;
-  const sh = obj.height * view.zoom;
+  const sh = obj.length * view.zoom;
   return [
     { pos: 'nw' as const, cx: sx, cy: sy },
     { pos: 'n' as const, cx: sx + sw / 2, cy: sy },
@@ -123,7 +123,7 @@ export function hitTestPlantings(
     // Single-arrangement container with one plant fills the container
     const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
     const half = isSingleFill
-      ? Math.min(parent.width, parent.height) / 2
+      ? Math.min(parent.width, parent.length) / 2
       : (cultivar?.footprintFt ?? 0.5) / 2;
     const isCircle = isSingleFill && 'shape' in parent && parent.shape === 'circle';
 
@@ -153,8 +153,8 @@ export function hitTestObjects(
     for (const s of sorted) {
       const hit =
         s.shape === 'circle'
-          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
-          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.length)
+          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.length);
       if (hit) {
         return { id: s.id, layer: 'structures' };
       }
@@ -163,7 +163,7 @@ export function hitTestObjects(
   if (activeLayer === 'zones') {
     const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
     for (const z of sorted) {
-      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
+      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.length)) {
         return { id: z.id, layer: 'zones' };
       }
     }
@@ -189,7 +189,7 @@ export function hitTestAllLayers(
   if (!locked.zones) {
     const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
     for (const z of sorted) {
-      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
+      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.length)) {
         return { id: z.id, layer: 'zones' };
       }
     }
@@ -200,8 +200,8 @@ export function hitTestAllLayers(
     for (const s of sorted) {
       const hit =
         s.shape === 'circle'
-          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
-          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.length)
+          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.length);
       if (hit) return { id: s.id, layer: 'structures' };
     }
   }
@@ -250,15 +250,15 @@ export function hitTestArea(
   if (!locked.structures) {
     for (const s of structures) {
       const hit = s.shape === 'circle'
-        ? ellipseOverlapsRect(s.x, s.y, s.width, s.height, rect.x, rect.y, rect.width, rect.height)
-        : rectsOverlap(s.x, s.y, s.width, s.height, rect.x, rect.y, rect.width, rect.height);
+        ? ellipseOverlapsRect(s.x, s.y, s.width, s.length, rect.x, rect.y, rect.width, rect.height)
+        : rectsOverlap(s.x, s.y, s.width, s.length, rect.x, rect.y, rect.width, rect.height);
       if (hit) results.push({ id: s.id, layer: 'structures' });
     }
   }
 
   if (!locked.zones) {
     for (const z of zones) {
-      if (rectsOverlap(z.x, z.y, z.width, z.height, rect.x, rect.y, rect.width, rect.height)) {
+      if (rectsOverlap(z.x, z.y, z.width, z.length, rect.x, rect.y, rect.width, rect.height)) {
         results.push({ id: z.id, layer: 'zones' });
       }
     }
@@ -314,7 +314,7 @@ export function hitTestStack(
       const cultivar = getCultivar(p.cultivarId);
       const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
       const half = isSingleFill
-        ? Math.min(parent.width, parent.height) / 2
+        ? Math.min(parent.width, parent.length) / 2
         : (cultivar?.footprintFt ?? 0.5) / 2;
       const isCircle = isSingleFill && 'shape' in parent && parent.shape === 'circle';
       const { x: cx, y: cy } = plantingWorldPose({ structures, zones }, p);
@@ -330,7 +330,7 @@ export function hitTestStack(
   if (!locked.zones) {
     const sorted = [...zones].sort((a, b) => b.zIndex - a.zIndex);
     for (const z of sorted) {
-      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.height)) {
+      if (pointInRect(worldX, worldY, z.x, z.y, z.width, z.length)) {
         out.push({ id: z.id, layer: 'zones' });
       }
     }
@@ -340,8 +340,8 @@ export function hitTestStack(
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
       const hit = s.shape === 'circle'
-        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.height)
-        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.height);
+        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.length)
+        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.length);
       if (hit) out.push({ id: s.id, layer: 'structures' });
     }
   }

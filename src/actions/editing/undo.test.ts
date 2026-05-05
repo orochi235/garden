@@ -14,7 +14,7 @@ describe('undoAction', () => {
   });
 
   it('undo reverts last change', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     expect(useGardenStore.getState().garden.structures).toHaveLength(1);
     undoAction.execute(ctx);
     expect(useGardenStore.getState().garden.structures).toHaveLength(0);

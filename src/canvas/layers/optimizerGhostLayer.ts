@@ -8,7 +8,7 @@ import { getCultivar } from '../../model/cultivars';
  * Only renders when `uiStore.optimizerResult` is non-null.
  */
 export function createOptimizerGhostLayer(
-  getStructures: () => { id: string; x: number; y: number; width: number; height: number }[],
+  getStructures: () => { id: string; x: number; y: number; width: number; length: number }[],
   getOptimizerState: () => { result: OptimizationResult | null; selectedCandidate: number },
 ): RenderLayer<unknown> {
   return {

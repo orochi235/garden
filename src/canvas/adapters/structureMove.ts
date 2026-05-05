@@ -2,7 +2,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { Structure } from '../../model/types';
 import type { MoveAdapter } from '@orochi235/weasel';
 
-export interface StructurePose { x: number; y: number; widthFt: number; heightFt: number }
+export interface StructurePose { x: number; y: number; widthFt: number; lengthFt: number }
 
 export type StructureMoveAdapter = MoveAdapter<Structure, StructurePose> & {
   insertObject(s: Structure): void;
@@ -23,7 +23,7 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
     getPose(id) {
       const s = getStructure(id);
       if (!s) throw new Error(`structure not found: ${id}`);
-      return { x: s.x, y: s.y, widthFt: s.width, heightFt: s.height };
+      return { x: s.x, y: s.y, widthFt: s.width, lengthFt: s.length };
     },
     getParent: (id) => getStructure(id)?.parentId ?? null,
     setPose(id, pose) {

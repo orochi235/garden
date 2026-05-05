@@ -77,10 +77,10 @@ function GardenCanvasNewPrototype() {
     if (didFitRef.current) return;
     if (width === 0 || height === 0) return;
     didFitRef.current = true;
-    const fit = computeFitView(width, height, garden.widthFt, garden.heightFt);
+    const fit = computeFitView(width, height, garden.widthFt, garden.lengthFt);
     useUiStore.getState().setZoom(fit.zoom);
     useUiStore.getState().setPan(fit.panX, fit.panY);
-  }, [width, height, garden.widthFt, garden.heightFt]);
+  }, [width, height, garden.widthFt, garden.lengthFt]);
 
   const gridCellSizeFt = useGardenStore((s) => s.garden.gridCellSizeFt);
 
@@ -143,7 +143,7 @@ function GardenCanvasNewPrototype() {
       spacing: gridCellSizeFt,
       bounds: () => {
         const g = useGardenStore.getState().garden;
-        return { x: 0, y: 0, width: g.widthFt, height: g.heightFt };
+        return { x: 0, y: 0, width: g.widthFt, height: g.lengthFt };
       },
       style: {
         line: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.18)' }, width: 1 },
@@ -171,14 +171,14 @@ function GardenCanvasNewPrototype() {
     }
     const margin = 40;
     const sx = (width - margin * 2) / Math.max(1, garden.widthFt);
-    const sy = (height - margin * 2) / Math.max(1, garden.heightFt);
+    const sy = (height - margin * 2) / Math.max(1, garden.lengthFt);
     const scale = Math.min(sx, sy);
     const usedW = garden.widthFt * scale;
-    const usedH = garden.heightFt * scale;
+    const usedH = garden.lengthFt * scale;
     const offX = (width - usedW) / 2;
     const offY = (height - usedH) / 2;
     return { x: -offX / scale, y: -offY / scale, scale };
-  }, [width, height, garden.widthFt, garden.heightFt, zoom, panX, panY]);
+  }, [width, height, garden.widthFt, garden.lengthFt, zoom, panX, panY]);
 
   const handleViewChange = (next: View) => {
     const ui = useUiStore.getState();

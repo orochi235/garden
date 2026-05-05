@@ -14,8 +14,8 @@ describe('cycleSelection actions', () => {
   });
 
   it('Tab selects first object when nothing selected', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, length: 2 });
     useUiStore.getState().setActiveLayer('structures');
     cycleSelectionNextAction.execute(ctx);
     const ids = useUiStore.getState().selectedIds;
@@ -24,8 +24,8 @@ describe('cycleSelection actions', () => {
   });
 
   it('Tab advances to next object', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, length: 2 });
     useUiStore.getState().setActiveLayer('structures');
     const structures = useGardenStore.getState().garden.structures;
     useUiStore.getState().select(structures[0].id);
@@ -34,8 +34,8 @@ describe('cycleSelection actions', () => {
   });
 
   it('Shift+Tab goes to previous object', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, length: 2 });
     useUiStore.getState().setActiveLayer('structures');
     const structures = useGardenStore.getState().garden.structures;
     useUiStore.getState().select(structures[0].id);
@@ -44,8 +44,8 @@ describe('cycleSelection actions', () => {
   });
 
   it('wraps around', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, length: 2 });
     useUiStore.getState().setActiveLayer('structures');
     const structures = useGardenStore.getState().garden.structures;
     useUiStore.getState().select(structures[1].id);

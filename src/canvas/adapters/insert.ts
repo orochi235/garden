@@ -31,7 +31,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
           x: b.x,
           y: b.y,
           width: b.width,
-          height: b.height,
+          length: b.height, // weasel InsertAdapter passes `height`; map to our `length`
         });
       }
       if (tool.category === 'zones') {
@@ -39,7 +39,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
           x: b.x,
           y: b.y,
           width: b.width,
-          height: b.height,
+          length: b.height, // weasel InsertAdapter passes `height`; map to our `length`
           color: tool.color,
           pattern: tool.pattern ?? null,
         });
@@ -73,7 +73,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
               x: s.x + offset.dx,
               y: s.y + offset.dy,
               width: s.width,
-              height: s.height,
+              length: s.length,
               shape: s.shape,
               groupId: s.groupId ?? undefined,
             }),
@@ -85,7 +85,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
               x: z.x + offset.dx,
               y: z.y + offset.dy,
               width: z.width,
-              height: z.height,
+              length: z.length,
               color: z.color,
               pattern: z.pattern,
             }),
@@ -97,10 +97,10 @@ export function createInsertAdapter(): GardenInsertAdapter {
             const { garden } = useGardenStore.getState();
             const container =
               garden.structures.find(
-                (s) => worldX >= s.x && worldX <= s.x + s.width && worldY >= s.y && worldY <= s.y + s.height,
+                (s) => worldX >= s.x && worldX <= s.x + s.width && worldY >= s.y && worldY <= s.y + s.length,
               ) ??
               garden.zones.find(
-                (z) => worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.height,
+                (z) => worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.length,
               );
             if (!container) continue; // silent drop
             out.push(

@@ -49,7 +49,7 @@ export function createSelectionOutlineLayer(
       const zones = getZones();
       const structures = getStructures();
 
-      const parentMap = new Map<string, { x: number; y: number; width: number; height: number; shape?: string }>();
+      const parentMap = new Map<string, { x: number; y: number; width: number; length: number; shape?: string }>();
       for (const z of zones) parentMap.set(z.id, z);
       for (const s of structures) {
         if (s.container) parentMap.set(s.id, s);
@@ -73,7 +73,7 @@ export function createSelectionOutlineLayer(
         ctx.setLineDash([]);
       }
 
-      const allObjects: Array<{ id: string; x: number; y: number; width: number; height: number; label?: string; shape?: string }> = [...structures, ...zones];
+      const allObjects: Array<{ id: string; x: number; y: number; width: number; length: number; label?: string; shape?: string }> = [...structures, ...zones];
       const selected = allObjects.filter((obj) => selectedIds.includes(obj.id));
 
       for (const obj of selected) {
@@ -85,16 +85,16 @@ export function createSelectionOutlineLayer(
         ctx.setLineDash([px(view, 6), px(view, 3)]);
         if (isCircle) {
           ctx.beginPath();
-          ctx.ellipse(obj.x + obj.width / 2, obj.y + obj.height / 2, obj.width / 2 + inset, obj.height / 2 + inset, 0, 0, Math.PI * 2);
+          ctx.ellipse(obj.x + obj.width / 2, obj.y + obj.length / 2, obj.width / 2 + inset, obj.length / 2 + inset, 0, 0, Math.PI * 2);
           ctx.stroke();
         } else {
-          ctx.strokeRect(obj.x - inset, obj.y - inset, obj.width + inset * 2, obj.height + inset * 2);
+          ctx.strokeRect(obj.x - inset, obj.y - inset, obj.width + inset * 2, obj.length + inset * 2);
         }
         ctx.setLineDash([]);
 
         if (obj.label) {
           const fontPx = (labelFontSize ?? 10) / Math.max(0.0001, view.scale);
-          renderLabel(ctx, obj.label, obj.x + obj.width / 2, obj.y + obj.height + px(view, 8), {
+          renderLabel(ctx, obj.label, obj.x + obj.width / 2, obj.y + obj.length + px(view, 8), {
             fontSize: fontPx,
             padX: px(view, 4),
             padY: px(view, 1),
@@ -137,7 +137,7 @@ export function createGroupOutlineLayer(
           if (m.x < minX) minX = m.x;
           if (m.y < minY) minY = m.y;
           if (m.x + m.width > maxX) maxX = m.x + m.width;
-          if (m.y + m.height > maxY) maxY = m.y + m.height;
+          if (m.y + m.length > maxY) maxY = m.y + m.length;
         }
         const inset = px(view, 4);
         ctx.strokeStyle = 'rgba(91, 164, 207, 0.55)';
@@ -167,7 +167,7 @@ export function createSelectionHandlesLayer(
       const ui = getUi();
       if (ui.selectedIds.length === 0) return;
 
-      const allObjects: Array<{ id: string; x: number; y: number; width: number; height: number }> =
+      const allObjects: Array<{ id: string; x: number; y: number; width: number; length: number }> =
         [...getStructures(), ...getZones()];
       const selected = allObjects.filter((obj) => ui.selectedIds.includes(obj.id));
 
@@ -180,7 +180,7 @@ export function createSelectionHandlesLayer(
         const sx = (obj.x - view.x) * view.scale;
         const sy = (obj.y - view.y) * view.scale;
         const sw = obj.width * view.scale;
-        const sh = obj.height * view.scale;
+        const sh = obj.length * view.scale;
 
         const points: [number, number][] = [
           [sx, sy],
@@ -273,8 +273,8 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
 
       const structures = getters.getStructures?.() ?? [];
       const zones = getters.getZones?.() ?? [];
-      for (const s of structures) drawRectHandles(s.x, s.y, s.width, s.height);
-      for (const z of zones) drawRectHandles(z.x, z.y, z.width, z.height);
+      for (const s of structures) drawRectHandles(s.x, s.y, s.width, s.length);
+      for (const z of zones) drawRectHandles(z.x, z.y, z.width, z.length);
 
       const plantings = getters.getPlantings?.() ?? [];
       if (plantings.length > 0) {

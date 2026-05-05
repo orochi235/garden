@@ -31,14 +31,14 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
           ctx.fillStyle = z.color;
-          ctx.fillRect(z.x, z.y, z.width, z.height);
+          ctx.fillRect(z.x, z.y, z.width, z.length);
 
           ctx.strokeStyle = '#4A7C59';
           ctx.lineWidth = px(view, 1.5);
           // setLineDash takes pixel-space values, but ctx is world-scaled, so
           // dash sizes need world-unit scaling too.
           ctx.setLineDash([px(view, 6), px(view, 3)]);
-          ctx.strokeRect(z.x, z.y, z.width, z.height);
+          ctx.strokeRect(z.x, z.y, z.width, z.length);
           ctx.setLineDash([]);
         }
       },
@@ -50,7 +50,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
         for (const z of sorted) {
           if (!z.pattern) continue;
           renderPatternOverlay(ctx, z.pattern as PatternId, {
-            x: z.x, y: z.y, w: z.width, h: z.height, shape: 'rectangle',
+            x: z.x, y: z.y, w: z.width, h: z.length, shape: 'rectangle',
           });
         }
       },
@@ -68,7 +68,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
           ctx.strokeStyle = '#FFD700';
           ctx.lineWidth = px(view, 2);
           ctx.setLineDash([]);
-          ctx.strokeRect(z.x, z.y, z.width, z.height);
+          ctx.strokeRect(z.x, z.y, z.width, z.length);
           ctx.restore();
         }
       },
@@ -82,7 +82,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
         const fontPx = ui.labelFontSize / Math.max(0.0001, view.scale);
         for (const z of sorted) {
           if (!z.label) continue;
-          renderLabel(ctx, z.label, z.x + z.width / 2, z.y + z.height + px(view, 4), {
+          renderLabel(ctx, z.label, z.x + z.width / 2, z.y + z.length + px(view, 4), {
             fontSize: fontPx,
             padX: px(view, 4),
             padY: px(view, 1),

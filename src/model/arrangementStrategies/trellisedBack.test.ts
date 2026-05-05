@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeTrellisedBack } from './trellisedBack';
 import type { ParentBounds } from '../arrangement';
 
-const rect: ParentBounds = { x: 0, y: 0, width: 6, height: 4, shape: 'rectangle' };
+const rect: ParentBounds = { x: 0, y: 0, width: 6, length: 4, shape: 'rectangle' };
 
 describe('computeTrellisedBack', () => {
   it('places trellis slots on the configured edge', () => {
@@ -22,7 +22,7 @@ describe('computeTrellisedBack', () => {
       rect,
       [],
     );
-    const trellis = slots.filter((s) => s.y > rect.y + rect.height - 1);
+    const trellis = slots.filter((s) => s.y > rect.y + rect.length - 1);
     expect(trellis.length).toBeGreaterThan(0);
   });
 });

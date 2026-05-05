@@ -88,7 +88,7 @@ export function computeContainerOverlay(
   // Add grid lines for rows and grid arrangements
   if (arrangement.type === 'rows') {
     const m = arrangement.marginFt;
-    for (let y = bounds.y + m + arrangement.spacingFt / 2; y <= bounds.y + bounds.height - m; y += arrangement.spacingFt) {
+    for (let y = bounds.y + m + arrangement.spacingFt / 2; y <= bounds.y + bounds.length - m; y += arrangement.spacingFt) {
       items.push({
         type: 'grid-line',
         x1: bounds.x + m,
@@ -105,10 +105,10 @@ export function computeContainerOverlay(
         x1: x,
         y1: bounds.y + m,
         x2: x,
-        y2: bounds.y + bounds.height - m,
+        y2: bounds.y + bounds.length - m,
       });
     }
-    for (let y = bounds.y + m + arrangement.spacingYFt / 2; y <= bounds.y + bounds.height - m; y += arrangement.spacingYFt) {
+    for (let y = bounds.y + m + arrangement.spacingYFt / 2; y <= bounds.y + bounds.length - m; y += arrangement.spacingYFt) {
       items.push({
         type: 'grid-line',
         x1: bounds.x + m,

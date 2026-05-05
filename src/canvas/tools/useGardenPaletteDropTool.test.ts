@@ -54,7 +54,7 @@ const structureEntry: PaletteEntry = {
   category: 'structures',
   type: 'raised-bed',
   defaultWidth: 4,
-  defaultHeight: 4,
+  defaultLength: 4,
   color: '#8b5a2b',
 };
 
@@ -64,7 +64,7 @@ const zoneEntry: PaletteEntry = {
   category: 'zones',
   type: 'soil',
   defaultWidth: 4,
-  defaultHeight: 4,
+  defaultLength: 4,
   color: '#5a3d2b',
 };
 

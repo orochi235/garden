@@ -67,7 +67,7 @@ function buildSeedablePaletteEntries(
       varietyLabel: c.variety ?? c.name,
       type: 'planting',
       defaultWidth: 0,
-      defaultHeight: 0,
+      defaultLength: 0,
       color: c.color,
     });
   }

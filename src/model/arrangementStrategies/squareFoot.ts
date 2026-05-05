@@ -14,7 +14,7 @@ export function computeSquareFoot(
   const x0 = bounds.x + m;
   const y0 = bounds.y + m;
   const x1 = bounds.x + bounds.width - m;
-  const y1 = bounds.y + bounds.height - m;
+  const y1 = bounds.y + bounds.length - m;
 
   for (let cx = x0 + cell / 2; cx <= x1; cx += cell) {
     for (let cy = y0 + cell / 2; cy <= y1; cy += cell) {
@@ -29,9 +29,9 @@ export function computeSquareFoot(
 function insideBounds(px: number, py: number, b: ParentBounds, margin: number): boolean {
   if (b.shape === 'circle') {
     const cx = b.x + b.width / 2;
-    const cy = b.y + b.height / 2;
+    const cy = b.y + b.length / 2;
     const rx = b.width / 2 - margin;
-    const ry = b.height / 2 - margin;
+    const ry = b.length / 2 - margin;
     if (rx <= 0 || ry <= 0) return false;
     const dx = (px - cx) / rx;
     const dy = (py - cy) / ry;
@@ -41,6 +41,6 @@ function insideBounds(px: number, py: number, b: ParentBounds, margin: number): 
     px >= b.x + margin &&
     px <= b.x + b.width - margin &&
     py >= b.y + margin &&
-    py <= b.y + b.height - margin
+    py <= b.y + b.length - margin
   );
 }

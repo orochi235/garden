@@ -19,7 +19,7 @@ describe('rotate actions', () => {
   });
 
   it('rotates a selected structure (swaps width/height after animation)', async () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 2 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 
@@ -32,11 +32,11 @@ describe('rotate actions', () => {
 
     const s = useGardenStore.getState().garden.structures[0];
     expect(s.width).toBe(2);
-    expect(s.height).toBe(4);
+    expect(s.length).toBe(4);
   });
 
   it('does not rotate circles', () => {
-    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 0, y: 0, width: 2, length: 2 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 
@@ -44,6 +44,6 @@ describe('rotate actions', () => {
 
     const s = useGardenStore.getState().garden.structures[0];
     expect(s.width).toBe(2);
-    expect(s.height).toBe(2);
+    expect(s.length).toBe(2);
   });
 });

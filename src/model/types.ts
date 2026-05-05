@@ -227,7 +227,7 @@ export function getPlantableBounds(s: { x: number; y: number; width: number; len
     x: s.x + wall,
     y: s.y + wall,
     width: Math.max(0, s.width - inset),
-    height: Math.max(0, s.length - inset),
+    length: Math.max(0, s.length - inset),
     shape: (s.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
   };
 }

@@ -68,7 +68,7 @@ function drawSingleBody(
   const x = s.x;
   const y = s.y;
   const w = s.width;
-  const h = s.height;
+  const h = s.length;
 
   ctx.fillStyle = s.color;
   ctx.strokeStyle = '#333333';
@@ -130,10 +130,10 @@ function drawGroupBody(
   for (const s of members) {
     if (s.shape === 'circle') {
       const cx = s.x + s.width / 2;
-      const cy = s.y + s.height / 2;
-      compoundPath.ellipse(cx, cy, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
+      const cy = s.y + s.length / 2;
+      compoundPath.ellipse(cx, cy, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
     } else {
-      compoundPath.rect(s.x, s.y, s.width, s.height);
+      compoundPath.rect(s.x, s.y, s.width, s.length);
     }
   }
 
@@ -187,8 +187,8 @@ export function createStructureLayers(
           for (const s of members) {
             if (s.type === 'pot' || s.type === 'felt-planter') {
               const cx = s.x + s.width / 2;
-              const cy = s.y + s.height / 2;
-              const r = Math.min(s.width, s.height) / 2;
+              const cy = s.y + s.length / 2;
+              const r = Math.min(s.width, s.length) / 2;
               ctx.fillStyle = s.color;
               ctx.beginPath();
               ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
@@ -207,9 +207,9 @@ export function createStructureLayers(
               ctx.stroke();
             } else if (s.type === 'raised-bed') {
               ctx.fillStyle = s.color;
-              ctx.fillRect(s.x, s.y, s.width, s.height);
+              ctx.fillRect(s.x, s.y, s.width, s.length);
               ctx.strokeStyle = '#333333';
-              ctx.strokeRect(s.x, s.y, s.width, s.height);
+              ctx.strokeRect(s.x, s.y, s.width, s.length);
             }
           }
         }
@@ -235,7 +235,7 @@ export function createStructureLayers(
           for (const s of members) {
             if (!s.surface) continue;
             renderPatternOverlay(ctx, 'hatch', {
-              x: s.x, y: s.y, w: s.width, h: s.height,
+              x: s.x, y: s.y, w: s.width, h: s.length,
               shape: s.shape === 'circle' ? 'circle' : 'rectangle',
             });
           }
@@ -252,8 +252,8 @@ export function createStructureLayers(
             if (s.type !== 'pot' && s.type !== 'felt-planter' && s.type !== 'raised-bed') continue;
             if (s.type === 'pot' || s.type === 'felt-planter') {
               const cx = s.x + s.width / 2;
-              const cy = s.y + s.height / 2;
-              const r = Math.min(s.width, s.height) / 2;
+              const cy = s.y + s.length / 2;
+              const r = Math.min(s.width, s.length) / 2;
               const rimWidth = Math.min(r, Math.max(pxToWorld(view, 1.5), s.wallThicknessFt));
               const innerD = (r - rimWidth) * 2;
               if (innerD > 4) {
@@ -262,9 +262,9 @@ export function createStructureLayers(
                 }, { params: { color: '#00FF00' } });
               }
             } else {
-              const wallWidth = Math.min(Math.min(s.width, s.height) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
+              const wallWidth = Math.min(Math.min(s.width, s.length) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
               const iw = s.width - wallWidth * 2;
-              const ih = s.height - wallWidth * 2;
+              const ih = s.length - wallWidth * 2;
               if (iw > 4 && ih > 4) {
                 renderPatternOverlay(ctx, 'hatch', {
                   x: s.x + wallWidth, y: s.y + wallWidth, w: iw, h: ih, shape: 'rectangle',
@@ -300,12 +300,12 @@ export function createStructureLayers(
             if (!s) continue;
             if (s.shape === 'circle') {
               ctx.beginPath();
-              ctx.ellipse(s.x + s.width / 2, s.y + s.height / 2, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
+              ctx.ellipse(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
               ctx.fill();
               ctx.stroke();
             } else {
-              ctx.fillRect(s.x, s.y, s.width, s.height);
-              ctx.strokeRect(s.x, s.y, s.width, s.height);
+              ctx.fillRect(s.x, s.y, s.width, s.length);
+              ctx.strokeRect(s.x, s.y, s.width, s.length);
             }
           }
           ctx.restore();
@@ -337,10 +337,10 @@ export function createStructureLayers(
             ctx.globalAlpha = op;
             if (s.shape === 'circle') {
               ctx.beginPath();
-              ctx.ellipse(s.x + s.width / 2, s.y + s.height / 2, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
+              ctx.ellipse(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
               ctx.stroke();
             } else {
-              ctx.strokeRect(s.x, s.y, s.width, s.height);
+              ctx.strokeRect(s.x, s.y, s.width, s.length);
             }
           } else {
             // Group highlight: take max opacity over members so the compound
@@ -354,9 +354,9 @@ export function createStructureLayers(
             const compound = new Path2D();
             for (const s of item.members) {
               if (s.shape === 'circle') {
-                compound.ellipse(s.x + s.width / 2, s.y + s.height / 2, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
+                compound.ellipse(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
               } else {
-                compound.rect(s.x, s.y, s.width, s.height);
+                compound.rect(s.x, s.y, s.width, s.length);
               }
             }
             ctx.save();
@@ -395,7 +395,7 @@ export function createStructureLayers(
           for (const s of members) {
             if (!s.label) continue;
             const cx = s.x + s.width / 2;
-            const ly = s.y + s.height + pxToWorld(view, 4);
+            const ly = s.y + s.length + pxToWorld(view, 4);
             const tw = ctx.measureText(s.label).width + padX * 2;
             const th = fontPx + padY * 2;
             entries.push({ label: s.label, x: cx - tw / 2, y: ly - padY, w: tw, h: th });

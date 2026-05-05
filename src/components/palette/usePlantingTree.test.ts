@@ -11,7 +11,7 @@ const makeEntry = (id: string, speciesId: string, speciesName: string, varietyLa
   varietyLabel,
   type: 'planting',
   defaultWidth: 0,
-  defaultHeight: 0,
+  defaultLength: 0,
   color,
 });
 

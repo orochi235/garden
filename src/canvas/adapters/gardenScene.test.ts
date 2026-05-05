@@ -10,9 +10,9 @@ describe('gardenSceneAdapter', () => {
   });
 
   function setup() {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, height: 4 });
-    useGardenStore.getState().addZone({ x: 30, y: 30, width: 6, height: 6 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, length: 4 });
+    useGardenStore.getState().addZone({ x: 30, y: 30, width: 6, length: 6 });
     const [bed, bed2] = useGardenStore.getState().garden.structures;
     const [zone] = useGardenStore.getState().garden.zones;
     useGardenStore.getState().addPlanting({ parentId: bed.id, x: 1, y: 2, cultivarId: 'tomato' });
@@ -164,12 +164,12 @@ describe('gardenSceneAdapter', () => {
   it('getBounds returns world AABB for each kind', () => {
     const { bed, zone, planting } = setup();
     const a = createGardenSceneAdapter();
-    expect(a.getBounds(bed.id)).toEqual({ x: bed.x, y: bed.y, width: bed.width, height: bed.height });
-    expect(a.getBounds(zone.id)).toEqual({ x: zone.x, y: zone.y, width: zone.width, height: zone.height });
+    expect(a.getBounds(bed.id)).toEqual({ x: bed.x, y: bed.y, width: bed.width, length: bed.length });
+    expect(a.getBounds(zone.id)).toEqual({ x: zone.x, y: zone.y, width: zone.width, length: zone.length });
     const pb = a.getBounds(planting.id);
     expect(pb).not.toBeNull();
     expect(pb!.width).toBeGreaterThan(0);
-    expect(pb!.height).toBeGreaterThan(0);
+    expect(pb!.length).toBeGreaterThan(0);
   });
 
   it('hitTestArea returns ids whose bounds intersect the rect', () => {

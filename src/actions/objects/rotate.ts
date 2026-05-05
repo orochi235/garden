@@ -18,15 +18,15 @@ function rotate(ccw: boolean): void {
         : (structure.rotation + 90) % 360;
       animateRotation(
         id, 'structures',
-        structure.width, structure.height,
-        structure.height, structure.width,
+        structure.width, structure.length,
+        structure.length, structure.width,
         newRotation,
       );
       continue;
     }
     const zone = garden.zones.find((z) => z.id === id);
     if (zone) {
-      animateRotation(id, 'zones', zone.width, zone.height, zone.height, zone.width, 0);
+      animateRotation(id, 'zones', zone.width, zone.length, zone.length, zone.width, 0);
     }
   }
 }

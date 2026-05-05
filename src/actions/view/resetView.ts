@@ -19,7 +19,7 @@ export function resetCurrentCanvasView(): void {
     ui.bumpSeedStartingViewResetTick();
     return;
   }
-  const fit = computeFitView(el.clientWidth, el.clientHeight, garden.widthFt, garden.heightFt);
+  const fit = computeFitView(el.clientWidth, el.clientHeight, garden.widthFt, garden.lengthFt);
   ui.setZoom(fit.zoom);
   ui.setPan(fit.panX, fit.panY);
 }

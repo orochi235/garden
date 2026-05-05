@@ -10,7 +10,7 @@ import { roundToCell } from '@orochi235/weasel';
  * Otherwise, use the raw drop position relative to the parent.
  */
 export function getPlantingPosition(
-  parent: { x: number; y: number; width: number; height: number; arrangement: Arrangement | null; shape?: string; wallThicknessFt?: number },
+  parent: { x: number; y: number; width: number; length: number; arrangement: Arrangement | null; shape?: string; wallThicknessFt?: number },
   existing: Planting[],
   worldX: number,
   worldY: number,

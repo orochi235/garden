@@ -11,7 +11,7 @@ function makeGarden(): Garden {
     structures: [
       {
         id: 'pot-1', type: 'pot', shape: 'circle',
-        x: 10, y: 10, width: 4, height: 4,
+        x: 10, y: 10, width: 4, length: 4,
         color: '#888', zIndex: 0, label: '',
         surface: null, fill: null, wallThicknessFt: 0.25,
         groupId: null, container: true,
@@ -19,7 +19,7 @@ function makeGarden(): Garden {
       },
       {
         id: 'bed-1', type: 'raised-bed', shape: 'rectangle',
-        x: 20, y: 20, width: 6, height: 4,
+        x: 20, y: 20, width: 6, length: 4,
         color: '#888', zIndex: 0, label: '',
         surface: null, fill: null, wallThicknessFt: 0.5,
         groupId: null, container: true,

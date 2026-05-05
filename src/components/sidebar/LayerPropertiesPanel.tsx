@@ -97,9 +97,9 @@ export function LayerPropertiesPanel() {
             type="number"
             step="0.1"
             min="1"
-            value={parseFloat(feetToDisplay(garden.heightFt, unit).toFixed(2))}
+            value={parseFloat(feetToDisplay(garden.lengthFt, unit).toFixed(2))}
             onChange={(e) =>
-              updateGarden({ heightFt: displayToFeet(parseFloat(e.target.value) || 0, unit) })
+              updateGarden({ lengthFt: displayToFeet(parseFloat(e.target.value) || 0, unit) })
             }
           />
 

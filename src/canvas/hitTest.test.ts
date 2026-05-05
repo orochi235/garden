@@ -16,7 +16,7 @@ describe('hitTestPlantings', () => {
       x: 0,
       y: 0,
       width: 4,
-      height: 4,
+      length: 4,
       rotation: 0,
       color: '#8B6914',
       label: '',
@@ -86,7 +86,7 @@ describe('hitTestPlantings', () => {
   it('hits planting in a zone parent', () => {
     const zoneParent: Zone[] = [
       {
-        id: 'z1', x: 5, y: 5, width: 4, height: 4, color: '#fff',
+        id: 'z1', x: 5, y: 5, width: 4, length: 4, color: '#fff',
         label: '', zIndex: 0, parentId: null, soilType: null,
         sunExposure: null, arrangement: null, pattern: null,
       },
@@ -110,7 +110,7 @@ describe('hitTestObjects', () => {
       x: 2,
       y: 2,
       width: 4,
-      height: 4,
+      length: 4,
       rotation: 0,
       color: '#8B6914',
       label: '',
@@ -132,7 +132,7 @@ describe('hitTestObjects', () => {
       x: 10,
       y: 10,
       width: 3,
-      height: 3,
+      length: 3,
       color: '#7FB06944',
       label: '',
       zIndex: 0,
@@ -159,7 +159,7 @@ describe('hitTestObjects', () => {
   it('returns topmost by zIndex', () => {
     const two: Structure[] = [
       { ...structures[0], id: 'bottom', zIndex: 0 },
-      { ...structures[0], id: 'top', zIndex: 1, x: 3, y: 3, width: 4, height: 4 },
+      { ...structures[0], id: 'top', zIndex: 1, x: 3, y: 3, width: 4, length: 4 },
     ];
     expect(hitTestObjects(4, 4, two, [], 'structures')?.id).toBe('top');
   });

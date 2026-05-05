@@ -31,7 +31,7 @@ interface PlantingParent {
   x: number;
   y: number;
   width: number;
-  height: number;
+  length: number;
   shape?: string;
   arrangement: import('../../model/arrangement').Arrangement | null;
   wallThicknessFt?: number;
@@ -77,12 +77,12 @@ function applyContainerClip(ctx: CanvasRenderingContext2D, parent: PlantingParen
   if (parent.shape === 'circle') {
     const rimWidth = Math.max(px(view, 1.5), wall);
     const cx = parent.x + parent.width / 2;
-    const cy = parent.y + parent.height / 2;
-    const r = Math.min(parent.width, parent.height) / 2 - rimWidth;
+    const cy = parent.y + parent.length / 2;
+    const r = Math.min(parent.width, parent.length) / 2 - rimWidth;
     ctx.arc(cx, cy, Math.max(0, r), 0, Math.PI * 2);
   } else {
     const wallWidth = Math.max(px(view, 2), wall);
-    ctx.rect(parent.x + wallWidth, parent.y + wallWidth, parent.width - wallWidth * 2, parent.height - wallWidth * 2);
+    ctx.rect(parent.x + wallWidth, parent.y + wallWidth, parent.width - wallWidth * 2, parent.length - wallWidth * 2);
   }
   ctx.clip();
   return true;
@@ -93,7 +93,7 @@ function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<str
   const footprint = cultivar?.footprintFt ?? 0.5;
   const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
   return isSingleFill
-    ? (Math.min(parent.width, parent.height) / 2) * plantIconScale
+    ? (Math.min(parent.width, parent.length) / 2) * plantIconScale
     : (footprint / 2) * plantIconScale;
 }
 
@@ -388,8 +388,8 @@ export function createPlantingLayers(
           if (s.type === 'pot' || s.type === 'felt-planter') {
             const rimWidth = Math.max(px(view, 1.5), s.wallThicknessFt);
             const cx = s.x + s.width / 2;
-            const cy = s.y + s.height / 2;
-            const r = Math.min(s.width, s.height) / 2 - rimWidth;
+            const cy = s.y + s.length / 2;
+            const r = Math.min(s.width, s.length) / 2 - rimWidth;
             if (r > 0) {
               ctx.beginPath();
               ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
@@ -397,7 +397,7 @@ export function createPlantingLayers(
             }
           } else {
             const wallWidth = Math.max(px(view, 2), s.wallThicknessFt);
-            ctx.strokeRect(s.x + wallWidth, s.y + wallWidth, s.width - wallWidth * 2, s.height - wallWidth * 2);
+            ctx.strokeRect(s.x + wallWidth, s.y + wallWidth, s.width - wallWidth * 2, s.length - wallWidth * 2);
           }
         }
       },

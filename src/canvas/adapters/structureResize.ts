@@ -2,7 +2,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { Structure } from '../../model/types';
 import type { ResizeAdapter } from '@orochi235/weasel';
 
-export interface StructureResizePose { x: number; y: number; width: number; height: number }
+export interface StructureResizePose { x: number; y: number; width: number; length: number }
 
 export function createStructureResizeAdapter(): ResizeAdapter<Structure, StructureResizePose> {
   function getStructure(id: string): Structure | undefined {
@@ -15,14 +15,14 @@ export function createStructureResizeAdapter(): ResizeAdapter<Structure, Structu
     getPose(id) {
       const s = getStructure(id);
       if (!s) throw new Error(`structure not found: ${id}`);
-      return { x: s.x, y: s.y, width: s.width, height: s.height };
+      return { x: s.x, y: s.y, width: s.width, length: s.length };
     },
     setPose(id, pose) {
       useGardenStore.getState().updateStructure(id, {
         x: pose.x,
         y: pose.y,
         width: pose.width,
-        height: pose.height,
+        length: pose.length,
       });
     },
     applyBatch(ops, _label) {

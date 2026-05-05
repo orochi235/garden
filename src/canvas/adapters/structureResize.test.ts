@@ -7,13 +7,13 @@ describe('createStructureResizeAdapter', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
-    useGardenStore.getState().addStructure({ type: 'bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4 });
   });
 
   it('getPose returns dimensions', () => {
     const s = useGardenStore.getState().garden.structures[0];
     const a = createStructureResizeAdapter();
-    expect(a.getPose(s.id)).toEqual({ x: 0, y: 0, width: 4, height: 4 });
+    expect(a.getPose(s.id)).toEqual({ x: 0, y: 0, width: 4, length: 4 });
   });
 
   it('getObject returns the structure', () => {
@@ -30,8 +30,8 @@ describe('createStructureResizeAdapter', () => {
     a.applyBatch!(
       [createTransformOp({
         id: s.id,
-        from: { x: s.x, y: s.y, width: s.width, height: s.height },
-        to: { x: 0, y: 0, width: 8, height: 8 },
+        from: { x: s.x, y: s.y, width: s.width, length: s.length },
+        to: { x: 0, y: 0, width: 8, length: 8 },
       })],
       'Resize',
     );

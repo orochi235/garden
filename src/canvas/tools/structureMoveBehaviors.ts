@@ -36,7 +36,7 @@ function unionDraggedAABB(
     const o = origin.get(id);
     if (!o) continue;
     const w = node.data.width;
-    const h = node.data.height;
+    const h = node.data.length;
     const x = o.x + dx;
     const y = o.y + dy;
     if (x < minX) minX = x;
@@ -85,8 +85,8 @@ export function clampStructureZoneToGardenBounds(
         if (aabb.x + shiftX < 0) shiftX = -aabb.x;
       }
       if (aabb.y < 0) shiftY = -aabb.y;
-      else if (aabb.y + aabb.height > garden.heightFt) {
-        shiftY = garden.heightFt - (aabb.y + aabb.height);
+      else if (aabb.y + aabb.height > garden.lengthFt) {
+        shiftY = garden.lengthFt - (aabb.y + aabb.height);
         if (aabb.y + shiftY < 0) shiftY = -aabb.y;
       }
 
@@ -151,14 +151,14 @@ export function detectStructureClash(
           x: o.x + dx,
           y: o.y + dy,
           width: node.data.width,
-          height: node.data.height,
+          height: node.data.length,
         });
       }
 
       const clashes: string[] = [];
       for (const s of garden.structures) {
         if (draggedSet.has(s.id)) continue;
-        const sRect = { x: s.x, y: s.y, width: s.width, height: s.height };
+        const sRect = { x: s.x, y: s.y, width: s.width, height: s.length };
         for (const dRect of draggedRects) {
           if (aabbIntersect(dRect, sRect)) {
             clashes.push(s.id);

@@ -19,7 +19,7 @@ function makeCtx(): CanvasRenderingContext2D {
 
 function makeZone(over: Partial<Zone> = {}): Zone {
   return {
-    id: 'z1', x: 0, y: 0, width: 10, height: 10,
+    id: 'z1', x: 0, y: 0, width: 10, length: 10,
     color: '#aabbcc', zIndex: 0, label: '', pattern: null, ...over,
   } as Zone;
 }
@@ -45,7 +45,7 @@ describe('createZoneLayers (world)', () => {
 
   it('zone-bodies draws fillRect at raw world coords', () => {
     const ctx = makeCtx();
-    const z = makeZone({ x: 1, y: 2, width: 3, height: 4 });
+    const z = makeZone({ x: 1, y: 2, width: 3, length: 4 });
     const layer = createZoneLayers(() => [z], () => baseUi)[0];
     layer.draw(ctx, {}, view);
     expect(ctx.fillRect).toHaveBeenCalledWith(1, 2, 3, 4);

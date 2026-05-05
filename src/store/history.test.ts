@@ -3,7 +3,7 @@ import { createGarden } from '../model/types';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 
 function makeGarden(name: string) {
-  const g = createGarden({ name, widthFt: 10, heightFt: 10 });
+  const g = createGarden({ name, widthFt: 10, lengthFt: 10 });
   return g;
 }
 

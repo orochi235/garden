@@ -14,10 +14,10 @@ export function ReturnToGarden({ canvasWidth, canvasHeight }: Props) {
   const visible = offscreen && !moving;
 
   const handleClick = () => {
-    const { widthFt, heightFt } = useGardenStore.getState().garden;
+    const { widthFt, lengthFt } = useGardenStore.getState().garden;
     const { zoom, setPan } = useUiStore.getState();
     const gardenW = widthFt * zoom;
-    const gardenH = heightFt * zoom;
+    const gardenH = lengthFt * zoom;
     setPan((canvasWidth - gardenW) / 2, (canvasHeight - gardenH) / 2);
   };
 

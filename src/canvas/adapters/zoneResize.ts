@@ -2,7 +2,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { Zone } from '../../model/types';
 import type { ResizeAdapter } from '@orochi235/weasel';
 
-export interface ZoneResizePose { x: number; y: number; width: number; height: number }
+export interface ZoneResizePose { x: number; y: number; width: number; length: number }
 
 export function createZoneResizeAdapter(): ResizeAdapter<Zone, ZoneResizePose> {
   function getZone(id: string): Zone | undefined {
@@ -15,14 +15,14 @@ export function createZoneResizeAdapter(): ResizeAdapter<Zone, ZoneResizePose> {
     getPose(id) {
       const z = getZone(id);
       if (!z) throw new Error(`zone not found: ${id}`);
-      return { x: z.x, y: z.y, width: z.width, height: z.height };
+      return { x: z.x, y: z.y, width: z.width, length: z.length };
     },
     setPose(id, pose) {
       useGardenStore.getState().updateZone(id, {
         x: pose.x,
         y: pose.y,
         width: pose.width,
-        height: pose.height,
+        length: pose.length,
       });
     },
     applyBatch(ops, _label) {

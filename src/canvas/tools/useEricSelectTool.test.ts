@@ -52,15 +52,15 @@ function pointer(init: Partial<PointerEventInit> = {}): PointerEvent {
 
 describe('useEricSelectTool group expansion', () => {
   beforeEach(() => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, heightFt: 100 }));
+    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     useUiStore.getState().clearSelection();
   });
 
   it('body-hit drag expands a single grouped member to all group siblings', () => {
-    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, height: 4, groupId: 'g1' });
-    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, height: 4, groupId: 'g1' });
-    const c = createStructure({ type: 'bed', x: 20, y: 0, width: 4, height: 4, groupId: 'g1' });
-    const d = createStructure({ type: 'bed', x: 30, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const c = createStructure({ type: 'bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const d = createStructure({ type: 'bed', x: 30, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a, b, c, d] },
     }));
@@ -81,8 +81,8 @@ describe('useEricSelectTool group expansion', () => {
   });
 
   it('body-hit drag on an ungrouped structure leaves drag set unchanged', () => {
-    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, height: 4 });
-    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4 });
+    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a, b] },
     }));
@@ -99,9 +99,9 @@ describe('useEricSelectTool group expansion', () => {
   });
 
   it('expands selection through useUiStore.setSelection when marquee covers a grouped member', () => {
-    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, height: 4, groupId: 'g1' });
-    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, height: 4, groupId: 'g1' });
-    const c = createStructure({ type: 'bed', x: 30, y: 0, width: 4, height: 4 });
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const c = createStructure({ type: 'bed', x: 30, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({
       garden: { ...s.garden, structures: [a, b, c] },
     }));
@@ -126,7 +126,7 @@ describe('useEricSelectTool — forceMarquee (select-area)', () => {
   it('drag started on a structure body produces a marquee, not a move', () => {
     useGardenStore.getState().addStructure({
       type: 'raised-bed',
-      x: 0, y: 0, width: 4, height: 4,
+      x: 0, y: 0, width: 4, length: 4,
     });
     const adapter = createGardenSceneAdapter();
     expect(adapter.hitTest(2, 2)).not.toBeNull();
@@ -146,7 +146,7 @@ describe('useEricSelectTool — forceMarquee (select-area)', () => {
   it('regular select tool (no forceMarquee) still initiates move on body drag', () => {
     useGardenStore.getState().addStructure({
       type: 'raised-bed',
-      x: 0, y: 0, width: 4, height: 4,
+      x: 0, y: 0, width: 4, length: 4,
     });
     const adapter = createGardenSceneAdapter();
 

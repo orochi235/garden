@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeMulti } from './multi';
 import type { ParentBounds } from '../arrangement';
 
-const rect: ParentBounds = { x: 0, y: 0, width: 4, height: 4, shape: 'rectangle' };
+const rect: ParentBounds = { x: 0, y: 0, width: 4, length: 4, shape: 'rectangle' };
 
 describe('computeMulti', () => {
   it('returns no slots when regions are empty', () => {

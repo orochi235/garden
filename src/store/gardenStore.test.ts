@@ -13,7 +13,7 @@ describe('gardenStore', () => {
     const { garden } = useGardenStore.getState();
     expect(garden.name).toBe('My Garden');
     expect(garden.widthFt).toBe(20);
-    expect(garden.heightFt).toBe(20);
+    expect(garden.lengthFt).toBe(20);
     expect(garden.structures).toEqual([]);
     expect(garden.zones).toEqual([]);
     expect(garden.plantings).toEqual([]);
@@ -21,7 +21,7 @@ describe('gardenStore', () => {
 
   it('adds a structure', () => {
     const { addStructure } = useGardenStore.getState();
-    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 8 });
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
     const { garden } = useGardenStore.getState();
     expect(garden.structures).toHaveLength(1);
     expect(garden.structures[0].type).toBe('raised-bed');
@@ -29,7 +29,7 @@ describe('gardenStore', () => {
 
   it('removes a structure', () => {
     const { addStructure } = useGardenStore.getState();
-    addStructure({ type: 'pot', x: 1, y: 1, width: 2, height: 2 });
+    addStructure({ type: 'pot', x: 1, y: 1, width: 2, length: 2 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useGardenStore.getState().removeStructure(id);
     expect(useGardenStore.getState().garden.structures).toHaveLength(0);
@@ -37,7 +37,7 @@ describe('gardenStore', () => {
 
   it('updates a structure', () => {
     const { addStructure } = useGardenStore.getState();
-    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 8 });
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useGardenStore.getState().updateStructure(id, { label: 'Herbs', x: 5 });
     const s = useGardenStore.getState().garden.structures[0];
@@ -48,13 +48,13 @@ describe('gardenStore', () => {
 
   it('adds a zone', () => {
     const { addZone } = useGardenStore.getState();
-    addZone({ x: 0, y: 0, width: 3, height: 3 });
+    addZone({ x: 0, y: 0, width: 3, length: 3 });
     expect(useGardenStore.getState().garden.zones).toHaveLength(1);
   });
 
   it('removes a zone and its plantings', () => {
     const { addZone, addPlanting, removeZone } = useGardenStore.getState();
-    addZone({ x: 0, y: 0, width: 3, height: 3 });
+    addZone({ x: 0, y: 0, width: 3, length: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
     addPlanting({ parentId: zoneId, x: 0.5, y: 0.5, cultivarId: 'tomato' });
     expect(useGardenStore.getState().garden.plantings).toHaveLength(1);
@@ -65,7 +65,7 @@ describe('gardenStore', () => {
 
   it('adds a planting', () => {
     const { addZone, addPlanting } = useGardenStore.getState();
-    addZone({ x: 0, y: 0, width: 3, height: 3 });
+    addZone({ x: 0, y: 0, width: 3, length: 3 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
     addPlanting({ parentId: zoneId, x: 1, y: 1, cultivarId: 'basil' });
     const p = useGardenStore.getState().garden.plantings[0];
@@ -75,29 +75,29 @@ describe('gardenStore', () => {
 
   it('rejects addStructure when it would collide', () => {
     const { addStructure } = useGardenStore.getState();
-    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    addStructure({ type: 'raised-bed', x: 2, y: 2, width: 4, height: 4 });
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    addStructure({ type: 'raised-bed', x: 2, y: 2, width: 4, length: 4 });
     expect(useGardenStore.getState().garden.structures).toHaveLength(1);
   });
 
   it('allows addStructure when no collision', () => {
     const { addStructure } = useGardenStore.getState();
-    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    addStructure({ type: 'raised-bed', x: 5, y: 0, width: 4, height: 4 });
+    addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    addStructure({ type: 'raised-bed', x: 5, y: 0, width: 4, length: 4 });
     expect(useGardenStore.getState().garden.structures).toHaveLength(2);
   });
 
   it('allows placing a structure on a surface', () => {
     const { addStructure } = useGardenStore.getState();
-    addStructure({ type: 'patio', x: 0, y: 0, width: 8, height: 8 });
-    addStructure({ type: 'pot', x: 2, y: 2, width: 1, height: 1 });
+    addStructure({ type: 'patio', x: 0, y: 0, width: 8, length: 8 });
+    addStructure({ type: 'pot', x: 2, y: 2, width: 1, length: 1 });
     expect(useGardenStore.getState().garden.structures).toHaveLength(2);
   });
 
   describe('rearrangePlantings', () => {
     it('rearranges plantings when adding to a container', () => {
       const { addStructure, addPlanting } = useGardenStore.getState();
-      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, length: 4 });
       const bedId = useGardenStore.getState().garden.structures[0].id;
 
       addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'basil' });
@@ -112,7 +112,7 @@ describe('gardenStore', () => {
 
     it('rearranges plantings when arrangement changes on a structure', () => {
       const { addStructure, addPlanting, commitStructureUpdate } = useGardenStore.getState();
-      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, length: 4 });
       const bedId = useGardenStore.getState().garden.structures[0].id;
 
       addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'tomato' });
@@ -132,7 +132,7 @@ describe('gardenStore', () => {
 
     it('rearranges plantings when arrangement changes on a zone', () => {
       const { addZone, addPlanting, commitZoneUpdate } = useGardenStore.getState();
-      addZone({ x: 0, y: 0, width: 6, height: 4 });
+      addZone({ x: 0, y: 0, width: 6, length: 4 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
 
       addPlanting({ parentId: zoneId, x: 0, y: 0, cultivarId: 'basil' });
@@ -149,7 +149,7 @@ describe('gardenStore', () => {
 
     it('does not rearrange plantings with free arrangement', () => {
       const { addStructure, addPlanting, commitStructureUpdate } = useGardenStore.getState();
-      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, length: 4 });
       const bedId = useGardenStore.getState().garden.structures[0].id;
 
       addPlanting({ parentId: bedId, x: 1.5, y: 1.5, cultivarId: 'tomato' });
@@ -168,8 +168,8 @@ describe('gardenStore', () => {
       // local coords. Without skipRearrange, rearrangePlantings would overwrite
       // those coords with the next available slot.
       const { addStructure, addPlanting, updatePlanting } = useGardenStore.getState();
-      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
-      addStructure({ type: 'raised-bed', x: 10, y: 0, width: 6, height: 4 });
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, length: 4 });
+      addStructure({ type: 'raised-bed', x: 10, y: 0, width: 6, length: 4 });
       const [bed1, bed2] = useGardenStore.getState().garden.structures;
 
       addPlanting({ parentId: bed1.id, x: 0, y: 0, cultivarId: 'tomato' });
@@ -191,11 +191,11 @@ describe('gardenStore', () => {
     const { garden } = useGardenStore.getState();
     expect(garden.name).toBe('Backyard');
     expect(garden.widthFt).toBe(40);
-    expect(garden.heightFt).toBe(20);
+    expect(garden.lengthFt).toBe(20);
   });
 
   it('adds a zone with pattern', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 3, height: 3, color: 'transparent', pattern: 'crosshatch' });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 3, length: 3, color: 'transparent', pattern: 'crosshatch' });
     const zone = useGardenStore.getState().garden.zones[0];
     expect(zone.pattern).toBe('crosshatch');
     expect(zone.color).toBe('transparent');
@@ -208,7 +208,7 @@ describe('gardenStore', () => {
       version: 1,
       name: 'Loaded',
       widthFt: 30,
-      heightFt: 25,
+      lengthFt: 25,
       gridCellSizeFt: 0.5,
       displayUnit: 'ft' as const,
       blueprint: null,
@@ -421,11 +421,11 @@ describe('selection rides on history', () => {
   });
 
   it('undo restores the selection that was active before the change', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
     useUiStore.getState().setSelection([z1]);
     // Add a second zone with z1 selected at checkpoint time.
-    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, length: 4 });
     useUiStore.getState().setSelection([]); // simulate a click clearing selection
     useGardenStore.getState().undo();
     // Undo restores selection to whatever it was when the second add was checkpointed.
@@ -433,10 +433,10 @@ describe('selection rides on history', () => {
   });
 
   it('redo restores the selection that was active just before undo', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
     useUiStore.getState().setSelection([z1]);
-    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, length: 4 });
     const z2 = useGardenStore.getState().garden.zones[1].id;
     useUiStore.getState().setSelection([z2]);
     useGardenStore.getState().undo();
@@ -446,11 +446,11 @@ describe('selection rides on history', () => {
 
   it('scrubs selection ids that no longer exist in the restored garden', () => {
     // Simulate the paste-then-undo bug: selection should never reference a deleted object.
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
     // Add a second zone, then select it. Selection at the checkpoint of the *next*
     // change will include z2.
-    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, length: 4 });
     const z2 = useGardenStore.getState().garden.zones[1].id;
     useUiStore.getState().setSelection([z2]);
     // Remove z2 (commitPatch snapshots {garden has z1+z2, sel=[z2]}).
@@ -476,7 +476,7 @@ describe('selection rides on history', () => {
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
     const { createDeleteOp, createSetSelectionOp } = await import('@orochi235/weasel');
 
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
     useUiStore.getState().setSelection([z1]);
 
@@ -510,7 +510,7 @@ describe('selection rides on history', () => {
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
     const { createInsertOp, createSetSelectionOp } = await import('@orochi235/weasel');
 
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
     useUiStore.getState().setSelection([z1]);
 
@@ -535,7 +535,7 @@ describe('selection rides on history', () => {
   });
 
   it('applyOptimizerResult places plantings at correct world coords and is undoable', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 8 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
     const bedId = useGardenStore.getState().garden.structures[0].id;
     // Verify no plantings exist yet
     expect(useGardenStore.getState().garden.plantings).toHaveLength(0);

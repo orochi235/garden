@@ -3,7 +3,7 @@ import type { LabItem, LayoutStrategy, Rect, ContainerShape, Point, ConfigField,
 import { computeSlots, defaultArrangement, type Arrangement, type ArrangementType, type ParentBounds, type Slot } from '@/model/arrangement';
 
 function toBounds(rect: Rect, shape: ContainerShape): ParentBounds {
-  return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, shape };
+  return { x: rect.x, y: rect.y, width: rect.width, length: rect.height, shape };
 }
 
 function buildArrangement(config: Record<string, unknown>): Arrangement {

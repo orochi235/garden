@@ -19,15 +19,15 @@ export const duplicateAction: ActionDescriptor = {
       const s = garden.structures.find((st) => st.id === id);
       if (s) {
         const offsetX = Math.max(cellSize, s.width);
-        const offsetY = Math.max(cellSize, s.height);
-        addStructure({ type: s.type, x: s.x + offsetX, y: s.y + offsetY, width: s.width, height: s.height });
+        const offsetY = Math.max(cellSize, s.length);
+        addStructure({ type: s.type, x: s.x + offsetX, y: s.y + offsetY, width: s.width, length: s.length });
         const newStructures = useGardenStore.getState().garden.structures;
         pastedIds.push(newStructures[newStructures.length - 1].id);
         continue;
       }
       const z = garden.zones.find((zn) => zn.id === id);
       if (z) {
-        addZone({ x: z.x + cellSize, y: z.y + cellSize, width: z.width, height: z.height });
+        addZone({ x: z.x + cellSize, y: z.y + cellSize, width: z.width, length: z.length });
         const newZones = useGardenStore.getState().garden.zones;
         pastedIds.push(newZones[newZones.length - 1].id);
       }

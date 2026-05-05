@@ -14,8 +14,8 @@ describe('selectAllAction', () => {
   });
 
   it('selectAll selects all objects in active layer', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, length: 2 });
     useUiStore.getState().setActiveLayer('structures');
     selectAllAction.execute(ctx);
     expect(useUiStore.getState().selectedIds).toHaveLength(2);

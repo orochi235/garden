@@ -10,7 +10,7 @@ describe('plantingMoveAdapter', () => {
   });
 
   function setup() {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, length: 4 });
     const bed = useGardenStore.getState().garden.structures[0];
     useGardenStore.getState().addPlanting({ parentId: bed.id, x: 1, y: 1, cultivarId: 'tomato' });
     const planting = useGardenStore.getState().garden.plantings[0];
@@ -55,7 +55,7 @@ describe('plantingMoveAdapter', () => {
 
   it('setParent rewrites parent and converts pose to new parent-relative coords', () => {
     const { planting } = setup();
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, length: 4 });
     const bed2 = useGardenStore.getState().garden.structures[1];
     const a = createPlantingMoveAdapter();
     a.setParent(planting.id, bed2.id);

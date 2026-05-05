@@ -28,7 +28,7 @@ export function animateRotation(
     const t = easeOut(rawT);
     const w = fromW + (toW - fromW) * t;
     const h = fromH + (toH - fromH) * t;
-    update(id, { width: w, height: h });
+    update(id, { width: w, length: h });
 
     if (rawT < 1) {
       activeAnimations.set(id, requestAnimationFrame(tick));
@@ -36,8 +36,8 @@ export function animateRotation(
       activeAnimations.delete(id);
       const finalUpdate =
         layer === 'structures'
-          ? { width: toW, height: toH, rotation: finalRotation }
-          : { width: toW, height: toH };
+          ? { width: toW, length: toH, rotation: finalRotation }
+          : { width: toW, length: toH };
       update(id, finalUpdate);
     }
   }

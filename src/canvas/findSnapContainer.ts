@@ -44,8 +44,8 @@ export function findSnapContainer(
     if (!parent) return planting.parentId;
     const { x: pw, y: ph } = plantingWorldPose(garden, planting);
     const inside = 'shape' in parent && parent.shape === 'circle'
-      ? pointInEllipse(pw, ph, parent.x, parent.y, parent.width, parent.height)
-      : pointInRect(pw, ph, parent.x, parent.y, parent.width, parent.height);
+      ? pointInEllipse(pw, ph, parent.x, parent.y, parent.width, parent.length)
+      : pointInRect(pw, ph, parent.x, parent.y, parent.width, parent.length);
     return inside ? planting.parentId : null;
   })();
 
@@ -55,7 +55,7 @@ export function findSnapContainer(
     x: number;
     y: number;
     width: number;
-    height: number;
+    length: number;
     shape: 'rectangle' | 'circle';
     arrangement: import('../model/arrangement').Arrangement | null;
     distance: number;
@@ -67,9 +67,9 @@ export function findSnapContainer(
   for (const s of garden.structures) {
     if (!s.container || s.id === excludeParentId) continue;
     const cx = s.x + s.width / 2;
-    const cy = s.y + s.height / 2;
+    const cy = s.y + s.length / 2;
     const dist = Math.hypot(worldX - cx, worldY - cy);
-    const boundingRadius = Math.max(s.width, s.height) / 2;
+    const boundingRadius = Math.max(s.width, s.length) / 2;
     if (dist > boundingRadius + attractionRadius + CULL_BUFFER_FT) continue;
     candidates.push({
       id: s.id,
@@ -77,7 +77,7 @@ export function findSnapContainer(
       x: s.x,
       y: s.y,
       width: s.width,
-      height: s.height,
+      length: s.length,
       shape: s.shape === 'circle' ? 'circle' : 'rectangle',
       arrangement: s.arrangement,
       distance: dist,
@@ -88,9 +88,9 @@ export function findSnapContainer(
   for (const z of garden.zones) {
     if (z.id === excludeParentId) continue;
     const cx = z.x + z.width / 2;
-    const cy = z.y + z.height / 2;
+    const cy = z.y + z.length / 2;
     const dist = Math.hypot(worldX - cx, worldY - cy);
-    const boundingRadius = Math.max(z.width, z.height) / 2;
+    const boundingRadius = Math.max(z.width, z.length) / 2;
     if (dist > boundingRadius + attractionRadius + CULL_BUFFER_FT) continue;
     candidates.push({
       id: z.id,
@@ -98,7 +98,7 @@ export function findSnapContainer(
       x: z.x,
       y: z.y,
       width: z.width,
-      height: z.height,
+      length: z.length,
       shape: 'rectangle',
       arrangement: z.arrangement,
       distance: dist,
@@ -114,9 +114,9 @@ export function findSnapContainer(
   for (const c of candidates) {
     // Is the cursor within the container bounds or within attraction radius of center?
     const insideBounds = c.shape === 'circle'
-      ? pointInEllipse(worldX, worldY, c.x, c.y, c.width, c.height)
-      : pointInRect(worldX, worldY, c.x, c.y, c.width, c.height);
-    if (!insideBounds && c.distance > Math.max(c.width, c.height) / 2 + attractionRadius) {
+      ? pointInEllipse(worldX, worldY, c.x, c.y, c.width, c.length)
+      : pointInRect(worldX, worldY, c.x, c.y, c.width, c.length);
+    if (!insideBounds && c.distance > Math.max(c.width, c.length) / 2 + attractionRadius) {
       continue;
     }
 
@@ -146,7 +146,7 @@ function findAvailableSlot(
     x: number;
     y: number;
     width: number;
-    height: number;
+    length: number;
     shape: 'rectangle' | 'circle';
     arrangement: import('../model/arrangement').Arrangement | null;
   },
@@ -160,7 +160,7 @@ function findAvailableSlot(
     // Free arrangement always has room — slot at container center
     return {
       x: container.width / 2,
-      y: container.height / 2,
+      y: container.length / 2,
     };
   }
 

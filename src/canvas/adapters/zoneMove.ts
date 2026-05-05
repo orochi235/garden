@@ -2,7 +2,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { Zone } from '../../model/types';
 import type { MoveAdapter } from '@orochi235/weasel';
 
-export interface ZonePose { x: number; y: number; widthFt: number; heightFt: number }
+export interface ZonePose { x: number; y: number; widthFt: number; lengthFt: number }
 
 export type ZoneMoveAdapter = MoveAdapter<Zone, ZonePose> & {
   insertObject(z: Zone): void;
@@ -23,7 +23,7 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
     getPose(id) {
       const z = getZone(id);
       if (!z) throw new Error(`zone not found: ${id}`);
-      return { x: z.x, y: z.y, widthFt: z.width, heightFt: z.height };
+      return { x: z.x, y: z.y, widthFt: z.width, lengthFt: z.length };
     },
     getParent: () => null,
     setPose(id, pose) {

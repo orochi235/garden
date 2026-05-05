@@ -10,7 +10,7 @@ describe('commit vs live updates', () => {
   });
 
   it('live updateStructure is NOT undoable on its own', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
 
     // Live update (no history push)
@@ -23,7 +23,7 @@ describe('commit vs live updates', () => {
   });
 
   it('commitStructureUpdate IS undoable', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
 
     // Commit update (with history push)
@@ -37,7 +37,7 @@ describe('commit vs live updates', () => {
   });
 
   it('commitZoneUpdate IS undoable', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
     const id = useGardenStore.getState().garden.zones[0].id;
 
     useGardenStore.getState().commitZoneUpdate(id, { label: 'Herb Garden' });
@@ -48,7 +48,7 @@ describe('commit vs live updates', () => {
   });
 
   it('commitPlantingUpdate IS undoable', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
     const zoneId = useGardenStore.getState().garden.zones[0].id;
     useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, cultivarId: 'tomato' });
     const id = useGardenStore.getState().garden.plantings[0].id;
@@ -61,7 +61,7 @@ describe('commit vs live updates', () => {
   });
 
   it('commit respects layer lock', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().setLayerLocked('structures', true);
 

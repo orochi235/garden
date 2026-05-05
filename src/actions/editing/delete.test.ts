@@ -14,7 +14,7 @@ describe('deleteAction', () => {
   });
 
   it('delete removes selected objects', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
     deleteAction.execute(ctx);

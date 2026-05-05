@@ -81,14 +81,14 @@ export function plantingLayoutFor(
       const shape = (c as Structure).shape ?? 'rectangle';
       if (shape === 'circle') {
         const cx = c.x + c.width / 2;
-        const cy = c.y + c.height / 2;
+        const cy = c.y + c.length / 2;
         const rx = c.width / 2;
-        const ry = c.height / 2;
+        const ry = c.length / 2;
         if (rx === 0 || ry === 0) return false;
         return ((point.x - cx) ** 2) / (rx * rx) + ((point.y - cy) ** 2) / (ry * ry) <= 1;
       }
       return point.x >= c.x && point.x <= c.x + c.width
-        && point.y >= c.y && point.y <= c.y + c.height;
+        && point.y >= c.y && point.y <= c.y + c.length;
     },
 
     getChildPositions(_container, children) {
@@ -105,7 +105,7 @@ export function plantingLayoutFor(
       if (c.arrangement?.type === 'free') {
         // Free arrangement: anchor at center as a single drop target.
         const cx = c.x + c.width / 2;
-        const cy = c.y + c.height / 2;
+        const cy = c.y + c.length / 2;
         return [{ pose: { x: cx, y: cy }, origin: { x: cx, y: cy } }];
       }
 

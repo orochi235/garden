@@ -18,7 +18,7 @@ interface GardenStore {
     updates: Partial<
       Pick<
         Garden,
-        'name' | 'widthFt' | 'heightFt' | 'gridCellSizeFt' | 'displayUnit' | 'groundColor'
+        'name' | 'widthFt' | 'lengthFt' | 'gridCellSizeFt' | 'displayUnit' | 'groundColor'
       >
     >,
   ) => void;
@@ -31,12 +31,12 @@ interface GardenStore {
     x: number;
     y: number;
     width: number;
-    height: number;
+    length: number;
   }) => void;
   updateStructure: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   commitStructureUpdate: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   removeStructure: (id: string) => void;
-  addZone: (opts: { x: number; y: number; width: number; height: number; color?: string; pattern?: string | null }) => void;
+  addZone: (opts: { x: number; y: number; width: number; length: number; color?: string; pattern?: string | null }) => void;
   updateZone: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   commitZoneUpdate: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   removeZone: (id: string) => void;
@@ -73,25 +73,25 @@ interface GardenStore {
 }
 
 function defaultGarden(): Garden {
-  const garden = createGarden({ name: 'My Garden', widthFt: 20, heightFt: 20 });
+  const garden = createGarden({ name: 'My Garden', widthFt: 20, lengthFt: 20 });
   const pathGroupId = generateId();
   garden.structures = [
-    createStructure({ type: 'path', x: 5, y: 0, width: 3, height: 20, groupId: pathGroupId }),
-    createStructure({ type: 'path', x: 12, y: 0, width: 3, height: 20, groupId: pathGroupId }),
-    createStructure({ type: 'path', x: 0, y: 8.5, width: 20, height: 3, groupId: pathGroupId }),
-    createStructure({ type: 'raised-bed', x: 1, y: 1, width: 4, height: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 8, y: 1, width: 4, height: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 15, y: 1, width: 4, height: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 1, y: 11.5, width: 4, height: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 8, y: 11.5, width: 4, height: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 15, y: 11.5, width: 4, height: 7.5 }),
+    createStructure({ type: 'path', x: 5, y: 0, width: 3, length: 20, groupId: pathGroupId }),
+    createStructure({ type: 'path', x: 12, y: 0, width: 3, length: 20, groupId: pathGroupId }),
+    createStructure({ type: 'path', x: 0, y: 8.5, width: 20, length: 3, groupId: pathGroupId }),
+    createStructure({ type: 'raised-bed', x: 1, y: 1, width: 4, length: 7.5 }),
+    createStructure({ type: 'raised-bed', x: 8, y: 1, width: 4, length: 7.5 }),
+    createStructure({ type: 'raised-bed', x: 15, y: 1, width: 4, length: 7.5 }),
+    createStructure({ type: 'raised-bed', x: 1, y: 11.5, width: 4, length: 7.5 }),
+    createStructure({ type: 'raised-bed', x: 8, y: 11.5, width: 4, length: 7.5 }),
+    createStructure({ type: 'raised-bed', x: 15, y: 11.5, width: 4, length: 7.5 }),
   ];
   return garden;
 }
 
 /** Empty garden for tests. */
 export function blankGarden(): Garden {
-  return createGarden({ name: 'My Garden', widthFt: 20, heightFt: 20 });
+  return createGarden({ name: 'My Garden', widthFt: 20, lengthFt: 20 });
 }
 
 function isLocked(layer: LayerId): boolean {
@@ -176,7 +176,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   function rearrangePlantings(
     plantings: Planting[],
     parentId: string,
-    parent: { x: number; y: number; width: number; height: number; shape?: string; arrangement: Arrangement | null; wallThicknessFt?: number },
+    parent: { x: number; y: number; width: number; length: number; shape?: string; arrangement: Arrangement | null; wallThicknessFt?: number },
   ): Planting[] {
     const arrangement = parent.arrangement;
     if (!arrangement || arrangement.type === 'free') return plantings;

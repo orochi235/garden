@@ -74,6 +74,12 @@ async function solve(
     }
 
     const placements = placementsFrom(model, solution.Columns);
+    if (placements.length === 0) {
+      // HiGHS reports "Time limit reached" with no MIP incumbent; Columns carry no Primal values.
+      // Reporting a zero-placement "candidate" misleads the UI.
+      console.warn('[optimizer] candidate', n, 'has no placements — status:', solution.Status, 'obj:', solution.ObjectiveValue);
+      continue;
+    }
     const active = activeVarNames(model, solution.Columns);
     priorActive = active;
 

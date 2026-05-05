@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { ParentBounds } from './arrangement';
 import { computeSlots, defaultArrangement } from './arrangement';
 
-const rectBounds: ParentBounds = { x: 0, y: 0, width: 4, height: 8, shape: 'rectangle' };
-const circleBounds: ParentBounds = { x: 0, y: 0, width: 4, height: 4, shape: 'circle' };
+const rectBounds: ParentBounds = { x: 0, y: 0, width: 4, length: 8, shape: 'rectangle' };
+const circleBounds: ParentBounds = { x: 0, y: 0, width: 4, length: 4, shape: 'circle' };
 
 describe('computeSlots', () => {
   describe('single', () => {

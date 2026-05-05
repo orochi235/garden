@@ -8,7 +8,7 @@ vi.mock('../debug', () => ({
 
 describe('createDebugLayers', () => {
   it('only includes layers whose token is enabled', () => {
-    const g = createGarden({ name: 't', widthFt: 10, heightFt: 10 });
+    const g = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
     const layers = createDebugLayers('garden', () => g);
     const ids = layers.map((l) => l.id);
     expect(ids).toContain('debug-hitboxes');
@@ -18,15 +18,15 @@ describe('createDebugLayers', () => {
   });
 
   it('hitbox layer enumerates structure + zone bboxes in garden mode', () => {
-    const g = createGarden({ name: 't', widthFt: 10, heightFt: 10 });
+    const g = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
     g.structures.push({
-      id: 's1', type: 'pot', shape: 'circle', x: 1, y: 2, width: 3, height: 4,
+      id: 's1', type: 'pot', shape: 'circle', x: 1, y: 2, width: 3, length: 4,
       rotation: 0, color: '#fff', label: 's1', zIndex: 0, parentId: null,
       groupId: null, snapToGrid: true, surface: false, container: true,
       fill: null, arrangement: null, wallThicknessFt: 0.1, trellisEdge: null,
     });
     g.zones.push({
-      id: 'z1', x: 0, y: 0, width: 5, height: 5, color: '#0f0', label: 'z1',
+      id: 'z1', x: 0, y: 0, width: 5, length: 5, color: '#0f0', label: 'z1',
       zIndex: 0, parentId: null, soilType: null, sunExposure: null,
       arrangement: null, pattern: null,
     });

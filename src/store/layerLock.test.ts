@@ -14,21 +14,21 @@ describe('layerLocked enforcement', () => {
       useUiStore.getState().setLayerLocked('structures', true);
       useGardenStore
         .getState()
-        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
       expect(useGardenStore.getState().garden.structures).toHaveLength(0);
     });
 
     it('allows addStructure when unlocked', () => {
       useGardenStore
         .getState()
-        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
       expect(useGardenStore.getState().garden.structures).toHaveLength(1);
     });
 
     it('blocks updateStructure when locked', () => {
       useGardenStore
         .getState()
-        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
       const id = useGardenStore.getState().garden.structures[0].id;
       useUiStore.getState().setLayerLocked('structures', true);
       useGardenStore.getState().updateStructure(id, { x: 10 });
@@ -38,7 +38,7 @@ describe('layerLocked enforcement', () => {
     it('blocks removeStructure when locked', () => {
       useGardenStore
         .getState()
-        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
       const id = useGardenStore.getState().garden.structures[0].id;
       useUiStore.getState().setLayerLocked('structures', true);
       useGardenStore.getState().removeStructure(id);
@@ -49,12 +49,12 @@ describe('layerLocked enforcement', () => {
   describe('zones', () => {
     it('blocks addZone when locked', () => {
       useUiStore.getState().setLayerLocked('zones', true);
-      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
       expect(useGardenStore.getState().garden.zones).toHaveLength(0);
     });
 
     it('blocks updateZone when locked', () => {
-      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
       const id = useGardenStore.getState().garden.zones[0].id;
       useUiStore.getState().setLayerLocked('zones', true);
       useGardenStore.getState().updateZone(id, { x: 10 });
@@ -62,7 +62,7 @@ describe('layerLocked enforcement', () => {
     });
 
     it('blocks removeZone when locked', () => {
-      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
       const id = useGardenStore.getState().garden.zones[0].id;
       useUiStore.getState().setLayerLocked('zones', true);
       useGardenStore.getState().removeZone(id);
@@ -72,7 +72,7 @@ describe('layerLocked enforcement', () => {
 
   describe('plantings', () => {
     it('blocks addPlanting when locked', () => {
-      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
       useUiStore.getState().setLayerLocked('plantings', true);
       useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, cultivarId: 'tomato' });
@@ -80,7 +80,7 @@ describe('layerLocked enforcement', () => {
     });
 
     it('blocks removePlanting when locked', () => {
-      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, height: 5 });
+      useGardenStore.getState().addZone({ x: 0, y: 0, width: 5, length: 5 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
       useGardenStore.getState().addPlanting({ parentId: zoneId, x: 1, y: 1, cultivarId: 'tomato' });
       const plantId = useGardenStore.getState().garden.plantings[0].id;
@@ -95,7 +95,7 @@ describe('layerLocked enforcement', () => {
       const { hitTestObjects } = await import('../canvas/hitTest');
       useGardenStore
         .getState()
-        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
       useUiStore.getState().setLayerLocked('structures', true);
       const hit = hitTestObjects(
         2,
@@ -111,7 +111,7 @@ describe('layerLocked enforcement', () => {
       const { hitTestObjects } = await import('../canvas/hitTest');
       useGardenStore
         .getState()
-        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+        .addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
       const hit = hitTestObjects(
         2,
         2,

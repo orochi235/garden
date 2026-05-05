@@ -25,7 +25,18 @@ export function LayerSection({
 
   return (
     <div className={styles.section}>
-      <button className={styles.header} onClick={() => setOpen(!open)}>
+      <div
+        className={styles.header}
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setOpen(!open);
+          }
+        }}
+      >
         {alwaysOn ? (
           <ToggleSwitch checked={true} onChange={() => {}} disabled title="Always visible" />
         ) : layerId ? (
@@ -37,7 +48,7 @@ export function LayerSection({
         ) : null}
         <span className={styles.title}>{title}</span>
         <span className={`${styles.arrow} ${open ? styles.arrowOpen : ''}`}>▸</span>
-      </button>
+      </div>
       {open && <div className={styles.body}>{children}</div>}
     </div>
   );

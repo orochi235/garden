@@ -23,7 +23,7 @@ describe('useKeyboardActionDispatch', () => {
   }
 
   it('dispatches undo on Cmd+Z', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     expect(useGardenStore.getState().garden.structures).toHaveLength(1);
 
     setup();
@@ -33,8 +33,8 @@ describe('useKeyboardActionDispatch', () => {
   });
 
   it('dispatches selectAll on Cmd+A', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
-    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.getState().addStructure({ type: 'pot', x: 5, y: 5, width: 2, length: 2 });
     useUiStore.getState().setActiveLayer('structures');
 
     setup();
@@ -44,7 +44,7 @@ describe('useKeyboardActionDispatch', () => {
   });
 
   it('dispatches delete on Backspace when objects selected', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 
@@ -55,7 +55,7 @@ describe('useKeyboardActionDispatch', () => {
   });
 
   it('does not dispatch canvas-scoped actions when input is focused', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 
@@ -105,7 +105,7 @@ describe('useKeyboardActionDispatch', () => {
   });
 
   it('auto-checkpoints non-transient actions', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const id = useGardenStore.getState().garden.structures[0].id;
     useUiStore.getState().select(id);
 

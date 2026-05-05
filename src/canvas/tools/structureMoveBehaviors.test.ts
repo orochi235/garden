@@ -35,7 +35,7 @@ describe('clampStructureZoneToGardenBounds', () => {
 
   it('clamps a structure dragged past the right edge to the right edge', () => {
     // 20×20 garden by default. Add a 4×4 structure at (10, 10).
-    useGardenStore.getState().addStructure({ type: 'patio', x: 10, y: 10, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 10, y: 10, width: 4, length: 4 });
     const s = useGardenStore.getState().garden.structures[0];
     const adapter = createGardenSceneAdapter();
     const behavior = clampStructureZoneToGardenBounds(adapter);
@@ -51,7 +51,7 @@ describe('clampStructureZoneToGardenBounds', () => {
   });
 
   it('clamps past the top-left corner to (0,0)', () => {
-    useGardenStore.getState().addStructure({ type: 'patio', x: 5, y: 5, width: 3, height: 3 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 5, y: 5, width: 3, length: 3 });
     const s = useGardenStore.getState().garden.structures[0];
     const adapter = createGardenSceneAdapter();
     const behavior = clampStructureZoneToGardenBounds(adapter);
@@ -63,7 +63,7 @@ describe('clampStructureZoneToGardenBounds', () => {
   });
 
   it('passes through poses that stay in bounds', () => {
-    useGardenStore.getState().addStructure({ type: 'patio', x: 1, y: 1, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 1, y: 1, width: 2, length: 2 });
     const s = useGardenStore.getState().garden.structures[0];
     const adapter = createGardenSceneAdapter();
     const behavior = clampStructureZoneToGardenBounds(adapter);
@@ -82,8 +82,8 @@ describe('detectStructureClash', () => {
   });
 
   it('populates clash ids when the dragged structure overlaps another', () => {
-    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 3, height: 3 });
-    useGardenStore.getState().addStructure({ type: 'patio', x: 10, y: 10, width: 3, height: 3 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 3, length: 3 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 10, y: 10, width: 3, length: 3 });
     const [a, b] = useGardenStore.getState().garden.structures;
     const adapter = createGardenSceneAdapter();
     const behavior = detectStructureClash(adapter);
@@ -96,8 +96,8 @@ describe('detectStructureClash', () => {
   });
 
   it('clears clash ids when the dragged structure is in free space', () => {
-    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 2, height: 2 });
-    useGardenStore.getState().addStructure({ type: 'patio', x: 15, y: 15, width: 2, height: 2 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 2, length: 2 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 15, y: 15, width: 2, length: 2 });
     const [a] = useGardenStore.getState().garden.structures;
     const adapter = createGardenSceneAdapter();
     const behavior = detectStructureClash(adapter);
@@ -111,8 +111,8 @@ describe('detectStructureClash', () => {
   });
 
   it('clears on end', () => {
-    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 3, height: 3 });
-    useGardenStore.getState().addStructure({ type: 'patio', x: 5, y: 5, width: 3, height: 3 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 3, length: 3 });
+    useGardenStore.getState().addStructure({ type: 'patio', x: 5, y: 5, width: 3, length: 3 });
     const [a] = useGardenStore.getState().garden.structures;
     const adapter = createGardenSceneAdapter();
     const behavior = detectStructureClash(adapter);

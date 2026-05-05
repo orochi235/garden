@@ -231,7 +231,7 @@ export function useEricSelectTool(
               const sx = (c.x - view.x) * view.scale;
               const sy = (c.y - view.y) * view.scale;
               const sw = c.width * view.scale;
-              const sh = c.height * view.scale;
+              const sh = c.length * view.scale;
               ctx.save();
               ctx.strokeStyle = '#5BA4CF';
               ctx.lineWidth = 2;
@@ -324,7 +324,7 @@ export function useEricSelectTool(
               const id = sel[0];
               const s = getStructure(id);
               if (s) {
-                const bounds = { x: s.x, y: s.y, width: s.width, height: s.height };
+                const bounds = { x: s.x, y: s.y, width: s.width, height: s.length };
                 for (const h of cornerResizeHandles(bounds)) {
                   if (hitCornerHandle(h, ctx.worldX, ctx.worldY, radiusWorld)) {
                     ctx.scratch = { kind: 'resize', targetId: id, layer: 'structures', anchor: h.anchor };
@@ -334,7 +334,7 @@ export function useEricSelectTool(
               }
               const z = getZone(id);
               if (z) {
-                const bounds = { x: z.x, y: z.y, width: z.width, height: z.height };
+                const bounds = { x: z.x, y: z.y, width: z.width, height: z.length };
                 for (const h of cornerResizeHandles(bounds)) {
                   if (hitCornerHandle(h, ctx.worldX, ctx.worldY, radiusWorld)) {
                     ctx.scratch = { kind: 'resize', targetId: id, layer: 'zones', anchor: h.anchor };

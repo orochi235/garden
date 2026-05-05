@@ -128,7 +128,7 @@ export interface ParentBounds {
   x: number;
   y: number;
   width: number;
-  height: number;
+  length: number;
   shape: 'rectangle' | 'circle';
 }
 
@@ -145,7 +145,7 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
     case 'ring':
       return computeRing(arrangement, bounds);
     case 'single':
-      return [{ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }];
+      return [{ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.length / 2 }];
     case 'free':
       return [];
     case 'square-foot':
@@ -164,9 +164,9 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
 function isInsideBounds(px: number, py: number, bounds: ParentBounds, margin: number): boolean {
   if (bounds.shape === 'circle') {
     const cx = bounds.x + bounds.width / 2;
-    const cy = bounds.y + bounds.height / 2;
+    const cy = bounds.y + bounds.length / 2;
     const rx = bounds.width / 2 - margin;
-    const ry = bounds.height / 2 - margin;
+    const ry = bounds.length / 2 - margin;
     if (rx <= 0 || ry <= 0) return false;
     const dx = (px - cx) / rx;
     const dy = (py - cy) / ry;
@@ -176,7 +176,7 @@ function isInsideBounds(px: number, py: number, bounds: ParentBounds, margin: nu
     px >= bounds.x + margin &&
     px <= bounds.x + bounds.width - margin &&
     py >= bounds.y + margin &&
-    py <= bounds.y + bounds.height - margin
+    py <= bounds.y + bounds.length - margin
   );
 }
 
@@ -184,7 +184,7 @@ function computeRows(config: RowsConfig, bounds: ParentBounds): Slot[] {
   const slots: Slot[] = [];
   const m = config.marginFt;
 
-  for (let y = bounds.y + m + config.spacingFt / 2; y <= bounds.y + bounds.height - m; y += config.spacingFt) {
+  for (let y = bounds.y + m + config.spacingFt / 2; y <= bounds.y + bounds.length - m; y += config.spacingFt) {
     for (
       let x = bounds.x + m + config.itemSpacingFt / 2;
       x <= bounds.x + bounds.width - m;
@@ -209,7 +209,7 @@ function computeGrid(config: GridConfig, bounds: ParentBounds): Slot[] {
   ) {
     for (
       let y = bounds.y + m + config.spacingYFt / 2;
-      y <= bounds.y + bounds.height - m;
+      y <= bounds.y + bounds.length - m;
       y += config.spacingYFt
     ) {
       if (isInsideBounds(x, y, bounds, m)) {
@@ -225,9 +225,9 @@ function computeRing(config: RingConfig, bounds: ParentBounds): Slot[] {
   if (config.count <= 0) return slots;
 
   const cx = bounds.x + bounds.width / 2;
-  const cy = bounds.y + bounds.height / 2;
+  const cy = bounds.y + bounds.length / 2;
   const rx = bounds.width / 2 - config.marginFt;
-  const ry = bounds.height / 2 - config.marginFt;
+  const ry = bounds.length / 2 - config.marginFt;
   if (rx <= 0 || ry <= 0) return slots;
 
   const startRad = (config.startAngleDeg * Math.PI) / 180;

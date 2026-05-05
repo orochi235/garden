@@ -16,7 +16,7 @@ export interface ZoneNode { kind: 'zone'; id: string; data: Zone }
 export interface PlantingNode { kind: 'planting'; id: string; data: Planting }
 export type SceneNode = StructureNode | ZoneNode | PlantingNode;
 
-export interface SceneBounds { x: number; y: number; width: number; height: number }
+export interface SceneBounds { x: number; y: number; width: number; length: number }
 
 export type GardenSceneAdapter = MoveAdapter<SceneNode, ScenePose> & {
   /** Layout strategy for a container id, or null for non-containers. */
@@ -181,12 +181,12 @@ export function createGardenSceneAdapter(): GardenSceneAdapter {
       switch (node.kind) {
         case 'structure':
         case 'zone':
-          return { x: node.data.x, y: node.data.y, width: node.data.width, height: node.data.height };
+          return { x: node.data.x, y: node.data.y, width: node.data.width, length: node.data.length };
         case 'planting': {
           const cult = getCultivar(node.data.cultivarId);
           const half = (cult?.footprintFt ?? 0.5) / 2;
           const { x: cx, y: cy } = plantingWorldPose(useGardenStore.getState().garden, node.data);
-          return { x: cx - half, y: cy - half, width: half * 2, height: half * 2 };
+          return { x: cx - half, y: cy - half, width: half * 2, length: half * 2 };
         }
       }
     },

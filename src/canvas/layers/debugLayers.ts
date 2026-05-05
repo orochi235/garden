@@ -10,10 +10,10 @@ interface Bbox { x: number; y: number; w: number; h: number; label?: string }
 function bboxesGarden(g: Garden): Bbox[] {
   const out: Bbox[] = [];
   for (const s of g.structures) {
-    out.push({ x: s.x, y: s.y, w: s.width, h: s.height, label: s.label || s.type });
+    out.push({ x: s.x, y: s.y, w: s.width, h: s.length, label: s.label || s.type });
   }
   for (const z of g.zones) {
-    out.push({ x: z.x, y: z.y, w: z.width, h: z.height, label: z.label });
+    out.push({ x: z.x, y: z.y, w: z.width, h: z.length, label: z.label });
   }
   return out;
 }
@@ -66,7 +66,7 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
       const g = getGarden();
       let x: number, y: number, w: number, h: number;
       if (mode === 'garden') {
-        x = 0; y = 0; w = g.widthFt; h = g.heightFt;
+        x = 0; y = 0; w = g.widthFt; h = g.lengthFt;
       } else {
         const t = g.seedStarting.trays[0];
         if (!t) return;
@@ -119,7 +119,7 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
       const g = getGarden();
       let step: number, w: number, h: number;
       if (mode === 'garden') {
-        step = g.gridCellSizeFt; w = g.widthFt; h = g.heightFt;
+        step = g.gridCellSizeFt; w = g.widthFt; h = g.lengthFt;
       } else {
         const t = g.seedStarting.trays[0];
         if (!t) return;

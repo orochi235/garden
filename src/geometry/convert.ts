@@ -6,15 +6,15 @@ import { rectPath, ellipsePath } from './shapes';
 export function structureToShape(s: Structure): ShapePath {
   if (s.shape === 'circle') {
     const cx = s.x + s.width / 2;
-    const cy = s.y + s.height / 2;
+    const cy = s.y + s.length / 2;
     const rx = s.width / 2;
-    const ry = s.height / 2;
+    const ry = s.length / 2;
     return ellipsePath(cx, cy, rx, ry);
   }
-  return rectPath(s.x, s.y, s.width, s.height);
+  return rectPath(s.x, s.y, s.width, s.length);
 }
 
 /** Convert a Zone to a ShapePath (always rectangular for now). */
 export function zoneToShape(z: Zone): ShapePath {
-  return rectPath(z.x, z.y, z.width, z.height);
+  return rectPath(z.x, z.y, z.width, z.length);
 }

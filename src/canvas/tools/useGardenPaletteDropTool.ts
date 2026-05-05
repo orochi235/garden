@@ -115,13 +115,13 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
 
         if (entry.category === 'structures') {
           const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultLength / 2, cellSize);
           transientObj = createStructure({
             type: entry.type,
             x: snappedX,
             y: snappedY,
             width: entry.defaultWidth,
-            height: entry.defaultHeight,
+            length: entry.defaultLength,
           });
           useUiStore.getState().setDragOverlay({
             layer: 'structures',
@@ -131,12 +131,12 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
           });
         } else if (entry.category === 'zones') {
           const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultLength / 2, cellSize);
           transientObj = createZone({
             x: snappedX,
             y: snappedY,
             width: entry.defaultWidth,
-            height: entry.defaultHeight,
+            length: entry.defaultLength,
             color: entry.color,
             pattern: entry.pattern ?? null,
           });
@@ -151,12 +151,12 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
             (s) =>
               s.container &&
               worldX >= s.x && worldX <= s.x + s.width &&
-              worldY >= s.y && worldY <= s.y + s.height,
+              worldY >= s.y && worldY <= s.y + s.length,
           );
           const zone = garden.zones.find(
             (z) =>
               worldX >= z.x && worldX <= z.x + z.width &&
-              worldY >= z.y && worldY <= z.y + z.height,
+              worldY >= z.y && worldY <= z.y + z.length,
           );
           const parent = container ?? zone;
           if (parent) {
@@ -195,7 +195,7 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
 
         if (entry.category === 'structures' || entry.category === 'zones') {
           const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
-          const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
+          const snappedY = roundToCell(worldY - entry.defaultLength / 2, cellSize);
           const updated = { ...transientObj, x: snappedX, y: snappedY };
           transientObj = updated;
           useUiStore.getState().setDragOverlay({ ...currentOverlay, objects: [updated] });
@@ -204,12 +204,12 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
             (s) =>
               s.container &&
               worldX >= s.x && worldX <= s.x + s.width &&
-              worldY >= s.y && worldY <= s.y + s.height,
+              worldY >= s.y && worldY <= s.y + s.length,
           );
           const zone = garden.zones.find(
             (z) =>
               worldX >= z.x && worldX <= z.x + z.width &&
-              worldY >= z.y && worldY <= z.y + z.height,
+              worldY >= z.y && worldY <= z.y + z.length,
           );
           const parent = container ?? zone;
           if (parent) {
@@ -255,7 +255,7 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
         const { garden, addStructure, addZone, addPlanting } = useGardenStore.getState();
         const cellSize = garden.gridCellSizeFt;
         const snappedX = roundToCell(worldX - entry.defaultWidth / 2, cellSize);
-        const snappedY = roundToCell(worldY - entry.defaultHeight / 2, cellSize);
+        const snappedY = roundToCell(worldY - entry.defaultLength / 2, cellSize);
 
         if (entry.category === 'structures') {
           addStructure({
@@ -263,26 +263,26 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
             x: snappedX,
             y: snappedY,
             width: entry.defaultWidth,
-            height: entry.defaultHeight,
+            length: entry.defaultLength,
           });
         } else if (entry.category === 'zones') {
           addZone({
             x: snappedX,
             y: snappedY,
             width: entry.defaultWidth,
-            height: entry.defaultHeight,
+            length: entry.defaultLength,
           });
         } else if (entry.category === 'plantings') {
           const container = garden.structures.find(
             (s) =>
               s.container &&
               worldX >= s.x && worldX <= s.x + s.width &&
-              worldY >= s.y && worldY <= s.y + s.height,
+              worldY >= s.y && worldY <= s.y + s.length,
           );
           const zone = garden.zones.find(
             (z) =>
               worldX >= z.x && worldX <= z.x + z.width &&
-              worldY >= z.y && worldY <= z.y + z.height,
+              worldY >= z.y && worldY <= z.y + z.length,
           );
           const parent = container ?? zone;
           if (parent) {

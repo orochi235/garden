@@ -7,8 +7,8 @@ import { flattenPath } from './flatten';
 
 describe('geometry integration', () => {
   it('unions two overlapping raised beds', () => {
-    const bed1 = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 8 });
-    const bed2 = createStructure({ type: 'raised-bed', x: 2, y: 0, width: 4, height: 8 });
+    const bed1 = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
+    const bed2 = createStructure({ type: 'raised-bed', x: 2, y: 0, width: 4, length: 8 });
 
     const shape1 = structureToShape(bed1);
     const shape2 = structureToShape(bed2);
@@ -26,7 +26,7 @@ describe('geometry integration', () => {
   });
 
   it('insets a bed by wall thickness', () => {
-    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 10, height: 10 });
+    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 10, length: 10 });
     const shape = structureToShape(bed);
     const inset = shapeOffset(shape, -bed.wallThicknessFt);
 
@@ -40,8 +40,8 @@ describe('geometry integration', () => {
   });
 
   it('subtracts a circular pot from a rectangular zone', () => {
-    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 10, height: 10 });
-    const pot = createStructure({ type: 'pot', x: 3, y: 3, width: 4, height: 4 });
+    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 10, length: 10 });
+    const pot = createStructure({ type: 'pot', x: 3, y: 3, width: 4, length: 4 });
 
     const bedShape = structureToShape(bed);
     const potShape = structureToShape(pot);
@@ -53,7 +53,7 @@ describe('geometry integration', () => {
   });
 
   it('flattened paths can be traced to a mock canvas sink', () => {
-    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 3 });
+    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 3 });
     const shape = structureToShape(bed);
 
     // Trace source shape (uses native bezierCurveTo if curves)

@@ -14,7 +14,7 @@ describe('redoAction', () => {
   });
 
   it('redo restores undone change', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 4 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.getState().undo();
     redoAction.execute(ctx);
     expect(useGardenStore.getState().garden.structures).toHaveLength(1);

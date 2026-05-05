@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeHex } from './hex';
 import type { ParentBounds } from '../arrangement';
 
-const rect: ParentBounds = { x: 0, y: 0, width: 4, height: 8, shape: 'rectangle' };
+const rect: ParentBounds = { x: 0, y: 0, width: 4, length: 8, shape: 'rectangle' };
 
 describe('computeHex', () => {
   it('produces staggered rows (even rows offset by half-pitch)', () => {

@@ -34,7 +34,7 @@ const entry: PaletteEntry = {
   varietyLabel: 'Tomato',
   type: 'planting',
   defaultWidth: 0,
-  defaultHeight: 0,
+  defaultLength: 0,
   color: '#ff0000',
 };
 

@@ -38,7 +38,7 @@ function makeCtx(): CanvasRenderingContext2D {
 function makeStructure(over: Partial<Structure> = {}): Structure {
   return {
     id: 's1', type: 'raised-bed',
-    x: 0, y: 0, width: 10, height: 10,
+    x: 0, y: 0, width: 10, length: 10,
     color: '#ccc', label: 'Bed',
     container: true,
     ...over,
@@ -47,7 +47,7 @@ function makeStructure(over: Partial<Structure> = {}): Structure {
 
 function makeZone(over: Partial<Zone> = {}): Zone {
   return {
-    id: 'z1', x: 0, y: 0, width: 10, height: 10,
+    id: 'z1', x: 0, y: 0, width: 10, length: 10,
     color: '#aabbcc', zIndex: 0, label: '', pattern: null,
     ...over,
   } as Zone;
@@ -79,7 +79,7 @@ describe('createSelectionOutlineLayer', () => {
 
   it('draws dashed outline at world coords for selected structure', () => {
     const ctx = makeCtx();
-    const s = makeStructure({ x: 2, y: 3, width: 5, height: 5 });
+    const s = makeStructure({ x: 2, y: 3, width: 5, length: 5 });
     const layer = createSelectionOutlineLayer(() => [], () => [], () => [s], () => ui({ selectedIds: ['s1'] }));
     layer.draw(ctx, {}, view);
     expect(ctx.setLineDash).toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('createSelectionOutlineLayer', () => {
 describe('createGroupOutlineLayer', () => {
   it('draws nothing when no selection', () => {
     const ctx = makeCtx();
-    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, height: 2 });
+    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, length: 2 });
     const layer = createGroupOutlineLayer(() => [a], () => ui());
     layer.draw(ctx, {}, view);
     expect(ctx.strokeRect).not.toHaveBeenCalled();
@@ -127,8 +127,8 @@ describe('createGroupOutlineLayer', () => {
 
   it('draws the union AABB of all members when one is selected', () => {
     const ctx = makeCtx();
-    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, height: 2 });
-    const b = makeStructure({ id: 'b', groupId: 'g', x: 5, y: 6, width: 3, height: 4 });
+    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, length: 2 });
+    const b = makeStructure({ id: 'b', groupId: 'g', x: 5, y: 6, width: 3, length: 4 });
     const layer = createGroupOutlineLayer(() => [a, b], () => ui({ selectedIds: ['a'] }));
     layer.draw(ctx, {}, view);
     const calls = (ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls;
@@ -143,8 +143,8 @@ describe('createGroupOutlineLayer', () => {
 
   it('draws each group only once when multiple members of the same group are selected', () => {
     const ctx = makeCtx();
-    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, height: 2 });
-    const b = makeStructure({ id: 'b', groupId: 'g', x: 5, y: 5, width: 2, height: 2 });
+    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, length: 2 });
+    const b = makeStructure({ id: 'b', groupId: 'g', x: 5, y: 5, width: 2, length: 2 });
     const layer = createGroupOutlineLayer(() => [a, b], () => ui({ selectedIds: ['a', 'b'] }));
     layer.draw(ctx, {}, view);
     expect((ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
@@ -166,7 +166,7 @@ describe('createSelectionHandlesLayer', () => {
 
   it('draws 8 handles at screen-projected positions for a selected structure', () => {
     const ctx = makeCtx();
-    const s = makeStructure({ x: 2, y: 3, width: 4, height: 4 });
+    const s = makeStructure({ x: 2, y: 3, width: 4, length: 4 });
     const layer = createSelectionHandlesLayer(() => [], () => [s], () => ui({ selectedIds: ['s1'] }));
     // view {x:0, y:0, scale: 10} → object spans screen [20..60, 30..70]
     layer.draw(ctx, {}, { x: 0, y: 0, scale: 10 });
@@ -185,9 +185,9 @@ describe('createAllHandlesLayer (?debug=handles)', () => {
 
   it('iterates over ALL structures + zones regardless of selection state', () => {
     const ctx = makeCtx();
-    const s1 = makeStructure({ id: 's1', x: 0, y: 0, width: 1, height: 1 });
-    const s2 = makeStructure({ id: 's2', x: 5, y: 5, width: 1, height: 1 });
-    const z1 = makeZone({ id: 'z1', x: 2, y: 2, width: 1, height: 1 });
+    const s1 = makeStructure({ id: 's1', x: 0, y: 0, width: 1, length: 1 });
+    const s2 = makeStructure({ id: 's2', x: 5, y: 5, width: 1, length: 1 });
+    const z1 = makeZone({ id: 'z1', x: 2, y: 2, width: 1, length: 1 });
     const layer = createAllHandlesLayer({
       getStructures: () => [s1, s2],
       getZones: () => [z1],
@@ -200,7 +200,7 @@ describe('createAllHandlesLayer (?debug=handles)', () => {
 
   it('draws a single handle dot per planting at its world pose', () => {
     const ctx = makeCtx();
-    const parent = makeStructure({ id: 'p', x: 10, y: 10, width: 4, height: 4 });
+    const parent = makeStructure({ id: 'p', x: 10, y: 10, width: 4, length: 4 });
     const planting: Planting = {
       id: 'pl1', cultivarId: 'c', parentId: 'p', x: 1, y: 2,
     } as unknown as Planting;
@@ -239,7 +239,7 @@ describe('createAllHandlesLayer (?debug=handles)', () => {
 
   it('uses lower opacity to be visually distinct from real selection handles', () => {
     const ctx = makeCtx();
-    const s = makeStructure({ x: 0, y: 0, width: 1, height: 1 });
+    const s = makeStructure({ x: 0, y: 0, width: 1, length: 1 });
     const seenAlphas: number[] = [];
     Object.defineProperty(ctx, 'globalAlpha', {
       get() { return 1; },
