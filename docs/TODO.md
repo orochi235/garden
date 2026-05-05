@@ -122,6 +122,7 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 ## Almanac
 
+- **Hardiness-zone data source is wrong.** `scripts/build-frost-zone-grid.mjs` line 161 reads `ANN-TMIN-NORMAL` from the NOAA annual-seasonal normals dataset, but that variable is the long-term *mean of daily TMIN* (~41 °F in zone-6a regions), not the *average annual extreme minimum* used by the USDA hardiness scale. `tempFToZoneIndex(41)` → idx 21 → "11a", which is what users in zone 6a are seeing. The NOAA normals dataset doesn't publish annual extreme min directly. Fix: switch to the USDA PHZM raster (https://prism.oregonstate.edu/projects/plant_hardiness_zones.php, 800 m grid) — rebuild `public/data/frost-zone-grid.bin` from PHZM and re-enable zone auto-fill in `AlmanacPanel.tsx` (currently disabled — only `lastFrostDate` is set on geolocate). The last-frost field (`ANN-TMIN-PRBLST-T32FP50`) is correct and stays.
 - **Frost-zone grid coverage beyond CONUS + AK + HI.** `scripts/build-frost-zone-grid.mjs` and `public/data/frost-zone-grid.bin` only cover the NOAA U.S. station network. Users in territories (PR, Guam, USVI), Canada, or anywhere else outside the lat/lon box (18..72 N, -172..-66 E) get "Couldn't determine zone for this location." Future: integrate an additional dataset (e.g. NRCan Plant Hardiness for Canada, EU Köppen-derived zones) and widen the grid bounds — or fall back to a coarser global Köppen lookup when off-grid.
 
 ## Seed-starting multi-tray auto-flow deferrals (v1, 2026-05-04)

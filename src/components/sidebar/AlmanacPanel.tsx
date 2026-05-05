@@ -24,18 +24,17 @@ export function AlmanacPanel() {
   const reset = useUiStore((s) => s.resetAlmanacFilters);
   const { status: locStatus, run: runLocate } = useFrostZoneByLocation();
 
-  // When the lookup resolves, push values into the almanac filter store.
-  // We mirror the resolved zone (integer band) and last-frost date (current
-  // year, MM-DD from the dataset) into the existing filter shape.
+  // When the lookup resolves, push the last-frost date into the filter store.
+  // The dataset's `zone` field is currently derived from ANN-TMIN-NORMAL (mean
+  // of daily lows), which is the wrong NOAA variable for USDA hardiness — it
+  // produces wildly warm zones (e.g. zone-6a regions read as 11a). Until the
+  // grid is rebuilt from a proper extreme-min source (USDA PHZM raster), do
+  // not auto-fill `usdaZone`. See docs/TODO.md "Almanac" section.
   useEffect(() => {
     if (locStatus.kind !== 'ready') return;
-    const intZone = parseInt(locStatus.result.zone, 10);
     const year = new Date().getFullYear();
     const iso = `${year}-${locStatus.result.lastFrost}`;
-    setFilters({
-      usdaZone: Number.isFinite(intZone) ? intZone : null,
-      lastFrostDate: iso,
-    });
+    setFilters({ lastFrostDate: iso });
   }, [locStatus, setFilters]);
 
   function toggleCellSize(size: CellSize) {
@@ -120,7 +119,7 @@ export function AlmanacPanel() {
           <>
             <span className={f.label}></span>
             <span className={f.span12} style={{ fontSize: 12, opacity: 0.75 }}>
-              {`${locStatus.result.lat.toFixed(1)}, ${locStatus.result.lon.toFixed(1)} → zone ${locStatus.result.zone}, last frost ${locStatus.result.lastFrost}`}
+              {`${locStatus.result.lat.toFixed(1)}, ${locStatus.result.lon.toFixed(1)} → last frost ${locStatus.result.lastFrost}`}
             </span>
           </>
         )}
