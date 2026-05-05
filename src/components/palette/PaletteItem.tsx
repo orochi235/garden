@@ -113,10 +113,18 @@ interface LeafRowProps {
 }
 
 export function PlantingLeafRow({ entry, onDragBegin }: LeafRowProps) {
+  const appMode = useUiStore((s) => s.appMode);
+  const armedCultivarId = useUiStore((s) => s.armedCultivarId);
+  const setArmedCultivarId = useUiStore((s) => s.setArmedCultivarId);
+  const armed = appMode === 'seed-starting' && armedCultivarId === entry.id;
   return (
     <div
-      className={styles.row}
+      className={`${styles.row} ${armed ? styles.rowArmed : ''}`}
       onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
+      onClick={() => {
+        if (appMode !== 'seed-starting') return;
+        setArmedCultivarId(armedCultivarId === entry.id ? null : entry.id);
+      }}
     >
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
@@ -166,10 +174,18 @@ interface ChildRowProps {
 }
 
 export function PlantingChildRow({ entry, onDragBegin }: ChildRowProps) {
+  const appMode = useUiStore((s) => s.appMode);
+  const armedCultivarId = useUiStore((s) => s.armedCultivarId);
+  const setArmedCultivarId = useUiStore((s) => s.setArmedCultivarId);
+  const armed = appMode === 'seed-starting' && armedCultivarId === entry.id;
   return (
     <div
-      className={`${styles.row} ${styles.rowChild}`}
+      className={`${styles.row} ${styles.rowChild} ${armed ? styles.rowArmed : ''}`}
       onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
+      onClick={() => {
+        if (appMode !== 'seed-starting') return;
+        setArmedCultivarId(armedCultivarId === entry.id ? null : entry.id);
+      }}
     >
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
