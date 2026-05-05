@@ -173,6 +173,13 @@ function GardenCanvasNewPrototype() {
 
   // --- Tools ---
   const selectTool = useEricSelectTool(adapter, { insertAdapter });
+  // Second select variant: in 'select-area' viewMode, drags on object bodies
+  // are reinterpreted as marquee strokes (no move/resize/clone).
+  const selectAreaTool = useEricSelectTool(adapter, {
+    insertAdapter,
+    forceMarquee: true,
+    toolId: 'eric-select-area',
+  });
   const cycleTool = useEricCycleTool(adapter);
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();
@@ -190,9 +197,11 @@ function GardenCanvasNewPrototype() {
       case 'pan':
         return leftDragPan.id;
       case 'select':
-      case 'select-area': // marquee is built into selectTool's empty-drag behavior
       case 'draw': // insertTool activates above when plottingTool is set; bare draw = select
         return selectTool.id;
+      case 'select-area':
+        // Force-marquee variant: drag-from-body draws a marquee instead of moving.
+        return selectAreaTool.id;
       case 'zoom':
         // Click-to-zoom around the cursor; shift-click zooms out. Wheel-zoom
         // remains always-on. Double-click on the toolbar zoom button still
@@ -201,12 +210,13 @@ function GardenCanvasNewPrototype() {
       default:
         return selectTool.id;
     }
-  }, [viewMode, plottingTool, leftDragPan.id, selectTool.id, insertTool.id, clickZoom.id]);
+  }, [viewMode, plottingTool, leftDragPan.id, selectTool.id, selectAreaTool.id, insertTool.id, clickZoom.id]);
 
   const tools = useTools({
     active: activeToolId,
     registry: {
       [selectTool.id]: selectTool,
+      [selectAreaTool.id]: selectAreaTool,
       [cycleTool.id]: cycleTool,
       [leftDragPan.id]: leftDragPan,
       [insertTool.id]: insertTool,
