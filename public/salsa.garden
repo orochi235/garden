@@ -34,7 +34,7 @@
         "direction": 0,
         "marginFt": 0.25
       },
-      "wallThicknessFt": 0.25,
+      "wallThicknessFt": 0.0833,
       "trellisEdge": null,
       "clipChildren": true,
       "pattern": null
