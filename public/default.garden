@@ -3,7 +3,6 @@
   "version": 1,
   "name": "My Garden",
   "widthFt": 20,
-  "heightFt": 20,
   "gridCellSizeFt": 1,
   "displayUnit": "ft",
   "groundColor": "#4A7C59",
@@ -16,7 +15,6 @@
       "x": 2,
       "y": 2,
       "width": 4,
-      "height": 8,
       "rotation": 0,
       "color": "#8B6914",
       "label": "Raised Bed",
@@ -26,7 +24,14 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "rows", "spacingFt": 0.5, "itemSpacingFt": 0.5, "direction": 0, "marginFt": 0.25 }
+      "arrangement": {
+        "type": "rows",
+        "spacingFt": 0.5,
+        "itemSpacingFt": 0.5,
+        "direction": 0,
+        "marginFt": 0.25
+      },
+      "length": 8
     },
     {
       "id": "default-bed-2",
@@ -35,7 +40,6 @@
       "x": 8,
       "y": 2,
       "width": 4,
-      "height": 8,
       "rotation": 0,
       "color": "#8B6914",
       "label": "Raised Bed",
@@ -45,7 +49,14 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "rows", "spacingFt": 0.5, "itemSpacingFt": 0.5, "direction": 0, "marginFt": 0.25 }
+      "arrangement": {
+        "type": "rows",
+        "spacingFt": 0.5,
+        "itemSpacingFt": 0.5,
+        "direction": 0,
+        "marginFt": 0.25
+      },
+      "length": 8
     },
     {
       "id": "default-path-1",
@@ -54,7 +65,6 @@
       "x": 6,
       "y": 2,
       "width": 2,
-      "height": 8,
       "rotation": 0,
       "color": "#D4C4A8",
       "label": "Path",
@@ -64,7 +74,8 @@
       "surface": true,
       "container": false,
       "fill": null,
-      "arrangement": null
+      "arrangement": null,
+      "length": 8
     },
     {
       "id": "default-patio-1",
@@ -73,7 +84,6 @@
       "x": 14,
       "y": 2,
       "width": 5,
-      "height": 5,
       "rotation": 0,
       "color": "#A0926B",
       "label": "Pot-emkin Village",
@@ -83,7 +93,8 @@
       "surface": true,
       "container": false,
       "fill": null,
-      "arrangement": null
+      "arrangement": null,
+      "length": 5
     },
     {
       "id": "default-pot-1",
@@ -92,7 +103,6 @@
       "x": 15,
       "y": 3,
       "width": 2,
-      "height": 2,
       "rotation": 0,
       "color": "#C75B39",
       "label": "Large Pot",
@@ -102,7 +112,10 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "single" }
+      "arrangement": {
+        "type": "single"
+      },
+      "length": 2
     },
     {
       "id": "default-pot-2",
@@ -111,7 +124,6 @@
       "x": 17,
       "y": 3,
       "width": 1,
-      "height": 1,
       "rotation": 0,
       "color": "#C75B39",
       "label": "Small Pot",
@@ -121,7 +133,10 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "single" }
+      "arrangement": {
+        "type": "single"
+      },
+      "length": 1
     },
     {
       "id": "default-pot-3",
@@ -130,7 +145,6 @@
       "x": 15,
       "y": 5,
       "width": 1,
-      "height": 1,
       "rotation": 0,
       "color": "#C75B39",
       "label": "Small Pot",
@@ -140,7 +154,10 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "single" }
+      "arrangement": {
+        "type": "single"
+      },
+      "length": 1
     },
     {
       "id": "default-pot-4",
@@ -149,7 +166,6 @@
       "x": 17,
       "y": 5,
       "width": 1,
-      "height": 1,
       "rotation": 0,
       "color": "#C75B39",
       "label": "Small Pot",
@@ -159,7 +175,10 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "single" }
+      "arrangement": {
+        "type": "single"
+      },
+      "length": 1
     },
     {
       "id": "default-pot-5",
@@ -168,7 +187,6 @@
       "x": 16,
       "y": 5,
       "width": 1,
-      "height": 1,
       "rotation": 0,
       "color": "#C75B39",
       "label": "Small Pot",
@@ -178,7 +196,10 @@
       "surface": false,
       "container": true,
       "fill": "soil",
-      "arrangement": { "type": "single" }
+      "arrangement": {
+        "type": "single"
+      },
+      "length": 1
     },
     {
       "id": "default-felt-1",
@@ -187,7 +208,6 @@
       "x": 2,
       "y": 12,
       "width": 1.5,
-      "height": 1.5,
       "rotation": 0,
       "color": "#3A3A3A",
       "label": "Felt Planter",
@@ -197,7 +217,10 @@
       "surface": false,
       "container": true,
       "fill": "potting-mix",
-      "arrangement": { "type": "single" }
+      "arrangement": {
+        "type": "single"
+      },
+      "length": 1.5
     }
   ],
   "zones": [
@@ -206,15 +229,20 @@
       "x": 14,
       "y": 8,
       "width": 5,
-      "height": 5,
       "color": "#7FB06944",
       "label": "Herb Garden",
       "zIndex": 0,
       "parentId": null,
       "soilType": null,
       "sunExposure": null,
-      "arrangement": { "type": "grid", "spacingXFt": 0.5, "spacingYFt": 0.5, "marginFt": 0.25 },
-      "pattern": null
+      "arrangement": {
+        "type": "grid",
+        "spacingXFt": 0.5,
+        "spacingYFt": 0.5,
+        "marginFt": 0.25
+      },
+      "pattern": null,
+      "length": 5
     }
   ],
   "plantings": [
@@ -326,5 +354,6 @@
       "label": "Tomato, Cherry, Sun Gold",
       "icon": null
     }
-  ]
+  ],
+  "lengthFt": 20
 }

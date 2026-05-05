@@ -8,7 +8,7 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
 import { enterSeedStarting } from '../utils/enterSeedStarting';
-import { autosave, loadPersistedCollection } from '../utils/file';
+import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/file';
 import type { Cultivar } from '../model/cultivars';
 import { WelcomeModal } from './WelcomeModal';
 import { MenuBar } from './MenuBar';
@@ -72,8 +72,8 @@ export function App() {
   useEffect(() => {
     // TODO: re-enable autosave loading once blank-canvas bug is fixed
     fetch(`${import.meta.env.BASE_URL}default.garden`)
-      .then((r) => r.json())
-      .then((g) => loadGarden(g))
+      .then((r) => r.text())
+      .then((t) => loadGarden(deserializeGarden(t)))
       .catch(() => {})
       .finally(() => {
         if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
