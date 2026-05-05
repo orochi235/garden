@@ -145,3 +145,15 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - [ ] Optimizer support for non-rectangular beds.
 - [ ] User-facing solver picker (currently fixed to `highs`).
 - [ ] Region-painting UI for `userRegions` input to the optimizer.
+
+## Optimizer auto-clustering follow-ups (2026-05-05)
+
+- [ ] Visualize cluster regions on the canvas (overlay shading per group), gated on user opt-in to define regions
+- [ ] Post-hoc cluster rotation/swap pass to reclaim cross-cluster companion bonuses lost at partition boundaries
+- [ ] Greedy fallback that respects existing intentional placements rather than producing a generic hex-packed layout
+- [ ] Interior trellis support (`trellis: { kind: 'line', ... }`): UI for placement, allocator for dual-side strip layout. Currently rejected with an error in `proportionalStripAllocator`.
+- [ ] Adaptive partitioner selection based on input shape (homogeneous bypass, paired-mirror, diversity-spread)
+- [ ] Adaptive allocator selection (guillotine cuts, bin-packing) — currently only proportional strips
+- [ ] Parallel sub-bed solves via multiple workers — currently sequential within a single worker
+- [ ] Cross-cluster score reported as a candidate-comparison stat (no objective contribution, just informational)
+- [ ] Minimum strip width enforcement in `proportionalStripAllocator` (currently allows arbitrarily thin strips; fewer plants get placed but no error fires)
