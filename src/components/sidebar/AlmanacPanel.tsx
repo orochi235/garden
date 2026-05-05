@@ -24,17 +24,23 @@ export function AlmanacPanel() {
   const reset = useUiStore((s) => s.resetAlmanacFilters);
   const { status: locStatus, run: runLocate } = useFrostZoneByLocation();
 
-  // When the lookup resolves, push the last-frost date into the filter store.
-  // The dataset's `zone` field is currently derived from ANN-TMIN-NORMAL (mean
-  // of daily lows), which is the wrong NOAA variable for USDA hardiness — it
-  // produces wildly warm zones (e.g. zone-6a regions read as 11a). Until the
-  // grid is rebuilt from a proper extreme-min source (USDA PHZM raster), do
-  // not auto-fill `usdaZone`. See docs/TODO.md "Almanac" section.
+  // When the lookup resolves, push both the USDA half-zone (whole-zone integer
+  // 1..13) and the last-frost date into the filter store.
   useEffect(() => {
     if (locStatus.kind !== 'ready') return;
-    const year = new Date().getFullYear();
-    const iso = `${year}-${locStatus.result.lastFrost}`;
-    setFilters({ lastFrostDate: iso });
+    const patch: { lastFrostDate?: string; usdaZone?: number | null } = {};
+    if (locStatus.result.lastFrost) {
+      const year = new Date().getFullYear();
+      patch.lastFrostDate = `${year}-${locStatus.result.lastFrost}`;
+    }
+    if (locStatus.result.zone && locStatus.result.zone !== 'unknown') {
+      const m = /^(\d{1,2})/.exec(locStatus.result.zone);
+      if (m) {
+        const z = parseInt(m[1], 10);
+        if (z >= 1 && z <= 13) patch.usdaZone = z;
+      }
+    }
+    if (Object.keys(patch).length > 0) setFilters(patch);
   }, [locStatus, setFilters]);
 
   function toggleCellSize(size: CellSize) {
@@ -119,7 +125,7 @@ export function AlmanacPanel() {
           <>
             <span className={f.label}></span>
             <span className={f.span12} style={{ fontSize: 12, opacity: 0.75 }}>
-              {`${locStatus.result.lat.toFixed(1)}, ${locStatus.result.lon.toFixed(1)} → last frost ${locStatus.result.lastFrost}`}
+              {`${locStatus.result.lat.toFixed(1)}, ${locStatus.result.lon.toFixed(1)} → zone ${locStatus.result.zone}, last frost ${locStatus.result.lastFrost || '?'}`}
             </span>
           </>
         )}
