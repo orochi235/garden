@@ -185,7 +185,7 @@ function GardenCanvasNewPrototype() {
     forceMarquee: true,
     toolId: 'eric-select-area',
   });
-  const cycleTool = useEricCycleTool(adapter);
+  const cycleTool = useEricCycleTool(adapter, insertAdapter);
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();

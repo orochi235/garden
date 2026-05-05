@@ -164,6 +164,15 @@ Running list of intended application behaviors.
 - Snap-dwell (the 500 ms hover-into-container UX from legacy) is not yet
   ported. Container resolution is immediate based on cursor position.
 
+## Alt+drag clone (2026-05-05)
+
+- Holding Alt and dragging a selected object duplicates it at the drop position (original stays in place).
+- The cycle tool (`useEricCycleTool`) delegates the drag to `useClone(cloneByAltDrag())` from weasel when an alt+click (cycle) is immediately followed by a drag.
+- The ghost overlay (dim copy tracking the cursor) is rendered by the cycle tool's own overlay layer while the drag is in flight.
+- Clone is committed as a single undo step via `applyBatch('Clone')`.
+- Structures and zones clone with an offset equal to the drag delta. Plantings resolve their new parent from whichever container the cursor is over at drop; if no container, the drop is silent (no new planting created).
+- Alt+click cycling remains unchanged: alt-clicking without dragging still cycles through overlapping objects at the cursor.
+
 ## Canvas redesign default + debug overlays (Phase 5, 2026-05-03)
 
 - The canvas pipeline rewritten on the weasel `<Canvas>` + Tool primitive is
