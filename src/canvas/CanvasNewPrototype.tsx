@@ -37,6 +37,7 @@ import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
+import { createOptimizerGhostLayer } from './layers/optimizerGhostLayer';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
@@ -60,6 +61,8 @@ function GardenCanvasNewPrototype() {
   useUiStore((s) => s.dragClashIds);
   useUiStore((s) => s.highlightOpacity);
   useUiStore((s) => s.showFootprintCircles);
+  useUiStore((s) => s.optimizerResult);
+  useUiStore((s) => s.optimizerSelectedCandidate);
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
 
@@ -107,6 +110,13 @@ function GardenCanvasNewPrototype() {
       ...createZoneLayers(getZones, getUi),
       ...createStructureLayers(getStructures, getUi),
       ...createPlantingLayers(getPlantings, getZones, getStructures, getUi),
+      createOptimizerGhostLayer(
+        getStructures,
+        () => {
+          const u = useUiStore.getState();
+          return { result: u.optimizerResult, selectedCandidate: u.optimizerSelectedCandidate };
+        },
+      ),
       createGroupOutlineLayer(getStructures, getUi),
       createSelectionOutlineLayer(getPlantings, getZones, getStructures, getUi),
       createSelectionHandlesLayer(getZones, getStructures, getUi),

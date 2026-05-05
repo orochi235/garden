@@ -147,6 +147,11 @@ interface UiStore {
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
   collectionEditorOpen: boolean;
+  optimizerResult: import('../optimizer').OptimizationResult | null;
+  optimizerSelectedCandidate: number;
+  setOptimizerResult: (r: import('../optimizer').OptimizationResult | null) => void;
+  setOptimizerSelectedCandidate: (n: number) => void;
+  clearOptimizerResult: () => void;
   setCollectionEditorOpen: (open: boolean) => void;
   setShowSeedlingWarnings: (show: boolean) => void;
   setHighlightOpacity: (opacity: number) => void;
@@ -265,6 +270,8 @@ function defaultState() {
       lastFrostDate: null,
     } as AlmanacFilters,
     collectionEditorOpen: readCollectionParam(),
+    optimizerResult: null,
+    optimizerSelectedCandidate: 0,
   };
 }
 
@@ -333,6 +340,9 @@ export const useUiStore = create<UiStore>((set) => ({
     set({
       almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
     }),
+  setOptimizerResult: (r) => set({ optimizerResult: r, optimizerSelectedCandidate: 0 }),
+  setOptimizerSelectedCandidate: (n) => set({ optimizerSelectedCandidate: n }),
+  clearOptimizerResult: () => set({ optimizerResult: null, optimizerSelectedCandidate: 0 }),
   setCollectionEditorOpen: (open) => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);

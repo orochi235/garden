@@ -258,3 +258,4 @@ Running list of intended application behaviors.
 - `cultivarSpacing` derives default pitch and square-foot bucket counts from cultivar metadata; falls back to category defaults when footprint is missing.
 
 - Arrangement supports five new strategies: `square-foot`, `hex`, `trellised-back`, `banded-rows`, `multi`. `computeSlots` accepts an optional `cultivars` arg used by hex (auto-pitch) and trellised-back (front-band routing). The `multi` strategy tags each slot with its source `regionId` so drops route to the correct sub-region.
+- The bed-layout optimizer is invoked explicitly from `OptimizePanel` (sidebar) or `OptimizerWizard` (modal). It runs in a Web Worker, returns up to 3 ranked candidates, and applies the user's choice as a single undoable batch. The optimizer module under `src/optimizer/` does not depend on any project types and is designed for later extraction.

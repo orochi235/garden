@@ -500,6 +500,36 @@ describe('selection rides on history', () => {
     expect(useUiStore.getState().selectedIds).not.toContain(pasted.id);
     expect(useUiStore.getState().selectedIds).toEqual([z1]);
   });
+
+  it('applyOptimizerResult places plantings at correct world coords and is undoable', () => {
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 8 });
+    const bedId = useGardenStore.getState().garden.structures[0].id;
+    // Verify no plantings exist yet
+    expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
+
+    const candidate: import('../optimizer').OptimizationCandidate = {
+      placements: [
+        { cultivarId: 'tomato', xIn: 12, yIn: 12 }, // 1ft, 1ft from bed origin
+        { cultivarId: 'basil', xIn: 24, yIn: 24 },  // 2ft, 2ft from bed origin
+      ],
+      score: 10,
+      reason: 'test',
+      gap: 0,
+      solveMs: 100,
+    };
+
+    useGardenStore.getState().applyOptimizerResult(bedId, candidate);
+    const { plantings } = useGardenStore.getState().garden;
+    expect(plantings).toHaveLength(2);
+
+    const tomato = plantings.find((p) => p.cultivarId === 'tomato')!;
+    expect(tomato.x).toBeCloseTo(0 + 12 / 12, 5); // bed.x + 1ft
+    expect(tomato.y).toBeCloseTo(0 + 12 / 12, 5);
+
+    // Undo should revert to 0 plantings
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
+  });
 });
 
 describe('collection orphan tolerance', () => {

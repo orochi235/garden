@@ -11,11 +11,13 @@
     "format": "biome format --write .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:optimizer-boundary": "./scripts/check-optimizer-boundary.sh"
   },
   "dependencies": {
     "@orochi235/weasel": "file:../weasel",
     "clipper2-ts": "^2.0.1-15",
+    "highs": "^1.8.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

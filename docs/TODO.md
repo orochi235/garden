@@ -130,3 +130,13 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - [ ] Build a real `bands` editor for `banded-rows` arrangements (currently JSON-only).
 - [ ] Build a region-painting UI for `multi` arrangements (currently optimizer-only entrypoint).
 - [ ] Auto-migration of existing `rows`-arrangement raised beds to `multi` when companion blocks are detected.
+
+## Bed-layout optimizer deferrals (Plan 2, 2026-05-04)
+
+- [ ] Extract `src/optimizer/` into a standalone npm package once the API has settled.
+- [ ] Symmetry/aesthetic objective term for the optimizer (deferred — hard to linearize).
+- [ ] Live re-optimization during drag (deferred — UX complexity).
+- [ ] Multi-season / crop rotation optimization.
+- [ ] Optimizer support for non-rectangular beds.
+- [ ] User-facing solver picker (currently fixed to `highs`).
+- [ ] Region-painting UI for `userRegions` input to the optimizer.
