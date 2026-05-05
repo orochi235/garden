@@ -23,3 +23,29 @@ export interface EricSceneUi {
 }
 
 export type GetUi = () => EricSceneUi;
+
+/**
+ * Static metadata for a single render layer. Each `*LayersWorld.ts` factory
+ * exports a `*_LAYER_DESCRIPTORS` array as the single source of truth for
+ * `id`/`label`/`alwaysOn`/`defaultVisible`. The factory reads its own labels
+ * from the array (so they can't drift from what the sidebar panel shows), and
+ * `RenderLayersPanel` imports the arrays directly for grouping.
+ *
+ * Anything dynamic (the `draw` closure, per-frame state) lives only on the
+ * `RenderLayer` returned by the factory — not here.
+ */
+export interface LayerDescriptor {
+  id: string;
+  label: string;
+  alwaysOn?: boolean;
+  defaultVisible?: boolean;
+}
+
+/** Build a quick id→descriptor lookup so factories can pull metadata by id. */
+export function descriptorById(
+  descriptors: readonly LayerDescriptor[],
+): Record<string, LayerDescriptor> {
+  const out: Record<string, LayerDescriptor> = {};
+  for (const d of descriptors) out[d.id] = d;
+  return out;
+}

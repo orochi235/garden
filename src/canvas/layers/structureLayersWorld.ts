@@ -1,10 +1,24 @@
 import { FILL_COLORS } from '../../model/types';
 import type { Structure } from '../../model/types';
 import type { RenderLayer } from '@orochi235/weasel';
-import type { View } from './worldLayerData';
+import type { GetUi, LayerDescriptor, View } from './worldLayerData';
+import { descriptorById } from './worldLayerData';
 import { renderLabel } from '@orochi235/weasel';
 import { renderPatternOverlay } from '../patterns';
-import type { GetUi } from './worldLayerData';
+
+/**
+ * Single source of truth for structure-layer metadata. Order here = canonical
+ * draw order. Factory pulls label/alwaysOn/defaultVisible from these entries
+ * by id; `RenderLayersPanel` imports the array for the "Structures" group.
+ */
+export const STRUCTURE_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
+  { id: 'structure-walls', label: 'Structure Walls' },
+  { id: 'structure-bodies', label: 'Structure Bodies', alwaysOn: true },
+  { id: 'structure-surfaces', label: 'Structure Surfaces' },
+  { id: 'structure-plantable-area', label: 'Plantable Area', defaultVisible: false },
+  { id: 'structure-highlights', label: 'Structure Highlights' },
+  { id: 'structure-labels', label: 'Structure Labels' },
+];
 
 type StructureRenderItem =
   | { type: 'single'; structure: Structure; order: number }
@@ -157,10 +171,10 @@ export function createStructureLayers(
   getStructures: () => Structure[],
   getUi: GetUi,
 ): RenderLayer<unknown>[] {
+  const meta = descriptorById(STRUCTURE_LAYER_DESCRIPTORS);
   return [
     {
-      id: 'structure-walls',
-      label: 'Structure Walls',
+      ...meta['structure-walls'],
       // Walls draw the outer ring/frame for containers (pot/felt-planter/
       // raised-bed). Soil disc/rect lives in `structure-bodies` so toggling
       // walls off reveals just the soil.
@@ -203,9 +217,7 @@ export function createStructureLayers(
       },
     },
     {
-      id: 'structure-bodies',
-      label: 'Structure Bodies',
-      alwaysOn: true,
+      ...meta['structure-bodies'],
       draw(ctx, _data, view) {
         const { queue } = getQueue(getStructures);
         for (const item of queue) {
@@ -215,8 +227,7 @@ export function createStructureLayers(
       },
     },
     {
-      id: 'structure-surfaces',
-      label: 'Structure Surfaces',
+      ...meta['structure-surfaces'],
       draw(ctx, _data, _view) {
         const { queue } = getQueue(getStructures);
         for (const item of queue) {
@@ -232,9 +243,7 @@ export function createStructureLayers(
       },
     },
     {
-      id: 'structure-plantable-area',
-      label: 'Plantable Area',
-      defaultVisible: false,
+      ...meta['structure-plantable-area'],
       draw(ctx, _data, view) {
         const { queue } = getQueue(getStructures);
         for (const item of queue) {
@@ -267,8 +276,7 @@ export function createStructureLayers(
       },
     },
     {
-      id: 'structure-highlights',
-      label: 'Structure Highlights',
+      ...meta['structure-highlights'],
       draw(ctx, _data, view) {
         const { getOpacity } = getUi();
         const { queue } = getQueue(getStructures);
@@ -335,8 +343,7 @@ export function createStructureLayers(
       },
     },
     {
-      id: 'structure-labels',
-      label: 'Structure Labels',
+      ...meta['structure-labels'],
       draw(ctx, _data, view) {
         const { labelMode, labelFontSize, debugOverlappingLabels } = getUi();
         if (labelMode === 'none' || labelMode === 'selection') return;

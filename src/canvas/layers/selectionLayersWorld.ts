@@ -3,7 +3,29 @@ import { renderLabel } from '@orochi235/weasel';
 import type { RenderLayer } from '@orochi235/weasel';
 import { plantingWorldPose } from '../../utils/plantingPose';
 import type { Planting, Structure, Zone } from '../../model/types';
-import type { GetUi, View } from './worldLayerData';
+import type { GetUi, LayerDescriptor, View } from './worldLayerData';
+import { descriptorById } from './worldLayerData';
+
+/**
+ * Single source of truth for selection-related layer metadata. Order here
+ * matches the canonical insertion order at the canvas registration site
+ * (`CanvasNewPrototype` adds group-outlines, then selection-outlines, then
+ * selection-handles). Three layers are exported by three separate factories
+ * because each takes different scene dependencies; the descriptor array
+ * keeps their metadata co-located so the panel doesn't have to know which
+ * factory owns which id.
+ *
+ * NOTE: a future `selection-debug-handles` layer is planned for the
+ * `?debug=handles` overlay (see docs/TODO.md). Add its descriptor here when
+ * the layer lands so `RenderLayersPanel` picks it up automatically.
+ */
+export const SELECTION_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
+  { id: 'group-outlines', label: 'Group Outlines', alwaysOn: true },
+  { id: 'selection-outlines', label: 'Selection Outlines', alwaysOn: true },
+  { id: 'selection-handles', label: 'Selection Handles', alwaysOn: true },
+];
+
+const SELECTION_META = descriptorById(SELECTION_LAYER_DESCRIPTORS);
 
 function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
@@ -21,9 +43,7 @@ export function createSelectionOutlineLayer(
   getUi: GetUi,
 ): RenderLayer<unknown> {
   return {
-    id: 'selection-outlines',
-    label: 'Selection Outlines',
-    alwaysOn: true,
+    ...SELECTION_META['selection-outlines'],
     draw(ctx, _data, view) {
       const { selectedIds, labelFontSize } = getUi();
       if (selectedIds.length === 0) return;
@@ -100,9 +120,7 @@ export function createGroupOutlineLayer(
   getUi: GetUi,
 ): RenderLayer<unknown> {
   return {
-    id: 'group-outlines',
-    label: 'Group Outlines',
-    alwaysOn: true,
+    ...SELECTION_META['group-outlines'],
     draw(ctx, _data, view) {
       const { selectedIds } = getUi();
       if (selectedIds.length === 0) return;
@@ -146,9 +164,7 @@ export function createSelectionHandlesLayer(
   getUi: GetUi,
 ): RenderLayer<unknown> {
   return {
-    id: 'selection-handles',
-    label: 'Selection Handles',
-    alwaysOn: true,
+    ...SELECTION_META['selection-handles'],
     space: 'screen',
     draw(ctx, _data, view) {
       const ui = getUi();
