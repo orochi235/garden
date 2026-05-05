@@ -22,6 +22,7 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
     cultivarId: cultivar.id,
     count,
     footprintIn: cultivar.footprintFt * FT_TO_IN,
+    spacingIn: cultivar.spacingFt * FT_TO_IN,
     heightIn: cultivar.heightFt != null ? cultivar.heightFt * FT_TO_IN : null,
     climber: cultivar.climber,
   }));

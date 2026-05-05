@@ -23,8 +23,10 @@ export interface OptimizerPlant {
   cultivarId: string;
   /** How many of this plant the user wants to fit. */
   count: number;
-  /** Footprint diameter in inches. */
+  /** Footprint diameter in inches (visual size at maturity). */
   footprintIn: number;
+  /** Recommended center-to-center spacing in inches. Falls back to footprintIn. */
+  spacingIn?: number;
   /** Mature height in inches. Used by the sun-shading term. */
   heightIn: number | null;
   /** True if the plant prefers a trellis edge. */
