@@ -40,23 +40,30 @@ export function CollectionEditor() {
   const [pendingSaveAfterTransfer, setPendingSaveAfterTransfer] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('icons');
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Enter' && e.shiftKey && state.checked.size > 0) {
-        e.preventDefault();
-        state.transferRight();
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [state]);
-
   const pendingIds = useMemo(() => new Set(state.pending.map((c) => c.id)), [state.pending]);
   const leftSource = useMemo(
     () => database.filter((c) => !pendingIds.has(c.id)),
     [database, pendingIds],
   );
   const visible = useMemo(() => state.visibleCultivars(leftSource), [state, leftSource]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Enter' && e.shiftKey && state.checked.size > 0) {
+        e.preventDefault();
+        state.transferRight();
+        return;
+      }
+      if (e.key === 'a' && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+        const tag = (e.target as HTMLElement | null)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        state.selectAll(visible.map((c) => c.id));
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [state, visible]);
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of leftSource) counts[c.category] = (counts[c.category] ?? 0) + 1;

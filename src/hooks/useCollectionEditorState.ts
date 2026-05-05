@@ -19,6 +19,7 @@ export interface CollectionEditorState {
   sortColumn: SortColumn;
   sortDir: SortDir;
   toggleChecked: (cultivarId: string) => void;
+  selectAll: (ids: string[]) => void;
   toggleSpeciesExpand: (speciesId: string) => void;
   setSearch: (value: string) => void;
   setCategories: (value: Set<CultivarCategory>) => void;
@@ -54,6 +55,10 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
       else next.add(cultivarId);
       return next;
     });
+  }, []);
+
+  const selectAll = useCallback((ids: string[]) => {
+    setChecked(new Set(ids));
   }, []);
 
   const toggleSpeciesExpand = useCallback((speciesId: string) => {
@@ -196,6 +201,7 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     sortColumn,
     sortDir,
     toggleChecked,
+    selectAll,
     toggleSpeciesExpand,
     setSearch,
     setCategories,
