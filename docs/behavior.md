@@ -140,6 +140,7 @@ Running list of intended application behaviors.
   that was active immediately before the change. Marquee select remains
   transient: it does not push history, so undo after a marquee returns to
   whatever selection existed before the marquee started.
+- After undo or redo, any selected ids that no longer exist in the restored garden are scrubbed; selection never references deleted objects.
 
 ## Clone (Phase 4 canvas-kit migration, 2026-05-01)
 
