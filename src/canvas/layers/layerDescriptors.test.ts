@@ -25,7 +25,7 @@ const ui: ReturnType<GetUi> = {
   labelFontSize: 13,
   plantIconScale: 1,
   showFootprintCircles: true,
-  highlightOpacity: 0,
+  getOpacity: () => 0,
   debugOverlappingLabels: false,
 };
 
