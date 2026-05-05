@@ -4,6 +4,8 @@ import type { Season } from '../../model/species';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
+import { useEffect } from 'react';
+import { useFrostZoneByLocation } from '../../hooks/useFrostZoneByLocation';
 
 const CELL_SIZES: { value: CellSize; label: string }[] = [
   { value: 'small', label: 'S' },
@@ -20,6 +22,21 @@ export function AlmanacPanel() {
   const filters = useUiStore((s) => s.almanacFilters);
   const setFilters = useUiStore((s) => s.setAlmanacFilters);
   const reset = useUiStore((s) => s.resetAlmanacFilters);
+  const { status: locStatus, run: runLocate } = useFrostZoneByLocation();
+
+  // When the lookup resolves, push values into the almanac filter store.
+  // We mirror the resolved zone (integer band) and last-frost date (current
+  // year, MM-DD from the dataset) into the existing filter shape.
+  useEffect(() => {
+    if (locStatus.kind !== 'ready') return;
+    const intZone = parseInt(locStatus.result.zone, 10);
+    const year = new Date().getFullYear();
+    const iso = `${year}-${locStatus.result.lastFrost}`;
+    setFilters({
+      usdaZone: Number.isFinite(intZone) ? intZone : null,
+      lastFrostDate: iso,
+    });
+  }, [locStatus, setFilters]);
 
   function toggleCellSize(size: CellSize) {
     const next = filters.cellSizes.includes(size)
@@ -88,6 +105,43 @@ export function AlmanacPanel() {
           value={filters.lastFrostDate ?? ''}
           onChange={(e) => setFilters({ lastFrostDate: e.target.value || null })}
         />
+
+        <span className={f.label}></span>
+        <button
+          className={`${f.input} ${f.span12}`}
+          style={{ cursor: 'pointer', textAlign: 'center' }}
+          onClick={runLocate}
+          disabled={locStatus.kind === 'loading'}
+        >
+          {locStatus.kind === 'loading' ? 'Locating…' : 'Use my location'}
+        </button>
+
+        {locStatus.kind === 'ready' && (
+          <>
+            <span className={f.label}></span>
+            <span className={f.span12} style={{ fontSize: 12, opacity: 0.75 }}>
+              {`${locStatus.result.lat.toFixed(1)}, ${locStatus.result.lon.toFixed(1)} → zone ${locStatus.result.zone}, last frost ${locStatus.result.lastFrost}`}
+            </span>
+          </>
+        )}
+
+        {locStatus.kind === 'error' && (
+          <>
+            <span className={f.label}></span>
+            <span className={f.span12} style={{ fontSize: 12, color: '#c44' }}>
+              {locStatus.message}{' '}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  runLocate();
+                }}
+              >
+                try again
+              </a>
+            </span>
+          </>
+        )}
 
         <span className={f.label}></span>
         <button
