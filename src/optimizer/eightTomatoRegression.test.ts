@@ -2,18 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { buildMipModel } from './formulation';
 import { DEFAULT_WEIGHTS, type OptimizationInput } from './types';
 
-// HiGHS-WASM (highs-js 1.8.0) crashes mid-solve when fed the LP for 8
-// same-cultivar copies in a 4×7.5ft raised bed at 4-inch grid resolution.
-// The crash mode varies ("table index is out of bounds", "Too few lines",
-// "Aborted()") because the WASM heap state from one solve call leaks
-// into the next. The same-species adjacency rows are responsible — see
-// `worker.ts` which retries without them on solver failure.
+// HiGHS-WASM (highs-js 1.8.0) crashes when fed too many binary placement
+// vars and/or too many same-species adjacency rows. The 8-tomato/4×7.5ft/4in
+// case used to produce ~1760 binary vars and ~5650 adj rows and crash with
+// "Too few lines". Snapping each plant's candidate cells to a footprint-aware
+// pitch cuts var counts dramatically without quality loss.
 //
-// We don't assert on a specific solver outcome here (it's flaky upstream),
-// only that the model topology that triggers the bug is what we expect:
-// a small handful of aux variables with a large number of adjacency rows.
+// These regressions verify the LP topology stays well below the danger zone.
 describe('8-tomato regression model topology', () => {
-  it('produces lots of same-species adjacency rows', () => {
+  it('keeps placement var count and adj rows below the HiGHS-WASM danger zone', () => {
     const input: OptimizationInput = {
       bed: { widthIn: 48, lengthIn: 90, trellisEdge: null, edgeClearanceIn: 0 },
       plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, climber: false }],
@@ -22,8 +19,9 @@ describe('8-tomato regression model topology', () => {
     };
     const model = buildMipModel(input);
     expect(model.aux.length).toBe(28); // C(8,2) same-species pairs
+    expect(model.vars.length).toBeLessThan(800); // pre-fix was 1760
     const adjRows = model.constraints.filter((c) => c.label.startsWith('adj:'));
-    expect(adjRows.length).toBeGreaterThan(5000); // dense neighborhood × pairs
+    expect(adjRows.length).toBeLessThan(1500); // pre-fix was ~5650; below same-species adj budget
   });
 
   it('every aux is for a same-species pair (so all adj rows are stripped on fallback)', () => {

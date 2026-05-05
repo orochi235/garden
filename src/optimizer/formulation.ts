@@ -62,9 +62,20 @@ export function buildMipModel(input: OptimizationInput): MipModel {
     }
   }
 
+  // Per-plant candidate-cell pitch: snap candidate cells to a stride proportional
+  // to the plant's footprint. A 12-inch tomato has no business getting 4-inch
+  // placement candidates — cuts the binary-var count dramatically without
+  // hurting solution quality (placements only a few inches apart are
+  // indistinguishable to the user). Pitch is in fine-grid cells.
+  const plantPitch: number[] = expanded.map((p) =>
+    Math.max(1, Math.round(p.footprintIn / g / 2)),
+  );
+
   const vars: MipVar[] = [];
   for (let pi = 0; pi < expanded.length; pi++) {
+    const stride = plantPitch[pi];
     for (const cell of cells) {
+      if (cell.i % stride !== 0 || cell.j % stride !== 0) continue;
       if (footprintFits(expanded[pi], cell, bed, g)) {
         const c = perCellCoeff(expanded[pi], cell, input);
         vars.push({
