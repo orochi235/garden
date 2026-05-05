@@ -94,7 +94,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 - ~~Click-to-sow without a current cultivar concept (see Phase 4 deferral on `useSowCellTool`) — design a `currentCultivarId` UI source.~~ Resolved via `armedCultivarId` (see Phase 4 deferral above).
 - True marquee area-select on seed-starting tray background (see updated Phase 4 deferral).
 - ~~Palette drag → Tool primitive (`usePaletteDropTool`) so the seed-starting view bridge can drop and the canvas owns its own view state.~~ Resolved 2026-05-04 — see Seed-starting deferrals above.
-- Garden palette → canvas drag (`App.handlePaletteDragBegin`) still reads `useUiStore.zoom`/`panX`/`panY` directly because garden mode's view IS the ui store. The seed-starting refactor (2026-05-04) deliberately scoped to seed-starting only. Migrate garden mode to a canvas-owned view (and matching `usePaletteDropTool` registration on `CanvasNewPrototype`) as a follow-up.
+- ~~Garden palette → canvas drag (`App.handlePaletteDragBegin`) still reads `useUiStore.zoom`/`panX`/`panY` directly…~~ Partially resolved 2026-05-04: the palette-drag refactor landed via `useGardenPaletteDropTool` (registered on `GardenCanvasNewPrototype`). `App.handlePaletteDragBegin` is now a 3-line setter that hands the gesture off through `palettePointerPayload`, mirroring `handleSeedDragBegin`. The new tool still reads `useUiStore.zoom`/`panX`/`panY` directly (minimal-scope refactor) — full canvas-owned view migration for garden mode (`viewRef`, local React view state, plumbed setter, mirroring every layer that reads zoom/pan) is **still deferred**. Pursuing it requires touching every garden layer/tool that consults the view.
 
 ## ViewToolbar wire-up deferrals
 
