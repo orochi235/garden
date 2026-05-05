@@ -58,15 +58,35 @@ async function solve(
 
     onProgress('solve', n);
     greedyHexPack(workingInput); // warm-start hint (logged; unused by LP-string API)
-    const lpString = mipModelToLpString(model);
     const solveStart = performance.now();
 
-    const solution = HighsModule.solve(lpString, {
+    const solveOpts = {
       time_limit: input.timeLimitSec,
       mip_rel_gap: input.mipGap,
       output_flag: false,
       log_to_console: false,
-    });
+    };
+
+    // HiGHS-WASM (highs-js 1.8.0) has a bug where large adjacency matrices
+    // (many same-species copies × dense neighborhood) crash the solver mid-run
+    // with "table index is out of bounds" or similar. The same-species adjacency
+    // rows are responsible for >95% of the constraint count in those cases.
+    // Fallback path: drop them and retry. Quality degrades (no same-species
+    // spreading penalty) but the user gets a layout instead of an error.
+    let solution = trySolve(HighsModule, mipModelToLpString(model), solveOpts);
+    if (!solution) {
+      console.warn('[optimizer] candidate', n, 'solver crashed; retrying without same-species adjacency');
+      const sameSpeciesAux = sameSpeciesAuxNames(model);
+      const stripped = {
+        ...model,
+        constraints: model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux)),
+      };
+      solution = trySolve(HighsModule, mipModelToLpString(stripped), solveOpts);
+      if (!solution) {
+        console.warn('[optimizer] candidate', n, 'solver crashed again after fallback; skipping');
+        continue;
+      }
+    }
 
     if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
       console.warn('[optimizer] candidate', n, 'status:', solution.Status);
@@ -111,7 +131,7 @@ async function loadHighs(): Promise<any> {
  * Vars are binary (0/1); aux vars are continuous [0,1].
  * Objective is maximized.
  */
-function mipModelToLpString(model: MipModel): string {
+export function mipModelToLpString(model: MipModel): string {
   const lines: string[] = [];
 
   // Objective
@@ -171,6 +191,46 @@ function formatCoeff(c: number): string {
   if (c === -1) return '-';
   if (c >= 0) return `+ ${c}`;
   return `- ${Math.abs(c)}`;
+}
+
+function trySolve(
+  HighsModule: { solve: (lp: string, opts: object) => HighsSolution },
+  lp: string,
+  opts: object,
+): HighsSolution | null {
+  try {
+    return HighsModule.solve(lp, opts);
+  } catch (e) {
+    console.warn('[optimizer] HiGHS threw:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+interface HighsSolution {
+  Status: string;
+  Columns: Record<string, { Primal: number }>;
+  ObjectiveValue: number;
+}
+
+/** Identify aux variable names whose pair represents same-species copies. */
+function sameSpeciesAuxNames(model: MipModel): Set<string> {
+  const out = new Set<string>();
+  for (const aux of model.aux) {
+    const m = aux.name.match(/^n_(\d+)_(\d+)$/);
+    if (!m) continue;
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (model.plants[a]?.cultivarId === model.plants[b]?.cultivarId) {
+      out.add(aux.name);
+    }
+  }
+  return out;
+}
+
+/** Match `adj:n_{a}_{b}_{i}_{j}`, `adj_ub_a:n_{a}_{b}`, or `adj_ub_b:n_{a}_{b}` rows. */
+function isAdjRowForAux(label: string, auxNames: Set<string>): boolean {
+  const m = label.match(/^(?:adj|adj_ub_a|adj_ub_b):(n_\d+_\d+)/);
+  return m != null && auxNames.has(m[1]);
 }
 
 /** LP variable names may not contain special chars — replace them. */
