@@ -7,7 +7,23 @@ import { createMarkdownRenderer, renderLabel, type TextRenderer } from '@orochi2
 import type { RenderLayer } from '@orochi235/weasel';
 import { renderPlant } from '../plantRenderers';
 import { plantingWorldPose } from '../../utils/plantingPose';
-import type { GetUi, View } from './worldLayerData';
+import type { GetUi, LayerDescriptor, View } from './worldLayerData';
+import { descriptorById } from './worldLayerData';
+
+/**
+ * Single source of truth for planting/container-layer metadata. Order = draw
+ * order. Factory pulls label/alwaysOn/defaultVisible by id; the panel
+ * imports the array for the "Plantings" group.
+ */
+export const PLANTING_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
+  { id: 'container-overlays', label: 'Container Overlays' },
+  { id: 'planting-spacing', label: 'Planting Spacing' },
+  { id: 'planting-icons', label: 'Planting Icons', alwaysOn: true },
+  { id: 'planting-measurements', label: 'Planting Measurements', defaultVisible: false },
+  { id: 'planting-highlights', label: 'Planting Highlights' },
+  { id: 'planting-labels', label: 'Planting Labels' },
+  { id: 'container-walls', label: 'Container Walls' },
+];
 
 interface RenderedRect { x: number; y: number; w: number; h: number }
 
@@ -87,10 +103,10 @@ export function createPlantingLayers(
   getStructures: () => Structure[],
   getUi: GetUi,
 ): RenderLayer<unknown>[] {
+  const meta = descriptorById(PLANTING_LAYER_DESCRIPTORS);
   return [
     {
-      id: 'container-overlays',
-      label: 'Container Overlays',
+      ...meta['container-overlays'],
       draw(ctx, _data, view) {
         const plantings = getPlantings();
         const zones = getZones();
@@ -148,8 +164,7 @@ export function createPlantingLayers(
     },
 
     {
-      id: 'planting-spacing',
-      label: 'Planting Spacing',
+      ...meta['planting-spacing'],
       draw(ctx, _data, view) {
         const data = getUi();
         const plantings = getPlantings();
@@ -191,9 +206,7 @@ export function createPlantingLayers(
     },
 
     {
-      id: 'planting-icons',
-      label: 'Planting Icons',
-      alwaysOn: true,
+      ...meta['planting-icons'],
       draw(ctx, _data, view) {
         const data = getUi();
         const plantings = getPlantings();
@@ -223,9 +236,7 @@ export function createPlantingLayers(
     },
 
     {
-      id: 'planting-measurements',
-      label: 'Planting Measurements',
-      defaultVisible: false,
+      ...meta['planting-measurements'],
       draw(ctx, _data, view) {
         const data = getUi();
         const plantings = getPlantings();
@@ -261,8 +272,7 @@ export function createPlantingLayers(
     },
 
     {
-      id: 'planting-highlights',
-      label: 'Planting Highlights',
+      ...meta['planting-highlights'],
       draw(ctx, _data, view) {
         const data = getUi();
         if (data.highlightOpacity <= 0) return;
@@ -291,8 +301,7 @@ export function createPlantingLayers(
     },
 
     {
-      id: 'planting-labels',
-      label: 'Planting Labels',
+      ...meta['planting-labels'],
       draw(ctx, _data, view) {
         const data = getUi();
         if (data.labelMode === 'none') return;
@@ -364,8 +373,7 @@ export function createPlantingLayers(
     },
 
     {
-      id: 'container-walls',
-      label: 'Container Walls',
+      ...meta['container-walls'],
       // Inner rim stroke (at the soil/wall boundary), drawn AFTER plantings so
       // it visually crops plant icons that overhang the soil edge. The outer
       // rim stroke + rim fill live in `structure-walls`; this layer is only

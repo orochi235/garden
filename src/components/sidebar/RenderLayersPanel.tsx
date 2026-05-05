@@ -5,35 +5,71 @@ import {
   type RegisteredLayer,
   type RegistryMode,
 } from '../../canvas/layers/renderLayerRegistry';
+import { STRUCTURE_LAYER_DESCRIPTORS } from '../../canvas/layers/structureLayersWorld';
+import { ZONE_LAYER_DESCRIPTORS } from '../../canvas/layers/zoneLayersWorld';
+import { PLANTING_LAYER_DESCRIPTORS } from '../../canvas/layers/plantingLayersWorld';
+import { SELECTION_LAYER_DESCRIPTORS } from '../../canvas/layers/selectionLayersWorld';
+import type { LayerDescriptor } from '../../canvas/layers/worldLayerData';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
 
 /**
- * The panel groups layers by id-prefix so the list stays scannable as more
- * layers get added by the prototypes. Anything that doesn't match a known
- * prefix falls into 'Other' so it still shows up.
+ * Each garden-mode group is defined by an explicit array of descriptors
+ * imported from the corresponding `*LayersWorld.ts` factory. That array is
+ * the single source of truth for `id`/`label`/`alwaysOn`/`defaultVisible`
+ * — the factory uses it to build its `RenderLayer` objects, and we use it
+ * here to decide group membership without prefix-matching ids.
+ *
+ * Anything registered at runtime that isn't in any descriptor group (debug
+ * overlays, seed-starting mode layers, future ad-hoc layers) falls through
+ * to a prefix-based fallback so it still shows up in the panel.
  */
-const GROUPS: { name: string; match: (id: string) => boolean }[] = [
-  { name: 'Structures', match: (id) => id.startsWith('structure-') },
-  { name: 'Zones', match: (id) => id.startsWith('zone-') },
-  { name: 'Plantings', match: (id) => id.startsWith('planting-') || id.startsWith('container-') },
+const DESCRIPTOR_GROUPS: { name: string; descriptors: readonly LayerDescriptor[] }[] = [
+  { name: 'Structures', descriptors: STRUCTURE_LAYER_DESCRIPTORS },
+  { name: 'Zones', descriptors: ZONE_LAYER_DESCRIPTORS },
+  { name: 'Plantings', descriptors: PLANTING_LAYER_DESCRIPTORS },
+  { name: 'Selection', descriptors: SELECTION_LAYER_DESCRIPTORS },
+];
+
+const DESCRIPTOR_GROUP_IDS: Set<string> = new Set(
+  DESCRIPTOR_GROUPS.flatMap((g) => g.descriptors.map((d) => d.id)),
+);
+
+/** Fallback prefix groups for layers not covered by descriptor arrays. */
+const FALLBACK_GROUPS: { name: string; match: (id: string) => boolean }[] = [
   { name: 'Trays', match: (id) => id.startsWith('tray-') },
   { name: 'Seedlings', match: (id) => id.startsWith('seedling') },
-  { name: 'Selection', match: (id) => id.startsWith('selection-') },
   { name: 'System', match: (id) => id.startsWith('system') },
   { name: 'Debug', match: (id) => id.startsWith('debug') },
 ];
 
 function groupLayers(layers: RegisteredLayer[]): { name: string; layers: RegisteredLayer[] }[] {
-  const buckets = GROUPS.map((g) => ({ name: g.name, layers: [] as RegisteredLayer[] }));
-  const other: RegisteredLayer[] = [];
-  for (const layer of layers) {
-    const idx = GROUPS.findIndex((g) => g.match(layer.id));
-    if (idx >= 0) buckets[idx].layers.push(layer);
-    else other.push(layer);
+  const byId = new Map(layers.map((l) => [l.id, l] as const));
+  const out: { name: string; layers: RegisteredLayer[] }[] = [];
+
+  // Descriptor-driven groups: only include if at least one of their
+  // descriptors is actually registered for the current mode.
+  for (const group of DESCRIPTOR_GROUPS) {
+    const present: RegisteredLayer[] = [];
+    for (const d of group.descriptors) {
+      const live = byId.get(d.id);
+      if (live) present.push(live);
+    }
+    if (present.length > 0) out.push({ name: group.name, layers: present });
   }
-  if (other.length > 0) buckets.push({ name: 'Other', layers: other });
-  return buckets.filter((b) => b.layers.length > 0);
+
+  // Fallback prefix groups for everything else.
+  const remaining = layers.filter((l) => !DESCRIPTOR_GROUP_IDS.has(l.id));
+  for (const fallback of FALLBACK_GROUPS) {
+    const matched = remaining.filter((l) => fallback.match(l.id));
+    if (matched.length > 0) out.push({ name: fallback.name, layers: matched });
+  }
+
+  const other = remaining.filter(
+    (l) => !FALLBACK_GROUPS.some((f) => f.match(l.id)),
+  );
+  if (other.length > 0) out.push({ name: 'Other', layers: other });
+  return out;
 }
 
 export function RenderLayersPanel() {

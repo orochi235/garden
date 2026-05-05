@@ -89,8 +89,8 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## Canvas redesign deferrals (Phase 5)
 
-- `RenderLayersPanel` now hardcodes the layer descriptor list (id/label/alwaysOn/defaultVisible) for the four garden groups. Keep this in sync with `src/canvas/layers/{structure,zone,planting,selection}LayersWorld.ts` whenever a layer is added or its flags change. Future cleanup: have each `createXxxLayers` factory expose a `*_LAYER_DESCRIPTORS` static so the panel doesn't drift.
-- `?debug=handles` is documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
+- ~~`RenderLayersPanel` now hardcodes the layer descriptor list (id/label/alwaysOn/defaultVisible) for the four garden groups.~~ Resolved: each `*LayersWorld.ts` exports a `*_LAYER_DESCRIPTORS` array as the single source of truth; factories build their `RenderLayer` objects from those descriptors, `RenderLayersPanel` imports the arrays for explicit group membership, and `layerDescriptors.test.ts` asserts factory output matches the descriptor array exactly.
+- `?debug=handles` is documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator). When the new layer lands, also add its descriptor to `SELECTION_LAYER_DESCRIPTORS` in `selectionLayersWorld.ts` so the sidebar picks it up.
 - Per-id flash opacity for seedling selection still unwired; garden currently aggregates all selected ids into a single `highlightOpacity`. Push per-id pulses into both modes.
 - Click-to-sow without a current cultivar concept (see Phase 4 deferral on `useSowCellTool`) — design a `currentCultivarId` UI source.
 - True marquee area-select on seed-starting tray background (see updated Phase 4 deferral).

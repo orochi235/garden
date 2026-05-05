@@ -2,18 +2,31 @@ import type { RenderLayer } from '@orochi235/weasel';
 import { renderLabel } from '@orochi235/weasel';
 import { renderPatternOverlay, type PatternId } from '../patterns';
 import type { Zone } from '../../model/types';
-import type { GetUi, View } from './worldLayerData';
+import type { GetUi, LayerDescriptor, View } from './worldLayerData';
+import { descriptorById } from './worldLayerData';
 
 function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
 }
 
+/**
+ * Single source of truth for zone-layer metadata. Order here = canonical
+ * draw order. The factory below pulls `label`/`alwaysOn`/`defaultVisible`
+ * from these entries by id, and `RenderLayersPanel` imports the array to
+ * build its "Zones" group.
+ */
+export const ZONE_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
+  { id: 'zone-bodies', label: 'Zone Bodies', alwaysOn: true },
+  { id: 'zone-patterns', label: 'Zone Patterns' },
+  { id: 'zone-highlights', label: 'Zone Highlights' },
+  { id: 'zone-labels', label: 'Zone Labels' },
+];
+
 export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLayer<unknown>[] {
+  const meta = descriptorById(ZONE_LAYER_DESCRIPTORS);
   return [
     {
-      id: 'zone-bodies',
-      label: 'Zone Bodies',
-      alwaysOn: true,
+      ...meta['zone-bodies'],
       draw(ctx, _data, view) {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
@@ -31,8 +44,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
       },
     },
     {
-      id: 'zone-patterns',
-      label: 'Zone Patterns',
+      ...meta['zone-patterns'],
       draw(ctx, _data, _view) {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
@@ -44,8 +56,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
       },
     },
     {
-      id: 'zone-highlights',
-      label: 'Zone Highlights',
+      ...meta['zone-highlights'],
       draw(ctx, _data, view) {
         const ui = getUi();
         if (ui.highlightOpacity <= 0) return;
@@ -62,8 +73,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
       },
     },
     {
-      id: 'zone-labels',
-      label: 'Zone Labels',
+      ...meta['zone-labels'],
       draw(ctx, _data, view) {
         const ui = getUi();
         if (ui.labelMode === 'none' || ui.labelMode === 'selection') return;
