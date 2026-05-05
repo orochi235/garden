@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { plantingLayoutFor } from './plantingLayout';
-import type { Garden } from '../../model/types';
+import type { Garden, Structure } from '../../model/types';
 
 function makeGarden(): Garden {
   return {
@@ -91,6 +91,30 @@ describe('plantingLayoutFor', () => {
       { pose: { x: 12, y: 12 }, origin: { x: 12, y: 12 } },
     );
     expect(ops).toHaveLength(2);
+  });
+
+  it('preserves regionId on drop target metadata for multi arrangements', () => {
+    const garden = makeGarden();
+    // Swap bed-1 to a multi arrangement with two single-slot regions
+    const bed = garden.structures.find((s) => s.id === 'bed-1') as Structure;
+    bed.arrangement = {
+      type: 'multi',
+      regions: [
+        { id: 'left', bounds: { x: 0, y: 0, w: 0.5, h: 1 }, arrangement: { type: 'single' } },
+        { id: 'right', bounds: { x: 0.5, y: 0, w: 0.5, h: 1 }, arrangement: { type: 'single' } },
+      ],
+    };
+    const layout = plantingLayoutFor(() => garden, 'bed-1')!;
+    const targets = layout.getDropTargets(
+      { id: 'bed-1', bounds: { x: 20, y: 20, width: 6, height: 4 } },
+      [],
+      { id: 'p', originPose: { x: 0, y: 0 }, pose: { x: 0, y: 0 }, sourceContainerId: null },
+    );
+    expect(targets).toHaveLength(2);
+    const leftTarget = targets.find((t) => (t.meta as { regionId?: string } | undefined)?.regionId === 'left');
+    const rightTarget = targets.find((t) => (t.meta as { regionId?: string } | undefined)?.regionId === 'right');
+    expect(leftTarget).toBeDefined();
+    expect(rightTarget).toBeDefined();
   });
 
   it('commitDrop omits reparent when source is the same container', () => {

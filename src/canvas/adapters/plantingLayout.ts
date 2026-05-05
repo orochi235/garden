@@ -19,9 +19,22 @@ import type { Op } from '@orochi235/weasel';
 import { computeSlots, type Arrangement } from '../../model/arrangement';
 import { getPlantableBounds } from '../../model/types';
 import type { Garden, Structure, Zone } from '../../model/types';
+import { getCultivar, type Cultivar } from '../../model/cultivars';
 import type { PlantingPose } from './plantingMove';
 
 type Container = (Structure | Zone) & { arrangement: Arrangement | null };
+
+/** Resolve the cultivars of all plantings inside a container, for auto-pitch strategies. */
+function cultivarsForContainer(garden: Garden, container: Container): Cultivar[] {
+  const cultivars: Cultivar[] = [];
+  for (const p of garden.plantings) {
+    if (p.parentId === container.id) {
+      const c = getCultivar(p.cultivarId);
+      if (c) cultivars.push(c);
+    }
+  }
+  return cultivars;
+}
 
 function findContainer(garden: Garden, id: string): Container | null {
   const s = garden.structures.find((x) => x.id === id);
@@ -97,14 +110,19 @@ export function plantingLayoutFor(
       }
 
       const bounds = getPlantableBounds(c);
-      const slots = computeSlots(c.arrangement!, bounds);
+      const cultivars = cultivarsForContainer(garden, c);
+      const slots = computeSlots(c.arrangement!, bounds, cultivars);
       const occupied = new Set(
         children.filter((ch) => ch.id !== dragged.id).map((ch) => `${ch.pose.x},${ch.pose.y}`),
       );
       const out: DropTarget<PlantingPose>[] = [];
       for (const s of slots) {
         if (occupied.has(`${s.x},${s.y}`)) continue;
-        out.push({ pose: { x: s.x, y: s.y }, origin: { x: s.x, y: s.y } });
+        out.push({
+          pose: { x: s.x, y: s.y },
+          origin: { x: s.x, y: s.y },
+          meta: s.regionId ? { regionId: s.regionId } : undefined,
+        });
       }
       return out;
     },
