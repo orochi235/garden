@@ -1,8 +1,7 @@
 import type { JSX } from 'react';
-import { computeFitView } from '@orochi235/weasel';
-import { useGardenStore } from '../store/gardenStore';
 import type { ViewMode } from '../store/uiStore';
 import { useUiStore } from '../store/uiStore';
+import { resetCurrentCanvasView } from '../actions/view/resetView';
 import styles from '../styles/ViewToolbar.module.css';
 
 const icons: Record<ViewMode, JSX.Element> = {
@@ -98,17 +97,6 @@ const tools: { mode: ViewMode; label: string }[] = [
 export function ViewToolbar() {
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
-  const setZoom = useUiStore((s) => s.setZoom);
-  const setPan = useUiStore((s) => s.setPan);
-  const garden = useGardenStore((s) => s.garden);
-
-  function handleZoomReset() {
-    const el = document.querySelector('[data-canvas-container]');
-    if (!el) return;
-    const fit = computeFitView(el.clientWidth, el.clientHeight, garden.widthFt, garden.heightFt);
-    setZoom(fit.zoom);
-    setPan(fit.panX, fit.panY);
-  }
 
   return (
     <div className={styles.container}>
@@ -117,7 +105,7 @@ export function ViewToolbar() {
           key={t.mode}
           className={`${styles.button} ${viewMode === t.mode ? styles.active : ''}`}
           onClick={() => setViewMode(t.mode)}
-          onDoubleClick={t.mode === 'zoom' ? handleZoomReset : undefined}
+          onDoubleClick={t.mode === 'zoom' ? resetCurrentCanvasView : undefined}
           title={t.label}
         >
           <span className={styles.icon}>{icons[t.mode]}</span>

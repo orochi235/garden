@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
+import { createTray } from '@/model/seedStarting';
 import { resetViewAction } from './resetView';
 import type { ActionContext } from '../types';
 
@@ -46,5 +47,28 @@ describe('resetViewAction', () => {
   it('has meta+0 shortcut', () => {
     const shortcut = resetViewAction.shortcut;
     expect(shortcut).toEqual({ key: '0', meta: true });
+  });
+
+  it('fits the current tray when in seed-starting mode', () => {
+    const tray = createTray({ rows: 6, cols: 4, cellSize: 'medium', label: 't1' });
+    useGardenStore.getState().addTraySilent(tray);
+    const ui = useUiStore.getState();
+    ui.setAppMode('seed-starting');
+    ui.setCurrentTrayId(tray.id);
+    ui.setSeedStartingZoom(99);
+    ui.setSeedStartingPan(123, 456);
+
+    resetViewAction.execute(ctx);
+
+    const after = useUiStore.getState();
+    const fitW = (800 * 0.85) / tray.widthIn;
+    const fitH = (600 * 0.85) / tray.heightIn;
+    expect(after.seedStartingZoom).toBeCloseTo(Math.min(fitW, fitH));
+    expect(after.seedStartingPanX).toBe(0);
+    expect(after.seedStartingPanY).toBe(0);
+    // Garden zoom/pan should be untouched.
+    expect(after.zoom).toBe(1);
+    expect(after.panX).toBe(0);
+    expect(after.panY).toBe(0);
   });
 });
