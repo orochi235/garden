@@ -26,7 +26,7 @@ export interface Structure {
   x: number;
   y: number;
   width: number;
-  height: number;
+  length: number;
   rotation: number;
   color: string;
   label: string;
@@ -58,7 +58,7 @@ export interface Zone {
   x: number;
   y: number;
   width: number;
-  height: number;
+  length: number;
   color: string;
   label: string;
   zIndex: number;
@@ -84,7 +84,7 @@ export interface Garden {
   version: number;
   name: string;
   widthFt: number;
-  heightFt: number;
+  lengthFt: number;
   gridCellSizeFt: number;
   displayUnit: DisplayUnit;
   groundColor: string;
@@ -101,13 +101,13 @@ export function generateId(): string {
   return crypto.randomUUID?.() ?? `id-${++_idCounter}-${Date.now()}`;
 }
 
-export function createGarden(opts: { name: string; widthFt: number; heightFt: number }): Garden {
+export function createGarden(opts: { name: string; widthFt: number; lengthFt: number }): Garden {
   return {
     id: generateId(),
     version: 1,
     name: opts.name,
     widthFt: opts.widthFt,
-    heightFt: opts.heightFt,
+    lengthFt: opts.lengthFt,
     gridCellSizeFt: 1,
     displayUnit: 'ft',
     groundColor: '#4A7C59',
@@ -155,7 +155,7 @@ export function createStructure(opts: {
   x: number;
   y: number;
   width: number;
-  height: number;
+  length: number;
   shape?: StructureShape;
   groupId?: string;
 }): Structure {
@@ -166,7 +166,7 @@ export function createStructure(opts: {
     x: opts.x,
     y: opts.y,
     width: opts.width,
-    height: opts.height,
+    length: opts.length,
     rotation: 0,
     color: DEFAULT_STRUCTURE_COLORS[opts.type] ?? '#8B6914',
     label: opts.type,
@@ -183,13 +183,13 @@ export function createStructure(opts: {
   };
 }
 
-export function createZone(opts: { x: number; y: number; width: number; height: number; color?: string; pattern?: string | null }): Zone {
+export function createZone(opts: { x: number; y: number; width: number; length: number; color?: string; pattern?: string | null }): Zone {
   return {
     id: generateId(),
     x: opts.x,
     y: opts.y,
     width: opts.width,
-    height: opts.height,
+    length: opts.length,
     color: opts.color ?? '#7FB06944',
     label: 'zone',
     zIndex: 0,
@@ -220,14 +220,14 @@ export function createPlanting(opts: {
 }
 
 /** Return the inner plantable bounds of a structure, inset by wall thickness. */
-export function getPlantableBounds(s: { x: number; y: number; width: number; height: number; shape?: string; wallThicknessFt?: number }): ParentBounds {
+export function getPlantableBounds(s: { x: number; y: number; width: number; length: number; shape?: string; wallThicknessFt?: number }): ParentBounds {
   const wall = s.wallThicknessFt ?? 0;
   const inset = wall * 2;
   return {
     x: s.x + wall,
     y: s.y + wall,
     width: Math.max(0, s.width - inset),
-    height: Math.max(0, s.height - inset),
+    height: Math.max(0, s.length - inset),
     shape: (s.shape === 'circle' ? 'circle' : 'rectangle') as 'rectangle' | 'circle',
   };
 }
