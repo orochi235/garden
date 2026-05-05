@@ -7,7 +7,7 @@ import { DEFAULT_WEIGHTS } from './types';
 describe('formulation perf smoke (CI hardware)', () => {
   it('builds a 4×8 ft bed × 30 plants formulation in under 1s and a manageable size', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, heightIn: 96, trellisEdge: 'N', edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 96, trellisEdge: 'N', edgeClearanceIn: 0 },
       plants: Array.from({ length: 10 }, (_, i) => ({
         cultivarId: `p${i}`,
         count: 3,

@@ -10,8 +10,8 @@ export type Edge = 'N' | 'E' | 'S' | 'W';
 export interface OptimizerBed {
   /** Bed width along the X axis, in inches. */
   widthIn: number;
-  /** Bed depth along the Y axis, in inches. */
-  heightIn: number;
+  /** Bed length along the Y axis, in inches. */
+  lengthIn: number;
   /** Trellis edge if any, used to attract climber-flagged plants. */
   trellisEdge: Edge | null;
   /** Per-edge clearance, inches. Default 0. */
@@ -36,7 +36,7 @@ export interface UserRegion {
   xIn: number;
   yIn: number;
   widthIn: number;
-  heightIn: number;
+  lengthIn: number;
   /** Cultivar ids that should prefer this region. */
   preferredCultivarIds: string[];
 }

@@ -26,7 +26,7 @@ export function greedyHexPack(input: OptimizationInput): SeedPlacement[] {
   const out: SeedPlacement[] = [];
   const m = input.bed.edgeClearanceIn;
   const w = input.bed.widthIn;
-  const h = input.bed.heightIn;
+  const h = input.bed.lengthIn;
 
   for (const plant of expanded) {
     const r = plant.footprintIn / 2;

@@ -31,7 +31,7 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
   const input: OptimizationInput = {
     bed: {
       widthIn: args.bed.width * FT_TO_IN,
-      heightIn: args.bed.height * FT_TO_IN,
+      lengthIn: args.bed.length * FT_TO_IN,
       trellisEdge: args.bed.trellisEdge,
       edgeClearanceIn: 0,
     },

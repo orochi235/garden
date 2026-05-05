@@ -40,7 +40,7 @@ export function buildMipModel(input: OptimizationInput): MipModel {
   const { bed, plants, gridResolutionIn: g, weights } = input;
   const cells: MipModel['cells'] = [];
   const cols = Math.floor((bed.widthIn - 2 * bed.edgeClearanceIn) / g);
-  const rows = Math.floor((bed.heightIn - 2 * bed.edgeClearanceIn) / g);
+  const rows = Math.floor((bed.lengthIn - 2 * bed.edgeClearanceIn) / g);
 
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
@@ -112,14 +112,18 @@ export function buildMipModel(input: OptimizationInput): MipModel {
     for (let n = 0; n < indices.length - 1; n++) {
       const a = indices[n];
       const b = indices[n + 1];
-      // Σ (cellOrder * x[a,c]) ≤ Σ (cellOrder * x[b,c]) - 1
+      // Σ (cellOrder * x[a,c]) ≤ Σ (cellOrder * x[b,c])
+      // Weak ≤ (not strict ≤ −1): coverage already forbids two copies of the same cultivar at
+      // the same cell (overlapping footprints), so allowing equality here doesn't admit any
+      // illegal solution. The strict form combined with the big-M cellOrder coefficient
+      // weakens the LP relaxation and dramatically slows branch-and-bound.
       const terms: Record<string, number> = {};
       for (const v of vars) {
         const order = v.cellI * 1000 + v.cellJ;
         if (v.plantIdx === a) terms[v.name] = (terms[v.name] ?? 0) + order;
         if (v.plantIdx === b) terms[v.name] = (terms[v.name] ?? 0) - order;
       }
-      constraints.push({ terms, op: '<=', rhs: -1, label: `sym:${a}<${b}` });
+      constraints.push({ terms, op: '<=', rhs: 0, label: `sym:${a}<${b}` });
     }
   }
 
@@ -185,31 +189,45 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         auxCoeff -= weights.shading * shadingPenalty;
       }
 
+      // Skip aux entirely if the coefficient is zero — no contribution to the objective.
+      if (!Number.isFinite(auxCoeff) || auxCoeff === 0) continue;
+
       aux.push({ name: auxName, c: auxCoeff });
 
-      // n[a,b] >= x[a,i,j] + x[b,k,l] - 1 for close cell pairs only
+      // Aggregate adjacency: for each candidate cell of a, sum b's candidate cells within range.
+      // n[a,b] >= x[a, c_a] + sum_{c_b in N(c_a)} x[b, c_b] - 1
+      // Since plant b is placed in exactly one cell (placement constraint), the sum is 0 or 1,
+      // and this is equivalent to the per-cell-pair big-M form but uses |cells_a| rows instead
+      // of |cells_a| * |cells_b within range|.
+      // The symmetric anchor on b is redundant (one direction suffices to force n_ab = 1 when
+      // both copies are adjacent).
       for (const va of cellPairsForA) {
         const cellA = cellByIJ.get(`${va.cellI}_${va.cellJ}`)!;
+        const terms: Record<string, number> = { [auxName]: -1, [va.name]: 1 };
+        let neighborCount = 0;
         for (const vb of cellPairsForB) {
-          // Quick grid-distance pre-filter to avoid sqrt for distant pairs
           const di = Math.abs(va.cellI - vb.cellI);
           const dj = Math.abs(va.cellJ - vb.cellJ);
           if (di > maxCellDist || dj > maxCellDist) continue;
-
           const cellB = cellByIJ.get(`${vb.cellI}_${vb.cellJ}`)!;
           const dist = Math.hypot(cellA.xCenterIn - cellB.xCenterIn, cellA.yCenterIn - cellB.yCenterIn);
           if (dist <= adjacencyIn) {
-            constraints.push({
-              terms: { [auxName]: -1, [va.name]: 1, [vb.name]: 1 },
-              op: '<=',
-              rhs: 1,
-              label: `adj:${auxName}_${va.cellI}_${va.cellJ}_${vb.cellI}_${vb.cellJ}`,
-            });
+            terms[vb.name] = (terms[vb.name] ?? 0) + 1;
+            neighborCount++;
           }
         }
+        // If no neighbors, this row reduces to n_ab >= x[a,c_a] - 1, which is implied by n_ab >= 0.
+        if (neighborCount === 0) continue;
+        constraints.push({
+          terms,
+          op: '<=',
+          rhs: 1,
+          label: `adj:${auxName}_${va.cellI}_${va.cellJ}`,
+        });
       }
 
-      // n[a,b] <= sum x[a,*]
+      // n[a,b] <= sum x[a,*]  (forces n_ab = 0 if a is unplaced; relevant only for negative coeffs
+      // since with placement = 1 these are slack)
       const termsA: Record<string, number> = { [auxName]: 1 };
       for (const va of cellPairsForA) termsA[va.name] = -1;
       constraints.push({ terms: termsA, op: '<=', rhs: 0, label: `adj_ub_a:${auxName}` });
@@ -235,7 +253,7 @@ function footprintFits(
     cell.xCenterIn - r >= bed.edgeClearanceIn &&
     cell.xCenterIn + r <= bed.widthIn - bed.edgeClearanceIn &&
     cell.yCenterIn - r >= bed.edgeClearanceIn &&
-    cell.yCenterIn + r <= bed.heightIn - bed.edgeClearanceIn
+    cell.yCenterIn + r <= bed.lengthIn - bed.edgeClearanceIn
   );
 }
 
@@ -262,7 +280,7 @@ function perCellCoeff(
   // Trellis attraction: closer to the trellis edge → higher coefficient
   if (p.climber && input.bed.trellisEdge) {
     const distFromEdge = distanceToEdge(cell, input.bed);
-    const maxDist = Math.max(input.bed.widthIn, input.bed.heightIn);
+    const maxDist = Math.max(input.bed.widthIn, input.bed.lengthIn);
     c += input.weights.trellisAttraction * (1 - distFromEdge / maxDist);
   }
   // Region preference
@@ -280,7 +298,7 @@ function distanceToEdge(
 ): number {
   switch (bed.trellisEdge) {
     case 'N': return cell.yCenterIn;
-    case 'S': return bed.heightIn - cell.yCenterIn;
+    case 'S': return bed.lengthIn - cell.yCenterIn;
     case 'W': return cell.xCenterIn;
     case 'E': return bed.widthIn - cell.xCenterIn;
     case null: default: return 0;
@@ -289,12 +307,12 @@ function distanceToEdge(
 
 function pointInRegion(
   cell: { xCenterIn: number; yCenterIn: number },
-  r: { xIn: number; yIn: number; widthIn: number; heightIn: number },
+  r: { xIn: number; yIn: number; widthIn: number; lengthIn: number },
 ): boolean {
   return (
     cell.xCenterIn >= r.xIn &&
     cell.xCenterIn <= r.xIn + r.widthIn &&
     cell.yCenterIn >= r.yIn &&
-    cell.yCenterIn <= r.yIn + r.heightIn
+    cell.yCenterIn <= r.yIn + r.lengthIn
   );
 }

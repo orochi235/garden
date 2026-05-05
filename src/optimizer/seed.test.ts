@@ -4,7 +4,7 @@ import type { OptimizationInput } from './types';
 import { DEFAULT_WEIGHTS } from './types';
 
 const baseInput: OptimizationInput = {
-  bed: { widthIn: 48, heightIn: 96, trellisEdge: null, edgeClearanceIn: 0 },
+  bed: { widthIn: 48, lengthIn: 96, trellisEdge: null, edgeClearanceIn: 0 },
   plants: [
     { cultivarId: 'tomato', count: 3, footprintIn: 18, heightIn: 60, climber: false },
     { cultivarId: 'basil', count: 6, footprintIn: 8, heightIn: 12, climber: false },
