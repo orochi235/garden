@@ -20,6 +20,14 @@ export function MenuBar() {
   async function handleOpen() {
     try {
       const loaded = await openGardenFile();
+      const current = garden.collection ?? [];
+      const incoming = loaded.collection ?? [];
+      if (current.length > 0 && incoming.length !== current.length) {
+        const keep = window.confirm(
+          `Keep your current collection (${current.length} cultivars)? OK = keep current, Cancel = use the file's collection (${incoming.length}).`,
+        );
+        if (keep) loaded.collection = current;
+      }
       loadGarden(loaded);
     } catch {}
   }
@@ -27,7 +35,16 @@ export function MenuBar() {
     downloadGarden(garden);
   }
   function handleNew() {
-    reset();
+    const current = garden.collection ?? [];
+    if (current.length > 0) {
+      const keep = window.confirm(
+        `Keep your current collection (${current.length} cultivars) in the new garden?`,
+      );
+      reset();
+      if (keep) useGardenStore.getState().setCollection(current);
+    } else {
+      reset();
+    }
   }
 
   return (
