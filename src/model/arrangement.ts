@@ -9,8 +9,9 @@
  */
 import { computeSquareFoot } from './arrangementStrategies/squareFoot';
 import { computeHex } from './arrangementStrategies/hex';
+import { computeBandedRows } from './arrangementStrategies/bandedRows';
 
-export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex';
+export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex' | 'banded-rows';
 
 export interface RowsConfig {
   type: 'rows';
@@ -65,7 +66,20 @@ export interface HexConfig {
   marginFt: number;
 }
 
-export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig;
+export interface BandConfig {
+  /** Fraction of bed depth this band occupies, summed across bands ≈ 1.0. */
+  depthFraction: number;
+  /** Item spacing along the row, in feet. */
+  pitchFt: number;
+}
+
+export interface BandedRowsConfig {
+  type: 'banded-rows';
+  bands: BandConfig[];
+  marginFt: number;
+}
+
+export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig | BandedRowsConfig;
 
 export interface Slot {
   x: number;
@@ -102,6 +116,8 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
       return computeSquareFoot(arrangement, bounds, _cultivars);
     case 'hex':
       return computeHex(arrangement, bounds, _cultivars);
+    case 'banded-rows':
+      return computeBandedRows(arrangement, bounds, _cultivars);
   }
 }
 
@@ -204,5 +220,7 @@ export function defaultArrangement(type: ArrangementType): Arrangement {
       return { type: 'square-foot', cellSizeFt: 1, marginFt: 0 };
     case 'hex':
       return { type: 'hex', pitchFt: 'auto', marginFt: 0.25 };
+    case 'banded-rows':
+      return { type: 'banded-rows', bands: [{ depthFraction: 0.5, pitchFt: 0.5 }, { depthFraction: 0.5, pitchFt: 1 }], marginFt: 0.25 };
   }
 }
