@@ -32,6 +32,7 @@ import { useEricSelectTool } from './tools/useEricSelectTool';
 import { useEricCycleTool } from './tools/useEricCycleTool';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
+import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
 import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
@@ -190,6 +191,12 @@ function GardenCanvasNewPrototype() {
   const insertTool = useInsertTool(insertAdapter, {
     onGestureEnd: () => useUiStore.getState().setPlottingTool(null),
   });
+  // Palette → garden drop tool (non-claiming pseudo-tool). Mirrors the
+  // seed-starting `usePaletteDropTool`: subscribes to `palettePointerPayload`,
+  // owns ghost + threshold drag + commit. Reads `useUiStore.zoom`/`panX`/`panY`
+  // directly because garden mode keeps those as the source of truth (full
+  // view-ownership migration deferred — see docs/TODO.md).
+  useGardenPaletteDropTool({ containerRef });
 
   const viewMode = useUiStore((s) => s.viewMode);
   const plottingTool = useUiStore((s) => s.plottingTool);
