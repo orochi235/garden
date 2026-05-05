@@ -5,6 +5,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createPlanting, createStructure, createZone } from '../../model/types';
 import { getPlantingPosition } from '../../utils/planting';
+import { getCultivar } from '../../model/cultivars';
 import type { PaletteEntry } from '../../components/palette/paletteData';
 
 interface Options {
@@ -75,7 +76,10 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
         const { zoom } = useUiStore.getState();
         const cellPx = useGardenStore.getState().garden.gridCellSizeFt;
         if (entry.category === 'plantings') {
-          const radius = Math.max(8, 0.4 * 30 * zoom);
+          const cultivar = getCultivar(entry.id);
+          const footprintFt = cultivar?.footprintFt ?? 0.5;
+          const iconScale = useUiStore.getState().plantIconScale ?? 1;
+          const radius = Math.max(8, (footprintFt / 2) * iconScale * zoom);
           ghost = createDragGhost({
             sizeCss: radius * 2,
             paint: (ctx) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
