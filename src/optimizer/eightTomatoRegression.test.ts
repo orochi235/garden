@@ -12,7 +12,7 @@ import { DEFAULT_WEIGHTS, type OptimizationInput } from './types';
 describe('8-tomato regression model topology', () => {
   it('keeps placement var count and adj rows below the HiGHS-WASM danger zone', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 90, trellisEdge: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 90, trellis: null, edgeClearanceIn: 0 },
       plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, climber: false }],
       weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
       userRegions: [], timeLimitSec: 15, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
@@ -26,7 +26,7 @@ describe('8-tomato regression model topology', () => {
 
   it('every aux is for a same-species pair (so all adj rows are stripped on fallback)', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 90, trellisEdge: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 90, trellis: null, edgeClearanceIn: 0 },
       plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, climber: false }],
       weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
       userRegions: [], timeLimitSec: 15, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,

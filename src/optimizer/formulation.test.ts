@@ -4,7 +4,7 @@ import type { OptimizationInput } from './types';
 import { DEFAULT_WEIGHTS } from './types';
 
 const tinyInput: OptimizationInput = {
-  bed: { widthIn: 16, lengthIn: 16, trellisEdge: null, edgeClearanceIn: 0 },
+  bed: { widthIn: 16, lengthIn: 16, trellis: null, edgeClearanceIn: 0 },
   plants: [{ cultivarId: 'a', count: 2, footprintIn: 4, heightIn: null, climber: false }],
   weights: DEFAULT_WEIGHTS,
   gridResolutionIn: 4,

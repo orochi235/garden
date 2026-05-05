@@ -303,7 +303,9 @@ function reasonLabel(input: OptimizationInput, placements: OptimizerPlacement[])
   const parts: string[] = [];
   if (placements.length === 0) return 'no placements found';
   parts.push(`${placements.length} plants placed`);
-  if (input.bed.trellisEdge) parts.push(`trellis ${input.bed.trellisEdge}`);
+  if (input.bed.trellis && input.bed.trellis.kind === 'edge') {
+    parts.push(`trellis ${input.bed.trellis.edge}`);
+  }
   const companionPairs = Object.values(input.companions.pairs).filter((r) => r === 'companion').length;
   if (companionPairs > 0) parts.push(`${companionPairs} companion pairs`);
   return parts.join(', ');

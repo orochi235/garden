@@ -289,8 +289,8 @@ function perCellCoeff(
 ): number {
   let c = 0;
   // Trellis attraction: closer to the trellis edge → higher coefficient
-  if (p.climber && input.bed.trellisEdge) {
-    const distFromEdge = distanceToEdge(cell, input.bed);
+  if (p.climber && input.bed.trellis && input.bed.trellis.kind === 'edge') {
+    const distFromEdge = distanceToEdge(cell, input.bed.trellis.edge, input.bed);
     const maxDist = Math.max(input.bed.widthIn, input.bed.lengthIn);
     c += input.weights.trellisAttraction * (1 - distFromEdge / maxDist);
   }
@@ -305,14 +305,14 @@ function perCellCoeff(
 
 function distanceToEdge(
   cell: { xCenterIn: number; yCenterIn: number },
-  bed: OptimizationInput['bed'],
+  edge: 'N' | 'E' | 'S' | 'W',
+  bed: { widthIn: number; lengthIn: number },
 ): number {
-  switch (bed.trellisEdge) {
+  switch (edge) {
     case 'N': return cell.yCenterIn;
     case 'S': return bed.lengthIn - cell.yCenterIn;
     case 'W': return cell.xCenterIn;
     case 'E': return bed.widthIn - cell.xCenterIn;
-    case null: default: return 0;
   }
 }
 
