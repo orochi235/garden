@@ -1,5 +1,5 @@
 import type { Cultivar } from '../cultivars';
-import { computeSlots, type Arrangement, type MultiConfig, type ParentBounds, type Slot } from '../arrangement';
+import { computeSlots, type MultiConfig, type ParentBounds, type Slot } from '../arrangement';
 
 export function computeMulti(
   config: MultiConfig,
