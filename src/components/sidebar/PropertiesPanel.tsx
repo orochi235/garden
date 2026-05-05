@@ -8,6 +8,7 @@ import { useUiStore } from '../../store/uiStore';
 import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
 import { SelectionPanel } from './SelectionPanel';
+import { OptimizePanel } from './OptimizePanel';
 
 const FILL_TYPES: FillType[] = ['soil', 'sand', 'rocks', 'peat', 'potting-mix'];
 
@@ -367,6 +368,11 @@ export function PropertiesPanel() {
           Delete
         </button>
       </div>
+      {structure?.type === 'raised-bed' && (
+        <div style={{ padding: '0 8px' }}>
+          <OptimizePanel structureId={structure.id} />
+        </div>
+      )}
     </div>
   );
 }
