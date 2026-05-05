@@ -211,23 +211,19 @@ describe('uiStore', () => {
     });
   });
 
-  describe('seed-starting view state', () => {
-    it('seedStartingZoom defaults to 30 and clamps', () => {
+  describe('seed-starting view signals', () => {
+    it('seedStartingViewResetTick starts at 0 and bumps', () => {
       useUiStore.getState().reset();
-      expect(useUiStore.getState().seedStartingZoom).toBe(30);
-      useUiStore.getState().setSeedStartingZoom(1);
-      expect(useUiStore.getState().seedStartingZoom).toBe(5);
-      useUiStore.getState().setSeedStartingZoom(500);
-      expect(useUiStore.getState().seedStartingZoom).toBe(100);
+      expect(useUiStore.getState().seedStartingViewResetTick).toBe(0);
+      useUiStore.getState().bumpSeedStartingViewResetTick();
+      expect(useUiStore.getState().seedStartingViewResetTick).toBe(1);
+      useUiStore.getState().bumpSeedStartingViewResetTick();
+      expect(useUiStore.getState().seedStartingViewResetTick).toBe(2);
     });
 
-    it('seedStartingPan defaults to 0,0 and can be set', () => {
+    it('palettePointerPayload defaults to null and can be set/cleared', () => {
       useUiStore.getState().reset();
-      expect(useUiStore.getState().seedStartingPanX).toBe(0);
-      expect(useUiStore.getState().seedStartingPanY).toBe(0);
-      useUiStore.getState().setSeedStartingPan(10, 20);
-      expect(useUiStore.getState().seedStartingPanX).toBe(10);
-      expect(useUiStore.getState().seedStartingPanY).toBe(20);
+      expect(useUiStore.getState().palettePointerPayload).toBeNull();
     });
 
     it('seedFillPreview defaults to null and can be set/cleared', () => {
@@ -240,12 +236,10 @@ describe('uiStore', () => {
     });
 
     it('seed-starting state resets', () => {
-      useUiStore.getState().setSeedStartingZoom(50);
-      useUiStore.getState().setSeedStartingPan(5, 5);
+      useUiStore.getState().bumpSeedStartingViewResetTick();
       useUiStore.getState().setSeedFillPreview({ trayId: 't', cultivarId: 'c', scope: 'all' });
       useUiStore.getState().reset();
-      expect(useUiStore.getState().seedStartingZoom).toBe(30);
-      expect(useUiStore.getState().seedStartingPanX).toBe(0);
+      expect(useUiStore.getState().seedStartingViewResetTick).toBe(0);
       expect(useUiStore.getState().seedFillPreview).toBeNull();
     });
   });

@@ -3,6 +3,7 @@ import type { Planting, Structure, Zone, LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 import type { Season } from '../model/species';
 import type { CellSize } from '../model/seedStarting';
+import type { PaletteEntry } from '../components/palette/paletteData';
 
 export interface AlmanacFilters {
   /** When non-empty, only seedables with one of these cell sizes are shown. */
@@ -80,10 +81,18 @@ interface UiStore {
   areaSelectOverlay: AreaSelectOverlayUi | null;
   appMode: AppMode;
   currentTrayId: string | null;
-  /** Per-mode view state for the seed-starting canvas (pixels per inch). */
-  seedStartingZoom: number;
-  seedStartingPanX: number;
-  seedStartingPanY: number;
+  /** Transient slot: the palette writes a payload here when the user starts a
+   *  drag from the seed palette. The seed-starting canvas's `usePaletteDropTool`
+   *  watches this slot, takes ownership of the gesture (its own document
+   *  pointer listeners + ghost), and clears the slot on commit/cancel.
+   *  This replaces the previous `seedStartingZoom`/`Pan` mirror — coordinate
+   *  math lives inside the canvas now. */
+  palettePointerPayload: { entry: PaletteEntry; pointerEvent: PointerEvent } | null;
+  /** Bumped by `resetCurrentCanvasView()` when the seed-starting canvas should
+   *  re-fit its local view to the current tray. The canvas owns its view in
+   *  React state; outside actors signal "please refit" by incrementing this
+   *  counter rather than poking view fields directly. */
+  seedStartingViewResetTick: number;
   /** Cultivar being dragged from the seed palette; null when no drag in progress. */
   seedDragCultivarId: string | null;
   /** Transient ghost preview shown while dragging a cultivar over a fill target. */
@@ -110,8 +119,8 @@ interface UiStore {
   setShowSeedlingWarnings: (show: boolean) => void;
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
-  setSeedStartingZoom: (zoom: number) => void;
-  setSeedStartingPan: (x: number, y: number) => void;
+  setPalettePointerPayload: (payload: UiStore['palettePointerPayload']) => void;
+  bumpSeedStartingViewResetTick: () => void;
   setSeedDragCultivarId: (id: string | null) => void;
   setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
   setSeedMovePreview: (preview: UiStore['seedMovePreview']) => void;
@@ -148,8 +157,6 @@ interface UiStore {
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 200;
-const SEED_MIN_ZOOM = 5;
-const SEED_MAX_ZOOM = 100;
 
 function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
@@ -202,9 +209,8 @@ function defaultState() {
     areaSelectOverlay: null as AreaSelectOverlayUi | null,
     appMode: readInitialAppMode(),
     currentTrayId: null as string | null,
-    seedStartingZoom: 30,
-    seedStartingPanX: 0,
-    seedStartingPanY: 0,
+    palettePointerPayload: null as UiStore['palettePointerPayload'],
+    seedStartingViewResetTick: 0,
     seedDragCultivarId: null as string | null,
     seedFillPreview: null as UiStore['seedFillPreview'],
     seedMovePreview: null as UiStore['seedMovePreview'],
@@ -268,8 +274,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setAppMode: (mode) => set({ appMode: mode }),
   setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
-  setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
-  setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
+  setPalettePointerPayload: (payload) => set({ palettePointerPayload: payload }),
+  bumpSeedStartingViewResetTick: () => set((s) => ({ seedStartingViewResetTick: s.seedStartingViewResetTick + 1 })),
   setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
   setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
   setSeedMovePreview: (preview) => set({ seedMovePreview: preview }),
