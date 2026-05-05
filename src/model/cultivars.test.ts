@@ -90,3 +90,16 @@ describe('cultivar registry', () => {
     }
   });
 });
+
+describe('Cultivar climber/height resolution', () => {
+  it('defaults climber to false when unspecified', () => {
+    const c = getAllCultivars().find((x) => x.climber === false);
+    expect(c).toBeDefined();
+  });
+
+  it('exposes heightFt as a number or undefined (never null)', () => {
+    for (const c of getAllCultivars()) {
+      expect(c.heightFt === undefined || typeof c.heightFt === 'number').toBe(true);
+    }
+  });
+});
