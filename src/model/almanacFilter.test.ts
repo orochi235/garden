@@ -23,6 +23,8 @@ function makeCultivar(over: Partial<Cultivar> = {}): Cultivar {
     color: '#fff',
     footprintFt: 1,
     spacingFt: 1,
+    heightFt: undefined,
+    climber: false,
     iconImage: null,
     iconBgColor: null,
     seedStarting: { ...DEFAULT_SEED_STARTING_FIELDS },

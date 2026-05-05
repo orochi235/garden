@@ -123,3 +123,7 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - **Vertical wrapping.** All trays sit on a single row in v1. For wide collections we'll want to wrap onto multiple rows (or columns) once the union width exceeds some viewport-relative threshold. `trayWorldOrigin` and `seedStartingWorldBounds` are the only two functions that need to learn the wrapped layout.
 - **Free placement of trays.** v1 has no per-tray `(x, y)` — once the user wants benches/shelves or non-rectangular arrangements, add an explicit pose to each `Tray` and let `trayWorldOrigin` prefer that pose when set, falling back to auto-flow when null. File-format change.
 - **Bench / shelf parents.** Trays should be groupable into a "bench" or "shelf" parent that owns its own world pose, with trays positioned relative to it. Likely paired with free placement above. Touches the seed-starting model schema, `seedStartingScene` adapter, and persistence.
+
+## Raised-bed feature
+
+- [ ] Expand companion/antagonist table beyond the v1 seed (~30 pairs in `src/data/companions.ts`). Source: extension-service publications, vetted gardening references.
