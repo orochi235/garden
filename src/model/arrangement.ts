@@ -7,8 +7,9 @@
  * should be positioned. `computeSlots` is the pure function that turns that
  * description into concrete positions.
  */
+import { computeSquareFoot } from './arrangementStrategies/squareFoot';
 
-export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free';
+export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot';
 
 export interface RowsConfig {
   type: 'rows';
@@ -48,7 +49,15 @@ export interface FreeConfig {
   type: 'free';
 }
 
-export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig;
+export interface SquareFootConfig {
+  type: 'square-foot';
+  /** Side length of each cell, feet. Default 1. */
+  cellSizeFt: number;
+  /** Inset from container edge (ft) */
+  marginFt: number;
+}
+
+export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig;
 
 export interface Slot {
   x: number;
@@ -81,6 +90,8 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
       return [{ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }];
     case 'free':
       return [];
+    case 'square-foot':
+      return computeSquareFoot(arrangement, bounds, _cultivars);
   }
 }
 
@@ -179,5 +190,7 @@ export function defaultArrangement(type: ArrangementType): Arrangement {
       return { type: 'single' };
     case 'free':
       return { type: 'free' };
+    case 'square-foot':
+      return { type: 'square-foot', cellSizeFt: 1, marginFt: 0 };
   }
 }
