@@ -19,7 +19,10 @@ const FILL_LABELS: Record<FillType, string> = {
   'potting-mix': 'Potting mix',
 };
 
-const ARRANGEMENT_TYPES: ArrangementType[] = ['rows', 'grid', 'ring', 'single', 'free'];
+const ARRANGEMENT_TYPES: ArrangementType[] = [
+  'rows', 'grid', 'ring', 'single', 'free',
+  'square-foot', 'hex', 'trellised-back', 'banded-rows', 'multi',
+];
 
 const ARRANGEMENT_LABELS: Record<ArrangementType, string> = {
   rows: 'Rows',
@@ -27,6 +30,11 @@ const ARRANGEMENT_LABELS: Record<ArrangementType, string> = {
   ring: 'Ring',
   single: 'Single',
   free: 'Free',
+  'square-foot': 'Square-foot',
+  hex: 'Hex (staggered)',
+  'trellised-back': 'Trellised back',
+  'banded-rows': 'Banded rows',
+  multi: 'Multi-region',
 };
 
 export function PropertiesPanel() {
@@ -349,6 +357,96 @@ export function PropertiesPanel() {
                     updateObj({ arrangement: { ...arr, count: parseInt(e.target.value) || 1 } });
                   }}
                 />
+              </>
+            )}
+            {obj.arrangement && obj.arrangement.type === 'square-foot' && (
+              <>
+                <span className={f.label}>Cell size</span>
+                <input
+                  className={`${f.input} ${f.span12}`}
+                  type="number"
+                  step="0.25"
+                  min="0.25"
+                  value={obj.arrangement.cellSizeFt}
+                  onChange={(e) => {
+                    const arr = obj.arrangement as Arrangement & { type: 'square-foot' };
+                    updateObj({ arrangement: { ...arr, cellSizeFt: parseFloat(e.target.value) || 1 } });
+                  }}
+                />
+              </>
+            )}
+            {obj.arrangement && obj.arrangement.type === 'hex' && (
+              <>
+                <span className={f.label}>Pitch (ft)</span>
+                <input
+                  className={`${f.input} ${f.span12}`}
+                  type="number"
+                  step="0.25"
+                  min="0.25"
+                  value={obj.arrangement.pitchFt === 'auto' ? '' : obj.arrangement.pitchFt}
+                  placeholder="auto"
+                  onChange={(e) => {
+                    const arr = obj.arrangement as Arrangement & { type: 'hex' };
+                    const val = parseFloat(e.target.value);
+                    updateObj({ arrangement: { ...arr, pitchFt: isNaN(val) ? 'auto' : val } });
+                  }}
+                />
+              </>
+            )}
+            {obj.arrangement && obj.arrangement.type === 'trellised-back' && (
+              <>
+                <span className={f.label}>Trellis edge</span>
+                <select
+                  className={`${f.select} ${f.span12}`}
+                  value={obj.arrangement.trellisEdge}
+                  onChange={(e) => {
+                    const arr = obj.arrangement as Arrangement & { type: 'trellised-back' };
+                    updateObj({ arrangement: { ...arr, trellisEdge: e.target.value as 'N' | 'E' | 'S' | 'W' } });
+                  }}
+                >
+                  {(['N', 'E', 'S', 'W'] as const).map((edge) => (
+                    <option key={edge} value={edge}>{edge}</option>
+                  ))}
+                </select>
+                <span className={f.label}>Front rows</span>
+                <select
+                  className={`${f.select} ${f.span12}`}
+                  value={obj.arrangement.frontStrategy}
+                  onChange={(e) => {
+                    const arr = obj.arrangement as Arrangement & { type: 'trellised-back' };
+                    updateObj({ arrangement: { ...arr, frontStrategy: e.target.value as 'rows' | 'square-foot' | 'hex' } });
+                  }}
+                >
+                  <option value="rows">Rows</option>
+                  <option value="square-foot">Square-foot</option>
+                  <option value="hex">Hex</option>
+                </select>
+              </>
+            )}
+            {obj.arrangement && obj.arrangement.type === 'banded-rows' && (
+              <>
+                <span className={f.label}>Bands (JSON)</span>
+                <textarea
+                  className={`${f.input} ${f.span12}`}
+                  rows={4}
+                  style={{ fontFamily: 'monospace', fontSize: '0.8em' }}
+                  defaultValue={JSON.stringify(obj.arrangement.bands, null, 2)}
+                  onBlur={(e) => {
+                    try {
+                      const arr = obj.arrangement as Arrangement & { type: 'banded-rows' };
+                      const bands = JSON.parse(e.target.value);
+                      updateObj({ arrangement: { ...arr, bands } });
+                    } catch { /* ignore invalid JSON */ }
+                  }}
+                />
+              </>
+            )}
+            {obj.arrangement && obj.arrangement.type === 'multi' && (
+              <>
+                <span className={f.label}></span>
+                <span className={`${f.span12}`} style={{ fontSize: '0.85em', opacity: 0.7 }}>
+                  Use the optimizer or paint regions on canvas — coming soon.
+                </span>
               </>
             )}
           </>
