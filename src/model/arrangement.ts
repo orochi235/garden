@@ -53,6 +53,8 @@ export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | 
 export interface Slot {
   x: number;
   y: number;
+  /** Set by the `multi` strategy so consumers can route drops to the originating sub-region. */
+  regionId?: string;
 }
 
 export interface ParentBounds {
@@ -67,7 +69,7 @@ export interface ParentBounds {
  * Given an arrangement and parent bounds, compute the world-space positions
  * where child objects should be placed.
  */
-export function computeSlots(arrangement: Arrangement, bounds: ParentBounds): Slot[] {
+export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cultivars?: import('./cultivars').Cultivar[]): Slot[] {
   switch (arrangement.type) {
     case 'rows':
       return computeRows(arrangement, bounds);
