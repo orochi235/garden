@@ -98,7 +98,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## ViewToolbar wire-up deferrals
 
-- `viewMode === 'zoom'` is not wired to a canvas tool. Toolbar button is visually selectable but produces only a one-time console warning. Design a click-to-zoom-in / shift-click-to-zoom-out tool (cursor: zoom-in / zoom-out) and register it under id `'zoom'` in `CanvasNewPrototype.tsx`. Double-click-on-button already triggers `computeFitView` reset via `ViewToolbar.handleZoomReset`.
+- ~~`viewMode === 'zoom'` is not wired to a canvas tool.~~ Resolved: `useEricClickZoomTool` claims plain left-click in zoom mode (shift inverts), wired into both `CanvasNewPrototype` and `SeedStartingCanvasNewPrototype`. Cursor flips `zoom-in`/`zoom-out` based on shift state. Double-click-on-button still resets to fit-view via `ViewToolbar`.
 - `viewMode === 'select-area'` aliases to the regular select tool (no warning); `useEricSelectTool` already supports drag-marquee in empty space. If "select area" is meant to be a distinct mode (e.g. forces marquee even when starting on an object), add a separate tool or a flag on the select tool.
 - `viewMode === 'draw'` aliases to select unless a plotting tool is picked from the palette, at which point `useInsertTool` activates. A freehand / polygon draw tool that emits a new zone or annotation is still TODO.
 
@@ -114,6 +114,6 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - **Wheel-zoom hands-on smoke test.** Tool is wired on both `CanvasNewPrototype` and `SeedStartingCanvasNewPrototype` and unit-tested for cursor-anchored zoom + clamping. Still want a real-mouse + trackpad-pinch pass to confirm UX feels right (no jumping, anchor matches cursor, pinch doesn't fight browser zoom).
 - **Per-id selection-flash opacity.** `CanvasNewPrototype` aggregates all selected ids into a single `highlightOpacity` via max(); the layer protocol takes one number rather than a per-id getter. Migrate `EricSceneUi.highlightOpacity` to a `getOpacity(id)` callback and update each `*LayersWorld.ts` highlight branch. Touches every layer file plus their tests.
 - **Selection-rides-on-history.** Undo/redo currently leaves `useUiStore.selectedIds` untouched, so undoing a paste leaves the (now-deleted) ids selected. Need to either snapshot selection into history checkpoints or scrub stale ids on every history transition.
-- **Click-to-zoom tool for `viewMode === 'zoom'`.** Toolbar button currently warns once on activation; wire a tool with cursor `zoom-in`/`zoom-out` (shift inverts) that increments/decrements `useUiStore.zoom` around the click point. Double-click-on-button already resets to fit-view.
+- ~~**Click-to-zoom tool for `viewMode === 'zoom'`.**~~ Done: see `useEricClickZoomTool` (`src/canvas/tools/useEricClickZoomTool.ts`).
 - **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.
 - **`?debug=handles` overlay.** Documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
