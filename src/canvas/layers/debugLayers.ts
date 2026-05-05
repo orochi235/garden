@@ -141,8 +141,11 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
 
 /**
  * Build the set of debug RenderLayers that the user has enabled via
- * `?debug=token1,token2`. Tokens supported: `hitboxes`, `bounds`, `axes`, `grid`.
- * (`handles` is a documented future overlay; not yet implemented.)
+ * `?debug=token1,token2`. Tokens supported: `hitboxes`, `bounds`, `axes`,
+ * `grid`. (`handles` is also a recognised token, but its overlay layer is
+ * created from the canvas prototypes so it can read the same selectable-
+ * entity getters the real selection-handles layer uses; see
+ * `createAllHandlesLayer` in `selectionLayersWorld.ts`.)
  */
 export function createDebugLayers(mode: Mode, getGarden: () => Garden): RenderLayer<unknown>[] {
   const out: RenderLayer<unknown>[] = [];

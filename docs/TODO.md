@@ -90,7 +90,6 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 ## Canvas redesign deferrals (Phase 5)
 
 - `RenderLayersPanel` now hardcodes the layer descriptor list (id/label/alwaysOn/defaultVisible) for the four garden groups. Keep this in sync with `src/canvas/layers/{structure,zone,planting,selection}LayersWorld.ts` whenever a layer is added or its flags change. Future cleanup: have each `createXxxLayers` factory expose a `*_LAYER_DESCRIPTORS` static so the panel doesn't drift.
-- `?debug=handles` is documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
 - Per-id flash opacity for seedling selection still unwired; garden currently aggregates all selected ids into a single `highlightOpacity`. Push per-id pulses into both modes.
 - Click-to-sow without a current cultivar concept (see Phase 4 deferral on `useSowCellTool`) — design a `currentCultivarId` UI source.
 - True marquee area-select on seed-starting tray background (see updated Phase 4 deferral).
@@ -116,4 +115,3 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - **Selection-rides-on-history.** Undo/redo currently leaves `useUiStore.selectedIds` untouched, so undoing a paste leaves the (now-deleted) ids selected. Need to either snapshot selection into history checkpoints or scrub stale ids on every history transition.
 - **Click-to-zoom tool for `viewMode === 'zoom'`.** Toolbar button currently warns once on activation; wire a tool with cursor `zoom-in`/`zoom-out` (shift inverts) that increments/decrements `useUiStore.zoom` around the click point. Double-click-on-button already resets to fit-view.
 - **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.
-- **`?debug=handles` overlay.** Documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).

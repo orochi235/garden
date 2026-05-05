@@ -166,6 +166,11 @@ Running list of intended application behaviors.
   set of overlay tokens. Tokens supported today: `hitboxes` (red 0.3-alpha
   bbox wireframes around each scene node), `bounds` (cyan dashed rectangle
   around the overall scene), `axes` (red +x / green +y axis lines from the
-  origin with `(0,0)` label), `grid` (yellow grid at the model's grid step).
-  Tokens are parsed once at page load; reload to change them. Multiple
-  tokens combine, e.g. `?debug=hitboxes,axes`.
+  origin with `(0,0)` label), `grid` (yellow grid at the model's grid step),
+  `handles` (muted, half-opacity grey 5px squares marking the drag/resize
+  handles for every selectable entity in the scene — 8 per structure/zone
+  bbox, a single dot per planting at its world pose, and a single dot per
+  seedling at its tray-cell centre; visually distinct from real selection
+  handles, which remain blue/white 8px squares drawn only on the current
+  selection). Tokens are parsed once at page load; reload to change them.
+  Multiple tokens combine, e.g. `?debug=hitboxes,axes`.

@@ -3,8 +3,10 @@ import {
   createSelectionOutlineLayer,
   createSelectionHandlesLayer,
   createGroupOutlineLayer,
+  createAllHandlesLayer,
 } from './selectionLayersWorld';
-import type { Structure, Zone } from '../../model/types';
+import type { Planting, Structure, Zone } from '../../model/types';
+import type { Seedling, Tray } from '../../model/seedStarting';
 import type { GetUi } from './worldLayerData';
 
 function makeCtx(): CanvasRenderingContext2D {
@@ -171,5 +173,81 @@ describe('createSelectionHandlesLayer', () => {
     expect(calls).toHaveLength(8);
     // NW handle (8x8) centered at screen (20, 30) → fillRect(16, 26, 8, 8)
     expect(calls[0]).toEqual([16, 26, 8, 8]);
+  });
+});
+
+describe('createAllHandlesLayer (?debug=handles)', () => {
+  it('declares space=screen so handles stay sharp at any zoom', () => {
+    const layer = createAllHandlesLayer({});
+    expect(layer.space).toBe('screen');
+  });
+
+  it('iterates over ALL structures + zones regardless of selection state', () => {
+    const ctx = makeCtx();
+    const s1 = makeStructure({ id: 's1', x: 0, y: 0, width: 1, height: 1 });
+    const s2 = makeStructure({ id: 's2', x: 5, y: 5, width: 1, height: 1 });
+    const z1 = makeZone({ id: 'z1', x: 2, y: 2, width: 1, height: 1 });
+    const layer = createAllHandlesLayer({
+      getStructures: () => [s1, s2],
+      getZones: () => [z1],
+    });
+    // No selection input is wired — overlay is unconditional.
+    layer.draw(ctx, {}, view);
+    // 8 handles per rect × 3 rects = 24 fillRect calls.
+    expect((ctx.fillRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(24);
+  });
+
+  it('draws a single handle dot per planting at its world pose', () => {
+    const ctx = makeCtx();
+    const parent = makeStructure({ id: 'p', x: 10, y: 10, width: 4, height: 4 });
+    const planting: Planting = {
+      id: 'pl1', cultivarId: 'c', parentId: 'p', x: 1, y: 2,
+    } as unknown as Planting;
+    const layer = createAllHandlesLayer({
+      getStructures: () => [parent],
+      getPlantings: () => [planting],
+    });
+    layer.draw(ctx, {}, { x: 0, y: 0, scale: 10 });
+    const calls = (ctx.fillRect as ReturnType<typeof vi.fn>).mock.calls;
+    // Parent: 8 handles. Planting dot: 1. Total 9.
+    expect(calls).toHaveLength(9);
+    // Last call = planting dot, world (11, 12) → screen (110, 120), 5×5 centred.
+    expect(calls[calls.length - 1]).toEqual([107.5, 117.5, 5, 5]);
+  });
+
+  it('draws a handle dot per seedling at its tray cell centre', () => {
+    const ctx = makeCtx();
+    const tray: Tray = {
+      id: 't1', label: 't', cellSize: 'small', rows: 2, cols: 2,
+      cellPitchIn: 2, widthIn: 4, heightIn: 4, slots: [],
+    } as unknown as Tray;
+    const seedling: Seedling = {
+      id: 'sd1', cultivarId: 'c', trayId: 't1', row: 0, col: 1, labelOverride: null,
+    };
+    const layer = createAllHandlesLayer({
+      getTrays: () => [tray],
+      getSeedlings: () => [seedling],
+    });
+    layer.draw(ctx, {}, { x: 0, y: 0, scale: 1 });
+    const calls = (ctx.fillRect as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(1);
+    // Cell (row=0, col=1) centre: x = 0 + 1.5*2 = 3; y = 0 + 0.5*2 = 1.
+    // 5×5 dot centred → fillRect(0.5, -1.5, 5, 5)
+    expect(calls[0]).toEqual([0.5, -1.5, 5, 5]);
+  });
+
+  it('uses lower opacity to be visually distinct from real selection handles', () => {
+    const ctx = makeCtx();
+    const s = makeStructure({ x: 0, y: 0, width: 1, height: 1 });
+    const seenAlphas: number[] = [];
+    Object.defineProperty(ctx, 'globalAlpha', {
+      get() { return 1; },
+      set(v: number) { seenAlphas.push(v); },
+      configurable: true,
+    });
+    const layer = createAllHandlesLayer({ getStructures: () => [s] });
+    layer.draw(ctx, {}, view);
+    // Layer should set globalAlpha < 1 at some point.
+    expect(seenAlphas.some((a) => a > 0 && a < 1)).toBe(true);
   });
 });
