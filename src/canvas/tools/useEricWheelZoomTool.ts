@@ -29,7 +29,7 @@ export function useEricWheelZoomTool(opts: EricWheelZoomOpts = {}): Tool<null> {
           onWheel: (e, ctx) => {
             e.preventDefault();
             const rect = ctx.canvasRect;
-            const anchor = { x: rect.width / 2, y: rect.height / 2 };
+            const anchor = { x: e.clientX - rect.left, y: e.clientY - rect.top };
             const factor = Math.pow(wheelStep, -e.deltaY / 100);
             ctx.setView(zoomAt(ctx.view, anchor, factor, { min, max }));
             return 'claim';
