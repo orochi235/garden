@@ -110,7 +110,6 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed the rest). Roughly ordered by user-visible impact.
 
-- **Drag-spread "gutter" affordance.** Pulling a planting onto the seed-starting tray gutter should let the user spread seedlings across a row/column/all-cells in one gesture. Lives partway between Tool-primitive and overlay-affordance schemas in canvas-kit. See the matching memory entry "Gutter affordance refactor" for the design tension.
 - **Group outlines.** Selecting one member of a structure group should draw a group-bounds outline so the user can see the implicit selection extent. Needs a design pass: outline as separate render layer? handle hit-testing? does dragging one member move the group?
 - **Wheel-zoom verification.** `useEricWheelZoomTool` is wired as `alwaysOn` in `CanvasNewPrototype`. Confirm it actually fires on the seed-starting canvas as well (`SeedStartingCanvasNewPrototype` does its own wiring), and that pinch-zoom on trackpads works. Suspected drift, not confirmed.
 - **Per-id selection-flash opacity.** `CanvasNewPrototype` aggregates all selected ids into a single `highlightOpacity` via max(); the layer protocol takes one number rather than a per-id getter. Migrate `EricSceneUi.highlightOpacity` to a `getOpacity(id)` callback and update each `*LayersWorld.ts` highlight branch. Touches every layer file plus their tests.

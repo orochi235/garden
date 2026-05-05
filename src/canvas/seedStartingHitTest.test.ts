@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../model/seedStarting';
 import {
-  DRAG_SPREAD_GUTTER_RATIO,
   cellCenterInches,
   findSeedlingsInRect,
   hitTestCellInches,
-  hitTestDragSpreadAffordanceInches,
 } from './seedStartingHitTest';
 import type { Seedling } from '../model/seedStarting';
 
@@ -37,36 +35,6 @@ describe('cellCenterInches', () => {
       x: off.x + 2.5 * p,
       y: off.y + 1.5 * p,
     });
-  });
-});
-
-describe('hitTestDragSpreadAffordanceInches', () => {
-  const off = trayInteriorOffsetIn(tray);
-  const p = tray.cellPitchIn;
-  const gutter = p * DRAG_SPREAD_GUTTER_RATIO;
-
-  it('returns null inside the grid', () => {
-    expect(hitTestDragSpreadAffordanceInches(tray, off.x + 0.5, off.y + 0.5)).toBeNull();
-  });
-
-  it('hits the corner all affordance', () => {
-    expect(hitTestDragSpreadAffordanceInches(tray, off.x - gutter / 2, off.y - gutter / 2))
-      .toEqual({ kind: 'all' });
-  });
-
-  it('hits a column affordance above the grid', () => {
-    expect(hitTestDragSpreadAffordanceInches(tray, off.x + 1 * p + p / 2, off.y - gutter / 2))
-      .toEqual({ kind: 'col', col: 1 });
-  });
-
-  it('hits a row affordance left of the grid', () => {
-    expect(hitTestDragSpreadAffordanceInches(tray, off.x - gutter / 2, off.y + 1 * p + p / 2))
-      .toEqual({ kind: 'row', row: 1 });
-  });
-
-  it('returns null further than the gutter from the grid', () => {
-    expect(hitTestDragSpreadAffordanceInches(tray, off.x - gutter - 0.1, off.y - gutter - 0.1))
-      .toBeNull();
   });
 });
 

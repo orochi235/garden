@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
-import { DRAG_SPREAD_GUTTER_RATIO } from '../seedStartingHitTest';
-import { getTrayDropTargets, hitTrayDropTarget } from './trayDropTargets';
+import {
+  DRAG_SPREAD_GUTTER_RATIO,
+  getTrayDropTargets,
+  hitTrayDropTarget,
+} from './trayDropTargets';
 
 const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
 const off = trayInteriorOffsetIn(tray);

@@ -3,10 +3,10 @@ import { defineTool, type RenderLayer, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
-  DRAG_SPREAD_GUTTER_RATIO,
   findSeedlingsInRect,
   hitTestCellInches,
 } from '../seedStartingHitTest';
+import { DRAG_SPREAD_GUTTER_RATIO } from '../layouts/trayDropTargets';
 import {
   getTrayDropTargets,
   hitTrayDropTarget,
@@ -159,7 +159,6 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
         if (!trayId) return;
         const tray = useGardenStore.getState().garden.seedStarting.trays.find((t) => t.id === trayId);
         if (!tray) return;
-        const off = trayInteriorOffsetIn(tray);
         const scale = view.scale;
         const cellPx = tray.cellPitchIn * scale;
         const gutterPx = cellPx * DRAG_SPREAD_GUTTER_RATIO;
@@ -169,39 +168,40 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
         const baseStroke = '#1a1a1a';
         const hoverFill = '#ffd27a';
 
-        // Grid origin in screen coords.
-        const gridScreenX = (off.x - view.x) * scale;
-        const gridScreenY = (off.y - view.y) * scale;
+        // Grid center for the diagonal corner marker's rotation.
+        const off = trayInteriorOffsetIn(tray);
+        const gridCx = (off.x + (tray.cols * tray.cellPitchIn) / 2 - view.x) * scale;
+        const gridCy = (off.y + (tray.rows * tray.cellPitchIn) / 2 - view.y) * scale;
 
-        // Per-column markers along the top edge.
-        for (let c = 0; c < tray.cols; c++) {
-          const cx = gridScreenX + c * cellPx + cellPx / 2;
-          const cy = gridScreenY - gutterPx / 2;
-          const isHover = affKind === 'col' && affIndex === c;
-          drawMarker(ctx, cx, cy, markerLen, markerW, 0, isHover ? hoverFill : baseFill, baseStroke);
-        }
-        // Per-row markers along the left edge.
-        for (let r = 0; r < tray.rows; r++) {
-          const cx = gridScreenX - gutterPx / 2;
-          const cy = gridScreenY + r * cellPx + cellPx / 2;
-          const isHover = affKind === 'row' && affIndex === r;
-          drawMarker(ctx, cx, cy, markerLen, markerW, -Math.PI / 2, isHover ? hoverFill : baseFill, baseStroke);
-        }
-        // Diagonal corner marker.
-        {
-          const cx = gridScreenX - gutterPx / 2;
-          const cy = gridScreenY - gutterPx / 2;
-          const gridCx = gridScreenX + (tray.cols * cellPx) / 2;
-          const gridCy = gridScreenY + (tray.rows * cellPx) / 2;
-          const angle = Math.atan2(-(gridCx - cx), gridCy - cy);
-          const isHover = affKind === 'all';
+        // Iterate gutter targets — chevron position = target origin in world,
+        // converted to screen. Hovered target lights up.
+        for (const t of getTrayDropTargets(tray)) {
+          if (t.meta.kind === 'cell') continue;
+          const cx = (t.origin.x - view.x) * scale;
+          const cy = (t.origin.y - view.y) * scale;
+          let isHover = false;
+          let rotation = 0;
+          let lenScale = 1;
+          let widthScale = 1;
+          if (t.meta.kind === 'col') {
+            rotation = 0;
+            isHover = affKind === 'col' && affIndex === t.meta.col;
+          } else if (t.meta.kind === 'row') {
+            rotation = -Math.PI / 2;
+            isHover = affKind === 'row' && affIndex === t.meta.row;
+          } else {
+            rotation = Math.atan2(-(gridCx - cx), gridCy - cy);
+            lenScale = 1.45;
+            widthScale = 1.35;
+            isHover = affKind === 'all';
+          }
           drawMarker(
             ctx,
             cx,
             cy,
-            markerLen * 1.45,
-            markerW * 1.35,
-            angle,
+            markerLen * lenScale,
+            markerW * widthScale,
+            rotation,
             isHover ? hoverFill : baseFill,
             baseStroke,
           );

@@ -30,37 +30,6 @@ export function cellCenterInches(tray: Tray, row: number, col: number): { x: num
   };
 }
 
-export type DragSpreadAffordanceHit =
-  | { kind: 'all' }
-  | { kind: 'row'; row: number }
-  | { kind: 'col'; col: number };
-
-/** Affordance gutter size in inches (relative to cell pitch). */
-export const DRAG_SPREAD_GUTTER_RATIO = 0.7;
-
-/** World-space (inches) variant. Tray world origin is `(0,0)` so the grid
- *  sits at `(off.x, off.y)` inches; the cursor is given in tray-local inches. */
-export function hitTestDragSpreadAffordanceInches(
-  tray: Tray,
-  xIn: number,
-  yIn: number,
-): DragSpreadAffordanceHit | null {
-  const off = trayInteriorOffsetIn(tray);
-  const p = tray.cellPitchIn;
-  const gutter = p * DRAG_SPREAD_GUTTER_RATIO;
-  const lx = xIn - off.x;
-  const ly = yIn - off.y;
-  const inGutterX = lx >= -gutter && lx < 0;
-  const inGutterY = ly >= -gutter && ly < 0;
-  const totalW = tray.cols * p;
-  const totalH = tray.rows * p;
-
-  if (inGutterX && inGutterY) return { kind: 'all' };
-  if (inGutterY && lx >= 0 && lx < totalW) return { kind: 'col', col: Math.floor(lx / p) };
-  if (inGutterX && ly >= 0 && ly < totalH) return { kind: 'row', row: Math.floor(ly / p) };
-  return null;
-}
-
 export interface WorldRect { x: number; y: number; width: number; height: number }
 
 /** Returns the ids of all seedlings whose cell center falls inside the given
