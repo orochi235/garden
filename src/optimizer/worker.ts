@@ -128,7 +128,8 @@ async function solveClustered(
   isCancelled: () => boolean,
 ): Promise<OptimizationCandidate | null> {
   const solveStart = performance.now();
-  const clusters = familyCompanionPartitioner(input);
+  const baseClusters = familyCompanionPartitioner(input);
+  const clusters = splitOversizedClusters(baseClusters, input);
   const subBeds = proportionalStripAllocator(input.bed, clusters);
 
   const allPlacements: OptimizerPlacement[] = [];
@@ -192,6 +193,43 @@ async function solveClustered(
     gap: worstGap,
     solveMs: performance.now() - solveStart,
   };
+}
+
+/**
+ * If a cluster's estimated placement vars exceed MAX_UNIFIED_VARS, split it
+ * into N sub-clusters by dividing each plant's count across the pieces, where
+ * N = ceil(estimate / MAX_UNIFIED_VARS). The allocator then gives each piece
+ * its own strip. This handles homogeneous over-large clusters (e.g. 8 same-
+ * cultivar tomatoes) that the category-based partitioner can't break up on
+ * its own.
+ */
+function splitOversizedClusters(clusters: Cluster[], parent: OptimizationInput): Cluster[] {
+  const out: Cluster[] = [];
+  for (const cluster of clusters) {
+    const estimate = estimatePlacementVars({ ...parent, plants: cluster.plants });
+    if (estimate <= MAX_UNIFIED_VARS) {
+      out.push(cluster);
+      continue;
+    }
+    const pieces = Math.ceil(estimate / MAX_UNIFIED_VARS);
+    for (let i = 0; i < pieces; i++) {
+      const piecePlants = cluster.plants
+        .map((p) => {
+          const base = Math.floor(p.count / pieces);
+          const remainder = p.count % pieces;
+          const count = base + (i < remainder ? 1 : 0);
+          return count > 0 ? { ...p, count } : null;
+        })
+        .filter((p): p is NonNullable<typeof p> => p !== null);
+      if (piecePlants.length === 0) continue;
+      out.push({
+        key: `${cluster.key}#${i + 1}`,
+        plants: piecePlants,
+        climberCount: piecePlants.reduce((s, p) => s + (p.climber ? p.count : 0), 0),
+      });
+    }
+  }
+  return out;
 }
 
 function buildSubInput(parent: OptimizationInput, subBed: SubBed): OptimizationInput {
