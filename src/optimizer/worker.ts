@@ -1,8 +1,16 @@
-import { buildMipModel } from './formulation';
+import { buildMipModel, estimatePlacementVars } from './formulation';
 import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
+import { familyCompanionPartitioner } from './partitioning/familyCompanion';
+import { proportionalStripAllocator } from './allocation/proportionalStrip';
 import type { MipModel } from './formulation';
-import type { OptimizationInput, OptimizationResult, OptimizationCandidate, OptimizerPlacement } from './types';
+import type {
+  OptimizationInput, OptimizationResult, OptimizationCandidate,
+  OptimizerPlacement, Cluster, SubBed,
+} from './types';
+
+const MAX_UNIFIED_VARS = 500;
+const SAME_SPECIES_ADJ_BUDGET = 1500;
 
 interface RunMsg { type: 'run'; input: OptimizationInput; id: string }
 interface CancelMsg { type: 'cancel'; id: string }
@@ -40,7 +48,7 @@ async function solve(
 ): Promise<OptimizationResult> {
   const start = performance.now();
   const candidates: OptimizationCandidate[] = [];
-  let priorActive: string[] = [];
+  const priorActiveByKey: Map<string, string[]> = new Map();
 
   for (let n = 0; n < input.candidateCount; n++) {
     if (isCancelled()) break;
@@ -48,98 +56,211 @@ async function solve(
 
     const weights = n === 0 ? input.weights : perturbWeights(input.weights, 0.05, 1000 + n);
     const workingInput = { ...input, weights };
-    const model = buildMipModel(workingInput);
 
-    if (n > 0 && priorActive.length > 0) {
-      model.constraints.push({ ...buildNoGoodCut(priorActive, input.diversityThreshold), label: `nogood:${n}` });
+    const useClustered = estimatePlacementVars(workingInput) > MAX_UNIFIED_VARS;
+    const candidate = useClustered
+      ? await solveClustered(workingInput, n, priorActiveByKey, onProgress, isCancelled)
+      : await solveUnified(workingInput, n, priorActiveByKey, onProgress, isCancelled);
+
+    if (candidate) candidates.push(candidate);
+  }
+
+  return { candidates, totalMs: performance.now() - start };
+}
+
+async function solveUnified(
+  input: OptimizationInput,
+  n: number,
+  priorActiveByKey: Map<string, string[]>,
+  onProgress: (phase: string, candidate: number) => void,
+  isCancelled: () => boolean,
+): Promise<OptimizationCandidate | null> {
+  if (isCancelled()) return null;
+  const solveStart = performance.now();
+  const model = buildMipModel(input);
+
+  const prior = priorActiveByKey.get('unified') ?? [];
+  if (n > 0 && prior.length > 0) {
+    model.constraints.push({ ...buildNoGoodCut(prior, input.diversityThreshold), label: `nogood:${n}` });
+  }
+
+  applySameSpeciesAdjStrip(model, n);
+
+  onProgress('solve', n);
+  greedyHexPack(input);
+
+  const HighsModule = await loadHighs();
+  const lpString = mipModelToLpString(model);
+  console.info(
+    '[optimizer] candidate', n, 'unified',
+    'vars:', model.vars.length, 'aux:', model.aux.length,
+    'constraints:', model.constraints.length, 'lpBytes:', lpString.length,
+  );
+  const solution = trySolve(HighsModule, lpString, solveOpts(input));
+  if (!solution) {
+    console.warn('[optimizer] candidate', n, 'unified solver crashed; falling back to greedy hex pack');
+    return greedyCandidate(input, performance.now() - solveStart, ['unified']);
+  }
+  if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
+    console.warn('[optimizer] candidate', n, 'unified status:', solution.Status);
+    return null;
+  }
+  const placements = placementsFrom(model, solution.Columns);
+  if (placements.length === 0) {
+    console.warn('[optimizer] candidate', n, 'unified has no placements — status:', solution.Status, 'obj:', solution.ObjectiveValue);
+    return null;
+  }
+  priorActiveByKey.set('unified', activeVarNames(model, solution.Columns));
+  return {
+    placements,
+    score: solution.ObjectiveValue,
+    reason: reasonLabel(input, placements),
+    gap: 0,
+    solveMs: performance.now() - solveStart,
+  };
+}
+
+async function solveClustered(
+  input: OptimizationInput,
+  n: number,
+  priorActiveByKey: Map<string, string[]>,
+  onProgress: (phase: string, candidate: number) => void,
+  isCancelled: () => boolean,
+): Promise<OptimizationCandidate | null> {
+  const solveStart = performance.now();
+  const clusters = familyCompanionPartitioner(input);
+  const subBeds = proportionalStripAllocator(input.bed, clusters);
+
+  const allPlacements: OptimizerPlacement[] = [];
+  let scoreSum = 0;
+  let worstGap = 0;
+  const fallbackKeys: string[] = [];
+
+  for (const subBed of subBeds) {
+    if (isCancelled()) return null;
+    const subInput = buildSubInput(input, subBed);
+
+    onProgress(`solve cluster ${subBed.cluster.key}`, n);
+    const model = buildMipModel(subInput);
+
+    const prior = priorActiveByKey.get(subBed.cluster.key) ?? [];
+    if (n > 0 && prior.length > 0) {
+      model.constraints.push({ ...buildNoGoodCut(prior, subInput.diversityThreshold), label: `nogood:${n}` });
     }
 
-    onProgress('solve', n);
-    greedyHexPack(workingInput); // warm-start hint (logged; unused by LP-string API)
-    const solveStart = performance.now();
-
-    const solveOpts = {
-      time_limit: input.timeLimitSec,
-      mip_rel_gap: input.mipGap,
-      output_flag: false,
-      log_to_console: false,
-    };
-
-    // HiGHS-WASM (highs-js 1.8.0) crashes mid-solve when fed a large enough
-    // same-species adjacency matrix (e.g. 8 same-cultivar copies × dense
-    // neighborhood ⇒ 5650 adj rows). Crash modes vary — "table index is out
-    // of bounds", "Too few lines", "Aborted()" — and the crash also poisons
-    // the WASM module heap, so reactive retry on the same module fails too.
-    // Worse, highsLoader() returns a singleton in the same JS realm, so even
-    // re-loading doesn't yield fresh state within one worker process.
-    //
-    // Proactive guard: when same-species adjacency would exceed a safe budget,
-    // strip those rows up-front. Quality degrades (no spreading penalty
-    // between same-cultivar copies) but the user gets a layout. Threshold
-    // chosen empirically — 4 same-cultivar copies in a 4×8ft bed at 4in grid
-    // produces ~600 rows and solves cleanly; 8 copies produce ~5650 and crash.
-    const SAME_SPECIES_ADJ_BUDGET = 1500;
-    const sameSpeciesAux = sameSpeciesAuxNames(model);
-    const sameSpeciesAdjCount = model.constraints.filter((c) =>
-      isAdjRowForAux(c.label, sameSpeciesAux),
-    ).length;
-    if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
-      console.warn(
-        '[optimizer] candidate', n,
-        `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping aux+rows to avoid HiGHS-WASM crash`,
-      );
-      model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
-      model.aux = model.aux.filter((a) => !sameSpeciesAux.has(a.name));
-    }
+    applySameSpeciesAdjStrip(model, n);
 
     const HighsModule = await loadHighs();
     const lpString = mipModelToLpString(model);
     console.info(
-      '[optimizer] candidate', n,
+      '[optimizer] candidate', n, 'cluster', subBed.cluster.key,
       'vars:', model.vars.length, 'aux:', model.aux.length,
       'constraints:', model.constraints.length, 'lpBytes:', lpString.length,
     );
-    const solution = trySolve(HighsModule, lpString, solveOpts);
-    if (!solution) {
-      console.warn('[optimizer] candidate', n, 'solver crashed; falling back to greedy hex pack');
-      const greedy = greedyHexPack(workingInput);
-      if (greedy.length > 0) {
-        candidates.push({
-          placements: greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn })),
-          score: 0,
-          reason: `${greedy.length} plants placed (greedy fallback)`,
-          gap: 1,
-          solveMs: performance.now() - solveStart,
-        });
-      }
-      continue;
+
+    const solution = trySolve(HighsModule, lpString, solveOpts(subInput));
+    let subPlacements: OptimizerPlacement[] = [];
+    let usedGreedy = false;
+    if (!solution || solution.Status === 'Infeasible') {
+      console.warn('[optimizer] candidate', n, 'cluster', subBed.cluster.key, 'crashed; greedy fallback');
+      const greedy = greedyHexPack(subInput);
+      subPlacements = greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn }));
+      usedGreedy = true;
+      worstGap = 1;
+    } else {
+      subPlacements = placementsFrom(model, solution.Columns);
+      priorActiveByKey.set(subBed.cluster.key, activeVarNames(model, solution.Columns));
+      scoreSum += solution.ObjectiveValue ?? 0;
     }
 
-    if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
-      console.warn('[optimizer] candidate', n, 'status:', solution.Status);
-      continue;
-    }
+    if (usedGreedy) fallbackKeys.push(subBed.cluster.key);
 
-    const placements = placementsFrom(model, solution.Columns);
-    if (placements.length === 0) {
-      // HiGHS reports "Time limit reached" with no MIP incumbent; Columns carry no Primal values.
-      // Reporting a zero-placement "candidate" misleads the UI.
-      console.warn('[optimizer] candidate', n, 'has no placements — status:', solution.Status, 'obj:', solution.ObjectiveValue);
-      continue;
+    for (const p of subPlacements) {
+      allPlacements.push({
+        cultivarId: p.cultivarId,
+        xIn: p.xIn + subBed.offsetIn.x,
+        yIn: p.yIn + subBed.offsetIn.y,
+      });
     }
-    const active = activeVarNames(model, solution.Columns);
-    priorActive = active;
-
-    candidates.push({
-      placements,
-      score: solution.ObjectiveValue,
-      reason: reasonLabel(workingInput, placements),
-      gap: 0, // highs LP string API doesn't expose MIP gap directly
-      solveMs: performance.now() - solveStart,
-    });
   }
 
-  return { candidates, totalMs: performance.now() - start };
+  if (allPlacements.length === 0) return null;
+  return {
+    placements: allPlacements,
+    score: scoreSum,
+    reason: clusteredReasonLabel(clusters, allPlacements.length, fallbackKeys),
+    gap: worstGap,
+    solveMs: performance.now() - solveStart,
+  };
+}
+
+function buildSubInput(parent: OptimizationInput, subBed: SubBed): OptimizationInput {
+  const translatedRegions = parent.userRegions
+    .map((r) => ({
+      xIn: r.xIn - subBed.offsetIn.x,
+      yIn: r.yIn - subBed.offsetIn.y,
+      widthIn: r.widthIn,
+      lengthIn: r.lengthIn,
+      preferredCultivarIds: r.preferredCultivarIds,
+    }))
+    .filter((r) =>
+      r.xIn + r.widthIn > 0 && r.yIn + r.lengthIn > 0 &&
+      r.xIn < subBed.bed.widthIn && r.yIn < subBed.bed.lengthIn,
+    );
+  return {
+    ...parent,
+    bed: subBed.bed,
+    plants: subBed.cluster.plants,
+    userRegions: translatedRegions,
+  };
+}
+
+function applySameSpeciesAdjStrip(model: MipModel, n: number): void {
+  const sameSpeciesAux = sameSpeciesAuxNames(model);
+  const sameSpeciesAdjCount = model.constraints.filter((c) =>
+    isAdjRowForAux(c.label, sameSpeciesAux),
+  ).length;
+  if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
+    console.warn(
+      '[optimizer] candidate', n,
+      `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping aux+rows`,
+    );
+    model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
+    model.aux = model.aux.filter((a) => !sameSpeciesAux.has(a.name));
+  }
+}
+
+function solveOpts(input: OptimizationInput) {
+  return {
+    time_limit: input.timeLimitSec,
+    mip_rel_gap: input.mipGap,
+    output_flag: false,
+    log_to_console: false,
+  };
+}
+
+function greedyCandidate(
+  input: OptimizationInput,
+  solveMs: number,
+  fallbackKeys: string[],
+): OptimizationCandidate | null {
+  const greedy = greedyHexPack(input);
+  if (greedy.length === 0) return null;
+  return {
+    placements: greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn })),
+    score: 0,
+    reason: `${greedy.length} plants placed (greedy fallback: ${fallbackKeys.join(', ')})`,
+    gap: 1,
+    solveMs,
+  };
+}
+
+function clusteredReasonLabel(clusters: Cluster[], placedCount: number, fallbackKeys: string[]): string {
+  const keys = clusters.map((c) => c.key).join(', ');
+  const fallbackNote = fallbackKeys.length > 0
+    ? ` (greedy fallback: ${fallbackKeys.join(', ')})`
+    : '';
+  return `${placedCount} plants placed across ${clusters.length} groups (${keys})${fallbackNote}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
