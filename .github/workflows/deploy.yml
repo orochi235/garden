@@ -18,16 +18,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: garden
+      - uses: actions/checkout@v4
+        with:
+          repository: orochi235/weasel
+          token: ${{ secrets.WEASEL_TOKEN }}
+          path: weasel
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: cp layer-lab.html dist/
+          cache-dependency-path: garden/package-lock.json
+      - working-directory: garden
+        run: npm ci
+      - working-directory: garden
+        run: npm run build
+      - working-directory: garden
+        run: cp layer-lab.html dist/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: garden/dist
 
   deploy:
     needs: build
