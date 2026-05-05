@@ -46,7 +46,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 - System layer (origin marker, axes, grid debug) not converted. Decide in Phase 3 whether the new prototype needs a counterpart or if it stays legacy-only.
 - `hitTest.ts` and `seedStartingHitTest.ts` were left alone in Phase 2 because their math was already mostly world-coord; the spec called for an explicit conversion + tests to confirm. Do that pass when wiring gestures in Phase 3.
 - Highlight pulse and flash are still imperative in `uiStore`/per-layer state. Move to a single Zustand-backed `highlightOpacity` value driven by a shared rAF tick when porting selection gestures (Phase 3).
-- `CanvasNewPrototype` hardcodes `highlightOpacity: 0` and `showFootprintCircles: true`. Wire to real ui state once Phase 3 introduces toggles.
+- ~~`CanvasNewPrototype` hardcodes `highlightOpacity: 0` and `showFootprintCircles: true`. Wire to real ui state once Phase 3 introduces toggles.~~ Resolved: `uiStore` now exposes `highlightOpacity` (default 0) and `showFootprintCircles` (default `true`); `CanvasNewPrototype` reads both from the store.
 - Selection rendering reads from `uiStore.selectedIds` but selection editing/gestures aren't wired (`selectionMode="none"`). Phase 3 connects palette/drag/click → adapter.
 - Label de-occlusion in `planting-labels` uses world-coord rects; the legacy version used screen rects. Visually verify behavior matches once labels are turned on at varied zoom levels (Phase 3).
 - `vite.config.ts` gained `resolve.dedupe: ['react', 'react-dom']` to fix duplicate-React errors when consuming linked weasel. Once weasel ships as a published package this dedupe is still safe but no longer load-bearing; revisit if it causes issues.
@@ -55,7 +55,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 - Highlight pulse is aggregated as `max(computeOpacity(id))` over the selected set and threaded into layers as a single `highlightOpacity` number. Per-id pulsing (so two flashing entities can ramp independently) is a Phase 5 refinement.
 - Alt+drag clone behavior was dropped from `useEricCycleTool` — alt currently only cycles topmost-stack on click. If we want alt-drag-to-duplicate parity with the legacy canvas, wire kit's `useClone`/`useDuplicate` behind a dedicated tool in Phase 4/5.
-- `CanvasNewPrototype` still hardcodes `showFootprintCircles: true` because no `useUiStore` flag exists for it. Add a toggle in the Plantings sidebar section if/when needed.
+- ~~`CanvasNewPrototype` still hardcodes `showFootprintCircles: true` because no `useUiStore` flag exists for it. Add a toggle in the Plantings sidebar section if/when needed.~~ Resolved: see Phase 2 bullet above. Sidebar toggle remains a future addition.
 - Insert tool (kit's `useInsertTool` + `InsertAdapter`) is not wired. Palette drags from the sidebar still flow through the legacy `useDragLayout` path. Phase 4 will plumb insert through the new tools registry.
 - Paste/clipboard (kit's `useClipboard`) is not wired into the new prototype. Defer until Phase 4 alongside insert.
 - Snap behaviors (`snapToGrid`, `snapToContainer`, `snapBackOrDelete`) are not yet attached to `useMove` options. Phase 5 will compose them once the snap-back UX is ported.

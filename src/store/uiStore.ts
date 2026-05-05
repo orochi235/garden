@@ -132,11 +132,25 @@ interface UiStore {
   hiddenSeedlingIds: string[];
   /** Whether to highlight seedlings with warnings (goldenrod ring + hover tooltip). */
   showSeedlingWarnings: boolean;
+  /**
+   * Current flash/highlight opacity for selection pulses, in `[0, 1]`.
+   * Defaults to 0 (no flash). The rAF-driven aggregation that writes this
+   * value is a future refinement (see docs/TODO.md). Garden canvas reads this
+   * so the value comes from the store rather than a hardcoded literal.
+   */
+  highlightOpacity: number;
+  /**
+   * Whether to render footprint circles on plantings. Defaults to `true` to
+   * preserve existing behavior. A sidebar toggle is a future addition.
+   */
+  showFootprintCircles: boolean;
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
   collectionEditorOpen: boolean;
   setCollectionEditorOpen: (open: boolean) => void;
   setShowSeedlingWarnings: (show: boolean) => void;
+  setHighlightOpacity: (opacity: number) => void;
+  setShowFootprintCircles: (show: boolean) => void;
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
   setPalettePointerPayload: (payload: UiStore['palettePointerPayload']) => void;
@@ -242,6 +256,8 @@ function defaultState() {
     dragPreview: null as ActiveDragPreview | null,
     hiddenSeedlingIds: [] as string[],
     showSeedlingWarnings: true,
+    highlightOpacity: 0,
+    showFootprintCircles: true,
     almanacFilters: {
       cellSizes: [],
       seasons: [],
@@ -300,6 +316,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setPan: (x, y) => set({ panX: x, panY: y }),
   setAppMode: (mode) => set({ appMode: mode }),
   setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
+  setHighlightOpacity: (opacity) => set({ highlightOpacity: opacity }),
+  setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
   setPalettePointerPayload: (payload) => set({ palettePointerPayload: payload }),
   bumpSeedStartingViewResetTick: () => set((s) => ({ seedStartingViewResetTick: s.seedStartingViewResetTick + 1 })),
