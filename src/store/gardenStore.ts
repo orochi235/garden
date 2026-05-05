@@ -64,6 +64,7 @@ interface GardenStore {
   fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
+  applyOptimizerResult: (structureId: string, candidate: import('../optimizer').OptimizationCandidate) => void;
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -371,6 +372,24 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     removePlanting: (id) => {
       if (isLocked('plantings')) return;
       commitPatch({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
+    },
+
+    applyOptimizerResult: (structureId, candidate) => {
+      const { garden } = get();
+      const structure = garden.structures.find((s) => s.id === structureId);
+      if (!structure) return;
+      const IN_TO_FT = 1 / 12;
+      // Remove existing plantings for this bed, add optimizer placements
+      const retained = garden.plantings.filter((p) => p.parentId !== structureId);
+      const newPlantings = candidate.placements.map((pl) =>
+        createPlanting({
+          parentId: structureId,
+          cultivarId: pl.cultivarId,
+          x: structure.x + pl.xIn * IN_TO_FT,
+          y: structure.y + pl.yIn * IN_TO_FT,
+        }),
+      );
+      commitPatch({ plantings: [...retained, ...newPlantings] });
     },
 
     // --- Seed Starting ---
