@@ -133,6 +133,7 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 ## Bed-layout optimizer deferrals (Plan 2, 2026-05-04)
 
+- [ ] **Solver returns 0 candidates in browser smoke-test.** WASM now loads (after `locateFile` fix), worker runs, `Solve` button toggles to `Cancel` and back, but `optimizerResult.candidates` is empty so no candidate UI appears. The `try/catch` around `HighsModule.solve` in `src/optimizer/worker.ts` silently swallows errors with `continue`. Investigate: surface the swallowed error, then decide if it's an LP-string format issue, an infeasibility issue, or a solver-config issue. Reproduce by selecting `default-bed-1` (the tomato bed) and clicking Solve.
 - [ ] Extract `src/optimizer/` into a standalone npm package once the API has settled.
 - [ ] Symmetry/aesthetic objective term for the optimizer (deferred — hard to linearize).
 - [ ] Live re-optimization during drag (deferred — UX complexity).

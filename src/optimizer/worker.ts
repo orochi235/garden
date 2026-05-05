@@ -95,9 +95,13 @@ async function solve(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadHighs(): Promise<any> {
-  const mod = await import('highs');
+  const [mod, wasmUrlMod] = await Promise.all([
+    import('highs'),
+    import('highs/runtime?url'),
+  ]);
   const loader = (mod as any).default ?? mod;
-  return loader({});
+  const wasmUrl = (wasmUrlMod as any).default ?? wasmUrlMod;
+  return loader({ locateFile: () => wasmUrl });
 }
 
 /**
