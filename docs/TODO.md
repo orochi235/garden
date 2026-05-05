@@ -91,7 +91,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 - `RenderLayersPanel` now hardcodes the layer descriptor list (id/label/alwaysOn/defaultVisible) for the four garden groups. Keep this in sync with `src/canvas/layers/{structure,zone,planting,selection}LayersWorld.ts` whenever a layer is added or its flags change. Future cleanup: have each `createXxxLayers` factory expose a `*_LAYER_DESCRIPTORS` static so the panel doesn't drift.
 - `?debug=handles` is documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
-- Per-id flash opacity for seedling selection still unwired; garden currently aggregates all selected ids into a single `highlightOpacity`. Push per-id pulses into both modes.
+- Garden mode now uses per-id flash via `EricSceneUi.getOpacity(id)`. Seed-starting still wires a separate per-id `getHighlight(id)` into `createSeedlingLayers`; consolidate the two callback shapes (or unify on a single per-id source) when there's appetite.
 - Click-to-sow without a current cultivar concept (see Phase 4 deferral on `useSowCellTool`) — design a `currentCultivarId` UI source.
 - True marquee area-select on seed-starting tray background (see updated Phase 4 deferral).
 - Palette drag → Tool primitive (`usePaletteDropTool`) so the seed-starting view bridge can drop and the canvas owns its own view state.
@@ -112,7 +112,6 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 - **Group outlines.** Selecting one member of a structure group should draw a group-bounds outline so the user can see the implicit selection extent. Needs a design pass: outline as separate render layer? handle hit-testing? does dragging one member move the group?
 - **Wheel-zoom hands-on smoke test.** Tool is wired on both `CanvasNewPrototype` and `SeedStartingCanvasNewPrototype` and unit-tested for cursor-anchored zoom + clamping. Still want a real-mouse + trackpad-pinch pass to confirm UX feels right (no jumping, anchor matches cursor, pinch doesn't fight browser zoom).
-- **Per-id selection-flash opacity.** `CanvasNewPrototype` aggregates all selected ids into a single `highlightOpacity` via max(); the layer protocol takes one number rather than a per-id getter. Migrate `EricSceneUi.highlightOpacity` to a `getOpacity(id)` callback and update each `*LayersWorld.ts` highlight branch. Touches every layer file plus their tests.
 - **Selection-rides-on-history.** Undo/redo currently leaves `useUiStore.selectedIds` untouched, so undoing a paste leaves the (now-deleted) ids selected. Need to either snapshot selection into history checkpoints or scrub stale ids on every history transition.
 - **Click-to-zoom tool for `viewMode === 'zoom'`.** Toolbar button currently warns once on activation; wire a tool with cursor `zoom-in`/`zoom-out` (shift inverts) that increments/decrements `useUiStore.zoom` around the click point. Double-click-on-button already resets to fit-view.
 - **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.

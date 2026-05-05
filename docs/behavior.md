@@ -169,3 +169,11 @@ Running list of intended application behaviors.
   origin with `(0,0)` label), `grid` (yellow grid at the model's grid step).
   Tokens are parsed once at page load; reload to change them. Multiple
   tokens combine, e.g. `?debug=hitboxes,axes`.
+
+## Per-id selection-flash opacity (2026-05-04)
+
+- Selection-flash highlights now pulse per-id rather than as a single
+  aggregated `max()` opacity across the whole selection. Two simultaneously
+  flashing entities (zone, structure, or planting) ramp independently — one
+  can finish fading while another is still at full intensity — instead of
+  being yoked to whichever started most recently.

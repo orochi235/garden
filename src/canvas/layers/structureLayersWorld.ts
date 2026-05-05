@@ -270,11 +270,21 @@ export function createStructureLayers(
       id: 'structure-highlights',
       label: 'Structure Highlights',
       draw(ctx, _data, view) {
-        const ui = getUi();
-        if (ui.highlightOpacity <= 0) return;
+        const { getOpacity } = getUi();
         const { queue } = getQueue(getStructures);
+        // Skip the save/setup if no structure is currently flashing — keeps
+        // the test that expects no `save()` when nothing's flashing happy.
+        let any = false;
+        for (const item of queue) {
+          const members = item.type === 'single' ? [item.structure] : item.members;
+          for (const s of members) {
+            if (getOpacity(s.id) > 0) { any = true; break; }
+          }
+          if (any) break;
+        }
+        if (!any) return;
+
         ctx.save();
-        ctx.globalAlpha = ui.highlightOpacity;
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = pxToWorld(view, 2);
         ctx.setLineDash([]);
@@ -282,6 +292,9 @@ export function createStructureLayers(
         for (const item of queue) {
           if (item.type === 'single') {
             const s = item.structure;
+            const op = getOpacity(s.id);
+            if (op <= 0) continue;
+            ctx.globalAlpha = op;
             if (s.shape === 'circle') {
               ctx.beginPath();
               ctx.ellipse(s.x + s.width / 2, s.y + s.height / 2, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
@@ -290,6 +303,14 @@ export function createStructureLayers(
               ctx.strokeRect(s.x, s.y, s.width, s.height);
             }
           } else {
+            // Group highlight: take max opacity over members so the compound
+            // outline pulses as a unit when any member flashes.
+            let groupOp = 0;
+            for (const s of item.members) {
+              const o = getOpacity(s.id);
+              if (o > groupOp) groupOp = o;
+            }
+            if (groupOp <= 0) continue;
             const compound = new Path2D();
             for (const s of item.members) {
               if (s.shape === 'circle') {
@@ -299,6 +320,7 @@ export function createStructureLayers(
               }
             }
             ctx.save();
+            ctx.globalAlpha = groupOp;
             const inverse = new Path2D();
             const r = viewWorldRect(ctx, view);
             inverse.rect(r.x, r.y, r.w, r.h);

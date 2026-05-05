@@ -15,7 +15,10 @@ export interface EricSceneUi {
   labelFontSize: number;
   plantIconScale: number;
   showFootprintCircles: boolean;
-  highlightOpacity: number;
+  /** Per-id selection-flash opacity in `[0, 1]`. Returns `0` when the id is
+   *  not currently flashing/hovered. Layers iterate their entities and call
+   *  this for each id rather than reading a single aggregated number. */
+  getOpacity: (id: string) => number;
   debugOverlappingLabels: boolean;
 }
 

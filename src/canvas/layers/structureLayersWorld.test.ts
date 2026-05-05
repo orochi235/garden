@@ -50,7 +50,7 @@ const baseUi: ReturnType<GetUi> = {
   labelFontSize: 13,
   plantIconScale: 1,
   showFootprintCircles: true,
-  highlightOpacity: 0,
+  getOpacity: () => 0,
   debugOverlappingLabels: false,
 };
 
@@ -85,25 +85,30 @@ describe('createStructureLayers (world)', () => {
     expect(ctx.lineWidth).toBeCloseTo(0.1);
   });
 
-  it('structure-highlights skips when highlightOpacity=0', () => {
+  it('structure-highlights skips when no structure has getOpacity(id)>0', () => {
     const ctx = makeCtx();
     const s = makeStructure();
-    const ui: ReturnType<GetUi> = { ...baseUi, highlightOpacity: 0 };
+    const ui: ReturnType<GetUi> = { ...baseUi, getOpacity: () => 0 };
     const layer = createStructureLayers(() => [s], () => ui)
       .find((l) => l.id === 'structure-highlights')!;
     layer.draw(ctx, {}, view);
     expect(ctx.save).not.toHaveBeenCalled();
   });
 
-  it('structure-highlights draws when highlightOpacity > 0', () => {
+  it('structure-highlights draws only structures whose getOpacity(id)>0', () => {
     const ctx = makeCtx();
-    const s = makeStructure();
-    const ui: ReturnType<GetUi> = { ...baseUi, highlightOpacity: 0.5 };
-    const layer = createStructureLayers(() => [s], () => ui)
+    const a = makeStructure({ id: 'a', x: 0, y: 0 });
+    const b = makeStructure({ id: 'b', x: 5, y: 5 });
+    const ui: ReturnType<GetUi> = {
+      ...baseUi,
+      getOpacity: (id: string) => (id === 'a' ? 0.5 : 0),
+    };
+    const layer = createStructureLayers(() => [a, b], () => ui)
       .find((l) => l.id === 'structure-highlights')!;
     layer.draw(ctx, {}, view);
     expect(ctx.save).toHaveBeenCalled();
-    expect(ctx.strokeRect).toHaveBeenCalled();
+    // Only one strokeRect — for 'a'.
+    expect((ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
 
   it('structure-labels skips when labelMode is none', () => {
