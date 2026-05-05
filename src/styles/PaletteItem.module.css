@@ -108,6 +108,12 @@
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
 }
+.rowArmed {
+  background: var(--theme-list-hover, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  outline: 2px solid var(--color-leaf, #6db05a);
+  outline-offset: -2px;
+}
 .rowLabel {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);

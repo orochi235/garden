@@ -34,6 +34,25 @@ export function SeedStartingCanvasNewPrototype() {
   const { width, height } = useCanvasSize(containerRef);
   const garden = useGardenStore((s) => s.garden);
   const currentTrayId = useUiStore((s) => s.currentTrayId);
+  const armedCultivarId = useUiStore((s) => s.armedCultivarId);
+  const setArmedCultivarId = useUiStore((s) => s.setArmedCultivarId);
+
+  // Escape and right-click disarm. Only listen while armed.
+  useEffect(() => {
+    if (!armedCultivarId) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setArmedCultivarId(null);
+    }
+    function onContext() {
+      setArmedCultivarId(null);
+    }
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('contextmenu', onContext);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('contextmenu', onContext);
+    };
+  }, [armedCultivarId, setArmedCultivarId]);
 
   useUiStore((s) => s.selectedIds);
   useUiStore((s) => s.hiddenSeedlingIds);
@@ -164,6 +183,7 @@ export function SeedStartingCanvasNewPrototype() {
         height: '100%',
         position: 'relative',
         background: '#1b1b1b',
+        cursor: armedCultivarId ? 'crosshair' : undefined,
       }}
       onContextMenu={(e) => e.preventDefault()}
     >

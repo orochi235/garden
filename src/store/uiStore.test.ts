@@ -296,6 +296,27 @@ describe('uiStore', () => {
     });
   });
 
+  describe('armedCultivarId', () => {
+    it('defaults to null', () => {
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().armedCultivarId).toBeNull();
+    });
+
+    it('setArmedCultivarId sets and clears the armed cultivar', () => {
+      useUiStore.getState().reset();
+      useUiStore.getState().setArmedCultivarId('tomato');
+      expect(useUiStore.getState().armedCultivarId).toBe('tomato');
+      useUiStore.getState().setArmedCultivarId(null);
+      expect(useUiStore.getState().armedCultivarId).toBeNull();
+    });
+
+    it('reset clears armedCultivarId', () => {
+      useUiStore.getState().setArmedCultivarId('tomato');
+      useUiStore.getState().reset();
+      expect(useUiStore.getState().armedCultivarId).toBeNull();
+    });
+  });
+
   describe('collectionEditorOpen', () => {
     it('defaults to false and toggles', () => {
       useUiStore.getState().reset();

@@ -123,6 +123,9 @@ Running list of intended application behaviors.
 - Existing seedlings can be dragged within the tray: dropping on an empty cell moves the seedling, dropping on an occupied cell swaps the two, and dropping outside the tray removes the seedling
 - Clicking a seedling selects it; shift- or cmd-clicking another seedling adds/removes it from the selection (multiselect). Clicking an empty cell or the background clears the selection. Selected seedlings render with a dashed blue ring
 - Drag from any empty space (between cells, in gutters, outside the tray) draws a marquee rectangle; release selects every seedling whose cell center falls inside. Shift extends the existing selection instead of replacing it. Mirrors the garden-mode marquee style
+- Click-to-sow arming: in seed-starting mode, clicking a planting entry in the palette arms that cultivar (the entry shows a leaf-colored ring). Clicking the same entry again disarms it; clicking a different entry switches the armed cultivar. Arming has no effect outside seed-starting mode
+- While a cultivar is armed, the seed-starting canvas shows a crosshair cursor. Left-clicking an empty tray cell sows a seedling of the armed cultivar there; left-clicking an occupied cell is a no-op (does not replace). Sowing does not auto-disarm — repeated clicks keep sowing until the user explicitly disarms
+- Pressing Escape or right-clicking anywhere disarms the currently armed cultivar. Disarming via right-click also suppresses the context menu (the seed-starting canvas already prevents the default context menu)
 
 ## Selection and clipboard (Phase 3 canvas-kit migration, 2026-05-01)
 

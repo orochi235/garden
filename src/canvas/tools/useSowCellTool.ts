@@ -7,8 +7,9 @@ import { hitTestCellInches } from '../seedStartingHitTest';
 export interface SowScratch { handled: boolean }
 
 /** Click an empty tray cell to sow with the currently dragging cultivar
- *  (`useUiStore.seedDragCultivarId`). Used by the seed-starting Canvas as
- *  a fallback for click-to-sow; the palette-drag-to-sow flow continues to
+ *  (`useUiStore.seedDragCultivarId`) or, as a fallback, the currently armed
+ *  cultivar (`useUiStore.armedCultivarId`). Used by the seed-starting Canvas
+ *  as a fallback for click-to-sow; the palette-drag-to-sow flow continues to
  *  go through App.tsx's DOM listener. The tool only claims when a cultivar
  *  is currently set so other tools (move, select) take precedence on
  *  populated cells / no-cultivar contexts. */
@@ -22,7 +23,8 @@ export function useSowCellTool(): Tool<SowScratch> {
         pointer: {
           onClick: (e, ctx) => {
             if (e.button !== 0) return 'pass';
-            const cultivarId = useUiStore.getState().seedDragCultivarId;
+            const ui = useUiStore.getState();
+            const cultivarId = ui.seedDragCultivarId ?? ui.armedCultivarId;
             if (!cultivarId) return 'pass';
             const ss = useGardenStore.getState().garden.seedStarting;
             for (const tray of ss.trays) {

@@ -93,6 +93,11 @@ interface UiStore {
   seedStartingPanY: number;
   /** Cultivar being dragged from the seed palette; null when no drag in progress. */
   seedDragCultivarId: string | null;
+  /** Cultivar armed for click-to-sow in seed-starting mode. Toggled by clicking
+   *  a palette planting entry; cleared by clicking it again, by Escape, or by
+   *  right-click. Independent of `seedDragCultivarId` (which is set only during
+   *  active palette drags). */
+  armedCultivarId: string | null;
   /** Transient ghost preview shown while dragging a cultivar over a fill target. */
   seedFillPreview:
     | { trayId: string; cultivarId: string; scope: 'all'; replace?: boolean }
@@ -120,6 +125,7 @@ interface UiStore {
   setSeedStartingZoom: (zoom: number) => void;
   setSeedStartingPan: (x: number, y: number) => void;
   setSeedDragCultivarId: (id: string | null) => void;
+  setArmedCultivarId: (id: string | null) => void;
   setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
   setSeedMovePreview: (preview: UiStore['seedMovePreview']) => void;
   setHiddenSeedlingIds: (ids: string[]) => void;
@@ -215,6 +221,7 @@ function defaultState() {
     seedStartingPanX: 0,
     seedStartingPanY: 0,
     seedDragCultivarId: null as string | null,
+    armedCultivarId: null as string | null,
     seedFillPreview: null as UiStore['seedFillPreview'],
     seedMovePreview: null as UiStore['seedMovePreview'],
     hiddenSeedlingIds: [] as string[],
@@ -281,6 +288,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setSeedStartingZoom: (z) => set({ seedStartingZoom: Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, z)) }),
   setSeedStartingPan: (x, y) => set({ seedStartingPanX: x, seedStartingPanY: y }),
   setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
+  setArmedCultivarId: (id) => set({ armedCultivarId: id }),
   setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
   setSeedMovePreview: (preview) => set({ seedMovePreview: preview }),
   setHiddenSeedlingIds: (ids) => set({ hiddenSeedlingIds: ids }),
