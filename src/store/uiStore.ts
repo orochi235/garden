@@ -4,6 +4,7 @@ import type { TimePeriod } from '../utils/timeTheme';
 import type { Season } from '../model/species';
 import type { CellSize } from '../model/seedStarting';
 import type { PaletteEntry } from '../components/palette/paletteData';
+import type { DragPreviewSlot } from '../canvas/drag/putativeDrag';
 
 export interface AlmanacFilters {
   /** When non-empty, only seedables with one of these cell sizes are shown. */
@@ -124,6 +125,14 @@ interface UiStore {
   hiddenSeedlingIds: string[];
   /** Whether to highlight seedlings with warnings (goldenrod ring + hover tooltip). */
   showSeedlingWarnings: boolean;
+  /** Generic putative-drag preview slot (Phase 1 of the putative-drag
+   *  framework — see `src/canvas/drag/putativeDrag.ts` and `docs/TODO.md`).
+   *  The dispatcher writes a `compute()` result here on every pointer / key
+   *  change while a drag is in flight; the focused render layer reads it
+   *  and dispatches to the active drag's `renderPreview`. Coexists with
+   *  legacy `seedFillPreview` and `dragOverlay` slots until those consumers
+   *  migrate (Phase 2+). */
+  dragPreview: DragPreviewSlot | null;
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
   collectionEditorOpen: boolean;

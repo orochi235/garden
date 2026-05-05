@@ -3,6 +3,7 @@ import {
   createSeedStartingSceneAdapter,
   seedStartingWorldBounds,
   TRAY_GUTTER_IN,
+  TRAYS_PER_COLUMN,
   trayWorldOrigin,
 } from './seedStartingScene';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
@@ -162,21 +163,21 @@ describe('seedStartingSceneAdapter', () => {
       });
     });
 
-    it('n=2 mixed widths: second tray offset by w0 + gutter; bounds sum widths + 1 gutter, max height', () => {
+    it('n=2 mixed widths: second tray stacks below the first in the same column; bounds use max width, summed heights + 1 gutter', () => {
       const ss = ssWithTrays([
         { rows: 2, cols: 3, label: 'a' },
         { rows: 4, cols: 6, label: 'b' },
       ]);
       const [t0, t1] = ss.trays;
       expect(trayWorldOrigin(t0, ss)).toEqual({ x: 0, y: 0 });
-      expect(trayWorldOrigin(t1, ss)).toEqual({ x: t0.widthIn + TRAY_GUTTER_IN, y: 0 });
+      expect(trayWorldOrigin(t1, ss)).toEqual({ x: 0, y: t0.heightIn + TRAY_GUTTER_IN });
       expect(seedStartingWorldBounds(ss)).toEqual({
-        width: t0.widthIn + TRAY_GUTTER_IN + t1.widthIn,
-        height: Math.max(t0.heightIn, t1.heightIn),
+        width: Math.max(t0.widthIn, t1.widthIn),
+        height: t0.heightIn + TRAY_GUTTER_IN + t1.heightIn,
       });
     });
 
-    it('n=3 mixed widths: origins accumulate prior widths + gutter * priorIndex', () => {
+    it('n=3 fills first column top-to-bottom (TRAYS_PER_COLUMN=3)', () => {
       const ss = ssWithTrays([
         { rows: 2, cols: 3, label: 'a' },
         { rows: 3, cols: 5, label: 'b' },
@@ -184,15 +185,38 @@ describe('seedStartingSceneAdapter', () => {
       ]);
       const [t0, t1, t2] = ss.trays;
       expect(trayWorldOrigin(t0, ss)).toEqual({ x: 0, y: 0 });
-      expect(trayWorldOrigin(t1, ss)).toEqual({ x: t0.widthIn + TRAY_GUTTER_IN, y: 0 });
+      expect(trayWorldOrigin(t1, ss)).toEqual({ x: 0, y: t0.heightIn + TRAY_GUTTER_IN });
       expect(trayWorldOrigin(t2, ss)).toEqual({
-        x: t0.widthIn + t1.widthIn + 2 * TRAY_GUTTER_IN,
+        x: 0,
+        y: t0.heightIn + t1.heightIn + 2 * TRAY_GUTTER_IN,
+      });
+      expect(seedStartingWorldBounds(ss)).toEqual({
+        width: Math.max(t0.widthIn, t1.widthIn, t2.widthIn),
+        height: t0.heightIn + t1.heightIn + t2.heightIn + 2 * TRAY_GUTTER_IN,
+      });
+    });
+
+    it('n=4 wraps to a second column; col0 width is max of its members', () => {
+      const ss = ssWithTrays([
+        { rows: 2, cols: 3, label: 'a' },
+        { rows: 3, cols: 5, label: 'b' },
+        { rows: 4, cols: 2, label: 'c' },
+        { rows: 2, cols: 4, label: 'd' },
+      ]);
+      const [t0, t1, t2, t3] = ss.trays;
+      const col0Width = Math.max(t0.widthIn, t1.widthIn, t2.widthIn);
+      expect(trayWorldOrigin(t3, ss)).toEqual({
+        x: col0Width + TRAY_GUTTER_IN,
         y: 0,
       });
       expect(seedStartingWorldBounds(ss)).toEqual({
-        width: t0.widthIn + t1.widthIn + t2.widthIn + 2 * TRAY_GUTTER_IN,
-        height: Math.max(t0.heightIn, t1.heightIn, t2.heightIn),
+        width: col0Width + TRAY_GUTTER_IN + t3.widthIn,
+        height: t0.heightIn + t1.heightIn + t2.heightIn + 2 * TRAY_GUTTER_IN,
       });
+    });
+
+    it('exposes TRAYS_PER_COLUMN as 3', () => {
+      expect(TRAYS_PER_COLUMN).toBe(3);
     });
 
     it('zero trays: bounds are (0, 0)', () => {
