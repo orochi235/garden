@@ -27,6 +27,7 @@ import { ViewToolbar } from './ViewToolbar';
 import { LayerSelector } from './LayerSelector';
 
 const MIN_PANEL = 160;
+const MIN_LEFT_PANEL = 200;
 const MAX_PANEL = 400;
 const DEFAULT_PANEL = 240;
 
@@ -535,7 +536,7 @@ export function App() {
       const dx = e.clientX - dragStartX.current;
       const raw = dragging.current === 'left' ? dragStartWidth.current + dx : dragStartWidth.current - dx;
       if (dragging.current === 'left') {
-        setLeftWidth(Math.min(MAX_PANEL, Math.max(MIN_PANEL, raw)));
+        setLeftWidth(Math.min(MAX_PANEL, Math.max(MIN_LEFT_PANEL, raw)));
       } else {
         // Right sidebar can collapse fully: snap to 0 below MIN_PANEL/2.
         // Cap at DEFAULT_PANEL — the right panel can't grow past its initial size.
