@@ -4,6 +4,7 @@ import type { TimePeriod } from '../utils/timeTheme';
 import type { Season } from '../model/species';
 import type { CellSize } from '../model/seedStarting';
 import type { PaletteEntry } from '../components/palette/paletteData';
+import type { ActiveDragPreview } from '../canvas/drag/putativeDrag';
 
 export interface AlmanacFilters {
   /** When non-empty, only seedables with one of these cell sizes are shown. */
@@ -114,6 +115,13 @@ interface UiStore {
     | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
     | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean }
     | null;
+  /**
+   * Generic putative-drag preview slot — Phase 1 of the framework defined in
+   * `src/canvas/drag/putativeDrag.ts`. Coexists with the legacy
+   * `seedFillPreview`, `seedMovePreview`, and `dragOverlay` slots until those
+   * drags are migrated. See `docs/TODO.md` "Repeatable putative-drag framework".
+   */
+  dragPreview: ActiveDragPreview | null;
   /** Multi-seedling move preview: ghosted icons in their resolved target cells. */
   seedMovePreview: {
     trayId: string;
@@ -137,6 +145,7 @@ interface UiStore {
   setArmedCultivarId: (id: string | null) => void;
   setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
   setSeedMovePreview: (preview: UiStore['seedMovePreview']) => void;
+  setDragPreview: (preview: ActiveDragPreview | null) => void;
   setHiddenSeedlingIds: (ids: string[]) => void;
   setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
   resetAlmanacFilters: () => void;
@@ -230,6 +239,7 @@ function defaultState() {
     armedCultivarId: null as string | null,
     seedFillPreview: null as UiStore['seedFillPreview'],
     seedMovePreview: null as UiStore['seedMovePreview'],
+    dragPreview: null as ActiveDragPreview | null,
     hiddenSeedlingIds: [] as string[],
     showSeedlingWarnings: true,
     almanacFilters: {
@@ -297,6 +307,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setArmedCultivarId: (id) => set({ armedCultivarId: id }),
   setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
   setSeedMovePreview: (preview) => set({ seedMovePreview: preview }),
+  setDragPreview: (preview) => set({ dragPreview: preview }),
   setHiddenSeedlingIds: (ids) => set({ hiddenSeedlingIds: ids }),
   setAlmanacFilters: (patch) =>
     set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),
