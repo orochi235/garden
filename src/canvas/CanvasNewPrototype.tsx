@@ -18,7 +18,11 @@ import { createGardenSceneAdapter, type SceneNode, type ScenePose } from './adap
 import { createStructureLayers } from './layers/structureLayersWorld';
 import { createZoneLayers } from './layers/zoneLayersWorld';
 import { createPlantingLayers } from './layers/plantingLayersWorld';
-import { createSelectionOutlineLayer, createSelectionHandlesLayer } from './layers/selectionLayersWorld';
+import {
+  createSelectionOutlineLayer,
+  createSelectionHandlesLayer,
+  createGroupOutlineLayer,
+} from './layers/selectionLayersWorld';
 import { createSystemLayer } from './layers/systemLayersWorld';
 import type { GetUi, View } from './layers/worldLayerData';
 import { useEricSelectTool } from './tools/useEricSelectTool';
@@ -110,6 +114,7 @@ function GardenCanvasNewPrototype() {
       ...createZoneLayers(getZones, getUi),
       ...createStructureLayers(getStructures, getUi),
       ...createPlantingLayers(getPlantings, getZones, getStructures, getUi),
+      createGroupOutlineLayer(getStructures, getUi),
       createSelectionOutlineLayer(getPlantings, getZones, getStructures, getUi),
       createSelectionHandlesLayer(getZones, getStructures, getUi),
       createSystemLayer(),

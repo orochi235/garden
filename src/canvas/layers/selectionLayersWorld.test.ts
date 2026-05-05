@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createSelectionOutlineLayer, createSelectionHandlesLayer } from './selectionLayersWorld';
+import {
+  createSelectionOutlineLayer,
+  createSelectionHandlesLayer,
+  createGroupOutlineLayer,
+} from './selectionLayersWorld';
 import type { Structure, Zone } from '../../model/types';
 import type { GetUi } from './worldLayerData';
 
@@ -90,6 +94,57 @@ describe('createSelectionOutlineLayer', () => {
     const layer = createSelectionOutlineLayer(() => [], () => [z], () => [], () => ui({ selectedIds: ['z1'] }));
     layer.draw(ctx, {}, view);
     expect(ctx.ellipse).toHaveBeenCalled();
+  });
+});
+
+describe('createGroupOutlineLayer', () => {
+  it('draws nothing when no selection', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, height: 2 });
+    const layer = createGroupOutlineLayer(() => [a], () => ui());
+    layer.draw(ctx, {}, view);
+    expect(ctx.strokeRect).not.toHaveBeenCalled();
+  });
+
+  it('draws nothing when the selected member is ungrouped', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', groupId: null });
+    const layer = createGroupOutlineLayer(() => [a], () => ui({ selectedIds: ['a'] }));
+    layer.draw(ctx, {}, view);
+    expect(ctx.strokeRect).not.toHaveBeenCalled();
+  });
+
+  it('draws nothing when the group has only one member', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', groupId: 'g' });
+    const layer = createGroupOutlineLayer(() => [a], () => ui({ selectedIds: ['a'] }));
+    layer.draw(ctx, {}, view);
+    expect(ctx.strokeRect).not.toHaveBeenCalled();
+  });
+
+  it('draws the union AABB of all members when one is selected', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, height: 2 });
+    const b = makeStructure({ id: 'b', groupId: 'g', x: 5, y: 6, width: 3, height: 4 });
+    const layer = createGroupOutlineLayer(() => [a, b], () => ui({ selectedIds: ['a'] }));
+    layer.draw(ctx, {}, view);
+    const calls = (ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(1);
+    // union: x∈[0,8], y∈[0,10]. inset = 4/scale = 0.4.
+    const [x, y, w, h] = calls[0];
+    expect(x).toBeCloseTo(-0.4);
+    expect(y).toBeCloseTo(-0.4);
+    expect(w).toBeCloseTo(8.8);
+    expect(h).toBeCloseTo(10.8);
+  });
+
+  it('draws each group only once when multiple members of the same group are selected', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', groupId: 'g', x: 0, y: 0, width: 2, height: 2 });
+    const b = makeStructure({ id: 'b', groupId: 'g', x: 5, y: 5, width: 2, height: 2 });
+    const layer = createGroupOutlineLayer(() => [a, b], () => ui({ selectedIds: ['a', 'b'] }));
+    layer.draw(ctx, {}, view);
+    expect((ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
 });
 
