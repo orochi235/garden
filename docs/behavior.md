@@ -173,6 +173,11 @@ Running list of intended application behaviors.
 - Structures and zones clone with an offset equal to the drag delta. Plantings resolve their new parent from whichever container the cursor is over at drop; if no container, the drop is silent (no new planting created).
 - Alt+click cycling remains unchanged: alt-clicking without dragging still cycles through overlapping objects at the cursor.
 
+## Insert-tool routing and clipboard wiring (Phase 4, 2026-05-05)
+
+- Insert tool (`useInsertTool` + `createInsertAdapter`) is wired into `CanvasNewPrototype` and activates when a plotting tool is selected from the object palette while in Draw mode; dragging on the canvas materializes the object via `insertAdapter.applyBatch`, creating a single undoable history entry.
+- Clipboard (Cmd/Ctrl+C copy, Cmd/Ctrl+X cut, Cmd/Ctrl+V paste) is wired in `App.tsx` via `useClipboard(insertAdapter, ...)` and dispatched through `useKeyboardActionDispatch`; each paste or cut creates exactly one undoable batch entry; paste selects the new objects and successive pastes cascade by one grid cell.
+
 ## Canvas redesign default + debug overlays (Phase 5, 2026-05-03)
 
 - The canvas pipeline rewritten on the weasel `<Canvas>` + Tool primitive is
