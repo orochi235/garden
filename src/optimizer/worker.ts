@@ -9,7 +9,7 @@ import type {
   OptimizerPlacement, Cluster, SubBed,
 } from './types';
 
-const MAX_UNIFIED_VARS = 500;
+const MAX_UNIFIED_VARS = 1500;
 const SAME_SPECIES_ADJ_BUDGET = 1500;
 
 interface RunMsg { type: 'run'; input: OptimizationInput; id: string }
@@ -82,6 +82,9 @@ async function solveUnified(
   const prior = priorActiveByKey.get('unified') ?? [];
   if (n > 0 && prior.length > 0) {
     model.constraints.push({ ...buildNoGoodCut(prior, input.diversityThreshold), label: `nogood:${n}` });
+    console.info('[optimizer] candidate', n, 'unified nogood cut: forbid', prior.length, 'prior vars; kDiff:', input.diversityThreshold);
+  } else if (n > 0) {
+    console.warn('[optimizer] candidate', n, 'unified has no prior to cut against');
   }
 
   applySameSpeciesAdjStrip(model, n);
@@ -217,15 +220,9 @@ function splitOversizedSubBeds(subBeds: SubBed[], parent: OptimizationInput): Su
     const stripIsHorizontal = subBed.bed.lengthIn >= subBed.bed.widthIn;
     const longAxisLen = stripIsHorizontal ? subBed.bed.lengthIn : subBed.bed.widthIn;
     const pieceLen = longAxisLen / pieces;
+    const piecePlantsByIdx = distributeUnitsAcrossPieces(subBed.cluster.plants, pieces);
     for (let i = 0; i < pieces; i++) {
-      const piecePlants = subBed.cluster.plants
-        .map((p) => {
-          const base = Math.floor(p.count / pieces);
-          const remainder = p.count % pieces;
-          const count = base + (i < remainder ? 1 : 0);
-          return count > 0 ? { ...p, count } : null;
-        })
-        .filter((p): p is NonNullable<typeof p> => p !== null);
+      const piecePlants = piecePlantsByIdx[i];
       if (piecePlants.length === 0) continue;
       const pieceCluster: Cluster = {
         key: `${subBed.cluster.key}#${i + 1}`,
@@ -242,7 +239,55 @@ function splitOversizedSubBeds(subBeds: SubBed[], parent: OptimizationInput): Su
       out.push({ cluster: pieceCluster, bed: pieceBed, offsetIn: pieceOffset });
     }
   }
+  for (const sb of out) {
+    console.info(
+      '[optimizer] split piece', sb.cluster.key,
+      'plants:', sb.cluster.plants.length, '(', sb.cluster.plants.reduce((s, p) => s + p.count, 0), 'units)',
+      'bed:', sb.bed.widthIn.toFixed(1), '×', sb.bed.lengthIn.toFixed(1),
+      'offset:', sb.offsetIn.x.toFixed(1), ',', sb.offsetIn.y.toFixed(1),
+      'trellis:', sb.bed.trellis ? 'yes' : 'no',
+    );
+  }
   return out;
+}
+
+/**
+ * Distribute the cluster's "plant units" (one per count) across N pieces so each
+ * piece gets a roughly equal slice. Handles both homogeneous many-count clusters
+ * (e.g. one plant with count=20) and heterogeneous count=1 clusters (e.g. 8
+ * distinct cultivars) — the latter would collapse into a single piece if we
+ * naively divided each plant's count by `pieces`.
+ */
+function distributeUnitsAcrossPieces<T extends { cultivarId: string; count: number }>(
+  plants: T[],
+  pieces: number,
+): T[][] {
+  const totalUnits = plants.reduce((s, p) => s + p.count, 0);
+  const base = Math.floor(totalUnits / pieces);
+  const extra = totalUnits % pieces;
+  const result: T[][] = Array.from({ length: pieces }, () => []);
+  let pi = 0;
+  let cap = base + (0 < extra ? 1 : 0);
+  let filled = 0;
+  for (const plant of plants) {
+    let remaining = plant.count;
+    while (remaining > 0 && pi < pieces) {
+      if (cap === 0) { pi++; if (pi < pieces) cap = base + (pi < extra ? 1 : 0); filled = 0; continue; }
+      const take = Math.min(remaining, cap - filled);
+      if (take > 0) {
+        const existing = result[pi].find((p) => p.cultivarId === plant.cultivarId);
+        if (existing) existing.count += take;
+        else result[pi].push({ ...plant, count: take });
+        filled += take;
+        remaining -= take;
+      }
+      if (filled >= cap) {
+        pi++;
+        if (pi < pieces) { cap = base + (pi < extra ? 1 : 0); filled = 0; }
+      }
+    }
+  }
+  return result;
 }
 
 function buildSubInput(parent: OptimizationInput, subBed: SubBed): OptimizationInput {
@@ -282,11 +327,12 @@ function applySameSpeciesAdjStrip(model: MipModel, n: number): void {
 }
 
 function solveOpts(input: OptimizationInput) {
+  // NOTE: do NOT pass output_flag:false or log_to_console:false. highs-js
+  // v1.8.0 parses the solution from stdout; silencing it makes solve() throw
+  // "Unable to parse solution. Too few lines." See highsLpRoundtrip.test.ts.
   return {
     time_limit: input.timeLimitSec,
     mip_rel_gap: input.mipGap,
-    output_flag: false,
-    log_to_console: false,
   };
 }
 
@@ -349,7 +395,7 @@ export function mipModelToLpString(model: MipModel): string {
   if (objTerms.length === 0) {
     lines.push(' obj: 0');
   } else {
-    lines.push(` obj: ${objTerms.join(' ')}`);
+    pushWrapped(lines, ' obj: ', objTerms);
   }
 
   // Constraints
@@ -362,9 +408,8 @@ export function mipModelToLpString(model: MipModel): string {
       }
     }
     if (termStrs.length === 0) continue;
-    const lhs = termStrs.join(' ');
     const op = c.op === '<=' ? '<=' : c.op === '>=' ? '>=' : '=';
-    lines.push(` ${sanitizeName(c.label)}: ${lhs} ${op} ${c.rhs}`);
+    pushWrapped(lines, ` ${sanitizeName(c.label)}: `, termStrs, ` ${op} ${c.rhs}`);
   }
 
   // Bounds
@@ -378,18 +423,59 @@ export function mipModelToLpString(model: MipModel): string {
 
   // General (binary integer variables)
   lines.push('General');
-  const binaryNames = model.vars.map((v) => sanitizeName(v.name)).join(' ');
-  if (binaryNames) lines.push(` ${binaryNames}`);
+  pushWrapped(lines, ' ', model.vars.map((v) => sanitizeName(v.name)));
 
   lines.push('End');
   return lines.join('\n');
 }
 
+/**
+ * Append `terms` to `lines`, wrapping them across multiple lines so no single
+ * line exceeds the CPLEX LP format's ~510-character limit. The first line
+ * starts with `prefix`; subsequent continuation lines are indented. If
+ * `suffix` is given (e.g. ` <= 5` for a constraint RHS), it is appended to the
+ * last line. HiGHS-WASM truncates / mis-parses long lines and then reports
+ * cryptic errors like "Unable to parse solution. Too few lines."
+ */
+function pushWrapped(lines: string[], prefix: string, terms: string[], suffix = ''): void {
+  if (terms.length === 0) {
+    lines.push(prefix.trimEnd() + suffix);
+    return;
+  }
+  const MAX_LINE = 500;
+  const CONT_INDENT = '   ';
+  let cur = prefix;
+  for (let i = 0; i < terms.length; i++) {
+    const t = terms[i];
+    const candidate = cur === prefix || cur.endsWith(' ') ? cur + t : `${cur} ${t}`;
+    if (candidate.length > MAX_LINE && cur !== prefix) {
+      lines.push(cur);
+      cur = `${CONT_INDENT}${t}`;
+    } else {
+      cur = candidate;
+    }
+  }
+  lines.push(cur + suffix);
+}
+
 function formatCoeff(c: number): string {
   if (c === 1) return '+';
   if (c === -1) return '-';
-  if (c >= 0) return `+ ${c}`;
-  return `- ${Math.abs(c)}`;
+  // LP format does NOT accept scientific notation; default Number.toString()
+  // emits 1e-7 for small magnitudes, which HiGHS-WASM rejects (and can later
+  // crash its solution parser with "Unable to parse solution"). Use a fixed
+  // decimal format and trim trailing zeros.
+  const fixed = formatDecimal(Math.abs(c));
+  return c >= 0 ? `+ ${fixed}` : `- ${fixed}`;
+}
+
+function formatDecimal(n: number): string {
+  if (n === 0) return '0';
+  // 12 fractional digits is enough to preserve double precision for values in
+  // the typical objective range (|c| up to ~1e6) without scientific notation.
+  let s = n.toFixed(12);
+  if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return s;
 }
 
 function trySolve(

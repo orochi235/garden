@@ -174,17 +174,17 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         plantA.heightIn !== plantB.heightIn;
       const sameSpecies = plantA.cultivarId === plantB.cultivarId;
 
-      // Only emit aux vars if there's something to score
-      const hasRelationship = rel != null || hasShading || sameSpecies;
-      if (!hasRelationship) continue;
-
       const cellPairsForA = varsByPlant.get(a) ?? [];
       const cellPairsForB = varsByPlant.get(b) ?? [];
 
       const auxName = `n_${a}_${b}`;
 
-      // Compute objective coefficient for this pair
-      let auxCoeff = 0;
+      // Compute objective coefficient for this pair. clusterCohesion is the
+      // baseline: every pair in the model belongs to the same cluster (the
+      // worker calls buildMipModel once per cluster), so a mild attractive
+      // reward gives the solver a reason to pack plants together. Specific
+      // relationships add to or override this base.
+      let auxCoeff = weights.clusterCohesion;
       if (rel === 'companion') {
         auxCoeff += weights.companion;
       } else if (rel === 'antagonist') {

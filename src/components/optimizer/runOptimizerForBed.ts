@@ -38,7 +38,7 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
       edgeClearanceIn: 0,
     },
     plants,
-    weights: DEFAULT_WEIGHTS,
+    weights: zeroWeightsIfDebug(),
     gridResolutionIn: 4,
     companions,
     userRegions: [],
@@ -52,6 +52,21 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
 }
 
 export type { OptimizationResult };
+
+/**
+ * Debug toggle: when the URL has `?optWeights=zero`, return all-zero weights so
+ * the LP objective collapses to "place as many plants as possible." This makes
+ * it trivial to see whether the diversity machinery (no-good cuts +
+ * perturbation) is producing varied candidates, since soft-objective bonuses no
+ * longer dominate the score.
+ */
+function zeroWeightsIfDebug() {
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('optWeights') === 'zero') {
+    console.info('[optimizer] DEBUG: zeroing all weights via ?optWeights=zero');
+    return { shading: 0, companion: 0, antagonist: 0, sameSpeciesBuffer: 0, trellisAttraction: 0, regionPreference: 0, clusterCohesion: 0 };
+  }
+  return DEFAULT_WEIGHTS;
+}
 
 function buildCompanionTable(cultivars: Cultivar[]): CompanionTable['pairs'] {
   const out: CompanionTable['pairs'] = {};

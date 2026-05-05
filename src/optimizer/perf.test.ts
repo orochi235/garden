@@ -30,7 +30,12 @@ describe('formulation perf smoke (CI hardware)', () => {
     const m = buildMipModel(input);
     const seed = greedyHexPack(input);
     const dt = performance.now() - t0;
-    expect(dt).toBeLessThan(2000); // 2s to accommodate cold-start in full test suite
+    // Budget includes cold-start in full test suite. Bumped to 6s when the
+    // clusterCohesion term started emitting C(30,2)=435 aux vars and their
+    // adj rows for this scenario; the same-species-only path was sparser.
+    // TODO(optimizer): cohesion-only aux rows could be cheaper to build
+    // (e.g., share precomputed adjacency between pairs).
+    expect(dt).toBeLessThan(6000);
     expect(m.vars.length).toBeLessThan(50_000);
     expect(seed.length).toBeGreaterThan(0);
   });

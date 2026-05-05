@@ -57,6 +57,15 @@ export interface OptimizerWeights {
   sameSpeciesBuffer: number;
   trellisAttraction: number;
   regionPreference: number;
+  /**
+   * Mild attractive reward for any pair of plants within the same model
+   * (i.e. same cluster) sitting within adjacency range. Without it, pairs
+   * with no companion/shading/same-species relationship contribute nothing
+   * to the objective and the solver returns an arbitrary feasible layout.
+   * Default is intentionally smaller than the relational weights so a real
+   * companion bond still dominates.
+   */
+  clusterCohesion: number;
 }
 
 /** Companion / antagonist relationships keyed by canonical "a|b" pair (a,b sorted). */
@@ -133,4 +142,5 @@ export const DEFAULT_WEIGHTS: OptimizerWeights = {
   sameSpeciesBuffer: 1,
   trellisAttraction: 1,
   regionPreference: 1,
+  clusterCohesion: 0.25,
 };

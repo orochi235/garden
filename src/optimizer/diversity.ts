@@ -18,6 +18,7 @@ export function perturbWeights(w: OptimizerWeights, magnitude: number, seed: num
     sameSpeciesBuffer: w.sameSpeciesBuffer * (1 + (rng() * 2 - 1) * magnitude),
     trellisAttraction: w.trellisAttraction * (1 + (rng() * 2 - 1) * magnitude),
     regionPreference: w.regionPreference * (1 + (rng() * 2 - 1) * magnitude),
+    clusterCohesion: w.clusterCohesion * (1 + (rng() * 2 - 1) * magnitude),
   };
 }
 
