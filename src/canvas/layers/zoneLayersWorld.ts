@@ -47,12 +47,13 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
       id: 'zone-highlights',
       label: 'Zone Highlights',
       draw(ctx, _data, view) {
-        const ui = getUi();
-        if (ui.highlightOpacity <= 0) return;
+        const { getOpacity } = getUi();
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
+          const opacity = getOpacity(z.id);
+          if (opacity <= 0) continue;
           ctx.save();
-          ctx.globalAlpha = ui.highlightOpacity;
+          ctx.globalAlpha = opacity;
           ctx.strokeStyle = '#FFD700';
           ctx.lineWidth = px(view, 2);
           ctx.setLineDash([]);

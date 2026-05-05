@@ -265,7 +265,6 @@ export function createPlantingLayers(
       label: 'Planting Highlights',
       draw(ctx, _data, view) {
         const data = getUi();
-        if (data.highlightOpacity <= 0) return;
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
@@ -275,10 +274,12 @@ export function createPlantingLayers(
           const parent = parentMap.get(group[0]?.parentId ?? '');
           if (!parent) continue;
           for (const p of group) {
+            const opacity = data.getOpacity(p.id);
+            if (opacity <= 0) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
             ctx.save();
-            ctx.globalAlpha = data.highlightOpacity;
+            ctx.globalAlpha = opacity;
             ctx.strokeStyle = '#FFD700';
             ctx.lineWidth = px(view, 2);
             ctx.beginPath();
@@ -318,7 +319,7 @@ export function createPlantingLayers(
             const isSelected = data.selectedIds.includes(p.id);
             const showThis = data.labelMode === 'all' || data.labelMode === 'active-layer'
               || (data.labelMode === 'selection' && isSelected)
-              || data.highlightOpacity > 0;
+              || data.getOpacity(p.id) > 0;
             if (!showThis) continue;
 
             const species = getSpecies(cultivar.speciesId);

@@ -88,24 +88,17 @@ function GardenCanvasNewPrototype() {
     const getPlantings = () => useGardenStore.getState().garden.plantings;
     const getUi: GetUi = () => {
       const u = useUiStore.getState();
-      const sel = u.selectedIds;
-      // Aggregate highlight: take the max of per-id flash opacities for
-      // anything currently selected (the legacy behavior — flash is used to
-      // pulse the selected entity on snap-back / drop). Layers receive a
-      // single number; per-id pulsing is a Phase 5 refinement.
-      const hs = useHighlightStore.getState();
-      let maxOp = 0;
-      for (const id of sel) {
-        const o = hs.computeOpacity(id);
-        if (o > maxOp) maxOp = o;
-      }
+      // Per-id flash opacity — layers call `getOpacity(id)` per entity. The
+      // highlight store already keys flashes/hovers by id; we just pass the
+      // reader through so each layer can pulse independently.
+      const getOpacity = (id: string) => useHighlightStore.getState().computeOpacity(id);
       return {
-        selectedIds: sel,
+        selectedIds: u.selectedIds,
         labelMode: u.labelMode,
         labelFontSize: u.labelFontSize,
         plantIconScale: u.plantIconScale,
         showFootprintCircles: true,
-        highlightOpacity: maxOp,
+        getOpacity,
         debugOverlappingLabels: u.debugOverlappingLabels,
       };
     };

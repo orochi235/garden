@@ -173,11 +173,13 @@ Running list of intended application behaviors.
   Tokens are parsed once at page load; reload to change them. Multiple
   tokens combine, e.g. `?debug=hitboxes,axes`.
 
-## Per-id selection-flash opacity for seedlings (2026-05-04)
+## Per-id selection-flash opacity (2026-05-04)
 
-- Seed-starting selection-flash opacity is sourced per-seedling. The seedling
-  layer pulls each id's pulse via a `getOpacity(id)` callback wired directly
-  to `useHighlightStore.computeOpacity`, so two simultaneously flashing
-  seedlings ramp independently rather than being yoked to a single
-  aggregated `max()` opacity. Mirrors the per-id pattern used in garden mode
-  for zone, structure, and planting highlights.
+- Selection-flash highlights pulse per-id rather than as a single
+  aggregated `max()` opacity across the whole selection. Two simultaneously
+  flashing entities ramp independently — one can finish fading while
+  another is still at full intensity — instead of being yoked to whichever
+  started most recently. Garden mode wires this through
+  `EricSceneUi.getOpacity(id)`; seed-starting wires it through a per-id
+  `getHighlight(id)` callback that `createSeedlingLayers` reads directly
+  from `useHighlightStore.computeOpacity`.
