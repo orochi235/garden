@@ -70,6 +70,7 @@ function buildParentLookup(plantings: Planting[], zones: Zone[], structures: Str
 }
 
 function applyContainerClip(ctx: CanvasRenderingContext2D, parent: PlantingParent, view: View): boolean {
+  if ('clipChildren' in parent && parent.clipChildren === false) return false;
   const wall = parent.wallThicknessFt ?? 0;
   if (wall <= 0) return false;
   ctx.save();

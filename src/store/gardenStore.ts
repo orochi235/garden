@@ -208,6 +208,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         if (s.groupId === undefined) {
           s.groupId = null;
         }
+        if (s.clipChildren === undefined) {
+          s.clipChildren = true;
+        }
       }
       if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
       if (!garden.collection) garden.collection = [];
