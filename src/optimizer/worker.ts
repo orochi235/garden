@@ -86,13 +86,20 @@ async function solve(
     if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
       console.warn(
         '[optimizer] candidate', n,
-        `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping to avoid HiGHS-WASM crash`,
+        `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping aux+rows to avoid HiGHS-WASM crash`,
       );
       model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
+      model.aux = model.aux.filter((a) => !sameSpeciesAux.has(a.name));
     }
 
     const HighsModule = await loadHighs();
-    const solution = trySolve(HighsModule, mipModelToLpString(model), solveOpts);
+    const lpString = mipModelToLpString(model);
+    console.info(
+      '[optimizer] candidate', n,
+      'vars:', model.vars.length, 'aux:', model.aux.length,
+      'constraints:', model.constraints.length, 'lpBytes:', lpString.length,
+    );
+    const solution = trySolve(HighsModule, lpString, solveOpts);
     if (!solution) {
       console.warn('[optimizer] candidate', n, 'solver crashed; skipping');
       continue;
