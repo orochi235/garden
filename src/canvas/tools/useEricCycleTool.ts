@@ -1,7 +1,17 @@
-import { useMemo, useRef } from 'react';
-import { defineTool, type Tool } from '@orochi235/weasel';
+import { useMemo, useRef, useState } from 'react';
+import {
+  defineTool,
+  useClone,
+  cloneByAltDrag,
+  type Tool,
+  type RenderLayer,
+} from '@orochi235/weasel';
 import { useUiStore } from '../../store/uiStore';
+import { useGardenStore } from '../../store/gardenStore';
+import { getCultivar } from '../../model/cultivars';
+import { renderPlant } from '../plantRenderers';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
+import type { GardenInsertAdapter } from '../adapters/insert';
 
 export interface CycleScratch { cycled: boolean }
 
@@ -13,13 +23,76 @@ interface CycleMemo {
   index: number;
 }
 
+interface CloneOverlayItem { id: string; x: number; y: number }
+
 /** Alt+click cycles through overlapping objects at the cursor. The first
  *  alt-click selects the top-most hit; each subsequent alt-click at the same
  *  spot advances through the stack. Memo resets when the cursor moves to a
  *  different (worldX, worldY) point — the threshold is intentionally tiny
- *  since clicks at "the same spot" are typically pixel-perfect. */
-export function useEricCycleTool(adapter: GardenSceneAdapter): Tool<CycleScratch> {
+ *  since clicks at "the same spot" are typically pixel-perfect.
+ *
+ *  Alt+drag (after hitting an object) clones the current selection via the
+ *  kit's `useClone` + `cloneByAltDrag` behavior. Requires `insertAdapter`
+ *  to be provided; if omitted, alt+drag does nothing (backwards-compatible
+ *  with call-sites that haven't wired the adapter yet). */
+export function useEricCycleTool(
+  adapter: GardenSceneAdapter,
+  insertAdapter?: GardenInsertAdapter,
+): Tool<CycleScratch> {
   const memoRef = useRef<CycleMemo | null>(null);
+
+  const [cloneOverlay, setCloneOverlay] = useState<CloneOverlayItem[]>([]);
+
+  // Stub adapter keeps `useClone` hook-count stable even when no real adapter
+  // is provided. Behaviours won't activate (alt check passes, but
+  // snapshotSelection returns nothing → end is a no-op).
+  const stubAdapter = useMemo<GardenInsertAdapter>(() => ({
+    commitInsert: () => null,
+    commitPaste: () => [],
+    getPasteOffset: () => ({ dx: 0, dy: 0 }),
+    snapshotSelection: () => ({ items: [] }),
+    insertObject: () => {},
+    removeObject: () => {},
+    getObject: () => undefined,
+    setSelection: () => {},
+    getSelection: () => [],
+    applyBatch: () => {},
+  }), []);
+
+  const clone = useClone<{ id: string }>(insertAdapter ?? stubAdapter, {
+    behaviors: [cloneByAltDrag()],
+    setOverlay: (_layer, objects) => setCloneOverlay(objects as CloneOverlayItem[]),
+    clearOverlay: () => setCloneOverlay([]),
+  });
+
+  const overlay = useMemo<RenderLayer<unknown>>(
+    () => ({
+      id: 'eric-cycle-clone-overlay',
+      label: 'Cycle-Clone Overlay (eric)',
+      space: 'screen',
+      alwaysOn: true,
+      draw(ctx, _data, view) {
+        if (cloneOverlay.length === 0) return;
+        const garden = useGardenStore.getState().garden;
+        for (const item of cloneOverlay) {
+          const planting = garden.plantings.find((p) => p.id === item.id);
+          if (!planting) continue;
+          const cultivar = getCultivar(planting.cultivarId);
+          if (!cultivar) continue;
+          const footprintFt = cultivar.footprintFt ?? 0.5;
+          const sx = (item.x - view.x) * view.scale;
+          const sy = (item.y - view.y) * view.scale;
+          const radiusPx = (footprintFt / 2) * view.scale;
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          ctx.translate(sx, sy);
+          renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
+          ctx.restore();
+        }
+      },
+    }),
+    [cloneOverlay],
+  );
 
   return useMemo(
     () =>
@@ -27,6 +100,7 @@ export function useEricCycleTool(adapter: GardenSceneAdapter): Tool<CycleScratch
         id: 'eric-cycle',
         modifier: 'alt',
         initScratch: () => ({ cycled: false }),
+        overlay,
         pointer: {
           onDown: (e, ctx) => {
             if (!ctx.modifiers.alt) return 'pass';
@@ -46,16 +120,38 @@ export function useEricCycleTool(adapter: GardenSceneAdapter): Tool<CycleScratch
             return 'claim';
           },
         },
-        // No drag — alt+drag is reserved for clone in the legacy canvas. Here
-        // we only intercept the click; if the user starts dragging, we let it
-        // pass to the next tool (which is currently nothing — clone-on-alt-drag
-        // is a Phase 5 deferral).
+        // Alt+drag after a cycle-click → clone the selection. If no
+        // insertAdapter was provided, we claim and no-op (safe default).
         drag: {
-          onStart: (_e, ctx) => (ctx.scratch.cycled ? 'claim' : 'pass'),
-          onMove: () => 'claim',
-          onEnd: () => 'claim',
+          onStart: (_e, ctx) => {
+            if (!ctx.scratch.cycled) return 'pass';
+            if (insertAdapter) {
+              const ids = useUiStore.getState().selectedIds;
+              if (ids.length > 0) {
+                clone.start(ctx.worldX, ctx.worldY, ids, 'plantings', ctx.modifiers);
+              }
+            }
+            return 'claim';
+          },
+          onMove: (_e, ctx) => {
+            if (clone.isCloning) {
+              clone.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+            }
+            return 'claim';
+          },
+          onEnd: (_e, _ctx) => {
+            if (clone.isCloning) {
+              clone.end();
+            }
+            return 'claim';
+          },
+          onCancel: () => {
+            if (clone.isCloning) {
+              clone.cancel();
+            }
+          },
         },
       }),
-    [adapter],
+    [adapter, clone, insertAdapter, overlay],
   );
 }
