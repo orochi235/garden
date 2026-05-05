@@ -415,10 +415,37 @@ describe('selection rides on history', () => {
     const z1 = useGardenStore.getState().garden.zones[0].id;
     useUiStore.getState().setSelection([z1]);
     useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
-    useUiStore.getState().setSelection(['post']);
+    const z2 = useGardenStore.getState().garden.zones[1].id;
+    useUiStore.getState().setSelection([z2]);
     useGardenStore.getState().undo();
     useGardenStore.getState().redo();
-    expect(useUiStore.getState().selectedIds).toEqual(['post']);
+    expect(useUiStore.getState().selectedIds).toEqual([z2]);
+  });
+
+  it('scrubs selection ids that no longer exist in the restored garden', () => {
+    // Simulate the paste-then-undo bug: selection should never reference a deleted object.
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    const z1 = useGardenStore.getState().garden.zones[0].id;
+    // Add a second zone, then select it. Selection at the checkpoint of the *next*
+    // change will include z2.
+    useGardenStore.getState().addZone({ x: 5, y: 5, width: 4, height: 4 });
+    const z2 = useGardenStore.getState().garden.zones[1].id;
+    useUiStore.getState().setSelection([z2]);
+    // Remove z2 (commitPatch snapshots {garden has z1+z2, sel=[z2]}).
+    useGardenStore.getState().removeZone(z2);
+    // Selection still has the now-deleted id (delete action would normally clear it,
+    // but other flows may leave it). Verify the scrub kicks in on undo/redo too.
+    useUiStore.getState().setSelection([z2]);
+    useGardenStore.getState().undo();
+    // After undo, garden has z2 again; selection [z2] is valid and preserved.
+    expect(useGardenStore.getState().garden.zones.map((z) => z.id)).toContain(z2);
+    expect(useUiStore.getState().selectedIds).toEqual([z2]);
+    // Redo: garden loses z2; selection snapshot was [z2] but that id is no longer live.
+    useGardenStore.getState().redo();
+    expect(useGardenStore.getState().garden.zones.map((z) => z.id)).not.toContain(z2);
+    expect(useUiStore.getState().selectedIds).not.toContain(z2);
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+    void z1;
   });
 });
 

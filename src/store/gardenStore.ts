@@ -97,6 +97,20 @@ function isLocked(layer: LayerId): boolean {
   return useUiStore.getState().layerLocked[layer];
 }
 
+/**
+ * Filter a list of selected ids down to those that still exist in the given
+ * garden. Used after undo/redo so selection never references deleted objects.
+ */
+function scrubSelection(ids: string[], garden: Garden): string[] {
+  if (ids.length === 0) return ids;
+  const live = new Set<string>();
+  for (const s of garden.structures) live.add(s.id);
+  for (const z of garden.zones) live.add(z.id);
+  for (const p of garden.plantings) live.add(p.id);
+  for (const sd of garden.seedStarting?.seedlings ?? []) live.add(sd.id);
+  return ids.filter((id) => live.has(id));
+}
+
 export const useGardenStore = create<GardenStore>((set, get) => {
   /** Apply a partial update to the garden object. */
   function patch(updates: Partial<Garden>) {
@@ -539,7 +553,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const prev = undo(get().garden, useUiStore.getState().selectedIds);
       if (prev) {
         set({ garden: prev.garden });
-        useUiStore.getState().setSelection(prev.selectedIds);
+        useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, prev.garden));
       }
     },
 
@@ -547,7 +561,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const next = redo(get().garden, useUiStore.getState().selectedIds);
       if (next) {
         set({ garden: next.garden });
-        useUiStore.getState().setSelection(next.selectedIds);
+        useUiStore.getState().setSelection(scrubSelection(next.selectedIds, next.garden));
       }
     },
 
