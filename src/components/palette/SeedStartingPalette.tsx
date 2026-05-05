@@ -114,6 +114,22 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
 
   return (
     <div className={styles.palette}>
+      <div className={styles.category}>
+        <div className={styles.categoryLabel}>Trays</div>
+        <div className={styles.treeContainer}>
+          {TRAY_CATALOG.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={styles.trayButton}
+              onClick={() => handleAddTray(preset.id)}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <hr style={{ border: 0, borderTop: '1px solid rgba(255,255,255,0.12)', margin: '8px 0' }} />
       <div className={styles.search}>
         <input
           className={styles.searchInput}
@@ -142,22 +158,6 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
         </label>
       </div>
       <div className={styles.scrollArea}>
-        <div className={styles.category}>
-          <div className={styles.categoryLabel}>Trays</div>
-          <div className={styles.treeContainer}>
-            {TRAY_CATALOG.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                className={styles.trayButton}
-                onClick={() => handleAddTray(preset.id)}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {tree.length === 0 && (
           <div className={styles.category}>
             <div className={styles.emptyMessage}>

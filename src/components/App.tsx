@@ -31,6 +31,11 @@ const MIN_LEFT_PANEL = 200;
 const MAX_PANEL = 400;
 const DEFAULT_PANEL = 240;
 
+const INITIAL_SEARCH =
+  typeof window === 'undefined' ? '' : window.location.search;
+const INITIAL_PARAMS = new URLSearchParams(INITIAL_SEARCH);
+const INITIAL_MODE_PARAM = INITIAL_PARAMS.get('mode');
+
 export function App() {
   const garden = useGardenStore((s) => s.garden);
   const loadGarden = useGardenStore((s) => s.loadGarden);
@@ -77,14 +82,13 @@ export function App() {
       .then((g) => loadGarden(g))
       .catch(() => {})
       .finally(() => {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('mode') === 'seed-starting') enterSeedStarting();
+        if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
         const persisted = loadPersistedCollection<Cultivar[]>();
         if (persisted && persisted.length > 0) {
           setCollection(persisted);
         } else if (
           (useGardenStore.getState().garden.collection ?? []).length === 0 &&
-          params.toString() === ''
+          INITIAL_PARAMS.toString() === ''
         ) {
           setShowWelcome(true);
         }
