@@ -42,13 +42,18 @@ interface Props {
   onDragBegin: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
-/** Build PaletteEntry list of cultivars whose resolved seedStarting.startable === true. */
-function buildSeedablePaletteEntries(cultivars: Cultivar[], filters: AlmanacFilters): PaletteEntry[] {
+/** Build PaletteEntry list of cultivars whose resolved seedStarting.startable === true.
+ *  When `showAll` is true, the startable gate is skipped (almanac filters still apply). */
+function buildSeedablePaletteEntries(
+  cultivars: Cultivar[],
+  filters: AlmanacFilters,
+  showAll: boolean,
+): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
   for (const c of cultivars) {
     const species = getSpecies(c.speciesId);
     const resolved = resolveSeedStarting(species?.seedStarting, c.seedStarting);
-    if (!resolved.startable) continue;
+    if (!showAll && !resolved.startable) continue;
     if (!passesAlmanacFilters(c, species, filters)) continue;
     entries.push({
       id: c.id,
@@ -68,6 +73,7 @@ function buildSeedablePaletteEntries(cultivars: Cultivar[], filters: AlmanacFilt
 
 export function SeedStartingPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
+  const [showAll, setShowAll] = useState(false);
   const addTray = useGardenStore((s) => s.addTray);
   const collection = useGardenStore((s) => s.garden.collection);
   const setCurrentTrayId = useUiStore((s) => s.setCurrentTrayId);
@@ -75,8 +81,8 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
   const almanacFilters = useUiStore((s) => s.almanacFilters);
 
   const seedables = useMemo(
-    () => buildSeedablePaletteEntries(collection, almanacFilters),
-    [collection, almanacFilters],
+    () => buildSeedablePaletteEntries(collection, almanacFilters, showAll),
+    [collection, almanacFilters, showAll],
   );
   const filtered = useMemo(() => {
     if (!search) return seedables;
@@ -116,6 +122,24 @@ export function SeedStartingPalette({ onDragBegin }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 8,
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.7)',
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showAll}
+            onChange={(e) => setShowAll(e.target.checked)}
+          />
+          Show all cultivars
+        </label>
       </div>
       <div className={styles.scrollArea}>
         <div className={styles.category}>
