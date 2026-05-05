@@ -40,8 +40,6 @@ async function solve(
 ): Promise<OptimizationResult> {
   const start = performance.now();
   const candidates: OptimizationCandidate[] = [];
-  const HighsModule = await loadHighs();
-
   let priorActive: string[] = [];
 
   for (let n = 0; n < input.candidateCount; n++) {
@@ -69,10 +67,11 @@ async function solve(
 
     // HiGHS-WASM (highs-js 1.8.0) has a bug where large adjacency matrices
     // (many same-species copies × dense neighborhood) crash the solver mid-run
-    // with "table index is out of bounds" or similar. The same-species adjacency
-    // rows are responsible for >95% of the constraint count in those cases.
-    // Fallback path: drop them and retry. Quality degrades (no same-species
-    // spreading penalty) but the user gets a layout instead of an error.
+    // with "table index is out of bounds", "Too few lines", or "Aborted()".
+    // The crash also poisons the WASM module heap, so retries must use a
+    // fresh module instance. Each candidate gets its own instance, and the
+    // fallback path (drop same-species adjacency rows) gets another.
+    let HighsModule = await loadHighs();
     let solution = trySolve(HighsModule, mipModelToLpString(model), solveOpts);
     if (!solution) {
       console.warn('[optimizer] candidate', n, 'solver crashed; retrying without same-species adjacency');
@@ -81,6 +80,7 @@ async function solve(
         ...model,
         constraints: model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux)),
       };
+      HighsModule = await loadHighs();
       solution = trySolve(HighsModule, mipModelToLpString(stripped), solveOpts);
       if (!solution) {
         console.warn('[optimizer] candidate', n, 'solver crashed again after fallback; skipping');
