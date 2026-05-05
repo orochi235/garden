@@ -61,19 +61,15 @@ async function solve(
     const lpString = mipModelToLpString(model);
     const solveStart = performance.now();
 
-    let solution;
-    try {
-      solution = HighsModule.solve(lpString, {
-        time_limit: input.timeLimitSec,
-        mip_rel_gap: input.mipGap,
-        output_flag: false,
-        log_to_console: false,
-      });
-    } catch {
-      continue;
-    }
+    const solution = HighsModule.solve(lpString, {
+      time_limit: input.timeLimitSec,
+      mip_rel_gap: input.mipGap,
+      output_flag: false,
+      log_to_console: false,
+    });
 
     if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
+      console.warn('[optimizer] candidate', n, 'status:', solution.Status);
       continue;
     }
 
