@@ -385,8 +385,8 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         createPlanting({
           parentId: structureId,
           cultivarId: pl.cultivarId,
-          x: structure.x + pl.xIn * IN_TO_FT,
-          y: structure.y + pl.yIn * IN_TO_FT,
+          x: pl.xIn * IN_TO_FT,
+          y: pl.yIn * IN_TO_FT,
         }),
       );
       commitPatch({ plantings: [...retained, ...newPlantings] });
