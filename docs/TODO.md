@@ -37,8 +37,8 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## Canvas redesign deferrals (Phase 1)
 
-- `gardenSceneAdapter.findSnapTarget` is a no-op for structure and zone nodes. Once Phase 2 wires drag-to-move on structures/zones, decide whether to add a grid-snap branch or accept free positioning.
-- `gardenSceneAdapter.setParent` for plantings recomputes local from current world pose to preserve visual position, but `gardenStore.updatePlanting` runs `rearrangePlantings` whenever `parentId` changes, which overwrites those local coords. Decide whether kit-driven drag-and-drop reparenting should bypass arrangement, defer to it, or get a new "manual position" path.
+- ~~`gardenSceneAdapter.findSnapTarget` is a no-op for structure and zone nodes. Once Phase 2 wires drag-to-move on structures/zones, decide whether to add a grid-snap branch or accept free positioning.~~ Resolved: grid-snap for structures/zones is handled by `snapStructureZoneToGrid` in `useEricSelectTool.ts`, not via `findSnapTarget`. `findSnapTarget` correctly returns null for non-plantings. Updated `snapStructureZoneToGrid` to honour the `snapToGrid` boolean on structures (`false` → free move); zones have no such flag and default to grid-snap.
+- ~~`gardenSceneAdapter.setParent` for plantings recomputes local from current world pose to preserve visual position, but `gardenStore.updatePlanting` runs `rearrangePlantings` whenever `parentId` changes, which overwrites those local coords. Decide whether kit-driven drag-and-drop reparenting should bypass arrangement, defer to it, or get a new "manual position" path.~~ Resolved: `updatePlanting` accepts an optional third arg `{ skipRearrange?: boolean }`; `gardenSceneAdapter.setParent` passes `{ skipRearrange: true }` so explicit local coords survive. All other callers are unchanged and still trigger rearrangement.
 
 ## Canvas redesign deferrals (Phase 2)
 

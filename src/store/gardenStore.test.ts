@@ -162,6 +162,28 @@ describe('gardenStore', () => {
       const plantings = useGardenStore.getState().garden.plantings;
       expect(plantings).toHaveLength(1);
     });
+
+    it('skipRearrange preserves explicit local coords when reparenting', () => {
+      // Two beds side by side; move planting from bed1 to bed2 with explicit
+      // local coords. Without skipRearrange, rearrangePlantings would overwrite
+      // those coords with the next available slot.
+      const { addStructure, addPlanting, updatePlanting } = useGardenStore.getState();
+      addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, height: 4 });
+      addStructure({ type: 'raised-bed', x: 10, y: 0, width: 6, height: 4 });
+      const [bed1, bed2] = useGardenStore.getState().garden.structures;
+
+      addPlanting({ parentId: bed1.id, x: 0, y: 0, cultivarId: 'tomato' });
+      const plantingId = useGardenStore.getState().garden.plantings[0].id;
+
+      // Reparent with explicit coords via skipRearrange.
+      updatePlanting(plantingId, { parentId: bed2.id, x: 2.5, y: 1.5 }, { skipRearrange: true });
+
+      const p = useGardenStore.getState().garden.plantings.find((pl) => pl.id === plantingId)!;
+      expect(p.parentId).toBe(bed2.id);
+      // Explicit coords must survive — rearrangePlantings must NOT have run.
+      expect(p.x).toBe(2.5);
+      expect(p.y).toBe(1.5);
+    });
   });
 
   it('updates garden settings', () => {

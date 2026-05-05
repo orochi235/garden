@@ -77,6 +77,11 @@ function snapStructureZoneToGrid(adapter: GardenSceneAdapter): MoveBehavior<Scen
     onMove(ctx, proposed) {
       const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind === 'planting') return;
+      // Honour per-object snapToGrid flag. Structures carry an explicit boolean;
+      // zones have no field so we default to true (zones are typically grid-aligned).
+      const shouldSnap =
+        obj.kind === 'structure' ? obj.data.snapToGrid : true;
+      if (!shouldSnap) return;
       // Re-read spacing each move; the garden grid cell size is editable.
       const inner = moveSnapToGrid<ScenePose>({
         spacing: useGardenStore.getState().garden.gridCellSizeFt,

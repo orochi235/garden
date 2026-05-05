@@ -41,7 +41,7 @@ interface GardenStore {
   commitZoneUpdate: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   removeZone: (id: string) => void;
   addPlanting: (opts: { parentId: string; x: number; y: number; cultivarId: string }) => void;
-  updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
+  updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>, opts?: { skipRearrange?: boolean }) => void;
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
   addTray: (tray: Tray) => void;
@@ -322,10 +322,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       }
     },
 
-    updatePlanting: (id, updates) => {
+    updatePlanting: (id, updates, opts) => {
       if (isLocked('plantings')) return;
       let newPlantings = mapCollection(get().garden.plantings, id, updates);
-      if ('parentId' in updates) {
+      if ('parentId' in updates && !opts?.skipRearrange) {
         const { structures, zones } = get().garden;
         const planting = get().garden.plantings.find((p) => p.id === id);
         // Rearrange target parent
