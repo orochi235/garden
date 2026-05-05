@@ -127,6 +127,22 @@ export function buildMipModel(input: OptimizationInput): MipModel {
   const aux: MipAuxVar[] = [];
   const adjacencyIn = 24; // pairs within this distance are "adjacent"
 
+  // Build fast lookups to avoid O(n²) searching in inner loops
+  const cellByIJ = new Map<string, typeof cells[number]>();
+  for (const cell of cells) cellByIJ.set(`${cell.i}_${cell.j}`, cell);
+
+  // Index vars by plantIdx for O(1) per-plant lookup
+  const varsByPlant = new Map<number, MipVar[]>();
+  for (const v of vars) {
+    const arr = varsByPlant.get(v.plantIdx) ?? [];
+    arr.push(v);
+    varsByPlant.set(v.plantIdx, arr);
+  }
+
+  // Precompute adjacency radius in grid cells to limit inner loop iterations
+  // adjacencyIn / g = max cell distance to consider
+  const maxCellDist = adjacencyIn / g;
+
   for (let a = 0; a < expanded.length; a++) {
     for (let b = a + 1; b < expanded.length; b++) {
       const plantA = expanded[a];
@@ -136,31 +152,31 @@ export function buildMipModel(input: OptimizationInput): MipModel {
       const keyAB = [plantA.cultivarId, plantB.cultivarId].sort().join('|');
       const rel = input.companions.pairs[keyAB];
 
-      // Shading term (only when both have height info)
-      const hasShading = plantA.heightIn != null && plantB.heightIn != null;
+      // Shading term (only when both have height info AND heights actually differ)
+      const hasShading =
+        plantA.heightIn != null &&
+        plantB.heightIn != null &&
+        plantA.heightIn !== plantB.heightIn;
       const sameSpecies = plantA.cultivarId === plantB.cultivarId;
 
       // Only emit aux vars if there's something to score
       const hasRelationship = rel != null || hasShading || sameSpecies;
       if (!hasRelationship) continue;
 
-      // Find cell pairs within adjacency radius
-      const cellPairsForA = vars.filter((v) => v.plantIdx === a);
-      const cellPairsForB = vars.filter((v) => v.plantIdx === b);
+      const cellPairsForA = varsByPlant.get(a) ?? [];
+      const cellPairsForB = varsByPlant.get(b) ?? [];
 
-      // For each close cell pair, emit: n[a,b,i,j,k,l] >= x[a,i,j] + x[b,k,l] - 1
-      // We aggregate into a single aux var n_a_b that is 1 if they are adjacent
       const auxName = `n_${a}_${b}`;
 
       // Compute objective coefficient for this pair
       let auxCoeff = 0;
       if (rel === 'companion') {
-        auxCoeff += weights.companion; // nearby companions: reward
+        auxCoeff += weights.companion;
       } else if (rel === 'antagonist') {
-        auxCoeff -= weights.antagonist; // nearby antagonists: penalize
+        auxCoeff -= weights.antagonist;
       }
       if (sameSpecies) {
-        auxCoeff -= weights.sameSpeciesBuffer; // penalize same-species adjacent
+        auxCoeff -= weights.sameSpeciesBuffer;
       }
       if (hasShading) {
         const hA = plantA.heightIn!;
@@ -171,15 +187,18 @@ export function buildMipModel(input: OptimizationInput): MipModel {
 
       aux.push({ name: auxName, c: auxCoeff });
 
-      // n[a,b] >= x[a,i,j] + x[b,k,l] - 1 for close cell pairs
+      // n[a,b] >= x[a,i,j] + x[b,k,l] - 1 for close cell pairs only
       for (const va of cellPairsForA) {
+        const cellA = cellByIJ.get(`${va.cellI}_${va.cellJ}`)!;
         for (const vb of cellPairsForB) {
-          const cellA = cells.find((c) => c.i === va.cellI && c.j === va.cellJ)!;
-          const cellB = cells.find((c) => c.i === vb.cellI && c.j === vb.cellJ)!;
+          // Quick grid-distance pre-filter to avoid sqrt for distant pairs
+          const di = Math.abs(va.cellI - vb.cellI);
+          const dj = Math.abs(va.cellJ - vb.cellJ);
+          if (di > maxCellDist || dj > maxCellDist) continue;
+
+          const cellB = cellByIJ.get(`${vb.cellI}_${vb.cellJ}`)!;
           const dist = Math.hypot(cellA.xCenterIn - cellB.xCenterIn, cellA.yCenterIn - cellB.yCenterIn);
           if (dist <= adjacencyIn) {
-            // n[a,b] >= x[a,i,j] + x[b,k,l] - 1
-            // => -n[a,b] + x[a,i,j] + x[b,k,l] <= 1
             constraints.push({
               terms: { [auxName]: -1, [va.name]: 1, [vb.name]: 1 },
               op: '<=',
@@ -190,7 +209,7 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         }
       }
 
-      // n[a,b] <= sum x[a,*]  (=> n can only be 1 if plant a is placed)
+      // n[a,b] <= sum x[a,*]
       const termsA: Record<string, number> = { [auxName]: 1 };
       for (const va of cellPairsForA) termsA[va.name] = -1;
       constraints.push({ terms: termsA, op: '<=', rhs: 0, label: `adj_ub_a:${auxName}` });
