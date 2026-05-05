@@ -101,7 +101,17 @@ async function solve(
     );
     const solution = trySolve(HighsModule, lpString, solveOpts);
     if (!solution) {
-      console.warn('[optimizer] candidate', n, 'solver crashed; skipping');
+      console.warn('[optimizer] candidate', n, 'solver crashed; falling back to greedy hex pack');
+      const greedy = greedyHexPack(workingInput);
+      if (greedy.length > 0) {
+        candidates.push({
+          placements: greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn })),
+          score: 0,
+          reason: `${greedy.length} plants placed (greedy fallback)`,
+          gap: 1,
+          solveMs: performance.now() - solveStart,
+        });
+      }
       continue;
     }
 
