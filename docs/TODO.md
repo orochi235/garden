@@ -42,7 +42,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## Canvas redesign deferrals (Phase 2)
 
-- Seedling and tray layers were not converted in Phase 2. They still live as legacy `SeedlingLayerRenderer`/`TrayLayerRenderer` and are not registered in `CanvasNewPrototype`. Phase 4 should port them to world-coord `RenderLayer`s alongside the gutter-affordance refactor.
+- ~~Seedling and tray layers were not converted in Phase 2. They still live as legacy `SeedlingLayerRenderer`/`TrayLayerRenderer` and are not registered in `CanvasNewPrototype`. Phase 4 should port them to world-coord `RenderLayer`s alongside the gutter-affordance refactor.~~ Resolved: `seedlingLayersWorld.ts` and `trayLayersWorld.ts` implement world-coord `RenderLayer`s and are registered in `SeedStartingCanvasNewPrototype`. No legacy `SeedlingLayerRenderer`/`TrayLayerRenderer` exist in the codebase; they were never created as standalone classes. The gutter-affordance refactor remains a separate open deferral (see Phase 4 bullets above).
 - System layer (origin marker, axes, grid debug) not converted. Decide in Phase 3 whether the new prototype needs a counterpart or if it stays legacy-only.
 - `hitTest.ts` and `seedStartingHitTest.ts` were left alone in Phase 2 because their math was already mostly world-coord; the spec called for an explicit conversion + tests to confirm. Do that pass when wiring gestures in Phase 3.
 - Highlight pulse and flash are still imperative in `uiStore`/per-layer state. Move to a single Zustand-backed `highlightOpacity` value driven by a shared rAF tick when porting selection gestures (Phase 3).
