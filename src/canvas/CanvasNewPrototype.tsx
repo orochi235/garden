@@ -58,6 +58,8 @@ function GardenCanvasNewPrototype() {
   useUiStore((s) => s.debugOverlappingLabels);
   useUiStore((s) => s.renderLayerVisibility);
   useUiStore((s) => s.dragClashIds);
+  useUiStore((s) => s.highlightOpacity);
+  useUiStore((s) => s.showFootprintCircles);
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
 
@@ -94,7 +96,7 @@ function GardenCanvasNewPrototype() {
         labelMode: u.labelMode,
         labelFontSize: u.labelFontSize,
         plantIconScale: u.plantIconScale,
-        showFootprintCircles: true,
+        showFootprintCircles: u.showFootprintCircles,
         getOpacity,
         debugOverlappingLabels: u.debugOverlappingLabels,
         dragClashIds: u.dragClashIds,
