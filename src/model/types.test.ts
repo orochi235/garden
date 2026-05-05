@@ -97,3 +97,8 @@ describe('createGarden', () => {
     expect(g.seedStarting).toEqual(emptySeedStartingState());
   });
 });
+
+it('createStructure defaults trellisEdge to null', () => {
+  const s = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, height: 8 });
+  expect(s.trellisEdge).toBeNull();
+});

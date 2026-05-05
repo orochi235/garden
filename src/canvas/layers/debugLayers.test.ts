@@ -23,7 +23,7 @@ describe('createDebugLayers', () => {
       id: 's1', type: 'pot', shape: 'circle', x: 1, y: 2, width: 3, height: 4,
       rotation: 0, color: '#fff', label: 's1', zIndex: 0, parentId: null,
       groupId: null, snapToGrid: true, surface: false, container: true,
-      fill: null, arrangement: null, wallThicknessFt: 0.1,
+      fill: null, arrangement: null, wallThicknessFt: 0.1, trellisEdge: null,
     });
     g.zones.push({
       id: 'z1', x: 0, y: 0, width: 5, height: 5, color: '#0f0', label: 'z1',
