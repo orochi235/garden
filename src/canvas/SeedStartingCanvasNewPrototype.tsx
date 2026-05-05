@@ -6,6 +6,7 @@ import {
   useTools,
 } from '@orochi235/weasel';
 import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
+import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
 import type { RenderLayer } from '@orochi235/weasel';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
@@ -123,15 +124,21 @@ export function SeedStartingCanvasNewPrototype() {
   const fillTool = useFillTrayTool();
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();
+  const clickZoom = useEricClickZoomTool();
+
+  const viewMode = useUiStore((s) => s.viewMode);
+  const activeToolId = viewMode === 'zoom' ? clickZoom.id : moveTool.id;
 
   // moveTool is the primary active tool: it handles seedling drag,
   // click-to-select, and marquee area-select on empty space. Sow tool runs
   // alongside (claims only when seedDragCultivarId is set); fill tool
-  // occupies the shift modifier slot.
+  // occupies the shift modifier slot. When the toolbar arms zoom mode the
+  // click-zoom tool takes over the active slot.
   const tools = useTools({
-    active: moveTool.id,
+    active: activeToolId,
     registry: {
       [moveTool.id]: moveTool,
+      [clickZoom.id]: clickZoom,
     },
     alwaysOn: [sowTool, fillTool, rightDragPan, wheelZoom],
   });

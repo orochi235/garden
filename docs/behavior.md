@@ -7,6 +7,7 @@ Running list of intended application behaviors.
 - When dragging an item from the object palette, once the cursor is over the canvas, display a ghosted full-size version of the object underneath the cursor to help the user place it
 - While the pan tool is selected, left-click drag on the canvas should pan it
 - Right-click drag always pans regardless of tool
+- While the zoom tool is selected, left-click on the canvas zooms in around the click point and shift+left-click zooms out; the cursor shows `zoom-in`/`zoom-out` accordingly. The world point under the cursor stays under the cursor across the zoom. Double-clicking the toolbar zoom button resets to fit-view.
 - While selecting, if you hold down alt and drag an object, it should clone it (snaps to grid)
 - Drag operations require a minimum screen-pixel distance (`DRAG_THRESHOLD_PX`, default 4px) before activating; clicks with a slow release do not trigger a drag or push undo state
 - If a planting is dragged and then returned within `DRAG_THRESHOLD_PX` of its original arrangement position, the drag is undone entirely — no undo history entry is created

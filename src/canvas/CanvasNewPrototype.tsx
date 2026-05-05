@@ -9,6 +9,7 @@ import {
 } from '@orochi235/weasel';
 import type { GridSlotConfig } from '@orochi235/weasel';
 import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
+import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
 import type { RenderLayer } from '@orochi235/weasel';
 import { createInsertAdapter } from './adapters/insert';
 import { useGardenStore } from '../store/gardenStore';
@@ -33,14 +34,6 @@ import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
-
-const warnedViewModes = new Set<string>();
-function warnUnwiredViewMode(mode: string) {
-  if (warnedViewModes.has(mode)) return;
-  warnedViewModes.add(mode);
-  // eslint-disable-next-line no-console
-  console.warn(`[CanvasNewPrototype] viewMode '${mode}' has no dedicated canvas tool yet; falling back to select.`);
-}
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
@@ -175,6 +168,7 @@ function GardenCanvasNewPrototype() {
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();
+  const clickZoom = useEricClickZoomTool();
   const insertTool = useInsertTool(insertAdapter, {
     onGestureEnd: () => useUiStore.getState().setPlottingTool(null),
   });
@@ -191,15 +185,14 @@ function GardenCanvasNewPrototype() {
       case 'draw': // insertTool activates above when plottingTool is set; bare draw = select
         return selectTool.id;
       case 'zoom':
-        // No drag-to-zoom-rect tool yet; double-click on the toolbar zoom button
-        // triggers fit-view. Wheel-zoom is always-on. Falling back to select keeps
-        // click-selection working while in this mode.
-        warnUnwiredViewMode(viewMode);
-        return selectTool.id;
+        // Click-to-zoom around the cursor; shift-click zooms out. Wheel-zoom
+        // remains always-on. Double-click on the toolbar zoom button still
+        // resets to fit-view (handled in the toolbar, not here).
+        return clickZoom.id;
       default:
         return selectTool.id;
     }
-  }, [viewMode, plottingTool, leftDragPan.id, selectTool.id, insertTool.id]);
+  }, [viewMode, plottingTool, leftDragPan.id, selectTool.id, insertTool.id, clickZoom.id]);
 
   const tools = useTools({
     active: activeToolId,
@@ -208,6 +201,7 @@ function GardenCanvasNewPrototype() {
       [cycleTool.id]: cycleTool,
       [leftDragPan.id]: leftDragPan,
       [insertTool.id]: insertTool,
+      [clickZoom.id]: clickZoom,
     },
     alwaysOn: [rightDragPan, wheelZoom],
   });
