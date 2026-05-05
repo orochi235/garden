@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { hitTestCellInches } from '../seedStartingHitTest';
 import {
-  hitTestCellInches,
-  hitTestDragSpreadAffordanceInches,
-} from '../seedStartingHitTest';
+  getTrayDropTargets,
+  hitTrayDropTarget,
+} from '../layouts/trayDropTargets';
 
 export interface FillTrayScratch {
   active: boolean;
@@ -52,29 +53,22 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
               (t) => t.id === ctx.scratch.trayId,
             );
             if (!tray) return 'claim';
-            const aff = hitTestDragSpreadAffordanceInches(tray, ctx.worldX, ctx.worldY);
+            const hit = hitTrayDropTarget(getTrayDropTargets(tray), { x: ctx.worldX, y: ctx.worldY });
             const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId, replace: true };
-            if (aff) {
-              useUiStore.getState().setSeedFillPreview(
-                aff.kind === 'all'
-                  ? { ...base, scope: 'all' }
-                  : aff.kind === 'row'
-                    ? { ...base, scope: 'row', index: aff.row }
-                    : { ...base, scope: 'col', index: aff.col },
-              );
-              return 'claim';
-            }
-            const cell = hitTestCellInches(tray, ctx.worldX, ctx.worldY);
-            if (!cell) {
+            if (!hit) {
               useUiStore.getState().setSeedFillPreview(null);
               return 'claim';
             }
-            useUiStore.getState().setSeedFillPreview({
-              ...base,
-              scope: 'cell',
-              row: cell.row,
-              col: cell.col,
-            });
+            const m = hit.meta;
+            useUiStore.getState().setSeedFillPreview(
+              m.kind === 'all'
+                ? { ...base, scope: 'all' }
+                : m.kind === 'row'
+                  ? { ...base, scope: 'row', index: m.row }
+                  : m.kind === 'col'
+                    ? { ...base, scope: 'col', index: m.col }
+                    : { ...base, scope: 'cell', row: m.row, col: m.col },
+            );
             return 'claim';
           },
           onEnd: (_e, ctx) => {

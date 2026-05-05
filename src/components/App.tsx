@@ -3,7 +3,7 @@ import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch'
 import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
 import { createInsertAdapter } from '../canvas/adapters/insert';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
-import { hitTestDragSpreadAffordanceInches, hitTestCellInches } from '../canvas/seedStartingHitTest';
+import { getTrayDropTargets, hitTrayDropTarget } from '../canvas/layouts/trayDropTargets';
 import { createDragGhost, useClipboard } from '@orochi235/weasel';
 import { startThresholdDrag } from '@orochi235/weasel';
 import { useActiveTheme } from '../hooks/useActiveTheme';
@@ -431,35 +431,27 @@ export function App() {
         const w = v.toWorld(lastClientX, lastClientY);
 
         const replace = shiftHeld;
-        const aff = hitTestDragSpreadAffordanceInches(v.tray, w.x, w.y);
-        if (aff) {
-          if (aff.kind === 'all') {
-            setPreview({ trayId: v.tray.id, cultivarId: entry.id, scope: 'all', replace });
-          } else if (aff.kind === 'row') {
-            setPreview({ trayId: v.tray.id, cultivarId: entry.id, scope: 'row', index: aff.row, replace });
-          } else {
-            setPreview({ trayId: v.tray.id, cultivarId: entry.id, scope: 'col', index: aff.col, replace });
-          }
+        const hit = hitTrayDropTarget(getTrayDropTargets(v.tray), w);
+        if (!hit) {
+          setPreview(null);
           return;
         }
-        const cell = hitTestCellInches(v.tray, w.x, w.y);
-        if (cell) {
-          const slot = v.tray.slots[cell.row * v.tray.cols + cell.col];
+        const m = hit.meta;
+        const base = { trayId: v.tray.id, cultivarId: entry.id, replace };
+        if (m.kind === 'all') {
+          setPreview({ ...base, scope: 'all' });
+        } else if (m.kind === 'row') {
+          setPreview({ ...base, scope: 'row', index: m.row });
+        } else if (m.kind === 'col') {
+          setPreview({ ...base, scope: 'col', index: m.col });
+        } else {
+          const slot = v.tray.slots[m.row * v.tray.cols + m.col];
           if (slot.state === 'sown' && !replace) {
             setPreview(null);
             return;
           }
-          setPreview({
-            trayId: v.tray.id,
-            cultivarId: entry.id,
-            scope: 'cell',
-            row: cell.row,
-            col: cell.col,
-            replace,
-          });
-          return;
+          setPreview({ ...base, scope: 'cell', row: m.row, col: m.col });
         }
-        setPreview(null);
       }
 
       function onKey(ev: KeyboardEvent) {
@@ -494,17 +486,24 @@ export function App() {
           if (!v) return;
           const w = v.toWorld(ev.clientX, ev.clientY);
 
-          const aff = hitTestDragSpreadAffordanceInches(v.tray, w.x, w.y);
-          if (aff) {
-            const replace = ev.shiftKey;
-            if (aff.kind === 'all') useGardenStore.getState().fillTray(v.tray.id, entry.id, { replace });
-            else if (aff.kind === 'row') useGardenStore.getState().fillRow(v.tray.id, aff.row, entry.id, { replace });
-            else useGardenStore.getState().fillColumn(v.tray.id, aff.col, entry.id, { replace });
+          const hit = hitTrayDropTarget(getTrayDropTargets(v.tray), w);
+          if (!hit) return;
+          const m = hit.meta;
+          const replace = ev.shiftKey;
+          const gs = useGardenStore.getState();
+          if (m.kind === 'all') {
+            gs.fillTray(v.tray.id, entry.id, { replace });
             return;
           }
-          const hit = hitTestCellInches(v.tray, w.x, w.y);
-          if (!hit) return;
-          useGardenStore.getState().sowCell(v.tray.id, hit.row, hit.col, entry.id, {
+          if (m.kind === 'row') {
+            gs.fillRow(v.tray.id, m.row, entry.id, { replace });
+            return;
+          }
+          if (m.kind === 'col') {
+            gs.fillColumn(v.tray.id, m.col, entry.id, { replace });
+            return;
+          }
+          gs.sowCell(v.tray.id, m.row, m.col, entry.id, {
             replace: ev.shiftKey,
           });
         },
