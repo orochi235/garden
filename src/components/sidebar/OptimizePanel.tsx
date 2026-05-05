@@ -3,6 +3,7 @@ import { getCultivar } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { runOptimizerForBed } from '../optimizer/runOptimizerForBed';
+import { OptimizerWizard } from '../optimizer/OptimizerWizard';
 import type { RunHandle } from '../../optimizer';
 
 interface Props {
@@ -18,6 +19,7 @@ export function OptimizePanel({ structureId }: Props) {
   const setSelectedCandidate = useUiStore((s) => s.setOptimizerSelectedCandidate);
   const clearOptimizerResult = useUiStore((s) => s.clearOptimizerResult);
 
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<{ phase: string; candidate: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -152,13 +154,25 @@ export function OptimizePanel({ structureId }: Props) {
                 `${optimizerResult.candidates[selectedCandidate].placements.length} plants`}
             </div>
           )}
-          <button
-            onClick={handleApply}
-            style={{ width: '100%', cursor: 'pointer', background: '#4a90e2', color: '#fff', border: 'none', padding: '6px 0', borderRadius: 3 }}
-          >
-            Apply
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={handleApply}
+              style={{ flex: 1, cursor: 'pointer', background: '#4a90e2', color: '#fff', border: 'none', padding: '6px 0', borderRadius: 3 }}
+            >
+              Apply
+            </button>
+            <button
+              onClick={() => setWizardOpen(true)}
+              style={{ cursor: 'pointer', padding: '6px 8px', borderRadius: 3, fontSize: 11 }}
+              title="Open in wizard"
+            >
+              ⋯
+            </button>
+          </div>
         </>
+      )}
+      {wizardOpen && (
+        <OptimizerWizard structureId={structureId} onClose={() => setWizardOpen(false)} />
       )}
     </div>
   );
