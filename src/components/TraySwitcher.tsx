@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { TRAY_CATALOG, instantiatePreset } from '../model/trayCatalog';
+import { zoomToTray } from '../actions/view/resetView';
 import styles from '../styles/TraySwitcher.module.css';
 
 interface Props {
@@ -64,6 +65,7 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
                   className={styles.item}
                   onClick={() => {
                     setCurrentTrayId(t.id);
+                    zoomToTray(t.id);
                     setOpen(false);
                   }}
                 >

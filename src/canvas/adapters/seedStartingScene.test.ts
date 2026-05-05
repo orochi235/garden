@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSeedStartingSceneAdapter } from './seedStartingScene';
+import {
+  createSeedStartingSceneAdapter,
+  seedStartingWorldBounds,
+  TRAY_GUTTER_IN,
+  trayWorldOrigin,
+} from './seedStartingScene';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
@@ -133,6 +138,67 @@ describe('seedStartingSceneAdapter', () => {
     expect(checkpoint).toHaveBeenCalledTimes(1);
     expect(op1.apply).toHaveBeenCalledWith(a);
     expect(op2.apply).toHaveBeenCalledWith(a);
+  });
+
+  describe('trayWorldOrigin / seedStartingWorldBounds (multi-tray auto-flow)', () => {
+    function ssWithTrays(trays: { rows: number; cols: number; label: string }[]) {
+      // Reset store and add each tray; return the live SeedStarting state.
+      useGardenStore.getState().reset();
+      useGardenStore.getState().loadGarden(blankGarden());
+      for (const t of trays) {
+        useGardenStore.getState().addTraySilent(
+          createTray({ rows: t.rows, cols: t.cols, cellSize: 'medium', label: t.label }),
+        );
+      }
+      return useGardenStore.getState().garden.seedStarting;
+    }
+
+    it('n=1: single tray sits at (0, 0); bounds equal tray dims', () => {
+      const ss = ssWithTrays([{ rows: 2, cols: 3, label: 'a' }]);
+      expect(trayWorldOrigin(ss.trays[0], ss)).toEqual({ x: 0, y: 0 });
+      expect(seedStartingWorldBounds(ss)).toEqual({
+        width: ss.trays[0].widthIn,
+        height: ss.trays[0].heightIn,
+      });
+    });
+
+    it('n=2 mixed widths: second tray offset by w0 + gutter; bounds sum widths + 1 gutter, max height', () => {
+      const ss = ssWithTrays([
+        { rows: 2, cols: 3, label: 'a' },
+        { rows: 4, cols: 6, label: 'b' },
+      ]);
+      const [t0, t1] = ss.trays;
+      expect(trayWorldOrigin(t0, ss)).toEqual({ x: 0, y: 0 });
+      expect(trayWorldOrigin(t1, ss)).toEqual({ x: t0.widthIn + TRAY_GUTTER_IN, y: 0 });
+      expect(seedStartingWorldBounds(ss)).toEqual({
+        width: t0.widthIn + TRAY_GUTTER_IN + t1.widthIn,
+        height: Math.max(t0.heightIn, t1.heightIn),
+      });
+    });
+
+    it('n=3 mixed widths: origins accumulate prior widths + gutter * priorIndex', () => {
+      const ss = ssWithTrays([
+        { rows: 2, cols: 3, label: 'a' },
+        { rows: 3, cols: 5, label: 'b' },
+        { rows: 4, cols: 2, label: 'c' },
+      ]);
+      const [t0, t1, t2] = ss.trays;
+      expect(trayWorldOrigin(t0, ss)).toEqual({ x: 0, y: 0 });
+      expect(trayWorldOrigin(t1, ss)).toEqual({ x: t0.widthIn + TRAY_GUTTER_IN, y: 0 });
+      expect(trayWorldOrigin(t2, ss)).toEqual({
+        x: t0.widthIn + t1.widthIn + 2 * TRAY_GUTTER_IN,
+        y: 0,
+      });
+      expect(seedStartingWorldBounds(ss)).toEqual({
+        width: t0.widthIn + t1.widthIn + t2.widthIn + 2 * TRAY_GUTTER_IN,
+        height: Math.max(t0.heightIn, t1.heightIn, t2.heightIn),
+      });
+    });
+
+    it('zero trays: bounds are (0, 0)', () => {
+      const ss = ssWithTrays([]);
+      expect(seedStartingWorldBounds(ss)).toEqual({ width: 0, height: 0 });
+    });
   });
 
   it('selection bridges to useUiStore', () => {

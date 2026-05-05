@@ -207,3 +207,26 @@ Running list of intended application behaviors.
   highlight clears on drop or cancel.
 - Zones do not participate in clash highlighting in either direction —
   zones may freely overlap structures and other zones.
+
+## Multi-tray auto-flow seed-starting layout (v1, 2026-05-04)
+
+- The seed-starting canvas now lays out every tray in `seedStarting.trays` at
+  once, left-to-right in insertion order, separated by a fixed
+  `TRAY_GUTTER_IN = 6` inches gutter. There is no per-tray `(x, y)` field on
+  the data model: a tray's world origin is computed from the running sum of
+  prior trays' widths plus `gutter * priorIndex`.
+- Default fit-view (Cmd+0 / "Reset View" in seed-starting mode) now fits the
+  union AABB of all trays (`seedStartingWorldBounds`), not just the
+  `currentTrayId` tray. Single-tray gardens are unaffected — the union
+  reduces to the single tray's dimensions.
+- Garden file format is unchanged. The first tray contributes zero gutter,
+  so existing single-tray gardens render identically.
+- Clicking a tray in the FloatingTraySwitcher or the TraySwitcher menu now
+  both selects it as `currentTrayId` AND zooms+pans the canvas to fit that
+  tray (`zoomToTray`). The pan offset is computed against the centered union
+  bounds so the tray ends up centered in the viewport.
+- Palette drags hit-test against all trays at the cursor position (not just
+  the current tray). When the cursor is off every tray, the drop falls back
+  to `currentTrayId` so off-tray drops still route somewhere predictable.
+- Drag-to-reorder trays is not implemented in v1 (deferred — see
+  `docs/TODO.md`).

@@ -4,6 +4,10 @@ import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
 import { createInsertAdapter } from '../canvas/adapters/insert';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
 import { getTrayDropTargets, hitTrayDropTarget } from '../canvas/layouts/trayDropTargets';
+import {
+  seedStartingWorldBounds,
+  trayWorldOrigin,
+} from '../canvas/adapters/seedStartingScene';
 import { createDragGhost, useClipboard } from '@orochi235/weasel';
 import { startThresholdDrag } from '@orochi235/weasel';
 import { useActiveTheme } from '../hooks/useActiveTheme';
@@ -372,8 +376,10 @@ export function App() {
       let lastClientY = e.clientY;
       let shiftHeld = false;
 
-      // Returns the current tray plus a function that maps client coords to
-      // tray-local inches via the same view math as SeedStartingCanvasNewPrototype.
+      // Returns a viewport for the multi-tray seed-starting world. `toWorld`
+      // maps client coords to world inches; `pickTray(world)` finds the tray
+      // under the cursor (or falls back to the current tray); `toLocal`
+      // converts world inches to tray-local inches for cell hit-tests.
       function viewport() {
         const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
         const rect = el?.getBoundingClientRect();
@@ -381,16 +387,36 @@ export function App() {
         const ui = useUiStore.getState();
         if (ui.appMode !== 'seed-starting') return null;
         const garden = useGardenStore.getState().garden;
-        const tray = garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
-        if (!tray) return null;
+        const ss = garden.seedStarting;
+        const bounds = seedStartingWorldBounds(ss);
         const ppi = ui.seedStartingZoom;
-        const originX = (rect.width - tray.widthIn * ppi) / 2 + ui.seedStartingPanX;
-        const originY = (rect.height - tray.heightIn * ppi) / 2 + ui.seedStartingPanY;
+        const originX = (rect.width - bounds.width * ppi) / 2 + ui.seedStartingPanX;
+        const originY = (rect.height - bounds.height * ppi) / 2 + ui.seedStartingPanY;
         const toWorld = (clientX: number, clientY: number) => ({
           x: (clientX - rect.left - originX) / ppi,
           y: (clientY - rect.top - originY) / ppi,
         });
-        return { rect, tray, toWorld };
+        const pickTray = (world: { x: number; y: number }) => {
+          // Hit-test trays at the cursor; fall back to current tray for off-tray drops.
+          for (const t of ss.trays) {
+            const o = trayWorldOrigin(t, ss);
+            if (
+              world.x >= o.x &&
+              world.y >= o.y &&
+              world.x < o.x + t.widthIn &&
+              world.y < o.y + t.heightIn
+            ) {
+              return t;
+            }
+          }
+          return ss.trays.find((t) => t.id === ui.currentTrayId) ?? null;
+        };
+        const toLocal = (world: { x: number; y: number }, tray: typeof ss.trays[number]) => {
+          const o = trayWorldOrigin(tray, ss);
+          return { x: world.x - o.x, y: world.y - o.y };
+        };
+        const currentTray = ss.trays.find((t) => t.id === ui.currentTrayId) ?? null;
+        return { rect, currentTray, toWorld, pickTray, toLocal };
       }
 
       let ghost: ReturnType<typeof createDragGhost> | null = null;
@@ -434,15 +460,21 @@ export function App() {
           return;
         }
         const w = v.toWorld(lastClientX, lastClientY);
+        const tray = v.pickTray(w);
+        if (!tray) {
+          setPreview(null);
+          return;
+        }
+        const local = v.toLocal(w, tray);
 
         const replace = shiftHeld;
-        const hit = hitTrayDropTarget(getTrayDropTargets(v.tray), w);
+        const hit = hitTrayDropTarget(getTrayDropTargets(tray), local);
         if (!hit) {
           setPreview(null);
           return;
         }
         const m = hit.meta;
-        const base = { trayId: v.tray.id, cultivarId: entry.id, replace };
+        const base = { trayId: tray.id, cultivarId: entry.id, replace };
         if (m.kind === 'all') {
           setPreview({ ...base, scope: 'all' });
         } else if (m.kind === 'row') {
@@ -450,7 +482,7 @@ export function App() {
         } else if (m.kind === 'col') {
           setPreview({ ...base, scope: 'col', index: m.col });
         } else {
-          const slot = v.tray.slots[m.row * v.tray.cols + m.col];
+          const slot = tray.slots[m.row * tray.cols + m.col];
           if (slot.state === 'sown' && !replace) {
             setPreview(null);
             return;
@@ -490,25 +522,28 @@ export function App() {
           const v = viewport();
           if (!v) return;
           const w = v.toWorld(ev.clientX, ev.clientY);
+          const tray = v.pickTray(w);
+          if (!tray) return;
+          const local = v.toLocal(w, tray);
 
-          const hit = hitTrayDropTarget(getTrayDropTargets(v.tray), w);
+          const hit = hitTrayDropTarget(getTrayDropTargets(tray), local);
           if (!hit) return;
           const m = hit.meta;
           const replace = ev.shiftKey;
           const gs = useGardenStore.getState();
           if (m.kind === 'all') {
-            gs.fillTray(v.tray.id, entry.id, { replace });
+            gs.fillTray(tray.id, entry.id, { replace });
             return;
           }
           if (m.kind === 'row') {
-            gs.fillRow(v.tray.id, m.row, entry.id, { replace });
+            gs.fillRow(tray.id, m.row, entry.id, { replace });
             return;
           }
           if (m.kind === 'col') {
-            gs.fillColumn(v.tray.id, m.col, entry.id, { replace });
+            gs.fillColumn(tray.id, m.col, entry.id, { replace });
             return;
           }
-          gs.sowCell(v.tray.id, m.row, m.col, entry.id, {
+          gs.sowCell(tray.id, m.row, m.col, entry.id, {
             replace: ev.shiftKey,
           });
         },
