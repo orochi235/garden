@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
+import { useUiStore } from './uiStore';
 
 export interface FlashEntry {
   startMs: number;
@@ -16,6 +17,10 @@ export interface HighlightState {
   flash(id: string, opts?: Partial<FlashEntry>): void;
   clearFlash(id: string): void;
   computeOpacity(id: string, nowMs?: number): number;
+  /** Max opacity across all active flashes and hover ids. Returns 0 when
+   *  nothing is active. Useful for single-channel consumers that don't need
+   *  per-id granularity (e.g. `uiStore.highlightOpacity`). */
+  getMaxOpacity(nowMs?: number): number;
   bumpPulse(): void;
 }
 
@@ -57,6 +62,17 @@ export const useHighlightStore = create<HighlightState>((set, get) => ({
     const fadeElapsed = elapsed - f.fadeInMs - f.holdMs;
     if (fadeElapsed >= f.fadeOutMs) return 0;
     return 1 - fadeElapsed / f.fadeOutMs;
+  },
+  getMaxOpacity(nowMs = performance.now()) {
+    const s = get();
+    if (s.hoverIds.size > 0) return 1;
+    if (s.flashes.size === 0) return 0;
+    let max = 0;
+    for (const id of s.flashes.keys()) {
+      const op = s.computeOpacity(id, nowMs);
+      if (op > max) max = op;
+    }
+    return max;
   },
   bumpPulse() {
     set((s) => ({ pulse: s.pulse + 1 }));
@@ -125,8 +141,19 @@ export function resetHighlightStore() {
   refCount = 0;
 }
 
-/** Imperative kick: any time something flashes, the rAF loop must wake. */
+/** Imperative kick: any time something flashes, the rAF loop must wake.
+ *  Also sync `getMaxOpacity()` into `uiStore.highlightOpacity` so single-
+ *  channel consumers (e.g. legacy garden layers) stay up to date without
+ *  needing their own per-id iteration. */
 useHighlightStore.subscribe((state, prev) => {
   if (state.flashes !== prev.flashes && state.flashes.size > 0) startTickIfNeeded();
   if (state.hoverIds !== prev.hoverIds && state.hoverIds.size > 0) startTickIfNeeded();
+  // Sync max opacity on every relevant change (pulse bumps, flash adds/removes, hover changes).
+  if (
+    state.pulse !== prev.pulse ||
+    state.flashes !== prev.flashes ||
+    state.hoverIds !== prev.hoverIds
+  ) {
+    useUiStore.getState().setHighlightOpacity(state.getMaxOpacity());
+  }
 });
