@@ -447,6 +447,37 @@ describe('selection rides on history', () => {
     expect(useUiStore.getState().selectedIds).toEqual([]);
     void z1;
   });
+
+  it('paste-then-undo via insert adapter does not leave stale ids selected', async () => {
+    // End-to-end coverage of the original bug: undoing a paste leaves the
+    // (now-deleted) pasted ids selected. Routes through the same applyBatch
+    // path the weasel clipboard uses.
+    const { createInsertAdapter } = await import('../canvas/adapters/insert');
+    const { createInsertOp, createSetSelectionOp } = await import('@orochi235/weasel');
+
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    const z1 = useGardenStore.getState().garden.zones[0].id;
+    useUiStore.getState().setSelection([z1]);
+
+    // Simulate a paste: snapshot z1, materialize a sibling, then setSelection
+    // to the new id — exactly what the weasel clipboard hook emits.
+    const adapter = createInsertAdapter();
+    const snap = adapter.snapshotSelection([z1]);
+    const [pasted] = adapter.commitPaste(snap, { dx: 1, dy: 1 });
+    adapter.applyBatch!(
+      [createInsertOp({ object: pasted }), createSetSelectionOp({ from: [z1], to: [pasted.id] })],
+      'Paste',
+    );
+    expect(useGardenStore.getState().garden.zones).toHaveLength(2);
+    expect(useUiStore.getState().selectedIds).toEqual([pasted.id]);
+
+    // Undo: garden loses the pasted zone, selection should restore to [z1]
+    // (what was selected at checkpoint time) — never reference the deleted id.
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.zones).toHaveLength(1);
+    expect(useUiStore.getState().selectedIds).not.toContain(pasted.id);
+    expect(useUiStore.getState().selectedIds).toEqual([z1]);
+  });
 });
 
 describe('collection orphan tolerance', () => {
