@@ -39,6 +39,8 @@ export interface Structure {
   fill: FillType | null;
   arrangement: Arrangement | null;
   wallThicknessFt: number;
+  /** For raised beds: which edge has a trellis attached, if any. Used by trellis-aware strategies and the optimizer. */
+  trellisEdge: 'N' | 'E' | 'S' | 'W' | null;
 }
 
 export type FillType = 'soil' | 'sand' | 'rocks' | 'peat' | 'potting-mix';
@@ -177,6 +179,7 @@ export function createStructure(opts: {
     fill: CONTAINER_TYPES.has(opts.type) ? 'soil' : null,
     arrangement: DEFAULT_ARRANGEMENTS[opts.type]?.() ?? null,
     wallThicknessFt: DEFAULT_WALL_THICKNESS_FT[opts.type] ?? 0,
+    trellisEdge: null,
   };
 }
 

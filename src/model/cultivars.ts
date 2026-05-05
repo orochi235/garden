@@ -12,6 +12,8 @@ interface CultivarRaw {
   color?: string;
   footprintFt?: number;
   spacingFt?: number;
+  heightFt?: number;
+  climber?: boolean;
   iconImage?: string;
   iconBgColor?: string;
   seedStarting?: Partial<SeedStartingFields>;
@@ -28,6 +30,9 @@ export interface Cultivar {
   color: string;
   footprintFt: number;
   spacingFt: number;
+  /** Mature height in feet. Undefined when neither cultivar nor species supplies a value. */
+  heightFt: number | undefined;
+  climber: boolean;
   iconImage: string | null;
   iconBgColor: string | null;
   seedStarting: SeedStartingFields;
@@ -49,6 +54,8 @@ function resolveCultivar(raw: CultivarRaw): Cultivar {
     color: raw.color ?? species.color,
     footprintFt: raw.footprintFt ?? species.footprintFt,
     spacingFt: raw.spacingFt ?? species.spacingFt,
+    heightFt: raw.heightFt ?? species.heightFt,
+    climber: raw.climber ?? species.climber ?? false,
     iconImage: raw.iconImage ?? species.iconImage,
     iconBgColor: raw.iconBgColor ?? species.iconBgColor,
     seedStarting: resolveSeedStarting(species.seedStarting, raw.seedStarting),

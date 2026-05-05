@@ -26,6 +26,10 @@ export interface Species {
   seasons?: Season[];
   /** USDA hardiness zone range where this species can be grown. */
   usdaZones?: UsdaZoneRange;
+  /** Mature plant height in feet. Optional — used by sun-shading objective. */
+  heightFt?: number;
+  /** True for vining/climbing cultivars that prefer a trellis edge. */
+  climber?: boolean;
 }
 
 const species: Species[] = speciesData as Species[];

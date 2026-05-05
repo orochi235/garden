@@ -232,3 +232,6 @@ Running list of intended application behaviors.
   to `currentTrayId` so off-tray drops still route somewhere predictable.
 - Drag-to-reorder trays is not implemented in v1 (deferred — see
   `docs/TODO.md`).
+- Cultivars expose optional `heightFt` and `climber` fields. When unspecified, `heightFt` is undefined and `climber` defaults to false.
+- Raised beds expose `trellisEdge: 'N'|'E'|'S'|'W'|null`, default null.
+- `cultivarSpacing` derives default pitch and square-foot bucket counts from cultivar metadata; falls back to category defaults when footprint is missing.
