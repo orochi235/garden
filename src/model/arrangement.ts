@@ -10,8 +10,9 @@
 import { computeSquareFoot } from './arrangementStrategies/squareFoot';
 import { computeHex } from './arrangementStrategies/hex';
 import { computeBandedRows } from './arrangementStrategies/bandedRows';
+import { computeTrellisedBack } from './arrangementStrategies/trellisedBack';
 
-export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex' | 'banded-rows';
+export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex' | 'banded-rows' | 'trellised-back';
 
 export interface RowsConfig {
   type: 'rows';
@@ -79,7 +80,21 @@ export interface BandedRowsConfig {
   marginFt: number;
 }
 
-export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig | BandedRowsConfig;
+export type Edge = 'N' | 'E' | 'S' | 'W';
+
+export interface TrellisedBackConfig {
+  type: 'trellised-back';
+  trellisEdge: Edge;
+  /** Depth of the trellis band along the trellis edge, in feet. */
+  trellisDepthFt: number;
+  /** Pitch (along-row spacing) for the trellis band, ft. */
+  trellisPitchFt: number;
+  /** Strategy for the front rows. Currently restricted to types that don't recursively need 'auto' resolution. */
+  frontStrategy: 'rows' | 'square-foot' | 'hex';
+  marginFt: number;
+}
+
+export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig | BandedRowsConfig | TrellisedBackConfig;
 
 export interface Slot {
   x: number;
@@ -118,6 +133,8 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
       return computeHex(arrangement, bounds, _cultivars);
     case 'banded-rows':
       return computeBandedRows(arrangement, bounds, _cultivars);
+    case 'trellised-back':
+      return computeTrellisedBack(arrangement, bounds, _cultivars);
   }
 }
 
@@ -222,5 +239,7 @@ export function defaultArrangement(type: ArrangementType): Arrangement {
       return { type: 'hex', pitchFt: 'auto', marginFt: 0.25 };
     case 'banded-rows':
       return { type: 'banded-rows', bands: [{ depthFraction: 0.5, pitchFt: 0.5 }, { depthFraction: 0.5, pitchFt: 1 }], marginFt: 0.25 };
+    case 'trellised-back':
+      return { type: 'trellised-back', trellisEdge: 'N', trellisDepthFt: 1, trellisPitchFt: 0.5, frontStrategy: 'rows', marginFt: 0.25 };
   }
 }
