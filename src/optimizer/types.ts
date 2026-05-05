@@ -7,13 +7,17 @@
 
 export type Edge = 'N' | 'E' | 'S' | 'W';
 
+export type TrellisLocation =
+  | { kind: 'edge'; edge: Edge }
+  | { kind: 'line'; orientation: 'horizontal' | 'vertical'; offsetIn: number };
+
 export interface OptimizerBed {
   /** Bed width along the X axis, in inches. */
   widthIn: number;
   /** Bed length along the Y axis, in inches. */
   lengthIn: number;
-  /** Trellis edge if any, used to attract climber-flagged plants. */
-  trellisEdge: Edge | null;
+  /** Trellis location, or null if no trellis. */
+  trellis: TrellisLocation | null;
   /** Per-edge clearance, inches. Default 0. */
   edgeClearanceIn: number;
 }
@@ -31,6 +35,8 @@ export interface OptimizerPlant {
   heightIn: number | null;
   /** True if the plant prefers a trellis edge. */
   climber: boolean;
+  /** Plant category for clustering (e.g. 'vegetables', 'herbs'). Optional. */
+  category?: string;
 }
 
 export interface UserRegion {
@@ -101,6 +107,23 @@ export interface OptimizationResult {
   candidates: OptimizationCandidate[];
   /** Total wall-clock time across all candidate solves, ms. */
   totalMs: number;
+}
+
+export interface Cluster {
+  /** Plants assigned to this cluster. */
+  plants: OptimizerPlant[];
+  /** Total number of climber-flagged plant copies (sum of count where climber=true). */
+  climberCount: number;
+  /** Stable identifier for the cluster, used for diagnostic logging and per-cluster no-good cuts. */
+  key: string;
+}
+
+export interface SubBed {
+  cluster: Cluster;
+  /** Sub-rectangle as a self-contained OptimizerBed. */
+  bed: OptimizerBed;
+  /** Offset of this sub-bed's origin within the parent bed, inches. */
+  offsetIn: { x: number; y: number };
 }
 
 export const DEFAULT_WEIGHTS: OptimizerWeights = {
