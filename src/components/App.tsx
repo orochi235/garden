@@ -3,11 +3,6 @@ import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch'
 import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
 import { createInsertAdapter } from '../canvas/adapters/insert';
 import { onIconLoad, renderPlant } from '../canvas/plantRenderers';
-import { getTrayDropTargets, hitTrayDropTarget } from '../canvas/layouts/trayDropTargets';
-import {
-  seedStartingWorldBounds,
-  trayWorldOrigin,
-} from '../canvas/adapters/seedStartingScene';
 import { createDragGhost, useClipboard } from '@orochi235/weasel';
 import { startThresholdDrag } from '@orochi235/weasel';
 import { useActiveTheme } from '../hooks/useActiveTheme';
@@ -369,191 +364,17 @@ export function App() {
     [],
   );
 
+  // Seed-starting palette drag: hand the gesture off to the canvas via a
+  // transient ui slot. The canvas's `usePaletteDropTool` watches
+  // `palettePointerPayload`, owns ghost + threshold drag + commit, and reads
+  // its own local view to compute world coordinates. App doesn't read the
+  // canvas's view here.
   const handleSeedDragBegin = useCallback(
     (entry: PaletteEntry, e: React.PointerEvent) => {
       if (entry.category !== 'plantings') return;
-      let lastClientX = e.clientX;
-      let lastClientY = e.clientY;
-      let shiftHeld = false;
-
-      // Returns a viewport for the multi-tray seed-starting world. `toWorld`
-      // maps client coords to world inches; `pickTray(world)` finds the tray
-      // under the cursor (or falls back to the current tray); `toLocal`
-      // converts world inches to tray-local inches for cell hit-tests.
-      function viewport() {
-        const el = document.querySelector('[data-canvas-container]') as HTMLElement | null;
-        const rect = el?.getBoundingClientRect();
-        if (!rect) return null;
-        const ui = useUiStore.getState();
-        if (ui.appMode !== 'seed-starting') return null;
-        const garden = useGardenStore.getState().garden;
-        const ss = garden.seedStarting;
-        const bounds = seedStartingWorldBounds(ss);
-        const ppi = ui.seedStartingZoom;
-        const originX = (rect.width - bounds.width * ppi) / 2 + ui.seedStartingPanX;
-        const originY = (rect.height - bounds.height * ppi) / 2 + ui.seedStartingPanY;
-        const toWorld = (clientX: number, clientY: number) => ({
-          x: (clientX - rect.left - originX) / ppi,
-          y: (clientY - rect.top - originY) / ppi,
-        });
-        const pickTray = (world: { x: number; y: number }) => {
-          // Hit-test trays at the cursor; fall back to current tray for off-tray drops.
-          for (const t of ss.trays) {
-            const o = trayWorldOrigin(t, ss);
-            if (
-              world.x >= o.x &&
-              world.y >= o.y &&
-              world.x < o.x + t.widthIn &&
-              world.y < o.y + t.heightIn
-            ) {
-              return t;
-            }
-          }
-          return ss.trays.find((t) => t.id === ui.currentTrayId) ?? null;
-        };
-        const toLocal = (world: { x: number; y: number }, tray: typeof ss.trays[number]) => {
-          const o = trayWorldOrigin(tray, ss);
-          return { x: world.x - o.x, y: world.y - o.y };
-        };
-        const currentTray = ss.trays.find((t) => t.id === ui.currentTrayId) ?? null;
-        return { rect, currentTray, toWorld, pickTray, toLocal };
-      }
-
-      let ghost: ReturnType<typeof createDragGhost> | null = null;
-      let unsubIcon: (() => void) | null = null;
-      function ensureGhost() {
-        if (ghost) return ghost;
-        const ui = useUiStore.getState();
-        const garden = useGardenStore.getState().garden;
-        const tray = garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId);
-        const cellPx = tray ? tray.cellPitchIn * ui.seedStartingZoom : 30;
-        const radius = (cellPx * 0.85) / 2;
-        ghost = createDragGhost({
-          sizeCss: radius * 2,
-          paint: (ctx) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
-        });
-        unsubIcon = onIconLoad(() => ghost?.repaint());
-        return ghost;
-      }
-      function moveGhost(x: number, y: number) {
-        ensureGhost().move(x, y);
-      }
-      function setGhostHidden(hidden: boolean) {
-        ghost?.setHidden(hidden);
-      }
-      function clearGhost() {
-        unsubIcon?.();
-        unsubIcon = null;
-        ghost?.destroy();
-        ghost = null;
-      }
-
-      function updateFillPreview() {
-        const set = useUiStore.getState().setSeedFillPreview;
-        const setPreview = (preview: Parameters<typeof set>[0]) => {
-          set(preview);
-          setGhostHidden(preview != null);
-        };
-        const v = viewport();
-        if (!v) {
-          setPreview(null);
-          return;
-        }
-        const w = v.toWorld(lastClientX, lastClientY);
-        const tray = v.pickTray(w);
-        if (!tray) {
-          setPreview(null);
-          return;
-        }
-        const local = v.toLocal(w, tray);
-
-        const replace = shiftHeld;
-        const hit = hitTrayDropTarget(getTrayDropTargets(tray), local);
-        if (!hit) {
-          setPreview(null);
-          return;
-        }
-        const m = hit.meta;
-        const base = { trayId: tray.id, cultivarId: entry.id, replace };
-        if (m.kind === 'all') {
-          setPreview({ ...base, scope: 'all' });
-        } else if (m.kind === 'row') {
-          setPreview({ ...base, scope: 'row', index: m.row });
-        } else if (m.kind === 'col') {
-          setPreview({ ...base, scope: 'col', index: m.col });
-        } else {
-          const slot = tray.slots[m.row * tray.cols + m.col];
-          if (slot.state === 'sown' && !replace) {
-            setPreview(null);
-            return;
-          }
-          setPreview({ ...base, scope: 'cell', row: m.row, col: m.col });
-        }
-      }
-
-      function onKey(ev: KeyboardEvent) {
-        if (ev.key !== 'Shift') return;
-        shiftHeld = ev.type === 'keydown';
-        updateFillPreview();
-      }
-
-      startThresholdDrag(e, {
-        onActivate: (ev) => {
-          useUiStore.getState().setSeedDragCultivarId(entry.id);
-          document.addEventListener('keydown', onKey);
-          document.addEventListener('keyup', onKey);
-          moveGhost(ev.clientX, ev.clientY);
-          updateFillPreview();
-        },
-        onMove: (ev) => {
-          lastClientX = ev.clientX;
-          lastClientY = ev.clientY;
-          shiftHeld = ev.shiftKey;
-          moveGhost(ev.clientX, ev.clientY);
-          updateFillPreview();
-        },
-        onCommit: (ev) => {
-          document.removeEventListener('keydown', onKey);
-          document.removeEventListener('keyup', onKey);
-          clearGhost();
-          useUiStore.getState().setSeedFillPreview(null);
-          useUiStore.getState().setSeedDragCultivarId(null);
-
-          const v = viewport();
-          if (!v) return;
-          const w = v.toWorld(ev.clientX, ev.clientY);
-          const tray = v.pickTray(w);
-          if (!tray) return;
-          const local = v.toLocal(w, tray);
-
-          const hit = hitTrayDropTarget(getTrayDropTargets(tray), local);
-          if (!hit) return;
-          const m = hit.meta;
-          const replace = ev.shiftKey;
-          const gs = useGardenStore.getState();
-          if (m.kind === 'all') {
-            gs.fillTray(tray.id, entry.id, { replace });
-            return;
-          }
-          if (m.kind === 'row') {
-            gs.fillRow(tray.id, m.row, entry.id, { replace });
-            return;
-          }
-          if (m.kind === 'col') {
-            gs.fillColumn(tray.id, m.col, entry.id, { replace });
-            return;
-          }
-          gs.sowCell(tray.id, m.row, m.col, entry.id, {
-            replace: ev.shiftKey,
-          });
-        },
-        onCancel: () => {
-          document.removeEventListener('keydown', onKey);
-          document.removeEventListener('keyup', onKey);
-          clearGhost();
-          useUiStore.getState().setSeedFillPreview(null);
-          useUiStore.getState().setSeedDragCultivarId(null);
-        },
+      useUiStore.getState().setPalettePointerPayload({
+        entry,
+        pointerEvent: e.nativeEvent,
       });
     },
     [],

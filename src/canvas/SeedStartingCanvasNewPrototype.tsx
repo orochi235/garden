@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { onIconLoad } from './plantRenderers';
 import {
   Canvas,
+  computeFitView,
   useCanvasSize,
   useTools,
 } from '@orochi235/weasel';
@@ -13,7 +14,7 @@ import { useUiStore } from '../store/uiStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import {
   createSeedStartingSceneAdapter,
-  seedStartingWorldBounds,
+  trayWorldOrigin,
   type SeedNode,
   type ScenePose,
 } from './adapters/seedStartingScene';
@@ -24,18 +25,23 @@ import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
 import { useSowCellTool } from './tools/useSowCellTool';
 import { useFillTrayTool } from './tools/useFillTrayTool';
+import { usePaletteDropTool } from './tools/usePaletteDropTool';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { createAllHandlesLayer } from './layers/selectionLayersWorld';
 import { isDebugEnabled } from './debug';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
 
+const SEED_MIN_ZOOM = 5;
+const SEED_MAX_ZOOM = 100;
+const DEFAULT_SEED_ZOOM = 30;
+
 export function SeedStartingCanvasNewPrototype() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
   const garden = useGardenStore((s) => s.garden);
   // Subscribe so that switching the current tray triggers a re-render of layers.
-  useUiStore((s) => s.currentTrayId);
+  const currentTrayId = useUiStore((s) => s.currentTrayId);
   const armedCultivarId = useUiStore((s) => s.armedCultivarId);
   const setArmedCultivarId = useUiStore((s) => s.setArmedCultivarId);
 
@@ -111,34 +117,62 @@ export function SeedStartingCanvasNewPrototype() {
     return map;
   }, []);
 
-  const seedZoom = useUiStore((s) => s.seedStartingZoom);
-  const seedPanX = useUiStore((s) => s.seedStartingPanX);
-  const seedPanY = useUiStore((s) => s.seedStartingPanY);
-
-  const view = useMemo<View>(() => {
-    if (width === 0 || height === 0) return { x: 0, y: 0, scale: 1 };
-    const bounds = seedStartingWorldBounds(garden.seedStarting);
-    const ppi = seedZoom;
-    // World bounds (sum of tray widths + gutters) centered in the container with
-    // optional pan offset. Single-tray gardens have bounds == tray dims, so this
-    // matches legacy behavior exactly.
-    const originX = (width - bounds.width * ppi) / 2 + seedPanX;
-    const originY = (height - bounds.height * ppi) / 2 + seedPanY;
-    return { x: -originX / ppi, y: -originY / ppi, scale: ppi };
-  }, [width, height, seedZoom, seedPanX, seedPanY, garden.seedStarting]);
+  // View state lives locally — the canvas owns its own viewport. Outside actors
+  // (palette drag, reset action) talk to us via `palettePointerPayload` and
+  // `seedStartingViewResetTick` in `useUiStore` rather than mirrored fields.
+  const [view, setView] = useState<View>({ x: 0, y: 0, scale: DEFAULT_SEED_ZOOM });
+  // Mirror to a ref so document-level pointer listeners (palette drop tool)
+  // can read the latest view without re-attaching listeners every frame.
+  const viewRef = useRef(view);
+  useEffect(() => { viewRef.current = view; }, [view]);
 
   const handleViewChange = (next: View) => {
-    const ui = useUiStore.getState();
-    const bounds = seedStartingWorldBounds(
-      useGardenStore.getState().garden.seedStarting,
-    );
-    ui.setSeedStartingZoom(next.scale);
-    const originX = -next.x * next.scale;
-    const originY = -next.y * next.scale;
-    const centerOffsetX = (width - bounds.width * next.scale) / 2;
-    const centerOffsetY = (height - bounds.height * next.scale) / 2;
-    ui.setSeedStartingPan(originX - centerOffsetX, originY - centerOffsetY);
+    // Clamp zoom (px-per-inch) to the seed-starting range; the kit's wheel
+    // zoom tool already clamps to its own min/max, but local edits and
+    // future tools shouldn't bypass those bounds.
+    const scale = Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, next.scale));
+    setView({ x: next.x, y: next.y, scale });
   };
+
+  // Fit the current tray on first useful layout, on tray change, and on
+  // explicit reset requests. Doesn't run while the user is mid-drag because
+  // setView is the only mutator and reset only fires through this hook.
+  const resetTick = useUiStore((s) => s.seedStartingViewResetTick);
+  const fitViewToTray = (containerW: number, containerH: number) => {
+    const ss = useGardenStore.getState().garden.seedStarting;
+    const tray = ss.trays.find(
+      (t) => t.id === useUiStore.getState().currentTrayId,
+    );
+    if (!tray) return;
+    const fit = computeFitView(containerW, containerH, tray.widthIn, tray.heightIn);
+    // computeFitView returns garden-style {zoom, panX, panY} — convert to our
+    // camera-coord View. Kit's zoom is the canvas's scale; centerOffset puts
+    // the tray's top-left at (panX, panY) on screen ⇒ view.x = trayOriginX -
+    // panX / scale, accounting for the tray's position in multi-tray world.
+    const scale = Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, fit.zoom));
+    const o = trayWorldOrigin(tray, ss);
+    setView({ x: o.x - fit.panX / scale, y: o.y - fit.panY / scale, scale });
+  };
+  // Initial fit / refit when tray or container size changes. The fit-key
+  // includes tray dimensions so a tray edit (resize rows/cols) also refits.
+  const tray = garden.seedStarting.trays.find((t) => t.id === currentTrayId);
+  const trayDimsKey = tray ? `${tray.widthIn.toFixed(2)}x${tray.heightIn.toFixed(2)}` : 'none';
+  const lastFitKeyRef = useRef<string>('');
+  useEffect(() => {
+    if (width === 0 || height === 0 || !currentTrayId) return;
+    const key = `${currentTrayId}:${trayDimsKey}:${width}x${height}`;
+    if (lastFitKeyRef.current === key) return;
+    lastFitKeyRef.current = key;
+    fitViewToTray(width, height);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, height, currentTrayId, trayDimsKey]);
+  // Reset action.
+  useEffect(() => {
+    if (resetTick === 0) return;
+    if (width === 0 || height === 0) return;
+    fitViewToTray(width, height);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetTick]);
 
   // --- Tools ---
   const moveTool = useSeedlingMoveTool(adapter);
@@ -147,6 +181,12 @@ export function SeedStartingCanvasNewPrototype() {
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();
   const clickZoom = useEricClickZoomTool();
+  // The palette drop tool is a non-claiming pseudo-tool: it doesn't take part
+  // in the kit dispatcher (palette drags begin off-canvas, so the dispatcher
+  // never sees their pointerdown). Instead it watches the `palettePointerPayload`
+  // ui slot and runs its own document-level pointer pipeline, reading our
+  // local `viewRef` to do screen→world math.
+  usePaletteDropTool({ containerRef, viewRef });
 
   const viewMode = useUiStore((s) => s.viewMode);
   const activeToolId = viewMode === 'zoom' ? clickZoom.id : moveTool.id;

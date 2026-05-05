@@ -49,23 +49,19 @@ describe('resetViewAction', () => {
     expect(shortcut).toEqual({ key: '0', meta: true });
   });
 
-  it('fits the current tray when in seed-starting mode', () => {
+  it('bumps the seed-starting reset tick in seed-starting mode', () => {
     const tray = createTray({ rows: 6, cols: 4, cellSize: 'medium', label: 't1' });
     useGardenStore.getState().addTraySilent(tray);
     const ui = useUiStore.getState();
     ui.setAppMode('seed-starting');
     ui.setCurrentTrayId(tray.id);
-    ui.setSeedStartingZoom(99);
-    ui.setSeedStartingPan(123, 456);
+    const before = useUiStore.getState().seedStartingViewResetTick;
 
     resetViewAction.execute(ctx);
 
     const after = useUiStore.getState();
-    const fitW = (800 * 0.85) / tray.widthIn;
-    const fitH = (600 * 0.85) / tray.heightIn;
-    expect(after.seedStartingZoom).toBeCloseTo(Math.min(fitW, fitH));
-    expect(after.seedStartingPanX).toBe(0);
-    expect(after.seedStartingPanY).toBe(0);
+    // Canvas owns its view locally now; reset is a "please refit" signal.
+    expect(after.seedStartingViewResetTick).toBe(before + 1);
     // Garden zoom/pan should be untouched.
     expect(after.zoom).toBe(1);
     expect(after.panX).toBe(0);

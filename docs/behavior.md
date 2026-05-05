@@ -126,6 +126,7 @@ Running list of intended application behaviors.
 - Click-to-sow arming: in seed-starting mode, clicking a planting entry in the palette arms that cultivar (the entry shows a leaf-colored ring). Clicking the same entry again disarms it; clicking a different entry switches the armed cultivar. Arming has no effect outside seed-starting mode
 - While a cultivar is armed, the seed-starting canvas shows a crosshair cursor. Left-clicking an empty tray cell sows a seedling of the armed cultivar there; left-clicking an occupied cell is a no-op (does not replace). Sowing does not auto-disarm — repeated clicks keep sowing until the user explicitly disarms
 - Pressing Escape or right-clicking anywhere disarms the currently armed cultivar. Disarming via right-click also suppresses the context menu (the seed-starting canvas already prevents the default context menu)
+- The seed-starting canvas owns its own viewport (zoom + pan) in local React state; outside actors signal "please refit" via the `seedStartingViewResetTick` counter rather than poking view fields. Palette → tray drags are handed off to the canvas through a transient `palettePointerPayload` slot in `useUiStore`; the canvas's `usePaletteDropTool` reads its own view to compute world coords for fill preview and commit, so no part of `App.tsx` reads the seed-starting view
 
 ## Selection and clipboard (Phase 3 canvas-kit migration, 2026-05-01)
 
