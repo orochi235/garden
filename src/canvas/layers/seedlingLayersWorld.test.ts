@@ -127,4 +127,51 @@ describe('createSeedlingLayers (world)', () => {
     layer.draw(ctx, {}, view);
     expect(ctx.translate).not.toHaveBeenCalled();
   });
+
+  it('per-id getHighlight is invoked with each sown seedling id', () => {
+    const ctx = makeCtx();
+    let tray = createTray({ rows: 1, cols: 2, cellSize: 'small', label: 't' });
+    const a = createSeedling({ cultivarId: 'basil', trayId: tray.id, row: 0, col: 0 });
+    const b = createSeedling({ cultivarId: 'basil', trayId: tray.id, row: 0, col: 1 });
+    tray = setCell(tray, 0, 0, { state: 'sown', seedlingId: a.id });
+    tray = setCell(tray, 0, 1, { state: 'sown', seedlingId: b.id });
+    const getHighlight = vi.fn((id: string) => (id === a.id ? 0.7 : 0));
+    const layer = createSeedlingLayers(
+      () => [tray],
+      () => [a, b],
+      () => baseUi,
+      getHighlight,
+    )[0];
+    layer.draw(ctx, {}, view);
+    expect(getHighlight).toHaveBeenCalledWith(a.id);
+    expect(getHighlight).toHaveBeenCalledWith(b.id);
+  });
+
+  it('per-id getHighlight controls globalAlpha independently per seedling', () => {
+    const ctx = makeCtx();
+    let tray = createTray({ rows: 1, cols: 2, cellSize: 'small', label: 't' });
+    const a = createSeedling({ cultivarId: 'basil', trayId: tray.id, row: 0, col: 0 });
+    const b = createSeedling({ cultivarId: 'basil', trayId: tray.id, row: 0, col: 1 });
+    tray = setCell(tray, 0, 0, { state: 'sown', seedlingId: a.id });
+    tray = setCell(tray, 0, 1, { state: 'sown', seedlingId: b.id });
+    const alphas: number[] = [];
+    const ctxProxy = new Proxy(ctx, {
+      set(target, prop, value) {
+        if (prop === 'globalAlpha' && typeof value === 'number') alphas.push(value);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (target as any)[prop] = value;
+        return true;
+      },
+    });
+    const getHighlight = (id: string) => (id === a.id ? 1 : 0);
+    const layer = createSeedlingLayers(
+      () => [tray],
+      () => [a, b],
+      () => baseUi,
+      getHighlight,
+    )[0];
+    layer.draw(ctxProxy as CanvasRenderingContext2D, {}, view);
+    // a should have a flash-derived alpha < 1; b should not (only flash > 0 sets it).
+    expect(alphas.some((v) => v < 1 && v >= 0.2)).toBe(true);
+  });
 });
