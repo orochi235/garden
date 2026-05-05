@@ -13,7 +13,9 @@ interface Props {
 export function OptimizePanel({ structureId }: Props) {
   const garden = useGardenStore((s) => s.garden);
   const applyOptimizerResult = useGardenStore((s) => s.applyOptimizerResult);
-  const optimizerResult = useUiStore((s) => s.optimizerResult);
+  const optimizerResultRaw = useUiStore((s) => s.optimizerResult);
+  const optimizerResultStructureId = useUiStore((s) => s.optimizerResultStructureId);
+  const optimizerResult = optimizerResultStructureId === structureId ? optimizerResultRaw : null;
   const selectedCandidate = useUiStore((s) => s.optimizerSelectedCandidate);
   const setOptimizerResult = useUiStore((s) => s.setOptimizerResult);
   const setSelectedCandidate = useUiStore((s) => s.setOptimizerSelectedCandidate);
@@ -58,7 +60,7 @@ export function OptimizePanel({ structureId }: Props) {
 
     try {
       const result = await handle.promise;
-      setOptimizerResult(result);
+      setOptimizerResult(result, structureId);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
