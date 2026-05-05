@@ -1,4 +1,4 @@
-import { runOptimizer, DEFAULT_WEIGHTS, type OptimizationInput, type OptimizationResult, type OptimizerPlant, type CompanionTable } from '../../optimizer';
+import { runOptimizer, DEFAULT_WEIGHTS, type OptimizationInput, type OptimizationResult, type OptimizerPlant, type CompanionTable, type RunHandle } from '../../optimizer';
 import type { Structure } from '../../model/types';
 import type { Cultivar } from '../../model/cultivars';
 import { getRelation } from '../../data/companions';
@@ -16,7 +16,7 @@ export interface BedOptimizerArgs {
   onProgress?: (phase: string, candidate: number) => void;
 }
 
-export async function runOptimizerForBed(args: BedOptimizerArgs): Promise<OptimizationResult> {
+export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
   const FT_TO_IN = 12;
   const plants: OptimizerPlant[] = args.request.map(({ cultivar, count }) => ({
     cultivarId: cultivar.id,
@@ -46,8 +46,10 @@ export async function runOptimizerForBed(args: BedOptimizerArgs): Promise<Optimi
     diversityThreshold: args.diversityThreshold ?? 3,
   };
 
-  return runOptimizer(input, { onProgress: args.onProgress }).promise;
+  return runOptimizer(input, { onProgress: args.onProgress });
 }
+
+export type { OptimizationResult };
 
 function buildCompanionTable(cultivars: Cultivar[]): CompanionTable['pairs'] {
   const out: CompanionTable['pairs'] = {};

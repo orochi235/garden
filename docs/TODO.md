@@ -127,3 +127,14 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 ## Raised-bed feature
 
 - [ ] Expand companion/antagonist table beyond the v1 seed (~30 pairs in `src/data/companions.ts`). Source: extension-service publications, vetted gardening references.
+
+## Bed-layout optimizer deferrals (Plan 2, 2026-05-04)
+
+- [ ] Extract `src/optimizer/` into a standalone npm package once the API has settled.
+- [ ] Replace the seed companion table (~30 pairs) with a sourced table.
+- [ ] Symmetry/aesthetic objective term for the optimizer (deferred — hard to linearize).
+- [ ] Live re-optimization during drag (deferred — UX complexity).
+- [ ] Multi-season / crop rotation optimization.
+- [ ] Optimizer support for non-rectangular beds.
+- [ ] User-facing solver picker (currently fixed to `highs`).
+- [ ] Region-painting UI for `userRegions` input to the optimizer.

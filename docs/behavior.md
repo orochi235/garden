@@ -235,3 +235,4 @@ Running list of intended application behaviors.
 - Cultivars expose optional `heightFt` and `climber` fields. When unspecified, `heightFt` is undefined and `climber` defaults to false.
 - Raised beds expose `trellisEdge: 'N'|'E'|'S'|'W'|null`, default null.
 - `cultivarSpacing` derives default pitch and square-foot bucket counts from cultivar metadata; falls back to category defaults when footprint is missing.
+- The bed-layout optimizer is invoked explicitly from `OptimizePanel` (sidebar) or `OptimizerWizard` (modal). It runs in a Web Worker, returns up to 3 ranked candidates, and applies the user's choice as a single undoable batch. The optimizer module under `src/optimizer/` does not depend on any project types and is designed for later extraction.

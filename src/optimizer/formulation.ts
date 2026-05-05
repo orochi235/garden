@@ -1,5 +1,5 @@
 import type { OptimizationInput } from './types';
-import { normalizeShadingTerm, normalizeCompanionTerm } from './weights';
+import { normalizeShadingTerm } from './weights';
 
 export interface MipVar {
   /** Encoded as `x_<plantIdx>_<cellI>_<cellJ>`. */

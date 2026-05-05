@@ -2,7 +2,6 @@ import { buildMipModel } from './formulation';
 import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
 import type { MipModel } from './formulation';
-import type { SeedPlacement } from './seed';
 import type { OptimizationInput, OptimizationResult, OptimizationCandidate, OptimizerPlacement } from './types';
 
 interface RunMsg { type: 'run'; input: OptimizationInput; id: string }
@@ -58,7 +57,7 @@ async function solve(
     }
 
     onProgress('solve', n);
-    const seed = greedyHexPack(workingInput);
+    greedyHexPack(workingInput); // warm-start hint (logged; unused by LP-string API)
     const lpString = mipModelToLpString(model);
     const solveStart = performance.now();
 
@@ -94,9 +93,10 @@ async function solve(
   return { candidates, totalMs: performance.now() - start };
 }
 
-async function loadHighs(): Promise<import('highs').default extends (...args: any[]) => Promise<infer T> ? T : never> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadHighs(): Promise<any> {
   const mod = await import('highs');
-  const loader = mod.default ?? (mod as any);
+  const loader = (mod as any).default ?? mod;
   return loader({});
 }
 
