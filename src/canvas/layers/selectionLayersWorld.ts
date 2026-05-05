@@ -3,6 +3,8 @@ import { renderLabel } from '@orochi235/weasel';
 import type { RenderLayer } from '@orochi235/weasel';
 import { plantingWorldPose } from '../../utils/plantingPose';
 import type { Planting, Structure, Zone } from '../../model/types';
+import type { Seedling, Tray } from '../../model/seedStarting';
+import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import type { GetUi, LayerDescriptor, View } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -10,14 +12,9 @@ import { descriptorById } from './worldLayerData';
  * Single source of truth for selection-related layer metadata. Order here
  * matches the canonical insertion order at the canvas registration site
  * (`CanvasNewPrototype` adds group-outlines, then selection-outlines, then
- * selection-handles). Three layers are exported by three separate factories
- * because each takes different scene dependencies; the descriptor array
- * keeps their metadata co-located so the panel doesn't have to know which
- * factory owns which id.
- *
- * NOTE: a future `selection-debug-handles` layer is planned for the
- * `?debug=handles` overlay (see docs/TODO.md). Add its descriptor here when
- * the layer lands so `RenderLayersPanel` picks it up automatically.
+ * selection-handles). The `debug-all-handles` overlay registered behind the
+ * `?debug=handles` token is intentionally kept out of this list — it's a
+ * debug-gated overlay, not a regular sidebar-toggleable layer.
  */
 export const SELECTION_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
   { id: 'group-outlines', label: 'Group Outlines', alwaysOn: true },
@@ -202,6 +199,107 @@ export function createSelectionHandlesLayer(
           ctx.strokeRect(x, y, hs, hs);
         }
       }
+    },
+  };
+}
+
+/**
+ * Debug overlay (`?debug=handles`): draws muted, lower-opacity handles for
+ * EVERY selectable entity in the scene, not just the currently selected ones.
+ * Visually distinct from real selection handles (smaller, neutral-color,
+ * partially transparent) so it's hard to confuse with an actual selection.
+ *
+ * Garden mode: structures + zones get 8-corner rect handles; plantings get a
+ * single handle dot at their world pose. Seed-starting mode: seedlings get a
+ * single handle dot at the centre of their cell.
+ *
+ * Implementation note (Phase 5 deferral): rather than parameterise
+ * `createSelectionHandlesLayer` with an "iterate-all" flag, this is its own
+ * sibling layer registered behind the debug-token gate. Keeps the hot path
+ * (real selection rendering) untouched and lets the all-handles overlay use
+ * a smaller / neutral style without conditional branches.
+ */
+export interface AllHandlesGetters {
+  getStructures?: () => Structure[];
+  getZones?: () => Zone[];
+  getPlantings?: () => Planting[];
+  getTrays?: () => Tray[];
+  getSeedlings?: () => Seedling[];
+}
+
+export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<unknown> {
+  return {
+    id: 'debug-all-handles',
+    label: 'Debug: All Handles',
+    alwaysOn: true,
+    space: 'screen',
+    draw(ctx, _data, view) {
+      const hs = 5;
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 1;
+
+      const drawRectHandles = (wx: number, wy: number, ww: number, wh: number) => {
+        const sx = (wx - view.x) * view.scale;
+        const sy = (wy - view.y) * view.scale;
+        const sw = ww * view.scale;
+        const sh = wh * view.scale;
+        const points: [number, number][] = [
+          [sx, sy],
+          [sx + sw / 2, sy],
+          [sx + sw, sy],
+          [sx + sw, sy + sh / 2],
+          [sx + sw, sy + sh],
+          [sx + sw / 2, sy + sh],
+          [sx, sy + sh],
+          [sx, sy + sh / 2],
+        ];
+        for (const [hx, hy] of points) {
+          const x = hx - hs / 2;
+          const y = hy - hs / 2;
+          ctx.fillRect(x, y, hs, hs);
+          ctx.strokeRect(x, y, hs, hs);
+        }
+      };
+
+      const drawDot = (wx: number, wy: number) => {
+        const sx = (wx - view.x) * view.scale;
+        const sy = (wy - view.y) * view.scale;
+        ctx.fillRect(sx - hs / 2, sy - hs / 2, hs, hs);
+        ctx.strokeRect(sx - hs / 2, sy - hs / 2, hs, hs);
+      };
+
+      const structures = getters.getStructures?.() ?? [];
+      const zones = getters.getZones?.() ?? [];
+      for (const s of structures) drawRectHandles(s.x, s.y, s.width, s.height);
+      for (const z of zones) drawRectHandles(z.x, z.y, z.width, z.height);
+
+      const plantings = getters.getPlantings?.() ?? [];
+      if (plantings.length > 0) {
+        for (const p of plantings) {
+          const { x, y } = plantingWorldPose({ structures, zones }, p);
+          drawDot(x, y);
+        }
+      }
+
+      const trays = getters.getTrays?.() ?? [];
+      const seedlings = getters.getSeedlings?.() ?? [];
+      if (trays.length > 0 && seedlings.length > 0) {
+        const trayById = new Map(trays.map((t) => [t.id, t] as const));
+        for (const sd of seedlings) {
+          if (!sd.trayId || sd.row == null || sd.col == null) continue;
+          const tray = trayById.get(sd.trayId);
+          if (!tray) continue;
+          const off = trayInteriorOffsetIn(tray);
+          const cx = off.x + (sd.col + 0.5) * tray.cellPitchIn;
+          const cy = off.y + (sd.row + 0.5) * tray.cellPitchIn;
+          drawDot(cx, cy);
+        }
+      }
+
+      ctx.restore();
     },
   };
 }

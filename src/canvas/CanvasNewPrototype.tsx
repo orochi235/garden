@@ -23,7 +23,9 @@ import {
   createSelectionOutlineLayer,
   createSelectionHandlesLayer,
   createGroupOutlineLayer,
+  createAllHandlesLayer,
 } from './layers/selectionLayersWorld';
+import { isDebugEnabled } from './debug';
 import { createSystemLayer } from './layers/systemLayersWorld';
 import type { GetUi, View } from './layers/worldLayerData';
 import { useEricSelectTool } from './tools/useEricSelectTool';
@@ -106,6 +108,13 @@ function GardenCanvasNewPrototype() {
       createSystemLayer(),
     ];
     const debugLayers = createDebugLayers('garden', () => useGardenStore.getState().garden);
+    if (isDebugEnabled('handles')) {
+      debugLayers.push(createAllHandlesLayer({
+        getStructures,
+        getZones,
+        getPlantings,
+      }));
+    }
     // Publish the full set (base + debug) so the sidebar Render Layers panel
     // can list whatever's actually being drawn. Done before wrapping so the
     // registry sees the original alwaysOn/defaultVisible flags.

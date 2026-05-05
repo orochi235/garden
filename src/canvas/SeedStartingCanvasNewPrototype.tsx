@@ -25,6 +25,8 @@ import { useSowCellTool } from './tools/useSowCellTool';
 import { useFillTrayTool } from './tools/useFillTrayTool';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
+import { createAllHandlesLayer } from './layers/selectionLayersWorld';
+import { isDebugEnabled } from './debug';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
 
 export function SeedStartingCanvasNewPrototype() {
@@ -75,6 +77,12 @@ export function SeedStartingCanvasNewPrototype() {
       ...createSeedlingLayers(getTrays, getSeedlings, getSeedlingUi, getHighlight),
     ];
     const debugLayers = createDebugLayers('seed-starting', () => useGardenStore.getState().garden);
+    if (isDebugEnabled('handles')) {
+      debugLayers.push(createAllHandlesLayer({
+        getTrays,
+        getSeedlings,
+      }));
+    }
     setRegisteredLayers('seed-starting', [...baseList, ...debugLayers]);
     const list = [
       ...wrapLayersWithVisibility(baseList, () => useUiStore.getState().renderLayerVisibility),
