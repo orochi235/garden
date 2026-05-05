@@ -65,27 +65,37 @@ async function solve(
       log_to_console: false,
     };
 
-    // HiGHS-WASM (highs-js 1.8.0) has a bug where large adjacency matrices
-    // (many same-species copies × dense neighborhood) crash the solver mid-run
-    // with "table index is out of bounds", "Too few lines", or "Aborted()".
-    // The crash also poisons the WASM module heap, so retries must use a
-    // fresh module instance. Each candidate gets its own instance, and the
-    // fallback path (drop same-species adjacency rows) gets another.
-    let HighsModule = await loadHighs();
-    let solution = trySolve(HighsModule, mipModelToLpString(model), solveOpts);
+    // HiGHS-WASM (highs-js 1.8.0) crashes mid-solve when fed a large enough
+    // same-species adjacency matrix (e.g. 8 same-cultivar copies × dense
+    // neighborhood ⇒ 5650 adj rows). Crash modes vary — "table index is out
+    // of bounds", "Too few lines", "Aborted()" — and the crash also poisons
+    // the WASM module heap, so reactive retry on the same module fails too.
+    // Worse, highsLoader() returns a singleton in the same JS realm, so even
+    // re-loading doesn't yield fresh state within one worker process.
+    //
+    // Proactive guard: when same-species adjacency would exceed a safe budget,
+    // strip those rows up-front. Quality degrades (no spreading penalty
+    // between same-cultivar copies) but the user gets a layout. Threshold
+    // chosen empirically — 4 same-cultivar copies in a 4×8ft bed at 4in grid
+    // produces ~600 rows and solves cleanly; 8 copies produce ~5650 and crash.
+    const SAME_SPECIES_ADJ_BUDGET = 1500;
+    const sameSpeciesAux = sameSpeciesAuxNames(model);
+    const sameSpeciesAdjCount = model.constraints.filter((c) =>
+      isAdjRowForAux(c.label, sameSpeciesAux),
+    ).length;
+    if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
+      console.warn(
+        '[optimizer] candidate', n,
+        `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping to avoid HiGHS-WASM crash`,
+      );
+      model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
+    }
+
+    const HighsModule = await loadHighs();
+    const solution = trySolve(HighsModule, mipModelToLpString(model), solveOpts);
     if (!solution) {
-      console.warn('[optimizer] candidate', n, 'solver crashed; retrying without same-species adjacency');
-      const sameSpeciesAux = sameSpeciesAuxNames(model);
-      const stripped = {
-        ...model,
-        constraints: model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux)),
-      };
-      HighsModule = await loadHighs();
-      solution = trySolve(HighsModule, mipModelToLpString(stripped), solveOpts);
-      if (!solution) {
-        console.warn('[optimizer] candidate', n, 'solver crashed again after fallback; skipping');
-        continue;
-      }
+      console.warn('[optimizer] candidate', n, 'solver crashed; skipping');
+      continue;
     }
 
     if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
