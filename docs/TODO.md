@@ -127,3 +127,6 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 ## Raised-bed feature
 
 - [ ] Expand companion/antagonist table beyond the v1 seed (~30 pairs in `src/data/companions.ts`). Source: extension-service publications, vetted gardening references.
+- [ ] Build a real `bands` editor for `banded-rows` arrangements (currently JSON-only).
+- [ ] Build a region-painting UI for `multi` arrangements (currently optimizer-only entrypoint).
+- [ ] Auto-migration of existing `rows`-arrangement raised beds to `multi` when companion blocks are detected.

@@ -235,3 +235,5 @@ Running list of intended application behaviors.
 - Cultivars expose optional `heightFt` and `climber` fields. When unspecified, `heightFt` is undefined and `climber` defaults to false.
 - Raised beds expose `trellisEdge: 'N'|'E'|'S'|'W'|null`, default null.
 - `cultivarSpacing` derives default pitch and square-foot bucket counts from cultivar metadata; falls back to category defaults when footprint is missing.
+
+- Arrangement supports five new strategies: `square-foot`, `hex`, `trellised-back`, `banded-rows`, `multi`. `computeSlots` accepts an optional `cultivars` arg used by hex (auto-pitch) and trellised-back (front-band routing). The `multi` strategy tags each slot with its source `regionId` so drops route to the correct sub-region.

@@ -7,8 +7,13 @@
  * should be positioned. `computeSlots` is the pure function that turns that
  * description into concrete positions.
  */
+import { computeSquareFoot } from './arrangementStrategies/squareFoot';
+import { computeHex } from './arrangementStrategies/hex';
+import { computeBandedRows } from './arrangementStrategies/bandedRows';
+import { computeTrellisedBack } from './arrangementStrategies/trellisedBack';
+import { computeMulti } from './arrangementStrategies/multi';
 
-export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free';
+export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex' | 'banded-rows' | 'trellised-back' | 'multi';
 
 export interface RowsConfig {
   type: 'rows';
@@ -48,11 +53,75 @@ export interface FreeConfig {
   type: 'free';
 }
 
-export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig;
+export interface SquareFootConfig {
+  type: 'square-foot';
+  /** Side length of each cell, feet. Default 1. */
+  cellSizeFt: number;
+  /** Inset from container edge (ft) */
+  marginFt: number;
+}
+
+export interface HexConfig {
+  type: 'hex';
+  /** Center-to-center spacing, ft. Use 'auto' to derive from cultivars. */
+  pitchFt: number | 'auto';
+  marginFt: number;
+}
+
+export interface BandConfig {
+  /** Fraction of bed depth this band occupies, summed across bands ≈ 1.0. */
+  depthFraction: number;
+  /** Item spacing along the row, in feet. */
+  pitchFt: number;
+}
+
+export interface BandedRowsConfig {
+  type: 'banded-rows';
+  bands: BandConfig[];
+  marginFt: number;
+}
+
+export type Edge = 'N' | 'E' | 'S' | 'W';
+
+export interface TrellisedBackConfig {
+  type: 'trellised-back';
+  trellisEdge: Edge;
+  /** Depth of the trellis band along the trellis edge, in feet. */
+  trellisDepthFt: number;
+  /** Pitch (along-row spacing) for the trellis band, ft. */
+  trellisPitchFt: number;
+  /** Strategy for the front rows. Currently restricted to types that don't recursively need 'auto' resolution. */
+  frontStrategy: 'rows' | 'square-foot' | 'hex';
+  marginFt: number;
+}
+
+/** Bed-local normalized rect: 0..1 in each dimension. */
+export interface NormalizedRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface MultiRegion {
+  /** Stable id; survives reflow when the bed is resized. */
+  id: string;
+  bounds: NormalizedRect;
+  arrangement: Arrangement;
+}
+
+export interface MultiConfig {
+  type: 'multi';
+  regions: MultiRegion[];
+}
+
+export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig | BandedRowsConfig | TrellisedBackConfig | MultiConfig;
 
 export interface Slot {
   x: number;
   y: number;
+  /** Set by the `multi` strategy so consumers can route drops to the originating sub-region. */
+  regionId?: string;
 }
 
 export interface ParentBounds {
@@ -67,7 +136,7 @@ export interface ParentBounds {
  * Given an arrangement and parent bounds, compute the world-space positions
  * where child objects should be placed.
  */
-export function computeSlots(arrangement: Arrangement, bounds: ParentBounds): Slot[] {
+export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cultivars?: import('./cultivars').Cultivar[]): Slot[] {
   switch (arrangement.type) {
     case 'rows':
       return computeRows(arrangement, bounds);
@@ -79,6 +148,16 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds): Sl
       return [{ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }];
     case 'free':
       return [];
+    case 'square-foot':
+      return computeSquareFoot(arrangement, bounds, _cultivars);
+    case 'hex':
+      return computeHex(arrangement, bounds, _cultivars);
+    case 'banded-rows':
+      return computeBandedRows(arrangement, bounds, _cultivars);
+    case 'trellised-back':
+      return computeTrellisedBack(arrangement, bounds, _cultivars);
+    case 'multi':
+      return computeMulti(arrangement, bounds, _cultivars);
   }
 }
 
@@ -177,5 +256,15 @@ export function defaultArrangement(type: ArrangementType): Arrangement {
       return { type: 'single' };
     case 'free':
       return { type: 'free' };
+    case 'square-foot':
+      return { type: 'square-foot', cellSizeFt: 1, marginFt: 0 };
+    case 'hex':
+      return { type: 'hex', pitchFt: 'auto', marginFt: 0.25 };
+    case 'banded-rows':
+      return { type: 'banded-rows', bands: [{ depthFraction: 0.5, pitchFt: 0.5 }, { depthFraction: 0.5, pitchFt: 1 }], marginFt: 0.25 };
+    case 'trellised-back':
+      return { type: 'trellised-back', trellisEdge: 'N', trellisDepthFt: 1, trellisPitchFt: 0.5, frontStrategy: 'rows', marginFt: 0.25 };
+    case 'multi':
+      return { type: 'multi', regions: [] };
   }
 }
