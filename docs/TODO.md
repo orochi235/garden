@@ -116,3 +116,7 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - **Click-to-zoom tool for `viewMode === 'zoom'`.** Toolbar button currently warns once on activation; wire a tool with cursor `zoom-in`/`zoom-out` (shift inverts) that increments/decrements `useUiStore.zoom` around the click point. Double-click-on-button already resets to fit-view.
 - **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.
 - **`?debug=handles` overlay.** Documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
+
+## Almanac
+
+- **Frost-zone grid coverage beyond CONUS + AK + HI.** `scripts/build-frost-zone-grid.mjs` and `public/data/frost-zone-grid.bin` only cover the NOAA U.S. station network. Users in territories (PR, Guam, USVI), Canada, or anywhere else outside the lat/lon box (18..72 N, -172..-66 E) get "Couldn't determine zone for this location." Future: integrate an additional dataset (e.g. NRCan Plant Hardiness for Canada, EU Köppen-derived zones) and widen the grid bounds — or fall back to a coarser global Köppen lookup when off-grid.
