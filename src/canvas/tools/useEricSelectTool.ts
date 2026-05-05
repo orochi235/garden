@@ -29,6 +29,7 @@ import {
 } from '../adapters/gardenScene';
 import { createStructureResizeAdapter, type StructureResizePose } from '../adapters/structureResize';
 import { createZoneResizeAdapter } from '../adapters/zoneResize';
+import { expandToGroups } from '../../utils/groups';
 
 export type SelectScratch =
   | { kind: 'idle' }
@@ -323,7 +324,12 @@ export function useEricSelectTool(
                 if (!ui.selectedIds.includes(hit.id)) ui.select(hit.id);
               }
               const ids = useUiStore.getState().selectedIds;
-              const dragIds = ids.length > 0 ? ids : [hit.id];
+              const baseIds = ids.length > 0 ? ids : [hit.id];
+              // Expand grouped members so dragging one moves the group.
+              // Selection in the UI store stays narrow so single-handle
+              // resize affordance is preserved on the originally-clicked member.
+              const structures = useGardenStore.getState().garden.structures;
+              const dragIds = expandToGroups(baseIds, structures);
               const altClone = ctx.modifiers.alt && !!cloneAdapter;
               ctx.scratch = altClone
                 ? { kind: 'clone', ids: dragIds }
@@ -418,6 +424,14 @@ export function useEricSelectTool(
                     || Math.abs(overlay.current.worldY - overlay.start.worldY) > 0.0001);
                 if (dragged) {
                   areaSelect.end();
+                  // Expand marquee result so touching any member of a group
+                  // selects all members.
+                  const ui = useUiStore.getState();
+                  const structures = useGardenStore.getState().garden.structures;
+                  const expanded = expandToGroups(ui.selectedIds, structures);
+                  if (expanded.length !== ui.selectedIds.length) {
+                    ui.setSelection(expanded);
+                  }
                 } else {
                   areaSelect.cancel();
                   // Click-on-empty-with-no-drag: clear selection unless
