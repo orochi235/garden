@@ -25,6 +25,7 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
     spacingIn: cultivar.spacingFt * FT_TO_IN,
     heightIn: cultivar.heightFt != null ? cultivar.heightFt * FT_TO_IN : null,
     climber: cultivar.climber,
+    category: cultivar.category,
   }));
 
   const companions: CompanionTable = { pairs: buildCompanionTable(args.request.map((r) => r.cultivar)) };
@@ -33,7 +34,7 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
     bed: {
       widthIn: args.bed.width * FT_TO_IN,
       lengthIn: args.bed.length * FT_TO_IN,
-      trellisEdge: args.bed.trellisEdge,
+      trellis: args.bed.trellisEdge ? { kind: 'edge', edge: args.bed.trellisEdge } : null,
       edgeClearanceIn: 0,
     },
     plants,
