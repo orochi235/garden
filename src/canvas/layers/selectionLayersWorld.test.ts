@@ -62,6 +62,7 @@ function ui(over: Partial<ReturnType<GetUi>> = {}): ReturnType<GetUi> {
     showFootprintCircles: true,
     highlightOpacity: 0,
     debugOverlappingLabels: false,
+    dragClashIds: [],
     ...over,
   };
 }

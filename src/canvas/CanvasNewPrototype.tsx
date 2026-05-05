@@ -61,6 +61,7 @@ function GardenCanvasNewPrototype() {
   useUiStore((s) => s.plantIconScale);
   useUiStore((s) => s.debugOverlappingLabels);
   useUiStore((s) => s.renderLayerVisibility);
+  useUiStore((s) => s.dragClashIds);
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
 
@@ -107,6 +108,7 @@ function GardenCanvasNewPrototype() {
         showFootprintCircles: true,
         highlightOpacity: maxOp,
         debugOverlappingLabels: u.debugOverlappingLabels,
+        dragClashIds: u.dragClashIds,
       };
     };
 

@@ -52,6 +52,7 @@ const baseUi: ReturnType<GetUi> = {
   showFootprintCircles: true,
   highlightOpacity: 0,
   debugOverlappingLabels: false,
+  dragClashIds: [],
 };
 
 describe('createStructureLayers (world)', () => {

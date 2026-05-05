@@ -104,7 +104,8 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## Editing
 
-- Edge-collision / containment for structure & zone drags: nothing currently prevents a structure from being dragged off the garden bounds or overlapping another structure. Grid-snap was added but no clamping. Pick a policy (clamp to bounds vs. allow-and-show-warning) and add a behavior to `useEricSelectTool`'s move pipeline.
+- ~~Edge-collision / containment for structure & zone drags: nothing currently prevents a structure from being dragged off the garden bounds or overlapping another structure. Grid-snap was added but no clamping. Pick a policy (clamp to bounds vs. allow-and-show-warning) and add a behavior to `useEricSelectTool`'s move pipeline.~~ Resolved 2026-05-04: hard-clamp to garden bounds for structures & zones; transient red clash highlight for structure-on-structure overlap (non-blocking); zones may overlap freely. See `src/canvas/tools/structureMoveBehaviors.ts`.
+- Multi-select group-drag clamp/clash edge cases: weasel's `useMove` invokes `MoveBehavior.onMove` only on the primary id; secondaries share the primary's delta. Today the clamp computes the union AABB and shifts the primary, which transitively shifts secondaries (correct). The clash detector likewise uses the secondaries' AABBs (each derived from origin + primary delta). Two follow-ups: (1) confirm behavior once the parallel group-outline drag work expands the drag set; (2) consider exposing a `behavior.onMoveAll` hook in weasel so behaviors can address every dragged id directly rather than relying on shared-delta inheritance.
 
 ## Phase 5 audit punch list — remaining
 

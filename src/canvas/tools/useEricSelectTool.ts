@@ -29,6 +29,10 @@ import {
 } from '../adapters/gardenScene';
 import { createStructureResizeAdapter, type StructureResizePose } from '../adapters/structureResize';
 import { createZoneResizeAdapter } from '../adapters/zoneResize';
+import {
+  clampStructureZoneToGardenBounds,
+  detectStructureClash,
+} from './structureMoveBehaviors';
 
 export type SelectScratch =
   | { kind: 'idle' }
@@ -112,7 +116,16 @@ export function useEricSelectTool(
   },
 ): Tool<SelectScratch> {
   const moveBehaviors = useMemo<MoveBehavior<ScenePose>[]>(
-    () => [snapStructureZoneToGrid(adapter), trackPlantingSnap(adapter), requirePlantingDrop(adapter)],
+    () => [
+      snapStructureZoneToGrid(adapter),
+      // Clamp before clash detection so the clash check sees the final pose.
+      // Order matters: snap → clamp → clash; planting-only behaviors are
+      // narrower (kind === 'planting') and don't interact with the above.
+      clampStructureZoneToGardenBounds(adapter),
+      detectStructureClash(adapter),
+      trackPlantingSnap(adapter),
+      requirePlantingDrop(adapter),
+    ],
     [adapter],
   );
   const move = useMove<SceneNode, ScenePose>(adapter, {
@@ -438,6 +451,10 @@ export function useEricSelectTool(
             zoneResize.cancel();
             areaSelect.cancel();
             activeResize.current = null;
+            // Behaviors don't run onCancel, so clear the clash signal directly.
+            if (useUiStore.getState().dragClashIds.length > 0) {
+              useUiStore.getState().setDragClashIds([]);
+            }
           },
         },
 
