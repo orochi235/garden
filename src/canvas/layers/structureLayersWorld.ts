@@ -278,7 +278,39 @@ export function createStructureLayers(
     {
       ...meta['structure-highlights'],
       draw(ctx, _data, view) {
-        const { getOpacity } = getUi();
+        const ui = getUi();
+        const { getOpacity } = ui;
+        const clashIds = ui.dragClashIds ?? [];
+        const drawClashes = clashIds.length > 0;
+
+        // Clash highlight: render a red-tinted ring on each structure whose
+        // AABB intersects the dragging set. Shown alongside the gold
+        // selection highlight; clears on drop / cancel.
+        if (drawClashes) {
+          const all = getStructures();
+          const byId = new Map(all.map((s) => [s.id, s]));
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.strokeStyle = '#E0413A';
+          ctx.fillStyle = 'rgba(224, 65, 58, 0.15)';
+          ctx.lineWidth = pxToWorld(view, 2);
+          ctx.setLineDash([]);
+          for (const id of clashIds) {
+            const s = byId.get(id);
+            if (!s) continue;
+            if (s.shape === 'circle') {
+              ctx.beginPath();
+              ctx.ellipse(s.x + s.width / 2, s.y + s.height / 2, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            } else {
+              ctx.fillRect(s.x, s.y, s.width, s.height);
+              ctx.strokeRect(s.x, s.y, s.width, s.height);
+            }
+          }
+          ctx.restore();
+        }
+
         const { queue } = getQueue(getStructures);
         // Skip the save/setup if no structure is currently flashing — keeps
         // the test that expects no `save()` when nothing's flashing happy.

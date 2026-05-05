@@ -20,6 +20,12 @@ export interface EricSceneUi {
    *  this for each id rather than reading a single aggregated number. */
   getOpacity: (id: string) => number;
   debugOverlappingLabels: boolean;
+  /**
+   * Ids of non-dragging structures whose AABB intersects the dragging set.
+   * Populated only while a structure drag is in flight; empty otherwise.
+   * Rendered as a red-tinted clash highlight by `structure-highlights`.
+   */
+  dragClashIds: string[];
 }
 
 export type GetUi = () => EricSceneUi;

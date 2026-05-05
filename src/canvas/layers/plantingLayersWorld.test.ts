@@ -11,6 +11,7 @@ const baseUi: ReturnType<GetUi> = {
   showFootprintCircles: true,
   getOpacity: () => 0,
   debugOverlappingLabels: false,
+  dragClashIds: [],
 };
 
 describe('createPlantingLayers (world)', () => {

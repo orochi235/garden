@@ -75,6 +75,13 @@ interface UiStore {
   layerFlashCounter: number;
   viewMode: ViewMode;
   dragOverlay: DragOverlay | null;
+  /**
+   * Transient overlap-clash signal populated by `useEricSelectTool` while a
+   * structure drag is in flight. Holds the ids of non-dragging structures
+   * whose AABBs intersect any dragging-set AABB so the structure highlight
+   * layer can render them with a red-tinted warning. Cleared on drop / cancel.
+   */
+  dragClashIds: string[];
   resizeOverlay: ResizeOverlayUi | null;
   insertOverlay: InsertOverlayUi | null;
   areaSelectOverlay: AreaSelectOverlayUi | null;
@@ -120,6 +127,7 @@ interface UiStore {
   resetAlmanacFilters: () => void;
   setDragOverlay: (overlay: DragOverlay) => void;
   clearDragOverlay: () => void;
+  setDragClashIds: (ids: string[]) => void;
   setResizeOverlay: (overlay: ResizeOverlayUi | null) => void;
   setInsertOverlay: (overlay: InsertOverlayUi | null) => void;
   setAreaSelectOverlay: (overlay: AreaSelectOverlayUi | null) => void;
@@ -197,6 +205,7 @@ function defaultState() {
     layerFlashCounter: 0,
     viewMode: 'select' as ViewMode,
     dragOverlay: null as DragOverlay | null,
+    dragClashIds: [] as string[],
     resizeOverlay: null as ResizeOverlayUi | null,
     insertOverlay: null as InsertOverlayUi | null,
     areaSelectOverlay: null as AreaSelectOverlayUi | null,
@@ -224,6 +233,7 @@ export const useUiStore = create<UiStore>((set) => ({
   ...defaultState(),
   setDragOverlay: (overlay) => set({ dragOverlay: overlay }),
   clearDragOverlay: () => set({ dragOverlay: null }),
+  setDragClashIds: (ids) => set({ dragClashIds: ids }),
   setResizeOverlay: (overlay) => set({ resizeOverlay: overlay }),
   setInsertOverlay: (overlay) => set({ insertOverlay: overlay }),
   setAreaSelectOverlay: (overlay) => set({ areaSelectOverlay: overlay }),

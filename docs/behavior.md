@@ -190,3 +190,17 @@ Running list of intended application behaviors.
   `EricSceneUi.getOpacity(id)`; seed-starting wires it through a per-id
   `getHighlight(id)` callback that `createSeedlingLayers` reads directly
   from `useHighlightStore.computeOpacity`.
+
+## Structure & zone drag bounds (2026-05-04)
+
+- Dragging a structure or zone hard-clamps the dragged set's union AABB to
+  the garden bounds `[0, widthFt] × [0, heightFt]`. Pushing past an edge
+  pins the AABB at that edge — there is no warning, just a stop. Plantings
+  are exempt (their pose is decided by container layout strategies, not
+  free-space drag).
+- While a structure is being dragged, any non-dragging structure whose AABB
+  intersects the dragging set is highlighted with a translucent red overlay.
+  The clash is non-blocking: releasing still commits the move. The
+  highlight clears on drop or cancel.
+- Zones do not participate in clash highlighting in either direction —
+  zones may freely overlap structures and other zones.
