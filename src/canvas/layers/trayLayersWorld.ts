@@ -1,9 +1,24 @@
 import type { RenderLayer } from '@orochi235/weasel';
 import type { Tray } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
+import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { useGardenStore } from '../../store/gardenStore';
 import type { View } from './worldLayerData';
 
 export type GetTrays = () => Tray[];
+
+function withTrayTransform(
+  ctx: CanvasRenderingContext2D,
+  tray: Tray,
+  draw: () => void,
+): void {
+  const ss = useGardenStore.getState().garden.seedStarting;
+  const o = trayWorldOrigin(tray, ss);
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  draw();
+  ctx.restore();
+}
 
 function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
@@ -69,7 +84,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
       alwaysOn: true,
       draw(ctx, _data, view) {
         for (const tray of getTrays()) {
-          drawTrayBody(ctx, tray, view);
+          withTrayTransform(ctx, tray, () => drawTrayBody(ctx, tray, view));
         }
       },
     },
@@ -78,7 +93,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
       label: 'Tray Wells',
       draw(ctx, _data, view) {
         for (const tray of getTrays()) {
-          drawTrayWells(ctx, tray, view);
+          withTrayTransform(ctx, tray, () => drawTrayWells(ctx, tray, view));
         }
       },
     },
@@ -88,7 +103,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
       defaultVisible: true,
       draw(ctx, _data, _view) {
         for (const tray of getTrays()) {
-          drawTrayGrid(ctx, tray);
+          withTrayTransform(ctx, tray, () => drawTrayGrid(ctx, tray));
         }
       },
     },

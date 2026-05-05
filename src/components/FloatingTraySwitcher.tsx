@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
+import { zoomToTray } from '../actions/view/resetView';
 import styles from '../styles/FloatingTraySwitcher.module.css';
 
 export function FloatingTraySwitcher() {
@@ -85,7 +86,10 @@ export function FloatingTraySwitcher() {
             <button
               type="button"
               className={styles.item}
-              onClick={() => setCurrentTrayId(t.id)}
+              onClick={() => {
+                setCurrentTrayId(t.id);
+                zoomToTray(t.id);
+              }}
               onDoubleClick={() => startEditing(t.id, t.label)}
               title={`${t.label} (double-click to rename)`}
             >

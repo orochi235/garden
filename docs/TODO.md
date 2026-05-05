@@ -75,7 +75,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 
 ## Canvas redesign deferrals (Phase 4)
 
-- `seedStartingScene` adapter places every tray's world origin at `(0, 0)`. The data model has no per-tray world position and the legacy view is single-tray (centered via viewport `originX/originY`). When multi-tray support lands, give each tray its own `(x, y)` field and update `trayWorldOrigin` to read it; today, `findSnapTarget` will pick the geometrically-closest tray but they all share the same origin so multi-tray semantics are not meaningful yet.
+- ~~`seedStartingScene` adapter places every tray's world origin at `(0, 0)`.~~ Resolved in v1 multi-tray auto-flow (2026-05-04): `trayWorldOrigin(tray, ss)` lays trays out left-to-right in insertion order with a `TRAY_GUTTER_IN = 6` gutter; no per-tray `(x, y)` field is added (computed from the running sum of prior widths). `seedStartingWorldBounds` returns the union AABB. Single-tray gardens are byte-identical and origin remains `(0, 0)`.
 - `seedStartingScene.setParent` is a no-op. Cross-tray drag-to-reparent is not part of the seed-starting flow today; if we ever want it, route through `removeSeedling`/`addSeedling` or a new store action that preserves cell identity.
 - `seedStartingScene.setPose` requires the dragged seedling to already live in a tray (uses `store.moveSeedling` which only swaps within one tray). Inserting a brand-new seedling via the move pipeline isn't supported — that's an `InsertAdapter` concern for the future seed-starting insert tool.
 - Gutter handling (drag-spread affordances along tray edges) deliberately omitted from `SeedNode`. A parallel sub-task owns the design decision; once resolved, add a `GutterNode` kind and re-introduce `hitTestDragSpreadAffordance` integration.
@@ -117,3 +117,10 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - **Click-to-zoom tool for `viewMode === 'zoom'`.** Toolbar button currently warns once on activation; wire a tool with cursor `zoom-in`/`zoom-out` (shift inverts) that increments/decrements `useUiStore.zoom` around the click point. Double-click-on-button already resets to fit-view.
 - **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.
 - **`?debug=handles` overlay.** Documented but not implemented — design the "show drag handles for ALL selectable entities" overlay (probably wires through the existing `selection-handles` layer with an unconditional iterator).
+
+## Seed-starting multi-tray auto-flow deferrals (v1, 2026-05-04)
+
+- **Drag-to-reorder trays.** v1 lays trays out in insertion order with no UI to reorder them. Need a drag affordance on the FloatingTraySwitcher entries (or in-canvas drag of the tray body) that mutates `seedStarting.trays[]` order; `trayWorldOrigin` then reflows automatically. Design question: does reorder snap-back if the new origin clips an in-flight palette drag?
+- **Vertical wrapping.** All trays sit on a single row in v1. For wide collections we'll want to wrap onto multiple rows (or columns) once the union width exceeds some viewport-relative threshold. `trayWorldOrigin` and `seedStartingWorldBounds` are the only two functions that need to learn the wrapped layout.
+- **Free placement of trays.** v1 has no per-tray `(x, y)` — once the user wants benches/shelves or non-rectangular arrangements, add an explicit pose to each `Tray` and let `trayWorldOrigin` prefer that pose when set, falling back to auto-flow when null. File-format change.
+- **Bench / shelf parents.** Trays should be groupable into a "bench" or "shelf" parent that owns its own world pose, with trays positioned relative to it. Likely paired with free placement above. Touches the seed-starting model schema, `seedStartingScene` adapter, and persistence.

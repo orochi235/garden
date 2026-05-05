@@ -1,7 +1,7 @@
 import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { Seedling, Tray } from '../../model/seedStarting';
+import type { Seedling, SeedStartingState, Tray } from '../../model/seedStarting';
 import { getCell } from '../../model/seedStarting';
 import { cellCenterInches, hitTestCellInches } from '../seedStartingHitTest';
 
@@ -19,8 +19,38 @@ export type SeedStartingSceneAdapter = MoveAdapter<SeedNode, ScenePose> & {
   setSelection(ids: string[]): void;
 };
 
-function trayWorldOrigin(_tray: Tray): { x: number; y: number } {
+/** Horizontal gap between trays in the auto-flow seed-starting world layout. */
+export const TRAY_GUTTER_IN = 6;
+
+/**
+ * World origin (top-left in inches) of `tray` given the full seed-starting
+ * state. Trays lay out left-to-right in insertion order; vertical origin is 0.
+ *
+ * Single-tray gardens get `(0, 0)` (the first tray contributes no gutter),
+ * matching legacy behavior exactly.
+ */
+export function trayWorldOrigin(tray: Tray, ss: SeedStartingState): { x: number; y: number } {
+  let x = 0;
+  for (const t of ss.trays) {
+    if (t.id === tray.id) return { x, y: 0 };
+    x += t.widthIn + TRAY_GUTTER_IN;
+  }
+  // Tray not in the list: fall back to (0, 0) so callers don't blow up.
   return { x: 0, y: 0 };
+}
+
+/** Total bounds spanned by all trays in `ss` once laid out left-to-right. */
+export function seedStartingWorldBounds(ss: SeedStartingState): { width: number; height: number } {
+  if (ss.trays.length === 0) return { width: 0, height: 0 };
+  let width = 0;
+  let height = 0;
+  for (let i = 0; i < ss.trays.length; i++) {
+    const t = ss.trays[i];
+    width += t.widthIn;
+    if (i < ss.trays.length - 1) width += TRAY_GUTTER_IN;
+    if (t.heightIn > height) height = t.heightIn;
+  }
+  return { width, height };
 }
 
 function findNode(id: string): SeedNode | undefined {
@@ -40,8 +70,8 @@ function allNodes(): SeedNode[] {
   return out;
 }
 
-function trayContains(tray: Tray, worldX: number, worldY: number): boolean {
-  const o = trayWorldOrigin(tray);
+function trayContains(tray: Tray, ss: SeedStartingState, worldX: number, worldY: number): boolean {
+  const o = trayWorldOrigin(tray, ss);
   const lx = worldX - o.x;
   const ly = worldY - o.y;
   return lx >= 0 && ly >= 0 && lx < tray.widthIn && ly < tray.heightIn;
@@ -88,16 +118,16 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
     getPose(id) {
       const node = findNode(id);
       if (!node) throw new Error(`seed-starting scene node not found: ${id}`);
+      const ss = useGardenStore.getState().garden.seedStarting;
       switch (node.kind) {
         case 'tray':
-          return trayWorldOrigin(node.data);
+          return trayWorldOrigin(node.data, ss);
         case 'seedling': {
           const s = node.data;
           if (!s.trayId || s.row == null || s.col == null) return { x: 0, y: 0 };
-          const ss = useGardenStore.getState().garden.seedStarting;
           const tray = ss.trays.find((t) => t.id === s.trayId);
           if (!tray) return { x: 0, y: 0 };
-          const o = trayWorldOrigin(tray);
+          const o = trayWorldOrigin(tray, ss);
           const c = cellCenterInches(tray, s.row, s.col);
           return { x: o.x + c.x, y: o.y + c.y };
         }
@@ -133,7 +163,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
           // else fall back to the seedling's existing tray.
           let targetTray: Tray | null = null;
           for (const t of ss.trays) {
-            if (trayContains(t, pose.x, pose.y)) {
+            if (trayContains(t, ss, pose.x, pose.y)) {
               targetTray = t;
               break;
             }
@@ -142,7 +172,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
             targetTray = ss.trays.find((t) => t.id === s.trayId) ?? null;
           }
           if (!targetTray) return;
-          const o = trayWorldOrigin(targetTray);
+          const o = trayWorldOrigin(targetTray, ss);
           const target = findEmptyCellNearest(targetTray, pose.x - o.x, pose.y - o.y, s.id);
           if (!target) return;
           if (s.trayId !== targetTray.id || s.row == null || s.col == null) return;
@@ -165,7 +195,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
       let bestTray: Tray | null = null;
       let bestDist = Infinity;
       for (const t of ss.trays) {
-        const o = trayWorldOrigin(t);
+        const o = trayWorldOrigin(t, ss);
         const cx = o.x + t.widthIn / 2;
         const cy = o.y + t.heightIn / 2;
         const d = (cx - worldX) ** 2 + (cy - worldY) ** 2;
@@ -175,7 +205,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
         }
       }
       if (!bestTray) return null;
-      const o = trayWorldOrigin(bestTray);
+      const o = trayWorldOrigin(bestTray, ss);
       const cell = findEmptyCellNearest(bestTray, worldX - o.x, worldY - o.y, draggedId);
       if (!cell) return null;
       const center = cellCenterInches(bestTray, cell.row, cell.col);
@@ -198,7 +228,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
       const out: SeedNode[] = [];
       // Seedlings on top: hit-test by occupied cell.
       for (const tray of ss.trays) {
-        const o = trayWorldOrigin(tray);
+        const o = trayWorldOrigin(tray, ss);
         const cell = hitTestCellInches(tray, worldX - o.x, worldY - o.y);
         if (!cell) continue;
         const slot = getCell(tray, cell.row, cell.col);
@@ -209,7 +239,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
       }
       // Trays below.
       for (const tray of ss.trays) {
-        if (trayContains(tray, worldX, worldY)) {
+        if (trayContains(tray, ss, worldX, worldY)) {
           out.push({ kind: 'tray', id: tray.id, data: tray });
         }
       }

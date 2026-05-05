@@ -12,6 +12,7 @@ import { useUiStore } from '../store/uiStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import {
   createSeedStartingSceneAdapter,
+  seedStartingWorldBounds,
   type SeedNode,
   type ScenePose,
 } from './adapters/seedStartingScene';
@@ -30,7 +31,8 @@ export function SeedStartingCanvasNewPrototype() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
   const garden = useGardenStore((s) => s.garden);
-  const currentTrayId = useUiStore((s) => s.currentTrayId);
+  // Subscribe so that switching the current tray triggers a re-render of layers.
+  useUiStore((s) => s.currentTrayId);
 
   useUiStore((s) => s.selectedIds);
   useUiStore((s) => s.hiddenSeedlingIds);
@@ -48,12 +50,9 @@ export function SeedStartingCanvasNewPrototype() {
 
   const layers = useMemo(() => {
     const getTrays = () => {
-      const ss = useGardenStore.getState().garden.seedStarting;
-      // Restrict to the current tray (legacy behavior shows one tray at a time).
-      const id = useUiStore.getState().currentTrayId;
-      if (!id) return ss.trays;
-      const t = ss.trays.find((x) => x.id === id);
-      return t ? [t] : [];
+      // Multi-tray auto-flow: render every tray in insertion order. Each layer
+      // applies the per-tray world transform via `trayWorldOrigin`.
+      return useGardenStore.getState().garden.seedStarting.trays;
     };
     const getSeedlings = () => useGardenStore.getState().garden.seedStarting.seedlings;
     const getSeedlingUi = (): SeedlingLayerUi => {
@@ -90,30 +89,26 @@ export function SeedStartingCanvasNewPrototype() {
 
   const view = useMemo<View>(() => {
     if (width === 0 || height === 0) return { x: 0, y: 0, scale: 1 };
-    const tray = garden.seedStarting.trays.find((t) => t.id === currentTrayId);
-    const trayW = tray?.widthIn ?? 0;
-    const trayH = tray?.heightIn ?? 0;
+    const bounds = seedStartingWorldBounds(garden.seedStarting);
     const ppi = seedZoom;
-    // Legacy: tray centered in container with optional pan. Convert (originX,originY,ppi)
-    // to view: screenX = (worldX - view.x) * scale ⇒ view.x = -originX/scale.
-    const originX = (width - trayW * ppi) / 2 + seedPanX;
-    const originY = (height - trayH * ppi) / 2 + seedPanY;
+    // World bounds (sum of tray widths + gutters) centered in the container with
+    // optional pan offset. Single-tray gardens have bounds == tray dims, so this
+    // matches legacy behavior exactly.
+    const originX = (width - bounds.width * ppi) / 2 + seedPanX;
+    const originY = (height - bounds.height * ppi) / 2 + seedPanY;
     return { x: -originX / ppi, y: -originY / ppi, scale: ppi };
-  }, [width, height, seedZoom, seedPanX, seedPanY, garden.seedStarting.trays, currentTrayId]);
+  }, [width, height, seedZoom, seedPanX, seedPanY, garden.seedStarting]);
 
   const handleViewChange = (next: View) => {
     const ui = useUiStore.getState();
-    const tray = useGardenStore.getState().garden.seedStarting.trays.find(
-      (t) => t.id === ui.currentTrayId,
+    const bounds = seedStartingWorldBounds(
+      useGardenStore.getState().garden.seedStarting,
     );
-    const trayW = tray?.widthIn ?? 0;
-    const trayH = tray?.heightIn ?? 0;
     ui.setSeedStartingZoom(next.scale);
-    // Invert: originX = -view.x * scale; pan = originX - centerOffset.
     const originX = -next.x * next.scale;
     const originY = -next.y * next.scale;
-    const centerOffsetX = (width - trayW * next.scale) / 2;
-    const centerOffsetY = (height - trayH * next.scale) / 2;
+    const centerOffsetX = (width - bounds.width * next.scale) / 2;
+    const centerOffsetY = (height - bounds.height * next.scale) / 2;
     ui.setSeedStartingPan(originX - centerOffsetX, originY - centerOffsetY);
   };
 

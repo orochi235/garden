@@ -8,7 +8,22 @@ import {
   SEEDLING_WARNING_COLOR,
 } from '../../model/seedlingWarnings';
 import { renderPlant } from '../plantRenderers';
+import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { useGardenStore } from '../../store/gardenStore';
 import type { View } from './worldLayerData';
+
+function withTrayTransform(
+  ctx: CanvasRenderingContext2D,
+  tray: Tray,
+  draw: () => void,
+): void {
+  const ss = useGardenStore.getState().garden.seedStarting;
+  const o = trayWorldOrigin(tray, ss);
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  draw();
+  ctx.restore();
+}
 
 interface SownCellEntry { row: number; col: number; seedling: Seedling }
 
@@ -262,7 +277,7 @@ export function createSeedlingLayers(
         const ui = getUi();
         const seedlings = getSeedlings();
         for (const tray of getTrays()) {
-          drawSeedlingsForTray(ctx, tray, seedlings, ui, view, getHighlight);
+          withTrayTransform(ctx, tray, () => drawSeedlingsForTray(ctx, tray, seedlings, ui, view, getHighlight));
         }
       },
     },
@@ -274,7 +289,7 @@ export function createSeedlingLayers(
         const ui = getUi();
         const seedlings = getSeedlings();
         for (const tray of getTrays()) {
-          drawSeedlingLabelsForTray(ctx, tray, seedlings, ui, view);
+          withTrayTransform(ctx, tray, () => drawSeedlingLabelsForTray(ctx, tray, seedlings, ui, view));
         }
       },
     },
@@ -286,7 +301,7 @@ export function createSeedlingLayers(
         const ui = getUi();
         if (!ui.fillPreview) return;
         for (const tray of getTrays()) {
-          drawFillPreview(ctx, tray, ui.fillPreview, ui.showWarnings, view);
+          withTrayTransform(ctx, tray, () => drawFillPreview(ctx, tray, ui.fillPreview!, ui.showWarnings, view));
         }
       },
     },
@@ -298,7 +313,7 @@ export function createSeedlingLayers(
         const ui = getUi();
         if (!ui.movePreview) return;
         for (const tray of getTrays()) {
-          drawMovePreview(ctx, tray, ui.movePreview, view);
+          withTrayTransform(ctx, tray, () => drawMovePreview(ctx, tray, ui.movePreview!, view));
         }
       },
     },

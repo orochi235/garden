@@ -62,7 +62,10 @@ describe('createSeedlingLayers (world)', () => {
     const tray = createTray({ rows: 2, cols: 2, cellSize: 'small', label: 't' });
     const layer = createSeedlingLayers(() => [tray], () => [], () => baseUi)[0];
     layer.draw(ctx, {}, view);
-    expect(ctx.translate).not.toHaveBeenCalled();
+    // The per-tray world transform wraps the inner draw with save/translate/restore,
+    // but no glyph/cell-level drawing should happen.
+    expect(ctx.arc).not.toHaveBeenCalled();
+    expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
   it('seedlings layer translates to cell center for each sown seedling', () => {
@@ -105,7 +108,9 @@ describe('createSeedlingLayers (world)', () => {
     const layer = createSeedlingLayers(() => [tray], () => [], () => ui)
       .find((l) => l.id === 'seedling-fill-preview')!;
     layer.draw(ctx, {}, view);
-    expect(ctx.translate).not.toHaveBeenCalled();
+    // Wrapper translates per tray, but no preview glyphs should render.
+    expect(ctx.arc).not.toHaveBeenCalled();
+    expect(ctx.fillText).not.toHaveBeenCalled();
   });
 
   it('move-preview skips when no preview set', () => {
@@ -125,6 +130,8 @@ describe('createSeedlingLayers (world)', () => {
     const ui: SeedlingLayerUi = { ...baseUi, hiddenSeedlingIds: [seedling.id] };
     const layer = createSeedlingLayers(() => [tray], () => [seedling], () => ui)[0];
     layer.draw(ctx, {}, view);
-    expect(ctx.translate).not.toHaveBeenCalled();
+    // The hidden seedling's glyph should not render.
+    expect(ctx.arc).not.toHaveBeenCalled();
+    expect(ctx.fillText).not.toHaveBeenCalled();
   });
 });
