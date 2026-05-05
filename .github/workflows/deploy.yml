@@ -30,6 +30,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: garden/package-lock.json
+      - working-directory: weasel
+        run: npm ci
       - working-directory: garden
         run: npm ci
       - working-directory: garden
