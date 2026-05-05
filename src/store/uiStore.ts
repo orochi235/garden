@@ -163,6 +163,12 @@ function readCollectionParam(): boolean {
   return v !== 'false' && v !== '0' && v !== 'null';
 }
 
+function readInitialAppMode(): AppMode {
+  if (typeof window === 'undefined') return 'garden';
+  const mode = new URLSearchParams(window.location.search).get('mode');
+  return mode === 'seed-starting' ? 'seed-starting' : 'garden';
+}
+
 function defaultState() {
   return {
     activeLayer: 'structures' as LayerId,
@@ -194,7 +200,7 @@ function defaultState() {
     resizeOverlay: null as ResizeOverlayUi | null,
     insertOverlay: null as InsertOverlayUi | null,
     areaSelectOverlay: null as AreaSelectOverlayUi | null,
-    appMode: 'garden' as AppMode,
+    appMode: readInitialAppMode(),
     currentTrayId: null as string | null,
     seedStartingZoom: 30,
     seedStartingPanX: 0,
