@@ -129,8 +129,9 @@ async function solveClustered(
 ): Promise<OptimizationCandidate | null> {
   const solveStart = performance.now();
   const baseClusters = familyCompanionPartitioner(input);
-  const clusters = splitOversizedClusters(baseClusters, input);
-  const subBeds = proportionalStripAllocator(input.bed, clusters);
+  const baseSubBeds = proportionalStripAllocator(input.bed, baseClusters);
+  const subBeds = splitOversizedSubBeds(baseSubBeds, input);
+  const clusters = subBeds.map((s) => s.cluster);
 
   const allPlacements: OptimizerPlacement[] = [];
   let scoreSum = 0;
@@ -196,24 +197,28 @@ async function solveClustered(
 }
 
 /**
- * If a cluster's estimated placement vars exceed MAX_UNIFIED_VARS, split it
- * into N sub-clusters by dividing each plant's count across the pieces, where
- * N = ceil(estimate / MAX_UNIFIED_VARS). The allocator then gives each piece
- * its own strip. This handles homogeneous over-large clusters (e.g. 8 same-
- * cultivar tomatoes) that the category-based partitioner can't break up on
- * its own.
+ * If a sub-bed's cluster still exceeds MAX_UNIFIED_VARS at the strip size,
+ * subdivide the strip along its long axis into N pieces and divide each
+ * plant's count across the pieces. Splitting at the strip level (rather than
+ * the parent bed) keeps each piece geometrically large enough to host the
+ * cluster's plants. Handles homogeneous over-large clusters and oversized
+ * heterogeneous strips alike.
  */
-function splitOversizedClusters(clusters: Cluster[], parent: OptimizationInput): Cluster[] {
-  const out: Cluster[] = [];
-  for (const cluster of clusters) {
-    const estimate = estimatePlacementVars({ ...parent, plants: cluster.plants });
+function splitOversizedSubBeds(subBeds: SubBed[], parent: OptimizationInput): SubBed[] {
+  const out: SubBed[] = [];
+  for (const subBed of subBeds) {
+    const subInput = buildSubInput(parent, subBed);
+    const estimate = estimatePlacementVars(subInput);
     if (estimate <= MAX_UNIFIED_VARS) {
-      out.push(cluster);
+      out.push(subBed);
       continue;
     }
     const pieces = Math.ceil(estimate / MAX_UNIFIED_VARS);
+    const stripIsHorizontal = subBed.bed.lengthIn >= subBed.bed.widthIn;
+    const longAxisLen = stripIsHorizontal ? subBed.bed.lengthIn : subBed.bed.widthIn;
+    const pieceLen = longAxisLen / pieces;
     for (let i = 0; i < pieces; i++) {
-      const piecePlants = cluster.plants
+      const piecePlants = subBed.cluster.plants
         .map((p) => {
           const base = Math.floor(p.count / pieces);
           const remainder = p.count % pieces;
@@ -222,11 +227,19 @@ function splitOversizedClusters(clusters: Cluster[], parent: OptimizationInput):
         })
         .filter((p): p is NonNullable<typeof p> => p !== null);
       if (piecePlants.length === 0) continue;
-      out.push({
-        key: `${cluster.key}#${i + 1}`,
+      const pieceCluster: Cluster = {
+        key: `${subBed.cluster.key}#${i + 1}`,
         plants: piecePlants,
         climberCount: piecePlants.reduce((s, p) => s + (p.climber ? p.count : 0), 0),
-      });
+      };
+      const start = i * pieceLen;
+      const pieceBed = stripIsHorizontal
+        ? { ...subBed.bed, lengthIn: pieceLen, trellis: i === 0 ? subBed.bed.trellis : null }
+        : { ...subBed.bed, widthIn: pieceLen, trellis: i === 0 ? subBed.bed.trellis : null };
+      const pieceOffset = stripIsHorizontal
+        ? { x: subBed.offsetIn.x, y: subBed.offsetIn.y + start }
+        : { x: subBed.offsetIn.x + start, y: subBed.offsetIn.y };
+      out.push({ cluster: pieceCluster, bed: pieceBed, offsetIn: pieceOffset });
     }
   }
   return out;
