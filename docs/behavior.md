@@ -107,7 +107,7 @@ Running list of intended application behaviors.
 ## Sidebar
 
 - Right-hand panel section titles have less space to the left of the toggle slider and a bit more to the right
-- The Almanac panel exposes a "Use my location" button that geolocates the user, looks up USDA hardiness zone + average last spring frost date from a locally bundled 0.5°-resolution grid (CONUS + AK + HI), and writes both into the almanac filters; resolved coordinates, zone, and frost date are shown beneath the button
+- The Almanac panel exposes a "Use my location" button that geolocates the user, looks up USDA hardiness zone + average last spring frost date from a locally bundled 0.5°-resolution grid (CONUS + AK + HI + PR), and writes both into the almanac filters; resolved coordinates, zone, and frost date are shown beneath the button. The hardiness zone comes from the USDA PHZM 2023 raster (PRISM/OSU); the last-frost date comes from NOAA 1991-2020 climate normals.
 
 ## Seed Starting
 

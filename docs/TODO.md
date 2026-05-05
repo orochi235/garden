@@ -122,7 +122,8 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 ## Almanac
 
-- **Hardiness-zone data source is wrong.** `scripts/build-frost-zone-grid.mjs` line 161 reads `ANN-TMIN-NORMAL` from the NOAA annual-seasonal normals dataset, but that variable is the long-term *mean of daily TMIN* (~41 °F in zone-6a regions), not the *average annual extreme minimum* used by the USDA hardiness scale. `tempFToZoneIndex(41)` → idx 21 → "11a", which is what users in zone 6a are seeing. The NOAA normals dataset doesn't publish annual extreme min directly. Fix: switch to the USDA PHZM raster (https://prism.oregonstate.edu/projects/plant_hardiness_zones.php, 800 m grid) — rebuild `public/data/frost-zone-grid.bin` from PHZM and re-enable zone auto-fill in `AlmanacPanel.tsx` (currently disabled — only `lastFrostDate` is set on geolocate). The last-frost field (`ANN-TMIN-PRBLST-T32FP50`) is correct and stays.
+- **PHZM disclaimer for any rendered map.** Per the OSU/USDA terms-of-use bundled with the PHZM 2023 raster, derived maps must either keep both USDA-ARS and OSU logos or carry a "not the official USDA Plant Hardiness Zone Map" disclaimer with logos removed. Today we only consume the data as point lookups (no map rendering), so no disclaimer surface exists. If we ever render a heatmap, choropleth, or zone-by-region overlay derived from this grid, add the disclaimer/logo surface at that point.
+
 ## Seed-starting multi-tray auto-flow deferrals (v1, 2026-05-04)
 
 - **Drag-to-reorder trays.** v1 lays trays out in insertion order with no UI to reorder them. Need a drag affordance on the FloatingTraySwitcher entries (or in-canvas drag of the tray body) that mutates `seedStarting.trays[]` order; `trayWorldOrigin` then reflows automatically. Design question: does reorder snap-back if the new origin clips an in-flight palette drag?
