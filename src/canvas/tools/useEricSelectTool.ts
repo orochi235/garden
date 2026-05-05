@@ -109,8 +109,18 @@ export function useEricSelectTool(
   opts?: {
     moveOptions?: UseMoveOptions<ScenePose>;
     insertAdapter?: InsertAdapter<{ id: string }>;
+    /**
+     * When true, press-and-drag on an object body falls through to marquee
+     * area-select instead of starting a move/clone. Click (no drag) on a body
+     * is unchanged so users can still pick objects via single click. This
+     * powers `viewMode === 'select-area'` from the ViewToolbar.
+     */
+    forceMarquee?: boolean;
+    /** Distinct tool id (used when registering multiple variants). */
+    toolId?: string;
   },
 ): Tool<SelectScratch> {
+  const forceMarquee = opts?.forceMarquee ?? false;
   const moveBehaviors = useMemo<MoveBehavior<ScenePose>[]>(
     () => [snapStructureZoneToGrid(adapter), trackPlantingSnap(adapter), requirePlantingDrop(adapter)],
     [adapter],
@@ -267,7 +277,7 @@ export function useEricSelectTool(
   return useMemo(
     () =>
       defineTool<SelectScratch>({
-        id: 'eric-select',
+        id: opts?.toolId ?? 'eric-select',
         cursor: 'default',
         overlay,
         initScratch: () => ({ kind: 'idle' }),
@@ -286,10 +296,12 @@ export function useEricSelectTool(
           onDown: (e, ctx) => {
             if (e.button !== 0) return 'pass';
 
-            // 1. Resize-handle hit (only when exactly one structure/zone is selected)
+            // 1. Resize-handle hit (only when exactly one structure/zone is selected).
+            //    Skipped in forceMarquee mode — handles aren't actionable when the
+            //    drag will be reinterpreted as a marquee.
             const sel = useUiStore.getState().selectedIds;
             const radiusWorld = HANDLE_HIT_RADIUS_PX / Math.max(0.0001, ctx.view.scale);
-            if (sel.length === 1) {
+            if (!forceMarquee && sel.length === 1) {
               const id = sel[0];
               const s = getStructure(id);
               if (s) {
@@ -313,8 +325,10 @@ export function useEricSelectTool(
               }
             }
 
-            // 2. Body hit → select + prepare move (or clone if alt-held & insert adapter present)
-            const hit = adapter.hitTest(ctx.worldX, ctx.worldY);
+            // 2. Body hit → select + prepare move (or clone if alt-held & insert adapter present).
+            //    In forceMarquee mode (viewMode === 'select-area'), skip the body branch
+            //    entirely so a press-and-drag on an object draws a marquee instead.
+            const hit = forceMarquee ? null : adapter.hitTest(ctx.worldX, ctx.worldY);
             if (hit) {
               const ui = useUiStore.getState();
               if (ctx.modifiers.shift) {
@@ -451,6 +465,6 @@ export function useEricSelectTool(
           },
         },
       }),
-    [adapter, move, clone, cloneAdapter, structureResize, zoneResize, areaSelect, overlay],
+    [adapter, move, clone, cloneAdapter, structureResize, zoneResize, areaSelect, overlay, forceMarquee, opts?.toolId],
   );
 }

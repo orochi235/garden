@@ -99,7 +99,7 @@ Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so 
 ## ViewToolbar wire-up deferrals
 
 - `viewMode === 'zoom'` is not wired to a canvas tool. Toolbar button is visually selectable but produces only a one-time console warning. Design a click-to-zoom-in / shift-click-to-zoom-out tool (cursor: zoom-in / zoom-out) and register it under id `'zoom'` in `CanvasNewPrototype.tsx`. Double-click-on-button already triggers `computeFitView` reset via `ViewToolbar.handleZoomReset`.
-- `viewMode === 'select-area'` aliases to the regular select tool (no warning); `useEricSelectTool` already supports drag-marquee in empty space. If "select area" is meant to be a distinct mode (e.g. forces marquee even when starting on an object), add a separate tool or a flag on the select tool.
+- ~~`viewMode === 'select-area'` aliases to the regular select tool…~~ Resolved: `useEricSelectTool` now takes a `forceMarquee` flag; `CanvasNewPrototype.tsx` registers a second variant with id `eric-select-area` and routes it when `viewMode === 'select-area'`. Drag-from-body draws a marquee; click-on-empty still clears selection.
 - `viewMode === 'draw'` aliases to select unless a plotting tool is picked from the palette, at which point `useInsertTool` activates. A freehand / polygon draw tool that emits a new zone or annotation is still TODO.
 
 ## Editing

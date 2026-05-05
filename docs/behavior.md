@@ -18,6 +18,7 @@ Running list of intended application behaviors.
 - Holding Alt/Option while dragging a selection clones the selection at the drop point: originals stay in place, copies are inserted as new objects (undoable). A dim ghost of each prospective clone tracks the cursor during the gesture
 - Structure and zone moves snap to the garden's grid cell size; holding Alt while moving bypasses the snap. Plantings ignore this snap (their pose comes from the container's layout strategy)
 - Cmd/Ctrl+X cuts the selection: snapshots it onto the clipboard, deletes the originals, and clears the selection (undoable as a single batch)
+- In select-area mode, drag-from-body draws a marquee instead of moving the object.
 
 ## Cursor
 
