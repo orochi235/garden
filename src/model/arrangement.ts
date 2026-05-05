@@ -8,8 +8,9 @@
  * description into concrete positions.
  */
 import { computeSquareFoot } from './arrangementStrategies/squareFoot';
+import { computeHex } from './arrangementStrategies/hex';
 
-export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot';
+export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex';
 
 export interface RowsConfig {
   type: 'rows';
@@ -57,7 +58,14 @@ export interface SquareFootConfig {
   marginFt: number;
 }
 
-export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig;
+export interface HexConfig {
+  type: 'hex';
+  /** Center-to-center spacing, ft. Use 'auto' to derive from cultivars. */
+  pitchFt: number | 'auto';
+  marginFt: number;
+}
+
+export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig;
 
 export interface Slot {
   x: number;
@@ -92,6 +100,8 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
       return [];
     case 'square-foot':
       return computeSquareFoot(arrangement, bounds, _cultivars);
+    case 'hex':
+      return computeHex(arrangement, bounds, _cultivars);
   }
 }
 
@@ -192,5 +202,7 @@ export function defaultArrangement(type: ArrangementType): Arrangement {
       return { type: 'free' };
     case 'square-foot':
       return { type: 'square-foot', cellSizeFt: 1, marginFt: 0 };
+    case 'hex':
+      return { type: 'hex', pitchFt: 'auto', marginFt: 0.25 };
   }
 }
