@@ -6,32 +6,25 @@ Backlog of work that's been considered but not scheduled. Add new items at the b
 
 ### Repeatable putative-drag framework
 
-Right now the only drag operation that shows a putative ghost preview is seed-mode shift-fill. That preview is hardcoded:
-- Transient `seedFillPreview` on `uiStore` is shape-specific to "{trayId, cultivarId}"
-- `renderSeedlings` has a special branch that draws ghost seedlings in empty cells
-- `App.handleSeedDragBegin` does its own shift / pointer-move tracking
+**Phase 1 landed** — `Drag<TInput, TPutative>` interface, `useDragController` hook, `dragPreview` slot on `uiStore`, generic `dragPreviewLayer`, and the seed-mode sow-cell / fill-tray drag migrated. See `src/canvas/drag/` and the seed-fill-tray migration in `src/canvas/tools/usePaletteDropTool.ts`.
 
-All other drag operations (palette → garden, structure / zone resize, move, plot, area-select, sow-single-cell) commit on pointerup with no ghost preview, and each lives in its own ad-hoc hook under `src/canvas/hooks/`.
+Coexistence notes (Phase 1):
+- Legacy slots `seedFillPreview`, `seedMovePreview`, and `dragOverlay` remain on `uiStore`. The migrated seed-fill-tray drag mirrors its putative into `seedFillPreview` via `Drag.onPutativeChange` so the existing `seedling-fill-preview` render layer keeps drawing without changes.
+- The new `drag-preview` render layer is registered on `SeedStartingCanvasNewPrototype`; the seed-fill-tray drag's `renderPreview` is a no-op while the legacy fill-preview layer is the canonical renderer. Future-migrated drags will own their own rendering.
 
-Goal: every drag is computed putatively on each pointer / key change, and renders a ghost of its would-be result while in flight.
+**Phase 2+ TODO** — migrate remaining drags onto the framework, in this order:
+- palette → garden plant-drop (`useGardenPaletteDropTool`)
+- move (single + multi) — currently lives in weasel's `useMove` + `useEricSelectTool` move pipeline
+- resize — `useEricResizeTool`
+- plot (rectangle drag) — `useInsertTool`
+- area-select marquee — `useEricSelectTool` (already shows a marquee but it's separate from the framework)
+- seed-mode multi-seedling move (`useSeedlingMoveTool` + `seedMovePreview`)
 
-Sketch:
-
-1. Define a `Drag<TInput, TPutative>` interface:
-   - `read(pointerEvent, modifiers, viewport): TInput`
-   - `compute(input): TPutative`  (pure)
-   - `renderPreview(ctx, putative, viewport)`
-   - `commit(putative)`
-2. One transient `dragPreview: { kind, putative } | null` slot on `uiStore`. Replaces ad-hoc `seedFillPreview`, `dragOverlay`, etc.
-3. Central drag controller dispatches pointer / key events to the active `Drag` and writes `compute()` result into the slot.
-4. Render layers consult the slot and call the matching `renderPreview` for the active kind.
-5. Migrate existing drags one at a time. Order of attack:
-   - sow-cell + fill-tray (already half-implemented)
-   - palette → garden plant-drop
-   - move (single + multi)
-   - resize
-   - plot (rectangle drag)
-   - area-select (already shows a marquee, but it's separate)
+Each migration should:
+1. Define a `Drag` in `src/canvas/drag/<name>Drag.ts`.
+2. Move the drag's `renderPreview` to draw via the framework (and delete the corresponding legacy preview layer once safe).
+3. Drop the drag's bespoke document-level pointer pipeline in favor of `useDragController.start()`.
+4. Remove the corresponding legacy slot from `uiStore` once no consumer remains.
 
 Watch out for:
 - Modifier keys (shift, alt, cmd) need to update the preview without further pointer movement — the existing seed handler already has `keydown`/`keyup` listeners; that pattern generalizes.

@@ -26,6 +26,8 @@ import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
 import { useSowCellTool } from './tools/useSowCellTool';
 import { useFillTrayTool } from './tools/useFillTrayTool';
 import { usePaletteDropTool } from './tools/usePaletteDropTool';
+import { createDragPreviewLayer } from './drag/dragPreviewLayer';
+import { createSeedFillTrayDrag } from './drag/seedFillTrayDrag';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { createAllHandlesLayer } from './layers/selectionLayersWorld';
@@ -66,6 +68,7 @@ export function SeedStartingCanvasNewPrototype() {
   useUiStore((s) => s.hiddenSeedlingIds);
   useUiStore((s) => s.seedFillPreview);
   useUiStore((s) => s.seedMovePreview);
+  useUiStore((s) => s.dragPreview);
   useUiStore((s) => s.showSeedlingWarnings);
   useUiStore((s) => s.renderLayerVisibility);
   useHighlightTick();
@@ -96,9 +99,18 @@ export function SeedStartingCanvasNewPrototype() {
 
     const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
 
+    // Putative-drag preview layer — Phase 1 dispatches to the seed-fill-tray
+    // drag (whose renderPreview is a no-op since the legacy
+    // `seedling-fill-preview` layer keeps drawing via mirrored
+    // `seedFillPreview`). Phase 2+ migrations will plug in here.
+    const dragPreviewRegistry = {
+      [createSeedFillTrayDrag({ getCultivarId: () => null }).kind]:
+        createSeedFillTrayDrag({ getCultivarId: () => null }),
+    };
     const baseList: RenderLayer<unknown>[] = [
       ...createTrayLayers(getTrays),
       ...createSeedlingLayers(getTrays, getSeedlings, getSeedlingUi, getHighlight),
+      createDragPreviewLayer(dragPreviewRegistry as never),
     ];
     const debugLayers = createDebugLayers('seed-starting', () => useGardenStore.getState().garden);
     if (isDebugEnabled('handles')) {
