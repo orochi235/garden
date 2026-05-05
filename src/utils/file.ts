@@ -7,11 +7,28 @@ export function serializeGarden(garden: Garden): string {
 
 export function deserializeGarden(json: string): Garden {
   const data = JSON.parse(json);
-  if (!data.version || !data.name || data.widthFt == null || data.heightFt == null) {
+  migrateHeightToLength(data);
+  if (!data.version || !data.name || data.widthFt == null || data.lengthFt == null) {
     throw new Error('Invalid garden file: missing required fields');
   }
   if (!data.seedStarting) data.seedStarting = emptySeedStartingState();
   return data as Garden;
+}
+
+function migrateHeightToLength(data: Record<string, unknown>): void {
+  if (data.lengthFt == null && data.heightFt != null) {
+    data.lengthFt = data.heightFt;
+    delete data.heightFt;
+  }
+  for (const arr of [data.structures, data.zones]) {
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (item && typeof item === 'object' && (item as Record<string, unknown>).length == null && (item as Record<string, unknown>).height != null) {
+        (item as Record<string, unknown>).length = (item as Record<string, unknown>).height;
+        delete (item as Record<string, unknown>).height;
+      }
+    }
+  }
 }
 
 export function downloadGarden(garden: Garden): void {
