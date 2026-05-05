@@ -11,8 +11,9 @@ import { computeSquareFoot } from './arrangementStrategies/squareFoot';
 import { computeHex } from './arrangementStrategies/hex';
 import { computeBandedRows } from './arrangementStrategies/bandedRows';
 import { computeTrellisedBack } from './arrangementStrategies/trellisedBack';
+import { computeMulti } from './arrangementStrategies/multi';
 
-export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex' | 'banded-rows' | 'trellised-back';
+export type ArrangementType = 'rows' | 'grid' | 'ring' | 'single' | 'free' | 'square-foot' | 'hex' | 'banded-rows' | 'trellised-back' | 'multi';
 
 export interface RowsConfig {
   type: 'rows';
@@ -94,7 +95,27 @@ export interface TrellisedBackConfig {
   marginFt: number;
 }
 
-export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig | BandedRowsConfig | TrellisedBackConfig;
+/** Bed-local normalized rect: 0..1 in each dimension. */
+export interface NormalizedRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface MultiRegion {
+  /** Stable id; survives reflow when the bed is resized. */
+  id: string;
+  bounds: NormalizedRect;
+  arrangement: Arrangement;
+}
+
+export interface MultiConfig {
+  type: 'multi';
+  regions: MultiRegion[];
+}
+
+export type Arrangement = RowsConfig | GridConfig | RingConfig | SingleConfig | FreeConfig | SquareFootConfig | HexConfig | BandedRowsConfig | TrellisedBackConfig | MultiConfig;
 
 export interface Slot {
   x: number;
@@ -135,6 +156,8 @@ export function computeSlots(arrangement: Arrangement, bounds: ParentBounds, _cu
       return computeBandedRows(arrangement, bounds, _cultivars);
     case 'trellised-back':
       return computeTrellisedBack(arrangement, bounds, _cultivars);
+    case 'multi':
+      return computeMulti(arrangement, bounds, _cultivars);
   }
 }
 
@@ -241,5 +264,7 @@ export function defaultArrangement(type: ArrangementType): Arrangement {
       return { type: 'banded-rows', bands: [{ depthFraction: 0.5, pitchFt: 0.5 }, { depthFraction: 0.5, pitchFt: 1 }], marginFt: 0.25 };
     case 'trellised-back':
       return { type: 'trellised-back', trellisEdge: 'N', trellisDepthFt: 1, trellisPitchFt: 0.5, frontStrategy: 'rows', marginFt: 0.25 };
+    case 'multi':
+      return { type: 'multi', regions: [] };
   }
 }
