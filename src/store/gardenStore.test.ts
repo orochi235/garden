@@ -470,6 +470,39 @@ describe('selection rides on history', () => {
     void z1;
   });
 
+  it('cut via insert adapter removes originals and is a single undoable batch', async () => {
+    // TDD: cut = snapshot + delete in one applyBatch call (single history entry).
+    // Undoing cut restores both the zone and the prior selection.
+    const { createInsertAdapter } = await import('../canvas/adapters/insert');
+    const { createDeleteOp, createSetSelectionOp } = await import('@orochi235/weasel');
+
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, height: 4 });
+    const z1 = useGardenStore.getState().garden.zones[0].id;
+    useUiStore.getState().setSelection([z1]);
+
+    const adapter = createInsertAdapter();
+    // Snapshot the zone before deleting it (mirrors weasel useClipboard.cut).
+    // The snapshot would normally be stored in clipboard state; here we only
+    // test the delete side of the cut (the undo behavior).
+    adapter.snapshotSelection([z1]);
+    const ids = [z1];
+    const cutOps = [
+      ...ids.map((id) => createDeleteOp({ object: adapter.getObject(id)! })),
+      createSetSelectionOp({ from: ids, to: [] }),
+    ];
+    adapter.applyBatch!(cutOps, 'Cut');
+
+    // Zone is gone, selection cleared.
+    expect(useGardenStore.getState().garden.zones).toHaveLength(0);
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+
+    // Single undo step restores both the zone and the selection.
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.zones).toHaveLength(1);
+    expect(useGardenStore.getState().garden.zones[0].id).toBe(z1);
+    expect(useUiStore.getState().selectedIds).toEqual([z1]);
+  });
+
   it('paste-then-undo via insert adapter does not leave stale ids selected', async () => {
     // End-to-end coverage of the original bug: undoing a paste leaves the
     // (now-deleted) pasted ids selected. Routes through the same applyBatch
