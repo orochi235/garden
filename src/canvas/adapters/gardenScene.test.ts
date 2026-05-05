@@ -59,11 +59,13 @@ describe('gardenSceneAdapter', () => {
     const worldBefore = a.getPose(planting.id);
 
     let captured: Partial<{ parentId: string; x: number; y: number }> | null = null;
+    let capturedOpts: { skipRearrange?: boolean } | undefined;
     const orig = useGardenStore.getState().updatePlanting;
     useGardenStore.setState({
-      updatePlanting: (id, updates) => {
+      updatePlanting: (id, updates, opts) => {
         captured = { ...captured, ...updates };
-        orig(id, updates);
+        capturedOpts = opts;
+        orig(id, updates, opts);
       },
     });
     a.setParent(planting.id, bed2.id);
@@ -73,6 +75,31 @@ describe('gardenSceneAdapter', () => {
     // Local should be (worldBefore.x - bed2.x, worldBefore.y - bed2.y).
     expect(captured!.x).toBe(worldBefore.x - bed2.x);
     expect(captured!.y).toBe(worldBefore.y - bed2.y);
+    // Kit-driven reparent must pass skipRearrange so the explicit local coords
+    // survive and are not overwritten by rearrangePlantings.
+    expect(capturedOpts?.skipRearrange).toBe(true);
+  });
+
+  it('setParent preserves world position end-to-end (skipRearrange bypasses rearrangePlantings)', () => {
+    // Integration: planting is dropped at a specific world point near bed2.
+    // Even though bed2 has an arrangement, the world pose should be preserved.
+    const { bed, bed2, planting } = setup();
+    const a = createGardenSceneAdapter();
+
+    // Give bed2 a rows arrangement so rearrangePlantings would normally fire.
+    useGardenStore.getState().commitStructureUpdate(bed2.id, {
+      arrangement: { type: 'rows', spacingFt: 1, itemSpacingFt: 1, marginFt: 0.25 },
+    });
+
+    const worldBefore = a.getPose(planting.id);
+    a.setParent(planting.id, bed2.id);
+
+    // World pose after reparent should equal worldBefore (visual position preserved).
+    const worldAfter = a.getPose(planting.id);
+    expect(worldAfter.x).toBeCloseTo(worldBefore.x, 5);
+    expect(worldAfter.y).toBeCloseTo(worldBefore.y, 5);
+
+    void bed;
   });
 
   it('getChildren returns ids of plantings under a structure', () => {

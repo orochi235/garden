@@ -123,7 +123,9 @@ export function createGardenSceneAdapter(): GardenSceneAdapter {
           const world = plantingWorldPose(store.garden, node.data);
           const newParent = parentId ? getPlantingParent(store.garden, parentId) : undefined;
           const local = worldToLocalForParent(newParent ?? { x: 0, y: 0 }, world.x, world.y);
-          store.updatePlanting(id, { parentId: parentId ?? '', x: local.x, y: local.y });
+          // skipRearrange: the user dragged to a specific world point; preserve
+          // those local coords instead of letting rearrangePlantings overwrite them.
+          store.updatePlanting(id, { parentId: parentId ?? '', x: local.x, y: local.y }, { skipRearrange: true });
           return;
         }
         case 'structure':
