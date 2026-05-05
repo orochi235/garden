@@ -327,3 +327,52 @@ function pointInRegion(
     cell.yCenterIn <= r.yIn + r.lengthIn
   );
 }
+
+/**
+ * Estimate the placement-var count without building the full model. Mirrors the
+ * candidate-cell pitch logic in buildMipModel so the worker can decide whether
+ * to invoke the clustered solve path before paying the cost of model construction.
+ */
+export function estimatePlacementVars(input: OptimizationInput): number {
+  const { bed, plants, gridResolutionIn: g } = input;
+  const cols = Math.floor((bed.widthIn - 2 * bed.edgeClearanceIn) / g);
+  const rows = Math.floor((bed.lengthIn - 2 * bed.edgeClearanceIn) / g);
+
+  // Build the expanded plant list (one entry per copy)
+  const expanded: Array<{ footprintIn: number }> = [];
+  for (const p of plants) {
+    for (let k = 0; k < p.count; k++) {
+      expanded.push({ footprintIn: p.footprintIn });
+    }
+  }
+
+  // Calculate pitch for each plant copy
+  const plantPitch: number[] = expanded.map((p) =>
+    Math.max(1, Math.round(p.footprintIn / g / 2)),
+  );
+
+  let total = 0;
+  for (let pi = 0; pi < expanded.length; pi++) {
+    const stride = plantPitch[pi];
+    let candidateCells = 0;
+    for (let i = 0; i < cols; i++) {
+      if (i % stride !== 0) continue;
+      for (let j = 0; j < rows; j++) {
+        if (j % stride !== 0) continue;
+        const xCenter = bed.edgeClearanceIn + (i + 0.5) * g;
+        const yCenter = bed.edgeClearanceIn + (j + 0.5) * g;
+        const r = expanded[pi].footprintIn / 2;
+        if (
+          xCenter - r >= bed.edgeClearanceIn &&
+          xCenter + r <= bed.widthIn - bed.edgeClearanceIn &&
+          yCenter - r >= bed.edgeClearanceIn &&
+          yCenter + r <= bed.lengthIn - bed.edgeClearanceIn
+        ) {
+          candidateCells++;
+        }
+      }
+    }
+    total += candidateCells;
+  }
+  return total;
+}

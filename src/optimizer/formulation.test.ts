@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMipModel } from './formulation';
+import { buildMipModel, estimatePlacementVars } from './formulation';
 import type { OptimizationInput } from './types';
 import { DEFAULT_WEIGHTS } from './types';
 
@@ -59,5 +59,32 @@ describe('buildMipModel', () => {
     const m = buildMipModel(input);
     const auxNames = m.aux.map((a) => a.name);
     expect(auxNames.some((n) => n.startsWith('n_0_1'))).toBe(true);
+  });
+});
+
+describe('estimatePlacementVars', () => {
+  it('matches the actual model var count', () => {
+    const input: OptimizationInput = {
+      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      plants: [
+        { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null, climber: false },
+        { cultivarId: 'basil', count: 6, footprintIn: 6, heightIn: null, climber: false },
+      ],
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
+      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+    };
+    const estimated = estimatePlacementVars(input);
+    const actual = buildMipModel(input).vars.length;
+    expect(estimated).toBe(actual);
+  });
+
+  it('returns 0 when there are no plants', () => {
+    const input: OptimizationInput = {
+      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      plants: [],
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
+      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+    };
+    expect(estimatePlacementVars(input)).toBe(0);
   });
 });
