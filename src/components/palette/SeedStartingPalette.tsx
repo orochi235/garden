@@ -43,7 +43,8 @@ interface Props {
 }
 
 /** Build PaletteEntry list of cultivars whose resolved seedStarting.startable === true.
- *  When `showAll` is true, the startable gate is skipped (almanac filters still apply). */
+ *  When `showAll` is true, the startable gate AND the almanac filters are skipped — every
+ *  cultivar in the collection appears. */
 function buildSeedablePaletteEntries(
   cultivars: Cultivar[],
   filters: AlmanacFilters,
@@ -52,9 +53,11 @@ function buildSeedablePaletteEntries(
   const entries: PaletteEntry[] = [];
   for (const c of cultivars) {
     const species = getSpecies(c.speciesId);
-    const resolved = resolveSeedStarting(species?.seedStarting, c.seedStarting);
-    if (!showAll && !resolved.startable) continue;
-    if (!passesAlmanacFilters(c, species, filters)) continue;
+    if (!showAll) {
+      const resolved = resolveSeedStarting(species?.seedStarting, c.seedStarting);
+      if (!resolved.startable) continue;
+      if (!passesAlmanacFilters(c, species, filters)) continue;
+    }
     entries.push({
       id: c.id,
       name: c.name,
