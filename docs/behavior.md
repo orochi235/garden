@@ -195,7 +195,7 @@ Running list of intended application behaviors.
   selection). Tokens are parsed once at page load; reload to change them.
   Multiple tokens combine, e.g. `?debug=hitboxes,axes`.
 
-## Per-id selection-flash opacity (2026-05-04)
+## Per-id selection-flash opacity (2026-05-04; rAF tick wired 2026-05-04)
 
 - Selection-flash highlights pulse per-id rather than as a single
   aggregated `max()` opacity across the whole selection. Two simultaneously
@@ -205,6 +205,17 @@ Running list of intended application behaviors.
   `EricSceneUi.getOpacity(id)`; seed-starting wires it through a per-id
   `getHighlight(id)` callback that `createSeedlingLayers` reads directly
   from `useHighlightStore.computeOpacity`.
+- A single shared rAF tick (`startTickIfNeeded` in `highlightStore.ts`)
+  drives the animation loop: it bumps a Zustand `pulse` counter once per
+  frame while any flash or hover is active, causing subscribed canvas
+  components to re-render and re-sample each entity's opacity. The loop
+  self-terminates when both the flash map and the hover set are empty
+  (no busy-idle overhead). `useHighlightTick()` is the React hook that
+  mounts/unmounts consumer participation.
+- `getMaxOpacity()` on `useHighlightStore` computes `max(computeOpacity(id))`
+  across all active ids. A store subscriber keeps `uiStore.highlightOpacity`
+  in sync so single-channel consumers that don't iterate per-id stay
+  accurate without polling.
 
 ## Structure & zone drag bounds (2026-05-04)
 
