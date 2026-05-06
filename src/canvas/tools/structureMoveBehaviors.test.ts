@@ -4,6 +4,7 @@ import {
   detectStructureClash,
 } from './structureMoveBehaviors';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { createStructure } from '../../model/types';
 import { useUiStore } from '../../store/uiStore';
 import { createGardenSceneAdapter, type ScenePose } from '../adapters/gardenScene';
 import type { GestureContext } from '@orochi235/weasel';
@@ -108,6 +109,51 @@ describe('detectStructureClash', () => {
     const ctx = makeCtx([a.id], origin);
     behavior.onMove!(ctx, { x: 5, y: 5 });
     expect(useUiStore.getState().dragClashIds).toEqual([]);
+  });
+
+  it('multi-select group-drag: clamp shifts primary so secondary stays in bounds', () => {
+    // Two grouped structures: primary at (5, 5) and secondary at (15, 10).
+    // Garden is 20×20. Drag primary to the right; the secondary's right edge
+    // would otherwise leave bounds first. Clamp uses the union AABB and
+    // shifts the primary so the secondary lands at the right edge.
+    const a = createStructure({ type: 'patio', x: 5, y: 5, width: 3, length: 3, groupId: 'g1' });
+    const b = createStructure({ type: 'patio', x: 15, y: 10, width: 3, length: 3, groupId: 'g1' });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b] } }));
+    const adapter = createGardenSceneAdapter();
+    const behavior = clampStructureZoneToGardenBounds(adapter);
+
+    // Drag dx = +5: primary would go to (10,5) and secondary's right edge
+    // (15+5+3=23) would exceed widthFt=20 by 3.
+    const origin = new Map<string, ScenePose>([
+      [a.id, { x: 5, y: 5 }],
+      [b.id, { x: 15, y: 10 }],
+    ]);
+    const ctx = makeCtx([a.id, b.id], origin);
+    const result = behavior.onMove!(ctx, { x: 10, y: 5 });
+    expect(result).toBeTruthy();
+    // Union AABB right edge would be at 23; clamp shifts primary back by -3.
+    // Primary lands at (10 - 3, 5) = (7, 5).
+    expect((result as { pose: ScenePose }).pose).toEqual({ x: 7, y: 5 });
+  });
+
+  it('multi-select group-drag: clash detector flags non-dragged structure overlap on a secondary', () => {
+    // Three structures. Drag a + b together (grouped); c is a non-dragged
+    // bystander. Drag delta lands b on top of c — clash should report c.
+    const a = createStructure({ type: 'patio', x: 0, y: 0, width: 2, length: 2, groupId: 'g1' });
+    const b = createStructure({ type: 'patio', x: 5, y: 0, width: 2, length: 2, groupId: 'g1' });
+    const c = createStructure({ type: 'patio', x: 12, y: 0, width: 2, length: 2 });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c] } }));
+    const adapter = createGardenSceneAdapter();
+    const behavior = detectStructureClash(adapter);
+
+    const origin = new Map<string, ScenePose>([
+      [a.id, { x: 0, y: 0 }],
+      [b.id, { x: 5, y: 0 }],
+    ]);
+    const ctx = makeCtx([a.id, b.id], origin);
+    // Drag dx = +7: a goes to (7,0); b goes to (12,0) — overlaps c at (12,0).
+    behavior.onMove!(ctx, { x: 7, y: 0 });
+    expect(useUiStore.getState().dragClashIds).toEqual([c.id]);
   });
 
   it('clears on end', () => {

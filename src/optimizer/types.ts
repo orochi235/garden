@@ -49,6 +49,17 @@ export interface OptimizationInput {
   candidateCount: number;
   /** Minimum-difference threshold between candidates (cells, default 3). */
   diversityThreshold: number;
+  /**
+   * Maximum number of Web Workers the runner may spawn in parallel. The runner
+   * partitions the candidate batch across this many workers
+   * (`ceil(candidateCount / N)` candidates per worker). Default 1 — identical
+   * to legacy single-worker behavior.
+   *
+   * Note: when N > 1, no-good-cut diversity chains are independent within each
+   * sub-batch — workers cannot see each other's prior active vars. Set to 1 if
+   * cross-candidate diversity matters more than wall-clock.
+   */
+  concurrency?: number;
 }
 
 export interface OptimizerPlacement {
@@ -79,6 +90,18 @@ export interface OptimizationCandidate {
    * solves. Typically ≤ 0 because the two terms are penalties.
    */
   crossClusterScore?: number;
+  /**
+   * Diagnostic-only: cluster sub-bed rectangles used by the clustered solver,
+   * one per piece (post-split). Coordinates are in inches relative to the
+   * parent bed origin. Undefined for unified (non-clustered) solves. Consumed
+   * by debug overlays; does not affect placements or scoring.
+   */
+  clusterRegions?: Array<{
+    key: string;
+    offsetIn: { x: number; y: number };
+    widthIn: number;
+    lengthIn: number;
+  }>;
 }
 
 export interface OptimizationResult {

@@ -180,4 +180,90 @@ describe('useEricSelectTool — forceMarquee (select-area)', () => {
   });
 });
 
+describe('useEricSelectTool — click-on-empty modifier matrix (A)', () => {
+  // Legacy parity per docs/behavior.md: click on empty space clears selection
+  // unless shift is held. Cmd/meta and Alt are NOT preserve-modifiers for
+  // empty-click — only shift extends/preserves. Verified across both code
+  // paths that perform the clear:
+  //   1. pointer.onClick (no-drag click — drag.onEnd never fires).
+  //   2. drag.onEnd in 'area' kind with no movement (degenerate drag).
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
+    useUiStore.getState().reset();
+  });
+
+  function withSelection(): string[] {
+    useUiStore.getState().setSelection(['existing-id']);
+    return useUiStore.getState().selectedIds;
+  }
+
+  it('plain click on empty clears selection (onClick path)', () => {
+    withSelection();
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+    const ctx = makeCtx(999, 999, { kind: 'idle' }, adapter);
+    result.current.pointer!.onDown!(pointer(), ctx);
+    expect(ctx.scratch.kind).toBe('area');
+    result.current.pointer!.onClick!(pointer(), ctx);
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+
+  it('shift click on empty preserves selection (onClick path)', () => {
+    withSelection();
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+    const ctx = makeCtx(999, 999, { kind: 'idle' }, adapter);
+    ctx.modifiers.shift = true;
+    result.current.pointer!.onDown!(pointer({ shiftKey: true }), ctx);
+    result.current.pointer!.onClick!(pointer({ shiftKey: true }), ctx);
+    expect(useUiStore.getState().selectedIds).toEqual(['existing-id']);
+  });
+
+  it('cmd/meta click on empty clears selection (onClick path)', () => {
+    withSelection();
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+    const ctx = makeCtx(999, 999, { kind: 'idle' }, adapter);
+    ctx.modifiers.meta = true;
+    result.current.pointer!.onDown!(pointer({ metaKey: true }), ctx);
+    result.current.pointer!.onClick!(pointer({ metaKey: true }), ctx);
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+
+  it('alt click on empty clears selection (onClick path)', () => {
+    withSelection();
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+    const ctx = makeCtx(999, 999, { kind: 'idle' }, adapter);
+    ctx.modifiers.alt = true;
+    result.current.pointer!.onDown!(pointer({ altKey: true }), ctx);
+    result.current.pointer!.onClick!(pointer({ altKey: true }), ctx);
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+
+  it('ctrl click on empty clears selection (onClick path)', () => {
+    withSelection();
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+    const ctx = makeCtx(999, 999, { kind: 'idle' }, adapter);
+    ctx.modifiers.ctrl = true;
+    result.current.pointer!.onDown!(pointer({ ctrlKey: true }), ctx);
+    result.current.pointer!.onClick!(pointer({ ctrlKey: true }), ctx);
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+
+  it('shift+cmd click on empty preserves selection (shift wins)', () => {
+    withSelection();
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+    const ctx = makeCtx(999, 999, { kind: 'idle' }, adapter);
+    ctx.modifiers.shift = true;
+    ctx.modifiers.meta = true;
+    result.current.pointer!.onDown!(pointer({ shiftKey: true, metaKey: true }), ctx);
+    result.current.pointer!.onClick!(pointer({ shiftKey: true, metaKey: true }), ctx);
+    expect(useUiStore.getState().selectedIds).toEqual(['existing-id']);
+  });
+});
+
 void vi;

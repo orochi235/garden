@@ -38,6 +38,7 @@ import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
 import { createOptimizerGhostLayer } from './layers/optimizerGhostLayer';
+import { createOptimizerClusterRegionsLayer } from './layers/optimizerClusterRegionsLayer';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
@@ -141,6 +142,19 @@ function GardenCanvasNewPrototype() {
         getZones,
         getPlantings,
       }));
+    }
+    if (isDebugEnabled('clusters')) {
+      debugLayers.push(createOptimizerClusterRegionsLayer(
+        getStructures,
+        () => {
+          const u = useUiStore.getState();
+          return {
+            result: u.optimizerResult,
+            selectedCandidate: u.optimizerSelectedCandidate,
+            structureId: u.optimizerResultStructureId,
+          };
+        },
+      ));
     }
     // Publish the full set (base + debug) so the sidebar Render Layers panel
     // can list whatever's actually being drawn. Done before wrapping so the

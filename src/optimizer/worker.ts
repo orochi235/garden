@@ -223,6 +223,12 @@ async function solveClustered(
     input.plants,
     input.weights,
   );
+  const clusterRegions = subBeds.map((sb) => ({
+    key: sb.cluster.key,
+    offsetIn: { x: sb.offsetIn.x, y: sb.offsetIn.y },
+    widthIn: sb.bed.widthIn,
+    lengthIn: sb.bed.lengthIn,
+  }));
   return {
     placements: allPlacements,
     score: scoreSum,
@@ -230,6 +236,7 @@ async function solveClustered(
     gap: worstGap,
     solveMs: performance.now() - solveStart,
     crossClusterScore,
+    clusterRegions,
   };
 }
 

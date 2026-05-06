@@ -25,6 +25,7 @@ Without these, the kit is essentially "axis-aligned-rectangle kit."
 
 ## Tier 1.5 — small additive hooks
 
+- **`MoveBehavior.onMoveAll(ctx)` hook.** Today `useMove` invokes `MoveBehavior.onMove` only on the primary id; secondaries share the primary's delta. Consumers that need to inspect or transform every dragged id (e.g. eric's union-AABB clamp + per-secondary clash detection in `structureMoveBehaviors.ts`) currently reconstruct each secondary's pose from `ctx.origin + (proposed.primary - origin.primary)`. Works for shared-delta translation but blocks per-id transforms (per-member snap, per-id constraints). Add an opt-in `onMoveAll(ctx)` callback that fires once per move with the full dragged set; behaviors choose `onMove` vs `onMoveAll` based on need.
 - **Selection-driven action hooks** still pending (others done):
   - Clipboard key wrappers (Ctrl+C/X/V) — `useClipboard` is logic-only today; an action-level wrapper that binds keys mirrors `useDeleteAction`.
   - `useGroupAction` / `useUngroupAction` (Ctrl+G / Ctrl+Shift+G) — wraps `createGroupOp` / `dissolveGroupOp`; ships alongside structural groups.

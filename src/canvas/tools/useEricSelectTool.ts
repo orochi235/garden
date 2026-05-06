@@ -131,6 +131,16 @@ export function useEricSelectTool(
   },
 ): Tool<SelectScratch> {
   const forceMarquee = opts?.forceMarquee ?? false;
+  // NOTE (multi-select group-drag, weasel limitation):
+  // weasel's `useMove` invokes `MoveBehavior.onMove` only on the primary id;
+  // secondaries inherit the primary's delta. Today's clamp/clash behaviors
+  // (`clampStructureZoneToGardenBounds`, `detectStructureClash`) compensate
+  // by computing the union AABB and per-secondary rects from
+  // `ctx.origin + (proposed.primary - origin.primary)`. That works for
+  // shared-delta translation but cannot express per-id transforms (e.g.
+  // per-member snap). A proper fix is a kit-side `behavior.onMoveAll(ctx)`
+  // hook that addresses every dragged id directly. Tracked in
+  // `docs/canvas-kit/TODO.md` (Tier 1.5).
   const moveBehaviors = useMemo<MoveBehavior<ScenePose>[]>(
     () => [
       snapStructureZoneToGrid(adapter),
