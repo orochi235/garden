@@ -42,3 +42,4 @@ drag-lab.png
 toolbar-*.png
 .claude/worktrees/
 .cache
+.claude/scheduled_tasks.lock
