@@ -70,23 +70,33 @@ export function App() {
   }, [appMode]);
 
   useEffect(() => {
-    // TODO: re-enable autosave loading once blank-canvas bug is fixed
-    fetch(`${import.meta.env.BASE_URL}default.garden`)
-      .then((r) => r.text())
-      .then((t) => loadGarden(deserializeGarden(t)))
-      .catch(() => {})
-      .finally(() => {
-        if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
-        const persisted = loadPersistedCollection<Cultivar[]>();
-        if (persisted && persisted.length > 0) {
-          setCollection(persisted);
-        } else if (
-          (useGardenStore.getState().garden.collection ?? []).length === 0 &&
-          INITIAL_PARAMS.toString() === ''
-        ) {
-          setShowWelcome(true);
-        }
-      });
+    // The garden store hydrates synchronously from localStorage during
+    // its `create()` call (see initialGarden()), so first render already
+    // shows the user's persisted garden — no flash. We only need the
+    // network seed for first-time visitors with no autosave.
+    const hasAutosave =
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem('garden-planner-autosave') != null;
+
+    const seedPromise = hasAutosave
+      ? Promise.resolve()
+      : fetch(`${import.meta.env.BASE_URL}default.garden`)
+          .then((r) => r.text())
+          .then((t) => loadGarden(deserializeGarden(t)))
+          .catch(() => {});
+
+    seedPromise.finally(() => {
+      if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
+      const persisted = loadPersistedCollection<Cultivar[]>();
+      if (persisted && persisted.length > 0) {
+        setCollection(persisted);
+      } else if (
+        (useGardenStore.getState().garden.collection ?? []).length === 0 &&
+        INITIAL_PARAMS.toString() === ''
+      ) {
+        setShowWelcome(true);
+      }
+    });
   }, [loadGarden, setCollection]);
 
   useEffect(() => {
