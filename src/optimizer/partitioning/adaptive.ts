@@ -1,4 +1,6 @@
+import { diversitySpreadPartitioner } from './diversitySpread';
 import { familyCompanionPartitioner } from './familyCompanion';
+import { pairedMirrorPartitioner } from './pairedMirror';
 import type { Cluster, OptimizationInput } from '../types';
 
 /**
@@ -15,25 +17,39 @@ export type Partitioner = (input: OptimizationInput) => Cluster[] | null;
  * Dispatches to the appropriate partitioner based on a quick inspection of
  * the input.
  *
- * Current heuristics:
- * - **Homogeneous bypass**: if `familyCompanionPartitioner` would produce
- *   exactly one cluster (all plants share a category, or all are
- *   uncategorized), return `null` so the caller skips clustering overhead
- *   and solves the input as-is via `solveUnified`. Splitting it into a
- *   single sub-bed equal to the parent and re-running the per-cluster
- *   pipeline buys nothing.
- * - **Otherwise**: fall back to `familyCompanionPartitioner`.
+ * Dispatch order (first match wins; partitioners that don't apply return
+ * null and we fall through):
+ *   1. **Homogeneous bypass** — if `familyCompanionPartitioner` would
+ *      produce exactly one cluster, return `null` so the caller skips the
+ *      clustering pipeline entirely and runs `solveUnified`.
+ *   2. **Paired-mirror** — 2–3 cultivars with roughly equal counts collapse
+ *      into a single cluster so the MILP can mirror/interleave them.
+ *   3. **Diversity-spread** — when category bucketing yields ≥4 tiny
+ *      clusters (each <5 plants), merge them so the same-species spreading
+ *      penalty acts across the whole sub-bed.
+ *   4. **Default** — `familyCompanionPartitioner` (category buckets).
  *
- * Deferred dispatches (still TODO):
- * - **Paired-mirror**: pairs of complementary plants (e.g. 2 cultivars × 4
- *   each) might benefit from a partitioner that puts the pair in the same
- *   cluster.
- * - **Diversity-spread**: many small clusters that all individually fit
- *   should be batched into a single "diversity" cluster so the
- *   same-species spreading penalty can act across them.
+ * Each speculative partitioner (2 and 3) is biased toward returning `null`
+ * on uncertainty: they fall through to the default rather than risk
+ * over-clustering. Antagonistic plants or clusters with genuinely different
+ * shading needs should not be merged — both partitioners cap their match
+ * conditions tightly to avoid that.
  */
 export const adaptivePartitioner: Partitioner = (input) => {
+  // 1. Homogeneous bypass (use base partitioner since paired-mirror would
+  // also collapse a single cultivar to one cluster, but bypass means "skip
+  // the whole pipeline" which is a different signal).
   const baseClusters = familyCompanionPartitioner(input);
   if (baseClusters.length <= 1) return null;
+
+  // 2. Paired-mirror: small N, balanced counts.
+  const paired = pairedMirrorPartitioner(input);
+  if (paired) return paired;
+
+  // 3. Diversity-spread: many tiny clusters.
+  const diversity = diversitySpreadPartitioner(input);
+  if (diversity) return diversity;
+
+  // 4. Default: category buckets.
   return baseClusters;
 };

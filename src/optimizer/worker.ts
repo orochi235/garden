@@ -2,7 +2,7 @@ import { buildMipModel, estimatePlacementVars } from './formulation';
 import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
 import { adaptivePartitioner } from './partitioning/adaptive';
-import { proportionalStripAllocator } from './allocation/proportionalStrip';
+import { adaptiveAllocator } from './allocation/adaptive';
 import { refineClusterLayout } from './scoring/postHocRefine';
 import type { MipModel } from './formulation';
 import type {
@@ -148,7 +148,7 @@ async function solveClustered(
     console.info('[optimizer] candidate', n, 'adaptive bypass: single-cluster input → solveUnified');
     return solveUnified(input, n, priorActiveByKey, onProgress, isCancelled);
   }
-  const baseSubBeds = proportionalStripAllocator(input.bed, baseClusters);
+  const baseSubBeds = adaptiveAllocator(input.bed, baseClusters);
   const subBeds = splitOversizedSubBeds(baseSubBeds, input);
   const clusters = subBeds.map((s) => s.cluster);
 

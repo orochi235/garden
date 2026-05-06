@@ -32,10 +32,12 @@ describe('adaptivePartitioner', () => {
     expect(adaptivePartitioner(input)).toBeNull();
   });
 
-  it('returns clusters as today for mixed-category input', () => {
+  it('returns family-companion clusters for mixed-category input that does not match paired-mirror or diversity-spread', () => {
+    // Lopsided counts (8 + 1) reject paired-mirror; the large 8-plant cluster
+    // rejects diversity-spread. → falls through to family-companion default.
     const input = makeInput([
-      { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null, category: 'vegetables' },
-      { cultivarId: 'basil', count: 4, footprintIn: 6, heightIn: null, category: 'herbs' },
+      { cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'basil', count: 1, footprintIn: 6, heightIn: null, category: 'herbs' },
     ]);
     const clusters = adaptivePartitioner(input);
     expect(clusters).not.toBeNull();
@@ -50,5 +52,46 @@ describe('adaptivePartitioner', () => {
       { cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, category: 'vegetables' },
     ]);
     expect(adaptivePartitioner(input)).toBeNull();
+  });
+
+  it('uses paired-mirror partitioner for 2 cultivars × 4 each across categories', () => {
+    // Even though categories differ, the paired-mirror partitioner collapses
+    // them into one cluster so the MILP can interleave them.
+    const input = makeInput([
+      { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'basil', count: 4, footprintIn: 6, heightIn: null, category: 'herbs' },
+    ]);
+    const clusters = adaptivePartitioner(input);
+    expect(clusters).not.toBeNull();
+    expect(clusters!.length).toBe(1);
+    expect(clusters![0].key).toBe('paired-mirror');
+  });
+
+  it('uses diversity-spread partitioner when 4+ tiny clusters appear', () => {
+    const input = makeInput([
+      { cultivarId: 'a', count: 2, footprintIn: 8, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'b', count: 2, footprintIn: 8, heightIn: null, category: 'herbs' },
+      { cultivarId: 'c', count: 2, footprintIn: 8, heightIn: null, category: 'flowers' },
+      { cultivarId: 'd', count: 2, footprintIn: 8, heightIn: null, category: 'fruit' },
+    ]);
+    const clusters = adaptivePartitioner(input);
+    expect(clusters).not.toBeNull();
+    expect(clusters!.length).toBe(1);
+    expect(clusters![0].key).toBe('diversity');
+  });
+
+  it('falls back to family-companion default for typical mixed input', () => {
+    // 3 categories, one large cluster (8) → no paired-mirror (lopsided),
+    // no diversity-spread (large cluster present) → default.
+    const input = makeInput([
+      { cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'basil', count: 2, footprintIn: 6, heightIn: null, category: 'herbs' },
+      { cultivarId: 'marigold', count: 2, footprintIn: 6, heightIn: null, category: 'flowers' },
+    ]);
+    const clusters = adaptivePartitioner(input);
+    expect(clusters).not.toBeNull();
+    expect(clusters!.length).toBe(3);
+    const keys = clusters!.map((c) => c.key).sort();
+    expect(keys).toEqual(['flowers', 'herbs', 'vegetables']);
   });
 });
