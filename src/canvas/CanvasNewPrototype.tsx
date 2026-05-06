@@ -33,6 +33,8 @@ import { useEricCycleTool } from './tools/useEricCycleTool';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
 import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
+import { createDragPreviewLayer } from './drag/dragPreviewLayer';
+import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
 import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
@@ -64,6 +66,7 @@ function GardenCanvasNewPrototype() {
   useUiStore((s) => s.showFootprintCircles);
   useUiStore((s) => s.optimizerResult);
   useUiStore((s) => s.optimizerSelectedCandidate);
+  useUiStore((s) => s.dragPreview);
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
 
@@ -115,10 +118,18 @@ function GardenCanvasNewPrototype() {
       };
     };
 
+    // Putative-drag preview layer — Phase 2 dispatches to the
+    // garden-palette-plant drag (cursor-following ghost during palette →
+    // garden plantings drop). Other migrated drags will plug in here.
+    const dragPreviewRegistry = {
+      [createGardenPaletteDrag({ getEntry: () => null }).kind]:
+        createGardenPaletteDrag({ getEntry: () => null }),
+    };
     const baseList: RenderLayer<unknown>[] = [
       ...createZoneLayers(getZones, getUi),
       ...createStructureLayers(getStructures, getUi),
       ...createPlantingLayers(getPlantings, getZones, getStructures, getUi),
+      createDragPreviewLayer(dragPreviewRegistry as never),
       createOptimizerGhostLayer(
         getStructures,
         () => {

@@ -180,37 +180,6 @@ describe('uiStore', () => {
     });
   });
 
-  describe('dragOverlay', () => {
-    it('starts as null', () => {
-      expect(useUiStore.getState().dragOverlay).toBeNull();
-    });
-
-    it('can be set and cleared', () => {
-      const overlay = {
-        layer: 'plantings' as const,
-        objects: [{ id: 'p1', parentId: 's1', cultivarId: 'tomato', x: 1, y: 2, label: 'Tomato', icon: null }],
-        hideIds: ['p1'],
-        snapped: false,
-      };
-      useUiStore.getState().setDragOverlay(overlay);
-      expect(useUiStore.getState().dragOverlay).toEqual(overlay);
-
-      useUiStore.getState().clearDragOverlay();
-      expect(useUiStore.getState().dragOverlay).toBeNull();
-    });
-
-    it('is cleared on reset', () => {
-      useUiStore.getState().setDragOverlay({
-        layer: 'structures',
-        objects: [],
-        hideIds: [],
-        snapped: false,
-      });
-      useUiStore.getState().reset();
-      expect(useUiStore.getState().dragOverlay).toBeNull();
-    });
-  });
-
   describe('seed-starting view signals', () => {
     it('seedStartingViewResetTick starts at 0 and bumps', () => {
       useUiStore.getState().reset();

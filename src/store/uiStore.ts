@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Planting, Structure, Zone, LayerId } from '../model/types';
+import type { LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 import type { Season } from '../model/species';
 import type { CellSize } from '../model/seedStarting';
@@ -20,13 +20,6 @@ export interface AlmanacFilters {
 export type ViewMode = 'select' | 'select-area' | 'pan' | 'zoom' | 'draw';
 export type LabelMode = 'all' | 'active-layer' | 'selection';
 export type AppMode = 'garden' | 'seed-starting';
-
-export interface DragOverlay {
-  layer: 'plantings' | 'structures' | 'zones';
-  objects: (Planting | Structure | Zone)[];
-  hideIds: string[];
-  snapped: boolean;
-}
 
 export interface ResizeOverlayUi {
   id: string;
@@ -76,7 +69,6 @@ interface UiStore {
   plantIconScale: number;
   layerFlashCounter: number;
   viewMode: ViewMode;
-  dragOverlay: DragOverlay | null;
   /**
    * Transient overlap-clash signal populated by `useEricSelectTool` while a
    * structure drag is in flight. Holds the ids of non-dragging structures
@@ -116,10 +108,10 @@ interface UiStore {
     | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean }
     | null;
   /**
-   * Generic putative-drag preview slot — Phase 1 of the framework defined in
+   * Generic putative-drag preview slot for the framework defined in
    * `src/canvas/drag/putativeDrag.ts`. Coexists with the legacy
-   * `seedFillPreview`, `seedMovePreview`, and `dragOverlay` slots until those
-   * drags are migrated. See `docs/TODO.md` "Repeatable putative-drag framework".
+   * `seedFillPreview` and `seedMovePreview` slots until those drags are
+   * migrated. See `docs/TODO.md` "Repeatable putative-drag framework".
    */
   dragPreview: ActiveDragPreview | null;
   /** Multi-seedling move preview: ghosted icons in their resolved target cells. */
@@ -169,8 +161,6 @@ interface UiStore {
   setHiddenSeedlingIds: (ids: string[]) => void;
   setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
   resetAlmanacFilters: () => void;
-  setDragOverlay: (overlay: DragOverlay) => void;
-  clearDragOverlay: () => void;
   setDragClashIds: (ids: string[]) => void;
   setResizeOverlay: (overlay: ResizeOverlayUi | null) => void;
   setInsertOverlay: (overlay: InsertOverlayUi | null) => void;
@@ -246,7 +236,6 @@ function defaultState() {
     plantIconScale: 1,
     layerFlashCounter: 0,
     viewMode: 'select' as ViewMode,
-    dragOverlay: null as DragOverlay | null,
     dragClashIds: [] as string[],
     resizeOverlay: null as ResizeOverlayUi | null,
     insertOverlay: null as InsertOverlayUi | null,
@@ -279,8 +268,6 @@ function defaultState() {
 
 export const useUiStore = create<UiStore>((set) => ({
   ...defaultState(),
-  setDragOverlay: (overlay) => set({ dragOverlay: overlay }),
-  clearDragOverlay: () => set({ dragOverlay: null }),
   setDragClashIds: (ids) => set({ dragClashIds: ids }),
   setResizeOverlay: (overlay) => set({ resizeOverlay: overlay }),
   setInsertOverlay: (overlay) => set({ insertOverlay: overlay }),

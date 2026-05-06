@@ -68,6 +68,16 @@ const zoneEntry: PaletteEntry = {
   color: '#5a3d2b',
 };
 
+const plantingEntry: PaletteEntry = {
+  id: 'tomato',
+  name: 'Tomato',
+  category: 'plantings',
+  type: 'plant',
+  defaultWidth: 1,
+  defaultLength: 1,
+  color: '#e63946',
+};
+
 describe('useGardenPaletteDropTool', () => {
   let container: HTMLDivElement;
 
@@ -85,7 +95,7 @@ describe('useGardenPaletteDropTool', () => {
   afterEach(() => {
     container.remove();
     useUiStore.getState().setPalettePointerPayload(null);
-    useUiStore.getState().clearDragOverlay();
+    useUiStore.getState().setDragPreview(null);
   });
 
   it('does nothing while no palette payload is armed', () => {
@@ -123,7 +133,6 @@ describe('useGardenPaletteDropTool', () => {
     expect(structs).toHaveLength(1);
     expect(structs[0].type).toBe('raised-bed');
     expect(useUiStore.getState().palettePointerPayload).toBeNull();
-    expect(useUiStore.getState().dragOverlay).toBeNull();
   });
 
   it('commits a zone on release', () => {
@@ -138,7 +147,7 @@ describe('useGardenPaletteDropTool', () => {
     expect(useUiStore.getState().palettePointerPayload).toBeNull();
   });
 
-  it('clears overlay and payload on cancel without committing', () => {
+  it('clears payload on cancel without committing', () => {
     setupHook(container);
     const pe = new Event('pointerdown') as PointerEvent;
     Object.assign(pe, { clientX: 100, clientY: 100, pointerId: 1, shiftKey: false });
@@ -148,7 +157,6 @@ describe('useGardenPaletteDropTool', () => {
 
     expect(useGardenStore.getState().garden.structures).toHaveLength(0);
     expect(useUiStore.getState().palettePointerPayload).toBeNull();
-    expect(useUiStore.getState().dragOverlay).toBeNull();
   });
 
   it('reads zoom/pan from uiStore (regression: minimal-scope refactor)', () => {
@@ -159,6 +167,80 @@ describe('useGardenPaletteDropTool', () => {
     expect(typeof ui.zoom).toBe('number');
     expect(typeof ui.panX).toBe('number');
     expect(typeof ui.panY).toBe('number');
+  });
+
+  describe('plantings — putative-drag framework path', () => {
+    function addFreeZone() {
+      // Add a zone at world (0,0)..(8,8) and force `arrangement: null` so
+      // `getPlantingPosition` falls into the cursor-driven branch (different
+      // cursor → different snapped position).
+      useGardenStore.getState().addZone({
+        x: 0,
+        y: 0,
+        width: 8,
+        length: 8,
+      });
+      const z = useGardenStore.getState().garden.zones[0];
+      useGardenStore.getState().updateZone(z.id, { arrangement: null });
+    }
+
+    it('writes dragPreview as the pointer moves and clears it on commit', () => {
+      setupHook(container);
+      addFreeZone();
+      const pe = new Event('pointerdown') as PointerEvent;
+      Object.assign(pe, { clientX: 60, clientY: 60, pointerId: 1, shiftKey: false });
+      useUiStore.getState().setPalettePointerPayload({ entry: plantingEntry, pointerEvent: pe });
+
+      // Cross the activation threshold over the container.
+      dispatchPointer('pointermove', { clientX: 90, clientY: 90 });
+      const slotAfterMove = useUiStore.getState().dragPreview;
+      expect(slotAfterMove).not.toBeNull();
+      expect(slotAfterMove?.kind).toBe('garden-palette-plant');
+
+      // Move to a meaningfully different spot — putative pose updates.
+      // (60 px = 2 ft at zoom=30; large enough to land in a different cell.)
+      dispatchPointer('pointermove', { clientX: 180, clientY: 180 });
+      const slotAfterSecondMove = useUiStore.getState().dragPreview;
+      expect(slotAfterSecondMove).not.toBeNull();
+      const before = slotAfterMove?.putative as { x: number; y: number };
+      const after = slotAfterSecondMove?.putative as { x: number; y: number };
+      expect(after.x !== before.x || after.y !== before.y).toBe(true);
+
+      // Release commits a planting and clears the slot.
+      dispatchPointer('pointerup', { clientX: 180, clientY: 180 });
+      expect(useUiStore.getState().dragPreview).toBeNull();
+      const plantings = useGardenStore.getState().garden.plantings;
+      expect(plantings).toHaveLength(1);
+      expect(plantings[0].cultivarId).toBe('tomato');
+      expect(useUiStore.getState().palettePointerPayload).toBeNull();
+    });
+
+    it('cancel clears the preview without committing', () => {
+      setupHook(container);
+      addFreeZone();
+      const pe = new Event('pointerdown') as PointerEvent;
+      Object.assign(pe, { clientX: 60, clientY: 60, pointerId: 1, shiftKey: false });
+      useUiStore.getState().setPalettePointerPayload({ entry: plantingEntry, pointerEvent: pe });
+      dispatchPointer('pointermove', { clientX: 90, clientY: 90 });
+      expect(useUiStore.getState().dragPreview).not.toBeNull();
+      dispatchPointer('pointercancel', { clientX: 90, clientY: 90 });
+      expect(useUiStore.getState().dragPreview).toBeNull();
+      expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
+      expect(useUiStore.getState().palettePointerPayload).toBeNull();
+    });
+
+    it('drop outside any container/zone does not commit', () => {
+      setupHook(container);
+      // No container added.
+      const pe = new Event('pointerdown') as PointerEvent;
+      Object.assign(pe, { clientX: 60, clientY: 60, pointerId: 1, shiftKey: false });
+      useUiStore.getState().setPalettePointerPayload({ entry: plantingEntry, pointerEvent: pe });
+      dispatchPointer('pointermove', { clientX: 90, clientY: 90 });
+      // No parent under cursor → putative is null.
+      expect(useUiStore.getState().dragPreview).toBeNull();
+      dispatchPointer('pointerup', { clientX: 90, clientY: 90 });
+      expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
+    });
   });
 
   it('does not activate without crossing the threshold (sub-threshold up = no commit)', () => {

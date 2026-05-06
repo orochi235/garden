@@ -13,7 +13,7 @@ Coexistence notes (Phase 1):
 - The new `drag-preview` render layer is registered on `SeedStartingCanvasNewPrototype`; the seed-fill-tray drag's `renderPreview` is a no-op while the legacy fill-preview layer is the canonical renderer. Future-migrated drags will own their own rendering.
 
 **Phase 2+ TODO** — migrate remaining drags onto the framework, in this order:
-- palette → garden plant-drop (`useGardenPaletteDropTool`)
+- ~~palette → garden plant-drop (`useGardenPaletteDropTool`)~~
 - move (single + multi) — currently lives in weasel's `useMove` + `useEricSelectTool` move pipeline
 - resize — `useEricResizeTool`
 - plot (rectangle drag) — `useInsertTool`
