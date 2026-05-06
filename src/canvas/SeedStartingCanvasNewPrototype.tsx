@@ -29,6 +29,7 @@ import { useFillTrayTool } from './tools/useFillTrayTool';
 import { usePaletteDropTool } from './tools/usePaletteDropTool';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createSeedFillTrayDrag } from './drag/seedFillTrayDrag';
+import { createSeedlingMoveDrag } from './drag/seedlingMoveDrag';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { createAllHandlesLayer } from './layers/selectionLayersWorld';
@@ -68,7 +69,6 @@ export function SeedStartingCanvasNewPrototype() {
   useUiStore((s) => s.selectedIds);
   useUiStore((s) => s.hiddenSeedlingIds);
   useUiStore((s) => s.seedFillPreview);
-  useUiStore((s) => s.seedMovePreview);
   useUiStore((s) => s.dragPreview);
   useUiStore((s) => s.showSeedlingWarnings);
   useUiStore((s) => s.renderLayerVisibility);
@@ -94,7 +94,6 @@ export function SeedStartingCanvasNewPrototype() {
         selectedIds: u.selectedIds,
         hiddenSeedlingIds: u.hiddenSeedlingIds,
         fillPreview: u.seedFillPreview,
-        movePreview: u.seedMovePreview,
       };
     };
 
@@ -107,6 +106,7 @@ export function SeedStartingCanvasNewPrototype() {
     const dragPreviewRegistry = {
       [createSeedFillTrayDrag({ getCultivarId: () => null }).kind]:
         createSeedFillTrayDrag({ getCultivarId: () => null }),
+      [createSeedlingMoveDrag().kind]: createSeedlingMoveDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createTrayLayers(getTrays),

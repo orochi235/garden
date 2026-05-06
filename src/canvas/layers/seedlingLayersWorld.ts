@@ -57,18 +57,11 @@ export interface SeedFillPreview {
   replace?: boolean;
 }
 
-export interface SeedMovePreview {
-  trayId: string;
-  cells: Array<{ row: number; col: number; cultivarId: string; bumped: boolean }>;
-  feasible: boolean;
-}
-
 export interface SeedlingLayerUi {
   showWarnings: boolean;
   selectedIds: string[];
   hiddenSeedlingIds: string[];
   fillPreview: SeedFillPreview | null;
-  movePreview: SeedMovePreview | null;
 }
 
 export type GetSeedlings = () => Seedling[];
@@ -212,56 +205,6 @@ function drawFillPreview(
   ctx.restore();
 }
 
-function drawMovePreview(
-  ctx: CanvasRenderingContext2D,
-  tray: Tray,
-  preview: SeedMovePreview,
-  view: View,
-): void {
-  if (preview.trayId !== tray.id || preview.cells.length === 0) return;
-  const p = tray.cellPitchIn;
-  const off = trayInteriorOffsetIn(tray);
-  const radius = (p * 0.85) / 2;
-
-  ctx.save();
-  ctx.globalAlpha = preview.feasible ? 0.6 : 0.35;
-  for (const m of preview.cells) {
-    const cultivar = getCultivar(m.cultivarId);
-    if (!cultivar) continue;
-    const cx = off.x + m.col * p + p / 2;
-    const cy = off.y + m.row * p + p / 2;
-    ctx.save();
-    ctx.translate(cx, cy);
-    renderPlant(ctx, cultivar.id, radius, cultivar.color);
-    ctx.restore();
-    if (m.bumped) {
-      ctx.save();
-      ctx.strokeStyle = '#d4a55a';
-      ctx.lineWidth = px(view, 1.5);
-      ctx.setLineDash([px(view, 4), px(view, 3)]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius + px(view, 2.5), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
-  }
-  if (!preview.feasible) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(220, 60, 60, 0.7)';
-    ctx.lineWidth = px(view, 2);
-    for (const m of preview.cells) {
-      const cx = off.x + m.col * p + p / 2;
-      const cy = off.y + m.row * p + p / 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius + px(view, 2.5), 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-  ctx.restore();
-}
-
 export function createSeedlingLayers(
   getTrays: GetTrays,
   getSeedlings: GetSeedlings,
@@ -302,18 +245,6 @@ export function createSeedlingLayers(
         if (!ui.fillPreview) return;
         for (const tray of getTrays()) {
           withTrayTransform(ctx, tray, () => drawFillPreview(ctx, tray, ui.fillPreview!, ui.showWarnings, view));
-        }
-      },
-    },
-    {
-      id: 'seedling-move-preview',
-      label: 'Seedling Move Preview',
-      alwaysOn: true,
-      draw(ctx, _data, view) {
-        const ui = getUi();
-        if (!ui.movePreview) return;
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawMovePreview(ctx, tray, ui.movePreview!, view));
         }
       },
     },

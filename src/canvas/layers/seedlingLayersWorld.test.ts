@@ -43,17 +43,15 @@ const baseUi: SeedlingLayerUi = {
   selectedIds: [],
   hiddenSeedlingIds: [],
   fillPreview: null,
-  movePreview: null,
 };
 
 describe('createSeedlingLayers (world)', () => {
-  it('returns 4 layers in canonical order', () => {
+  it('returns 3 layers in canonical order', () => {
     const layers = createSeedlingLayers(() => [], () => [], () => baseUi);
     expect(layers.map((l) => l.id)).toEqual([
       'seedlings',
       'seedling-labels',
       'seedling-fill-preview',
-      'seedling-move-preview',
     ]);
   });
 
@@ -111,15 +109,6 @@ describe('createSeedlingLayers (world)', () => {
     // Wrapper translates per tray, but no preview glyphs should render.
     expect(ctx.arc).not.toHaveBeenCalled();
     expect(ctx.fillText).not.toHaveBeenCalled();
-  });
-
-  it('move-preview skips when no preview set', () => {
-    const ctx = makeCtx();
-    const tray = createTray({ rows: 1, cols: 1, cellSize: 'small', label: 't' });
-    const layer = createSeedlingLayers(() => [tray], () => [], () => baseUi)
-      .find((l) => l.id === 'seedling-move-preview')!;
-    layer.draw(ctx, {}, view);
-    expect(ctx.translate).not.toHaveBeenCalled();
   });
 
   it('respects hiddenSeedlingIds (skips hidden seedlings)', () => {

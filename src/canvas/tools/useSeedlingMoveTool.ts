@@ -15,6 +15,31 @@ import {
 import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/seedStarting';
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
 import { trayWorldOrigin, type SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
+import {
+  SEEDLING_MOVE_DRAG_KIND,
+  type SeedlingMovePutative,
+} from '../drag/seedlingMoveDrag';
+
+/**
+ * Publish a seedling-move ghost putative into the framework's shared
+ * `dragPreview` slot. Mirrors the legacy `setSeedMovePreview` writes.
+ *
+ * This is the façade pattern: the Tool owns the gesture (scratch is mutated
+ * imperatively in the kit Tool callbacks) and publishes putatives to the
+ * shared slot directly. The framework's `dragPreviewLayer` then renders via
+ * `seedlingMoveDrag.renderPreview`. We don't use a `useEffect` mirror because
+ * scratch state isn't React-reactive — the kit Tool exposes no overlay
+ * snapshot we could subscribe to. Direct writes from the handler are the
+ * pragmatic equivalent.
+ */
+function setMoveGhost(p: SeedlingMovePutative | null): void {
+  const ui = useUiStore.getState();
+  if (p) {
+    ui.setDragPreview({ kind: SEEDLING_MOVE_DRAG_KIND, putative: p });
+  } else if (ui.dragPreview && ui.dragPreview.kind === SEEDLING_MOVE_DRAG_KIND) {
+    ui.setDragPreview(null);
+  }
+}
 
 export interface SeedlingMoveScratch {
   active: boolean;
@@ -320,7 +345,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
                       ? { ...base, scope: 'row', index: aff.row }
                       : { ...base, scope: 'col', index: aff.col },
                 );
-                useUiStore.getState().setSeedMovePreview(null);
+                setMoveGhost(null);
                 scratchRef.current = ctx.scratch;
                 return 'claim';
               }
@@ -332,7 +357,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);
             if (!cell) {
               useUiStore.getState().setSeedFillPreview(null);
-              useUiStore.getState().setSeedMovePreview(null);
+              setMoveGhost(null);
               scratchRef.current = ctx.scratch;
               return 'claim';
             }
@@ -353,7 +378,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
                 toCol: s.col! + dc,
               }));
               const result = resolveGroupMoves(tray, pending);
-              useUiStore.getState().setSeedMovePreview({
+              setMoveGhost({
                 trayId: tray.id,
                 feasible: result.feasible,
                 cells: result.moves.map((m) => ({
@@ -373,10 +398,10 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
                 col: cell.col,
                 replace: true,
               });
-              useUiStore.getState().setSeedMovePreview(null);
+              setMoveGhost(null);
             } else {
               useUiStore.getState().setSeedFillPreview(null);
-              useUiStore.getState().setSeedMovePreview(null);
+              setMoveGhost(null);
             }
             scratchRef.current = ctx.scratch;
             return 'claim';
@@ -411,7 +436,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             const tray = ss.trays.find((t) => t.id === trayId);
             const cleanup = () => {
               useUiStore.getState().setSeedFillPreview(null);
-              useUiStore.getState().setSeedMovePreview(null);
+              setMoveGhost(null);
               useUiStore.getState().setHiddenSeedlingIds([]);
               ctx.scratch.active = false;
               ctx.scratch.affordance = null;
@@ -497,7 +522,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
           },
           onCancel: (ctx) => {
             useUiStore.getState().setSeedFillPreview(null);
-            useUiStore.getState().setSeedMovePreview(null);
+            setMoveGhost(null);
             useUiStore.getState().setHiddenSeedlingIds([]);
             ctx.scratch.active = false;
             ctx.scratch.affordance = null;
