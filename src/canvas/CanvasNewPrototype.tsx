@@ -35,6 +35,7 @@ import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
 import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
+import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
 import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
@@ -120,10 +121,12 @@ function GardenCanvasNewPrototype() {
 
     // Putative-drag preview layer — Phase 2 dispatches to the
     // garden-palette-plant drag (cursor-following ghost during palette →
-    // garden plantings drop). Other migrated drags will plug in here.
+    // garden plantings drop) and the eric-move drag (per-id ghost layout +
+    // snap-target outline during structure / zone / planting moves).
     const dragPreviewRegistry = {
       [createGardenPaletteDrag({ getEntry: () => null }).kind]:
         createGardenPaletteDrag({ getEntry: () => null }),
+      [MOVE_DRAG_KIND]: createMoveDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createZoneLayers(getZones, getUi),

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   defineTool,
   useMove,
@@ -37,6 +37,7 @@ import {
   snapStructureZoneToGrid,
   requirePlantingDrop,
 } from './snapMoveBehaviors';
+import { MOVE_DRAG_KIND, type MovePutative } from '../drag/moveDrag';
 
 export type SelectScratch =
   | { kind: 'idle' }
@@ -183,6 +184,39 @@ export function useEricSelectTool(
     ...(opts?.moveOptions ?? {}),
   });
 
+  // Mirror weasel's live `move.overlay` into the framework's `dragPreview`
+  // slot. The generic `dragPreviewLayer` then renders the move ghost via
+  // `moveDrag.renderPreview` — this replaces the previous per-id ghost block
+  // that lived in `eric-select-overlay`. See `src/canvas/drag/moveDrag.ts`
+  // for the rationale (Option A façade over `useMove`).
+  //
+  // The publish is pure-render: no commit happens here. Commit still flows
+  // through `move.end()` in `drag.onEnd`, which invokes `dispatchApplyBatch`
+  // → `adapter.applyBatch` → `gardenStore.checkpoint()` + ops as a single
+  // undo step.
+  const moveOverlay = move.overlay;
+  useEffect(() => {
+    const ui = useUiStore.getState();
+    if (!moveOverlay || moveOverlay.draggedIds.length === 0) {
+      if (ui.dragPreview && ui.dragPreview.kind === MOVE_DRAG_KIND) {
+        ui.setDragPreview(null);
+      }
+      return;
+    }
+    const putative: MovePutative = {
+      draggedIds: moveOverlay.draggedIds,
+      posesById: moveOverlay.draggedIds
+        .map((id) => {
+          const p = moveOverlay.poses.get(id);
+          return p ? ([id, { x: p.x, y: p.y }] as [string, { x: number; y: number }]) : null;
+        })
+        .filter((e): e is [string, { x: number; y: number }] => e !== null),
+      destContainerId: moveOverlay.destContainerId,
+      accepted: moveOverlay.accepted,
+    };
+    ui.setDragPreview({ kind: MOVE_DRAG_KIND, putative });
+  }, [moveOverlay]);
+
   const structureResizeAdapter = useMemo(() => createStructureResizeAdapter(), []);
   const zoneResizeAdapter = useMemo(() => createZoneResizeAdapter(), []);
   const structureResizeOpts: UseResizeOptions<StructureResizePose> = {};
@@ -247,59 +281,10 @@ export function useEricSelectTool(
           ctx.restore();
         }
 
-        // Drag ghosts: render translucent plant icons at the live overlay
-        // poses. `useMove` doesn't write through to the store during a drag,
-        // so the source planting stays put; this layer is the only visible
-        // feedback that the drag is active.
-        const mov = move.overlay;
-        if (mov && mov.draggedIds.length > 0) {
-          const garden = useGardenStore.getState().garden;
-
-          // Snap-target highlight: if the layout pass has accepted a
-          // destination container, outline it so the user can see where the
-          // drop will land.
-          if (mov.accepted && mov.destContainerId) {
-            const c = garden.structures.find((s) => s.id === mov.destContainerId)
-              ?? garden.zones.find((z) => z.id === mov.destContainerId);
-            if (c) {
-              const sx = (c.x - view.x) * view.scale;
-              const sy = (c.y - view.y) * view.scale;
-              const sw = c.width * view.scale;
-              const sh = c.length * view.scale;
-              ctx.save();
-              ctx.strokeStyle = '#5BA4CF';
-              ctx.lineWidth = 2;
-              ctx.setLineDash([6, 4]);
-              if ((c as { shape?: string }).shape === 'circle') {
-                ctx.beginPath();
-                ctx.ellipse(sx + sw / 2, sy + sh / 2, sw / 2, sh / 2, 0, 0, Math.PI * 2);
-                ctx.stroke();
-              } else {
-                ctx.strokeRect(sx, sy, sw, sh);
-              }
-              ctx.setLineDash([]);
-              ctx.restore();
-            }
-          }
-
-          for (const id of mov.draggedIds) {
-            const pose = mov.poses.get(id);
-            if (!pose) continue;
-            const planting = garden.plantings.find((p) => p.id === id);
-            if (!planting) continue;
-            const cultivar = getCultivar(planting.cultivarId);
-            if (!cultivar) continue;
-            const footprintFt = cultivar.footprintFt ?? 0.5;
-            const sx = (pose.x - view.x) * view.scale;
-            const sy = (pose.y - view.y) * view.scale;
-            const radiusPx = (footprintFt / 2) * view.scale;
-            ctx.save();
-            ctx.globalAlpha = 0.65;
-            ctx.translate(sx, sy);
-            renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
-            ctx.restore();
-          }
-        }
+        // Move ghosts (plantings, structures, zones) and snap-target outlines
+        // are now drawn by the framework's `dragPreviewLayer` via
+        // `moveDrag.renderPreview`. See `src/canvas/drag/moveDrag.ts` and the
+        // `move.overlay` → `uiStore.dragPreview` mirror effect above.
 
         // Clone overlay: dashed dim ghosts of the selection at offset positions
         // while alt-drag is in flight. The originals stay rendered in their
@@ -324,7 +309,7 @@ export function useEricSelectTool(
         }
       },
     }),
-    [areaSelect, move, cloneOverlay],
+    [areaSelect, cloneOverlay],
   );
 
   return useMemo(
