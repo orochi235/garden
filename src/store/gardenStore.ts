@@ -451,6 +451,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       commitPatch({
         seedStarting: { ...seedStarting, trays: [...seedStarting.trays, tray] },
       });
+      useUiStore.getState().bumpSeedStartingViewResetTick();
     },
 
     /** Add a tray without creating an undo entry — used when bootstrapping seed-starting mode. */
