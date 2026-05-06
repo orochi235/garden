@@ -1,7 +1,7 @@
 import { buildMipModel, estimatePlacementVars } from './formulation';
 import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
-import { familyCompanionPartitioner } from './partitioning/familyCompanion';
+import { adaptivePartitioner } from './partitioning/adaptive';
 import { proportionalStripAllocator } from './allocation/proportionalStrip';
 import { refineClusterLayout } from './scoring/postHocRefine';
 import type { MipModel } from './formulation';
@@ -139,7 +139,15 @@ async function solveClustered(
   isCancelled: () => boolean,
 ): Promise<OptimizationCandidate | null> {
   const solveStart = performance.now();
-  const baseClusters = familyCompanionPartitioner(input);
+  const baseClusters = adaptivePartitioner(input);
+  if (baseClusters === null) {
+    // Adaptive partitioner says "no clustering needed" — e.g. homogeneous
+    // input where bucketing would produce a single cluster equal to the
+    // input. Fall through to the unified solver and skip the partition /
+    // allocate / refine overhead entirely.
+    console.info('[optimizer] candidate', n, 'adaptive bypass: single-cluster input → solveUnified');
+    return solveUnified(input, n, priorActiveByKey, onProgress, isCancelled);
+  }
   const baseSubBeds = proportionalStripAllocator(input.bed, baseClusters);
   const subBeds = splitOversizedSubBeds(baseSubBeds, input);
   const clusters = subBeds.map((s) => s.cluster);
