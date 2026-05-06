@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
-import { downloadGarden, openGardenFile } from '../utils/file';
+import { deserializeGarden, downloadGarden, openGardenFile } from '../utils/file';
+
+const FIXTURES = [
+  { label: 'Marinara', path: 'marinara.garden' },
+  { label: '8 Tomatoes', path: 'eight-tomatoes.garden' },
+  { label: 'Salsa', path: 'salsa.garden' },
+  { label: 'Trellis', path: 'trellis-bed.garden' },
+];
 import { CollectionEditor } from './collection/CollectionEditor';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { ModeOnly } from './ModeOnly';
@@ -20,6 +27,14 @@ export function MenuBar() {
   async function handleOpen() {
     try {
       const loaded = await openGardenFile();
+      const current = garden.collection ?? [];
+      const incoming = loaded.collection ?? [];
+      if (current.length > 0 && incoming.length !== current.length) {
+        const keep = window.confirm(
+          `Keep your current collection (${current.length} cultivars)? OK = keep current, Cancel = use the file's collection (${incoming.length}).`,
+        );
+        if (keep) loaded.collection = current;
+      }
       loadGarden(loaded);
     } catch {}
   }
@@ -27,7 +42,16 @@ export function MenuBar() {
     downloadGarden(garden);
   }
   function handleNew() {
-    reset();
+    const current = garden.collection ?? [];
+    if (current.length > 0) {
+      const keep = window.confirm(
+        `Keep your current collection (${current.length} cultivars) in the new garden?`,
+      );
+      reset();
+      if (keep) useGardenStore.getState().setCollection(current);
+    } else {
+      reset();
+    }
   }
 
   return (
@@ -39,6 +63,25 @@ export function MenuBar() {
       </ModeOnly>
       {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}
       {collectionEditorOpen && <CollectionEditor />}
+      <div className={styles.devNav}>
+        <span className={styles.devLabel}>fixtures</span>
+        {FIXTURES.map((f) => (
+          <span
+            key={f.path}
+            style={{ cursor: 'pointer' }}
+            onClick={async () => {
+              try {
+                const text = await fetch(f.path).then((r) => r.text());
+                loadGarden(deserializeGarden(text));
+              } catch (e) {
+                console.error('failed to load fixture', f.path, e);
+              }
+            }}
+          >
+            {f.label}
+          </span>
+        ))}
+      </div>
       <div className={styles.spacer} />
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>

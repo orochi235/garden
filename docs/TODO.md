@@ -145,3 +145,17 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 - [ ] Optimizer support for non-rectangular beds.
 - [ ] User-facing solver picker (currently fixed to `highs`).
 - [ ] Region-painting UI for `userRegions` input to the optimizer.
+
+## Optimizer auto-clustering follow-ups (2026-05-05)
+
+- [ ] Visualize cluster regions on the canvas (overlay shading per group), gated on user opt-in to define regions
+- [ ] Post-hoc cluster rotation/swap pass to reclaim cross-cluster companion bonuses lost at partition boundaries
+- [ ] Greedy fallback that respects existing intentional placements rather than producing a generic hex-packed layout
+- [ ] Interior trellis support (`trellis: { kind: 'line', ... }`): UI for placement, allocator for dual-side strip layout. Currently rejected with an error in `proportionalStripAllocator`.
+- [ ] Adaptive partitioner selection based on input shape (homogeneous bypass, paired-mirror, diversity-spread)
+- [ ] Adaptive allocator selection (guillotine cuts, bin-packing) — currently only proportional strips
+- [ ] Parallel sub-bed solves via multiple workers — currently sequential within a single worker
+- [ ] Cross-cluster score reported as a candidate-comparison stat (no objective contribution, just informational)
+- [ ] Minimum strip width enforcement in `proportionalStripAllocator` (currently allows arbitrarily thin strips; fewer plants get placed but no error fires)
+- [ ] Cultivar-level `heightFt` overrides in `cultivars.json` for varieties that genuinely differ from species default (e.g. determinate vs. indeterminate tomatoes). Species data was backfilled 2026-05-05 so the shading objective term now fires across mixed-species beds, but same-species/different-cultivar beds still see `hasShading=false` because every cultivar inherits one species-level height. Until cultivar overrides exist, an all-tomato bed gets no shading signal.
+- [ ] Optimize `clusterCohesion` aux-row generation. The term added 2026-05-05 emits C(n,2) aux vars + adjacency rows per cluster — perf test budget bumped from 2s → 6s for a 30-plant scenario. Options: share precomputed adjacency between cohesion-only pairs (currently rebuilt per pair), or cap cohesion edges to k-nearest cluster members rather than all pairs. See `src/optimizer/formulation.ts` and the comment at `src/optimizer/perf.test.ts:33-37`.

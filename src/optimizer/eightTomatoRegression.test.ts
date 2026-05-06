@@ -12,10 +12,10 @@ import { DEFAULT_WEIGHTS, type OptimizationInput } from './types';
 describe('8-tomato regression model topology', () => {
   it('keeps placement var count and adj rows below the HiGHS-WASM danger zone', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 90, trellisEdge: null, edgeClearanceIn: 0 },
-      plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, climber: false }],
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 15, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      bed: { widthIn: 48, lengthIn: 90, edgeClearanceIn: 0 },
+      plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null }],
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 15, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     const model = buildMipModel(input);
     expect(model.aux.length).toBe(28); // C(8,2) same-species pairs
@@ -26,10 +26,10 @@ describe('8-tomato regression model topology', () => {
 
   it('every aux is for a same-species pair (so all adj rows are stripped on fallback)', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 90, trellisEdge: null, edgeClearanceIn: 0 },
-      plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, climber: false }],
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 15, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      bed: { widthIn: 48, lengthIn: 90, edgeClearanceIn: 0 },
+      plants: [{ cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null }],
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 15, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     const model = buildMipModel(input);
     for (const aux of model.aux) {

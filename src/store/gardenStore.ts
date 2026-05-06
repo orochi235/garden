@@ -7,7 +7,7 @@ import type { Cultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
 import { structuresCollide } from '../utils/collision';
-import { persistCollection } from '../utils/file';
+import { loadAutosave, persistCollection } from '../utils/file';
 import { worldToLocalForParent } from '../utils/plantingPose';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
@@ -92,6 +92,46 @@ function defaultGarden(): Garden {
 /** Empty garden for tests. */
 export function blankGarden(): Garden {
   return createGarden({ name: 'My Garden', widthFt: 20, lengthFt: 20 });
+}
+
+/**
+ * Apply backfills for fields that may be missing from older serialized
+ * gardens. Mutates and returns the garden. Shared by sync init (from
+ * localStorage) and `loadGarden` (from disk / network).
+ */
+function backfillGarden(garden: Garden): Garden {
+  for (const s of garden.structures) {
+    if (s.wallThicknessFt == null) {
+      s.wallThicknessFt = DEFAULT_WALL_THICKNESS_FT[s.type] ?? 0;
+    }
+    if (s.groupId === undefined) {
+      s.groupId = null;
+    }
+    if (s.clipChildren === undefined) {
+      s.clipChildren = true;
+    }
+  }
+  if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
+  if (!garden.collection) garden.collection = [];
+  return garden;
+}
+
+/**
+ * Synchronous initial garden: prefer the autosaved garden in localStorage
+ * so the very first render shows the user's persisted state. Falls back to
+ * the seeded default for first-time visitors. Any failure (no window,
+ * corrupt JSON) falls back too. App.tsx separately handles the
+ * first-time-visit flow of fetching `default.garden` from the server.
+ */
+function initialGarden(): Garden {
+  if (typeof window === 'undefined') return defaultGarden();
+  try {
+    const saved = loadAutosave();
+    if (saved) return backfillGarden(saved);
+  } catch {
+    // ignore — fall through to default
+  }
+  return defaultGarden();
 }
 
 function isLocked(layer: LayerId): boolean {
@@ -196,22 +236,11 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   }
 
   return {
-    garden: defaultGarden(),
+    garden: initialGarden(),
 
     loadGarden: (garden) => {
       clearHistory();
-      // Backfill fields for saves predating them
-      for (const s of garden.structures) {
-        if (s.wallThicknessFt == null) {
-          s.wallThicknessFt = DEFAULT_WALL_THICKNESS_FT[s.type] ?? 0;
-        }
-        if (s.groupId === undefined) {
-          s.groupId = null;
-        }
-      }
-      if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
-      if (!garden.collection) garden.collection = [];
-      set({ garden });
+      set({ garden: backfillGarden(garden) });
     },
 
     reset: () => {
@@ -385,8 +414,8 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         createPlanting({
           parentId: structureId,
           cultivarId: pl.cultivarId,
-          x: structure.x + pl.xIn * IN_TO_FT,
-          y: structure.y + pl.yIn * IN_TO_FT,
+          x: pl.xIn * IN_TO_FT,
+          y: pl.yIn * IN_TO_FT,
         }),
       );
       commitPatch({ plantings: [...retained, ...newPlantings] });

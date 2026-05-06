@@ -13,11 +13,7 @@ export function perturbWeights(w: OptimizerWeights, magnitude: number, seed: num
   const rng = mulberry32(seed);
   return {
     shading: w.shading * (1 + (rng() * 2 - 1) * magnitude),
-    companion: w.companion * (1 + (rng() * 2 - 1) * magnitude),
-    antagonist: w.antagonist * (1 + (rng() * 2 - 1) * magnitude),
     sameSpeciesBuffer: w.sameSpeciesBuffer * (1 + (rng() * 2 - 1) * magnitude),
-    trellisAttraction: w.trellisAttraction * (1 + (rng() * 2 - 1) * magnitude),
-    regionPreference: w.regionPreference * (1 + (rng() * 2 - 1) * magnitude),
   };
 }
 

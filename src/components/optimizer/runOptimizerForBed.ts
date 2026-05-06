@@ -1,7 +1,6 @@
-import { runOptimizer, DEFAULT_WEIGHTS, type OptimizationInput, type OptimizationResult, type OptimizerPlant, type CompanionTable, type RunHandle } from '../../optimizer';
+import { runOptimizer, DEFAULT_WEIGHTS, type OptimizationInput, type OptimizationResult, type OptimizerPlant, type RunHandle } from '../../optimizer';
 import type { Structure } from '../../model/types';
 import type { Cultivar } from '../../model/cultivars';
-import { getRelation } from '../../data/companions';
 
 export interface BedOptimizerArgs {
   bed: Structure;
@@ -24,23 +23,18 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
     footprintIn: cultivar.footprintFt * FT_TO_IN,
     spacingIn: cultivar.spacingFt * FT_TO_IN,
     heightIn: cultivar.heightFt != null ? cultivar.heightFt * FT_TO_IN : null,
-    climber: cultivar.climber,
+    category: cultivar.category,
   }));
-
-  const companions: CompanionTable = { pairs: buildCompanionTable(args.request.map((r) => r.cultivar)) };
 
   const input: OptimizationInput = {
     bed: {
       widthIn: args.bed.width * FT_TO_IN,
       lengthIn: args.bed.length * FT_TO_IN,
-      trellisEdge: args.bed.trellisEdge,
       edgeClearanceIn: 0,
     },
     plants,
-    weights: DEFAULT_WEIGHTS,
+    weights: zeroWeightsIfDebug(),
     gridResolutionIn: 4,
-    companions,
-    userRegions: [],
     timeLimitSec: args.timeLimitSec ?? 5,
     mipGap: 0.01,
     candidateCount: args.candidateCount ?? 3,
@@ -52,15 +46,14 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
 
 export type { OptimizationResult };
 
-function buildCompanionTable(cultivars: Cultivar[]): CompanionTable['pairs'] {
-  const out: CompanionTable['pairs'] = {};
-  for (let i = 0; i < cultivars.length; i++) {
-    for (let j = i + 1; j < cultivars.length; j++) {
-      const rel = getRelation(cultivars[i].speciesId, cultivars[j].speciesId);
-      if (!rel) continue;
-      const key = [cultivars[i].id, cultivars[j].id].sort().join('|');
-      out[key] = rel;
-    }
+/**
+ * Debug toggle: when the URL has `?optWeights=zero`, return all-zero weights
+ * (sets every objective term to 0).
+ */
+function zeroWeightsIfDebug() {
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('optWeights') === 'zero') {
+    console.info('[optimizer] DEBUG: zeroing all weights via ?optWeights=zero');
+    return { shading: 0, sameSpeciesBuffer: 0 };
   }
-  return out;
+  return DEFAULT_WEIGHTS;
 }

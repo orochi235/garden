@@ -1,8 +1,16 @@
-import { buildMipModel } from './formulation';
+import { buildMipModel, estimatePlacementVars } from './formulation';
 import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
+import { familyCompanionPartitioner } from './partitioning/familyCompanion';
+import { proportionalStripAllocator } from './allocation/proportionalStrip';
 import type { MipModel } from './formulation';
-import type { OptimizationInput, OptimizationResult, OptimizationCandidate, OptimizerPlacement } from './types';
+import type {
+  OptimizationInput, OptimizationResult, OptimizationCandidate,
+  OptimizerPlacement, Cluster, SubBed,
+} from './types';
+
+const MAX_UNIFIED_VARS = 1500;
+const SAME_SPECIES_ADJ_BUDGET = 1500;
 
 interface RunMsg { type: 'run'; input: OptimizationInput; id: string }
 interface CancelMsg { type: 'cancel'; id: string }
@@ -40,7 +48,7 @@ async function solve(
 ): Promise<OptimizationResult> {
   const start = performance.now();
   const candidates: OptimizationCandidate[] = [];
-  let priorActive: string[] = [];
+  const priorActiveByKey: Map<string, string[]> = new Map();
 
   for (let n = 0; n < input.candidateCount; n++) {
     if (isCancelled()) break;
@@ -48,98 +56,314 @@ async function solve(
 
     const weights = n === 0 ? input.weights : perturbWeights(input.weights, 0.05, 1000 + n);
     const workingInput = { ...input, weights };
-    const model = buildMipModel(workingInput);
 
-    if (n > 0 && priorActive.length > 0) {
-      model.constraints.push({ ...buildNoGoodCut(priorActive, input.diversityThreshold), label: `nogood:${n}` });
-    }
+    const useClustered = estimatePlacementVars(workingInput) > MAX_UNIFIED_VARS;
+    const candidate = useClustered
+      ? await solveClustered(workingInput, n, priorActiveByKey, onProgress, isCancelled)
+      : await solveUnified(workingInput, n, priorActiveByKey, onProgress, isCancelled);
 
-    onProgress('solve', n);
-    greedyHexPack(workingInput); // warm-start hint (logged; unused by LP-string API)
-    const solveStart = performance.now();
+    if (candidate) candidates.push(candidate);
+  }
 
-    const solveOpts = {
-      time_limit: input.timeLimitSec,
-      mip_rel_gap: input.mipGap,
-      output_flag: false,
-      log_to_console: false,
-    };
+  return { candidates, totalMs: performance.now() - start };
+}
 
-    // HiGHS-WASM (highs-js 1.8.0) crashes mid-solve when fed a large enough
-    // same-species adjacency matrix (e.g. 8 same-cultivar copies × dense
-    // neighborhood ⇒ 5650 adj rows). Crash modes vary — "table index is out
-    // of bounds", "Too few lines", "Aborted()" — and the crash also poisons
-    // the WASM module heap, so reactive retry on the same module fails too.
-    // Worse, highsLoader() returns a singleton in the same JS realm, so even
-    // re-loading doesn't yield fresh state within one worker process.
-    //
-    // Proactive guard: when same-species adjacency would exceed a safe budget,
-    // strip those rows up-front. Quality degrades (no spreading penalty
-    // between same-cultivar copies) but the user gets a layout. Threshold
-    // chosen empirically — 4 same-cultivar copies in a 4×8ft bed at 4in grid
-    // produces ~600 rows and solves cleanly; 8 copies produce ~5650 and crash.
-    const SAME_SPECIES_ADJ_BUDGET = 1500;
-    const sameSpeciesAux = sameSpeciesAuxNames(model);
-    const sameSpeciesAdjCount = model.constraints.filter((c) =>
-      isAdjRowForAux(c.label, sameSpeciesAux),
-    ).length;
-    if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
-      console.warn(
-        '[optimizer] candidate', n,
-        `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping aux+rows to avoid HiGHS-WASM crash`,
-      );
-      model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
-      model.aux = model.aux.filter((a) => !sameSpeciesAux.has(a.name));
-    }
+async function solveUnified(
+  input: OptimizationInput,
+  n: number,
+  priorActiveByKey: Map<string, string[]>,
+  onProgress: (phase: string, candidate: number) => void,
+  isCancelled: () => boolean,
+): Promise<OptimizationCandidate | null> {
+  if (isCancelled()) return null;
+  const solveStart = performance.now();
+  const model = buildMipModel(input);
 
-    const HighsModule = await loadHighs();
-    const lpString = mipModelToLpString(model);
-    console.info(
-      '[optimizer] candidate', n,
-      'vars:', model.vars.length, 'aux:', model.aux.length,
-      'constraints:', model.constraints.length, 'lpBytes:', lpString.length,
-    );
-    const solution = trySolve(HighsModule, lpString, solveOpts);
-    if (!solution) {
-      console.warn('[optimizer] candidate', n, 'solver crashed; falling back to greedy hex pack');
-      const greedy = greedyHexPack(workingInput);
-      if (greedy.length > 0) {
-        candidates.push({
-          placements: greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn })),
-          score: 0,
-          reason: `${greedy.length} plants placed (greedy fallback)`,
-          gap: 1,
-          solveMs: performance.now() - solveStart,
+  // Bypass: no pairwise penalties → MIP would just enforce non-overlap, which
+  // hex pack already satisfies. Skip the solver.
+  if (model.aux.length === 0) {
+    console.info('[optimizer] candidate', n, 'unified bypass: no aux, hex-packing');
+    return greedyCandidate(input, performance.now() - solveStart, []);
+  }
+
+  const prior = priorActiveByKey.get('unified') ?? [];
+  if (n > 0 && prior.length > 0) {
+    model.constraints.push({ ...buildNoGoodCut(prior, input.diversityThreshold), label: `nogood:${n}` });
+    console.info('[optimizer] candidate', n, 'unified nogood cut: forbid', prior.length, 'prior vars; kDiff:', input.diversityThreshold);
+  } else if (n > 0) {
+    console.warn('[optimizer] candidate', n, 'unified has no prior to cut against');
+  }
+
+  applySameSpeciesAdjStrip(model, n);
+
+  onProgress('solve', n);
+  greedyHexPack(input);
+
+  const HighsModule = await loadHighs();
+  const lpString = mipModelToLpString(model);
+  console.info(
+    '[optimizer] candidate', n, 'unified',
+    'vars:', model.vars.length, 'aux:', model.aux.length,
+    'constraints:', model.constraints.length, 'lpBytes:', lpString.length,
+  );
+  const solution = trySolve(HighsModule, lpString, solveOpts(input));
+  if (!solution) {
+    console.warn('[optimizer] candidate', n, 'unified solver crashed; falling back to greedy hex pack');
+    return greedyCandidate(input, performance.now() - solveStart, ['unified']);
+  }
+  if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
+    console.warn('[optimizer] candidate', n, 'unified status:', solution.Status);
+    return null;
+  }
+  const placements = placementsFrom(model, solution.Columns);
+  if (placements.length === 0) {
+    console.warn('[optimizer] candidate', n, 'unified has no placements — status:', solution.Status, 'obj:', solution.ObjectiveValue);
+    return null;
+  }
+  priorActiveByKey.set('unified', activeVarNames(model, solution.Columns));
+  return {
+    placements,
+    score: solution.ObjectiveValue,
+    reason: reasonLabel(input, placements),
+    gap: 0,
+    solveMs: performance.now() - solveStart,
+  };
+}
+
+async function solveClustered(
+  input: OptimizationInput,
+  n: number,
+  priorActiveByKey: Map<string, string[]>,
+  onProgress: (phase: string, candidate: number) => void,
+  isCancelled: () => boolean,
+): Promise<OptimizationCandidate | null> {
+  const solveStart = performance.now();
+  const baseClusters = familyCompanionPartitioner(input);
+  const baseSubBeds = proportionalStripAllocator(input.bed, baseClusters);
+  const subBeds = splitOversizedSubBeds(baseSubBeds, input);
+  const clusters = subBeds.map((s) => s.cluster);
+
+  const allPlacements: OptimizerPlacement[] = [];
+  let scoreSum = 0;
+  let worstGap = 0;
+  const fallbackKeys: string[] = [];
+
+  for (const subBed of subBeds) {
+    if (isCancelled()) return null;
+    const subInput = buildSubInput(input, subBed);
+
+    onProgress(`solve cluster ${subBed.cluster.key}`, n);
+    const model = buildMipModel(subInput);
+
+    // Bypass per cluster: no pairwise penalties → hex-pack inside this sub-bed.
+    if (model.aux.length === 0) {
+      console.info('[optimizer] candidate', n, 'cluster', subBed.cluster.key, 'bypass: no aux, hex-packing');
+      const greedy = greedyHexPack(subInput);
+      for (const gp of greedy) {
+        allPlacements.push({
+          cultivarId: gp.cultivarId,
+          xIn: gp.xIn + subBed.offsetIn.x,
+          yIn: gp.yIn + subBed.offsetIn.y,
         });
       }
       continue;
     }
 
-    if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
-      console.warn('[optimizer] candidate', n, 'status:', solution.Status);
-      continue;
+    const prior = priorActiveByKey.get(subBed.cluster.key) ?? [];
+    if (n > 0 && prior.length > 0) {
+      model.constraints.push({ ...buildNoGoodCut(prior, subInput.diversityThreshold), label: `nogood:${n}` });
     }
 
-    const placements = placementsFrom(model, solution.Columns);
-    if (placements.length === 0) {
-      // HiGHS reports "Time limit reached" with no MIP incumbent; Columns carry no Primal values.
-      // Reporting a zero-placement "candidate" misleads the UI.
-      console.warn('[optimizer] candidate', n, 'has no placements — status:', solution.Status, 'obj:', solution.ObjectiveValue);
-      continue;
-    }
-    const active = activeVarNames(model, solution.Columns);
-    priorActive = active;
+    applySameSpeciesAdjStrip(model, n);
 
-    candidates.push({
-      placements,
-      score: solution.ObjectiveValue,
-      reason: reasonLabel(workingInput, placements),
-      gap: 0, // highs LP string API doesn't expose MIP gap directly
-      solveMs: performance.now() - solveStart,
-    });
+    const HighsModule = await loadHighs();
+    const lpString = mipModelToLpString(model);
+    console.info(
+      '[optimizer] candidate', n, 'cluster', subBed.cluster.key,
+      'vars:', model.vars.length, 'aux:', model.aux.length,
+      'constraints:', model.constraints.length, 'lpBytes:', lpString.length,
+    );
+
+    const solution = trySolve(HighsModule, lpString, solveOpts(subInput));
+    let subPlacements: OptimizerPlacement[] = [];
+    let usedGreedy = false;
+    if (!solution || solution.Status === 'Infeasible') {
+      console.warn('[optimizer] candidate', n, 'cluster', subBed.cluster.key, 'crashed; greedy fallback');
+      const greedy = greedyHexPack(subInput);
+      subPlacements = greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn }));
+      usedGreedy = true;
+      worstGap = 1;
+    } else {
+      subPlacements = placementsFrom(model, solution.Columns);
+      priorActiveByKey.set(subBed.cluster.key, activeVarNames(model, solution.Columns));
+      scoreSum += solution.ObjectiveValue ?? 0;
+    }
+
+    if (usedGreedy) fallbackKeys.push(subBed.cluster.key);
+
+    for (const p of subPlacements) {
+      allPlacements.push({
+        cultivarId: p.cultivarId,
+        xIn: p.xIn + subBed.offsetIn.x,
+        yIn: p.yIn + subBed.offsetIn.y,
+      });
+    }
   }
 
-  return { candidates, totalMs: performance.now() - start };
+  if (allPlacements.length === 0) return null;
+  return {
+    placements: allPlacements,
+    score: scoreSum,
+    reason: clusteredReasonLabel(clusters, allPlacements.length, fallbackKeys),
+    gap: worstGap,
+    solveMs: performance.now() - solveStart,
+  };
+}
+
+/**
+ * If a sub-bed's cluster still exceeds MAX_UNIFIED_VARS at the strip size,
+ * subdivide the strip along its long axis into N pieces and divide each
+ * plant's count across the pieces. Splitting at the strip level (rather than
+ * the parent bed) keeps each piece geometrically large enough to host the
+ * cluster's plants. Handles homogeneous over-large clusters and oversized
+ * heterogeneous strips alike.
+ */
+function splitOversizedSubBeds(subBeds: SubBed[], parent: OptimizationInput): SubBed[] {
+  const out: SubBed[] = [];
+  for (const subBed of subBeds) {
+    const subInput = buildSubInput(parent, subBed);
+    const estimate = estimatePlacementVars(subInput);
+    if (estimate <= MAX_UNIFIED_VARS) {
+      out.push(subBed);
+      continue;
+    }
+    const pieces = Math.ceil(estimate / MAX_UNIFIED_VARS);
+    const stripIsHorizontal = subBed.bed.lengthIn >= subBed.bed.widthIn;
+    const longAxisLen = stripIsHorizontal ? subBed.bed.lengthIn : subBed.bed.widthIn;
+    const pieceLen = longAxisLen / pieces;
+    const piecePlantsByIdx = distributeUnitsAcrossPieces(subBed.cluster.plants, pieces);
+    for (let i = 0; i < pieces; i++) {
+      const piecePlants = piecePlantsByIdx[i];
+      if (piecePlants.length === 0) continue;
+      const pieceCluster: Cluster = {
+        key: `${subBed.cluster.key}#${i + 1}`,
+        plants: piecePlants,
+      };
+      const start = i * pieceLen;
+      const pieceBed = stripIsHorizontal
+        ? { ...subBed.bed, lengthIn: pieceLen }
+        : { ...subBed.bed, widthIn: pieceLen };
+      const pieceOffset = stripIsHorizontal
+        ? { x: subBed.offsetIn.x, y: subBed.offsetIn.y + start }
+        : { x: subBed.offsetIn.x + start, y: subBed.offsetIn.y };
+      out.push({ cluster: pieceCluster, bed: pieceBed, offsetIn: pieceOffset });
+    }
+  }
+  for (const sb of out) {
+    console.info(
+      '[optimizer] split piece', sb.cluster.key,
+      'plants:', sb.cluster.plants.length, '(', sb.cluster.plants.reduce((s, p) => s + p.count, 0), 'units)',
+      'bed:', sb.bed.widthIn.toFixed(1), '×', sb.bed.lengthIn.toFixed(1),
+      'offset:', sb.offsetIn.x.toFixed(1), ',', sb.offsetIn.y.toFixed(1),
+    );
+  }
+  return out;
+}
+
+/**
+ * Distribute the cluster's "plant units" (one per count) across N pieces so each
+ * piece gets a roughly equal slice. Handles both homogeneous many-count clusters
+ * (e.g. one plant with count=20) and heterogeneous count=1 clusters (e.g. 8
+ * distinct cultivars) — the latter would collapse into a single piece if we
+ * naively divided each plant's count by `pieces`.
+ */
+function distributeUnitsAcrossPieces<T extends { cultivarId: string; count: number }>(
+  plants: T[],
+  pieces: number,
+): T[][] {
+  const totalUnits = plants.reduce((s, p) => s + p.count, 0);
+  const base = Math.floor(totalUnits / pieces);
+  const extra = totalUnits % pieces;
+  const result: T[][] = Array.from({ length: pieces }, () => []);
+  let pi = 0;
+  let cap = base + (0 < extra ? 1 : 0);
+  let filled = 0;
+  for (const plant of plants) {
+    let remaining = plant.count;
+    while (remaining > 0 && pi < pieces) {
+      if (cap === 0) { pi++; if (pi < pieces) cap = base + (pi < extra ? 1 : 0); filled = 0; continue; }
+      const take = Math.min(remaining, cap - filled);
+      if (take > 0) {
+        const existing = result[pi].find((p) => p.cultivarId === plant.cultivarId);
+        if (existing) existing.count += take;
+        else result[pi].push({ ...plant, count: take });
+        filled += take;
+        remaining -= take;
+      }
+      if (filled >= cap) {
+        pi++;
+        if (pi < pieces) { cap = base + (pi < extra ? 1 : 0); filled = 0; }
+      }
+    }
+  }
+  return result;
+}
+
+function buildSubInput(parent: OptimizationInput, subBed: SubBed): OptimizationInput {
+  return {
+    ...parent,
+    bed: subBed.bed,
+    plants: subBed.cluster.plants,
+  };
+}
+
+function applySameSpeciesAdjStrip(model: MipModel, n: number): void {
+  const sameSpeciesAux = sameSpeciesAuxNames(model);
+  const sameSpeciesAdjCount = model.constraints.filter((c) =>
+    isAdjRowForAux(c.label, sameSpeciesAux),
+  ).length;
+  if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
+    console.warn(
+      '[optimizer] candidate', n,
+      `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping aux+rows`,
+    );
+    model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
+    model.aux = model.aux.filter((a) => !sameSpeciesAux.has(a.name));
+  }
+}
+
+function solveOpts(input: OptimizationInput) {
+  // NOTE: do NOT pass output_flag:false or log_to_console:false. highs-js
+  // v1.8.0 parses the solution from stdout; silencing it makes solve() throw
+  // "Unable to parse solution. Too few lines." See highsLpRoundtrip.test.ts.
+  return {
+    time_limit: input.timeLimitSec,
+    mip_rel_gap: input.mipGap,
+  };
+}
+
+function greedyCandidate(
+  input: OptimizationInput,
+  solveMs: number,
+  fallbackKeys: string[],
+): OptimizationCandidate | null {
+  const greedy = greedyHexPack(input);
+  if (greedy.length === 0) return null;
+  return {
+    placements: greedy.map((g) => ({ cultivarId: g.cultivarId, xIn: g.xIn, yIn: g.yIn })),
+    score: 0,
+    reason: `${greedy.length} plants placed (greedy fallback: ${fallbackKeys.join(', ')})`,
+    gap: 1,
+    solveMs,
+  };
+}
+
+function clusteredReasonLabel(clusters: Cluster[], placedCount: number, fallbackKeys: string[]): string {
+  const keys = clusters.map((c) => c.key).join(', ');
+  const fallbackNote = fallbackKeys.length > 0
+    ? ` (greedy fallback: ${fallbackKeys.join(', ')})`
+    : '';
+  return `${placedCount} plants placed across ${clusters.length} groups (${keys})${fallbackNote}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -177,7 +401,7 @@ export function mipModelToLpString(model: MipModel): string {
   if (objTerms.length === 0) {
     lines.push(' obj: 0');
   } else {
-    lines.push(` obj: ${objTerms.join(' ')}`);
+    pushWrapped(lines, ' obj: ', objTerms);
   }
 
   // Constraints
@@ -190,9 +414,8 @@ export function mipModelToLpString(model: MipModel): string {
       }
     }
     if (termStrs.length === 0) continue;
-    const lhs = termStrs.join(' ');
     const op = c.op === '<=' ? '<=' : c.op === '>=' ? '>=' : '=';
-    lines.push(` ${sanitizeName(c.label)}: ${lhs} ${op} ${c.rhs}`);
+    pushWrapped(lines, ` ${sanitizeName(c.label)}: `, termStrs, ` ${op} ${c.rhs}`);
   }
 
   // Bounds
@@ -206,18 +429,59 @@ export function mipModelToLpString(model: MipModel): string {
 
   // General (binary integer variables)
   lines.push('General');
-  const binaryNames = model.vars.map((v) => sanitizeName(v.name)).join(' ');
-  if (binaryNames) lines.push(` ${binaryNames}`);
+  pushWrapped(lines, ' ', model.vars.map((v) => sanitizeName(v.name)));
 
   lines.push('End');
   return lines.join('\n');
 }
 
+/**
+ * Append `terms` to `lines`, wrapping them across multiple lines so no single
+ * line exceeds the CPLEX LP format's ~510-character limit. The first line
+ * starts with `prefix`; subsequent continuation lines are indented. If
+ * `suffix` is given (e.g. ` <= 5` for a constraint RHS), it is appended to the
+ * last line. HiGHS-WASM truncates / mis-parses long lines and then reports
+ * cryptic errors like "Unable to parse solution. Too few lines."
+ */
+function pushWrapped(lines: string[], prefix: string, terms: string[], suffix = ''): void {
+  if (terms.length === 0) {
+    lines.push(prefix.trimEnd() + suffix);
+    return;
+  }
+  const MAX_LINE = 500;
+  const CONT_INDENT = '   ';
+  let cur = prefix;
+  for (let i = 0; i < terms.length; i++) {
+    const t = terms[i];
+    const candidate = cur === prefix || cur.endsWith(' ') ? cur + t : `${cur} ${t}`;
+    if (candidate.length > MAX_LINE && cur !== prefix) {
+      lines.push(cur);
+      cur = `${CONT_INDENT}${t}`;
+    } else {
+      cur = candidate;
+    }
+  }
+  lines.push(cur + suffix);
+}
+
 function formatCoeff(c: number): string {
   if (c === 1) return '+';
   if (c === -1) return '-';
-  if (c >= 0) return `+ ${c}`;
-  return `- ${Math.abs(c)}`;
+  // LP format does NOT accept scientific notation; default Number.toString()
+  // emits 1e-7 for small magnitudes, which HiGHS-WASM rejects (and can later
+  // crash its solution parser with "Unable to parse solution"). Use a fixed
+  // decimal format and trim trailing zeros.
+  const fixed = formatDecimal(Math.abs(c));
+  return c >= 0 ? `+ ${fixed}` : `- ${fixed}`;
+}
+
+function formatDecimal(n: number): string {
+  if (n === 0) return '0';
+  // 12 fractional digits is enough to preserve double precision for values in
+  // the typical objective range (|c| up to ~1e6) without scientific notation.
+  let s = n.toFixed(12);
+  if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return s;
 }
 
 function trySolve(
@@ -299,12 +563,7 @@ function activeVarNames(
     .map((v) => v.name);
 }
 
-function reasonLabel(input: OptimizationInput, placements: OptimizerPlacement[]): string {
-  const parts: string[] = [];
+function reasonLabel(_input: OptimizationInput, placements: OptimizerPlacement[]): string {
   if (placements.length === 0) return 'no placements found';
-  parts.push(`${placements.length} plants placed`);
-  if (input.bed.trellisEdge) parts.push(`trellis ${input.bed.trellisEdge}`);
-  const companionPairs = Object.values(input.companions.pairs).filter((r) => r === 'companion').length;
-  if (companionPairs > 0) parts.push(`${companionPairs} companion pairs`);
-  return parts.join(', ');
+  return `${placements.length} plants placed`;
 }

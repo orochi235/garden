@@ -266,6 +266,15 @@ export function PropertiesPanel() {
                 ))}
               </select>
             </div>
+            <span className={f.label}></span>
+            <label className={f.span12} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <input
+                type="checkbox"
+                checked={structure.clipChildren !== false}
+                onChange={(e) => updateObj({ clipChildren: e.target.checked })}
+              />
+              <span>Clip plantings to container</span>
+            </label>
           </>
         )}
 

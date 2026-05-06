@@ -87,7 +87,15 @@ function GardenCanvasNewPrototype() {
   const layers = useMemo(() => {
     const getStructures = () => useGardenStore.getState().garden.structures;
     const getZones = () => useGardenStore.getState().garden.zones;
-    const getPlantings = () => useGardenStore.getState().garden.plantings;
+    // Hide existing plantings of the bed currently showing an optimizer
+    // preview, so the ghost layout reads cleanly without the prior contents
+    // bleeding through.
+    const getPlantings = () => {
+      const all = useGardenStore.getState().garden.plantings;
+      const previewBedId = useUiStore.getState().optimizerResultStructureId;
+      if (!previewBedId) return all;
+      return all.filter((p) => p.parentId !== previewBedId);
+    };
     const getUi: GetUi = () => {
       const u = useUiStore.getState();
       // Per-id flash opacity — layers call `getOpacity(id)` per entity. The
@@ -114,7 +122,11 @@ function GardenCanvasNewPrototype() {
         getStructures,
         () => {
           const u = useUiStore.getState();
-          return { result: u.optimizerResult, selectedCandidate: u.optimizerSelectedCandidate };
+          return {
+            result: u.optimizerResult,
+            selectedCandidate: u.optimizerSelectedCandidate,
+            structureId: u.optimizerResultStructureId,
+          };
         },
       ),
       createGroupOutlineLayer(getStructures, getUi),

@@ -69,6 +69,7 @@ export function LayerPropertiesPanel() {
 
   return (
     <div className={styles.panel}>
+      {/*
       <LayerSection title="Garden" alwaysOn defaultOpen>
         <div className={f.grid}>
           <span className={f.label}>Name</span>
@@ -127,6 +128,7 @@ export function LayerPropertiesPanel() {
           </select>
         </div>
       </LayerSection>
+      */}
 
       <LayerSection title="Ground" layerId="ground">
         <div className={styles.swatchGrid}>
@@ -142,6 +144,7 @@ export function LayerPropertiesPanel() {
         </div>
       </LayerSection>
 
+      {/*
       <LayerSection title="Blueprint" layerId="blueprint">
         <div className={f.grid}>
           {garden.blueprint ? (
@@ -188,6 +191,7 @@ export function LayerPropertiesPanel() {
           )}
         </div>
       </LayerSection>
+      */}
 
       <LayerSection title="Structures" layerId="structures">
         <div className={f.grid}>
@@ -222,11 +226,13 @@ export function LayerPropertiesPanel() {
         </div>
       </LayerSection>
 
+      {/*
       <LayerSection title="Zones" layerId="zones">
         <div className={f.grid}>
           <span className={f.label}>No properties yet</span>
         </div>
       </LayerSection>
+      */}
 
       <LayerSection title="Plantings" layerId="plantings">
         <div className={f.grid}>

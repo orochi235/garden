@@ -7,7 +7,8 @@ export interface MipVar {
   plantIdx: number;
   cellI: number;
   cellJ: number;
-  /** Constant coefficient in the objective (covers per-cell terms #7, #8). */
+  /** Constant coefficient in the objective. Always 0 in the simplified model
+   *  (no per-cell terms remain) — kept for forward compatibility. */
   c: number;
 }
 
@@ -33,7 +34,7 @@ export interface MipModel {
   sense: 'max';
   /** Cell metadata so the worker can map variable assignments back to placements. */
   cells: { i: number; j: number; xCenterIn: number; yCenterIn: number }[];
-  plants: { cultivarId: string; footprintIn: number; heightIn: number | null; climber: boolean }[];
+  plants: { cultivarId: string; footprintIn: number; heightIn: number | null }[];
 }
 
 export function buildMipModel(input: OptimizationInput): MipModel {
@@ -57,7 +58,6 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         cultivarId: p.cultivarId,
         footprintIn: p.footprintIn,
         heightIn: p.heightIn,
-        climber: p.climber,
       });
     }
   }
@@ -76,14 +76,13 @@ export function buildMipModel(input: OptimizationInput): MipModel {
     const stride = plantPitch[pi];
     for (const cell of cells) {
       if (cell.i % stride !== 0 || cell.j % stride !== 0) continue;
-      if (footprintFits(expanded[pi], cell, bed, g)) {
-        const c = perCellCoeff(expanded[pi], cell, input);
+      if (footprintFits(expanded[pi], cell, bed)) {
         vars.push({
           name: `x_${pi}_${cell.i}_${cell.j}`,
           plantIdx: pi,
           cellI: cell.i,
           cellJ: cell.j,
-          c,
+          c: 0,
         });
       }
     }
@@ -106,7 +105,6 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         terms[v.name] = 1;
       }
     }
-    // Always emit the coverage constraint for each cell (even if empty terms — 0 <= 1 is valid)
     constraints.push({ terms, op: '<=', rhs: 1, label: `coverage:${cell.i}_${cell.j}` });
   }
 
@@ -123,11 +121,6 @@ export function buildMipModel(input: OptimizationInput): MipModel {
     for (let n = 0; n < indices.length - 1; n++) {
       const a = indices[n];
       const b = indices[n + 1];
-      // Σ (cellOrder * x[a,c]) ≤ Σ (cellOrder * x[b,c])
-      // Weak ≤ (not strict ≤ −1): coverage already forbids two copies of the same cultivar at
-      // the same cell (overlapping footprints), so allowing equality here doesn't admit any
-      // illegal solution. The strict form combined with the big-M cellOrder coefficient
-      // weakens the LP relaxation and dramatically slows branch-and-bound.
       const terms: Record<string, number> = {};
       for (const v of vars) {
         const order = v.cellI * 1000 + v.cellJ;
@@ -138,15 +131,14 @@ export function buildMipModel(input: OptimizationInput): MipModel {
     }
   }
 
-  // Pairwise auxiliary variables for companion/antagonist/shading/same-species buffer
+  // Pairwise auxiliary variables for shading + same-species buffer (both negative
+  // coefficients — the one-sided coupling we use is correct for negatives only).
   const aux: MipAuxVar[] = [];
-  const adjacencyIn = 24; // pairs within this distance are "adjacent"
+  const adjacencyIn = 24;
 
-  // Build fast lookups to avoid O(n²) searching in inner loops
   const cellByIJ = new Map<string, typeof cells[number]>();
   for (const cell of cells) cellByIJ.set(`${cell.i}_${cell.j}`, cell);
 
-  // Index vars by plantIdx for O(1) per-plant lookup
   const varsByPlant = new Map<number, MipVar[]>();
   for (const v of vars) {
     const arr = varsByPlant.get(v.plantIdx) ?? [];
@@ -154,8 +146,6 @@ export function buildMipModel(input: OptimizationInput): MipModel {
     varsByPlant.set(v.plantIdx, arr);
   }
 
-  // Precompute adjacency radius in grid cells to limit inner loop iterations
-  // adjacencyIn / g = max cell distance to consider
   const maxCellDist = adjacencyIn / g;
 
   for (let a = 0; a < expanded.length; a++) {
@@ -163,36 +153,14 @@ export function buildMipModel(input: OptimizationInput): MipModel {
       const plantA = expanded[a];
       const plantB = expanded[b];
 
-      // Determine relationship
-      const keyAB = [plantA.cultivarId, plantB.cultivarId].sort().join('|');
-      const rel = input.companions.pairs[keyAB];
-
-      // Shading term (only when both have height info AND heights actually differ)
       const hasShading =
         plantA.heightIn != null &&
         plantB.heightIn != null &&
         plantA.heightIn !== plantB.heightIn;
       const sameSpecies = plantA.cultivarId === plantB.cultivarId;
 
-      // Only emit aux vars if there's something to score
-      const hasRelationship = rel != null || hasShading || sameSpecies;
-      if (!hasRelationship) continue;
-
-      const cellPairsForA = varsByPlant.get(a) ?? [];
-      const cellPairsForB = varsByPlant.get(b) ?? [];
-
-      const auxName = `n_${a}_${b}`;
-
-      // Compute objective coefficient for this pair
       let auxCoeff = 0;
-      if (rel === 'companion') {
-        auxCoeff += weights.companion;
-      } else if (rel === 'antagonist') {
-        auxCoeff -= weights.antagonist;
-      }
-      if (sameSpecies) {
-        auxCoeff -= weights.sameSpeciesBuffer;
-      }
+      if (sameSpecies) auxCoeff -= weights.sameSpeciesBuffer;
       if (hasShading) {
         const hA = plantA.heightIn!;
         const hB = plantB.heightIn!;
@@ -200,18 +168,15 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         auxCoeff -= weights.shading * shadingPenalty;
       }
 
-      // Skip aux entirely if the coefficient is zero — no contribution to the objective.
       if (!Number.isFinite(auxCoeff) || auxCoeff === 0) continue;
 
+      const auxName = `n_${a}_${b}`;
       aux.push({ name: auxName, c: auxCoeff });
 
-      // Aggregate adjacency: for each candidate cell of a, sum b's candidate cells within range.
+      const cellPairsForA = varsByPlant.get(a) ?? [];
+      const cellPairsForB = varsByPlant.get(b) ?? [];
+
       // n[a,b] >= x[a, c_a] + sum_{c_b in N(c_a)} x[b, c_b] - 1
-      // Since plant b is placed in exactly one cell (placement constraint), the sum is 0 or 1,
-      // and this is equivalent to the per-cell-pair big-M form but uses |cells_a| rows instead
-      // of |cells_a| * |cells_b within range|.
-      // The symmetric anchor on b is redundant (one direction suffices to force n_ab = 1 when
-      // both copies are adjacent).
       for (const va of cellPairsForA) {
         const cellA = cellByIJ.get(`${va.cellI}_${va.cellJ}`)!;
         const terms: Record<string, number> = { [auxName]: -1, [va.name]: 1 };
@@ -227,7 +192,6 @@ export function buildMipModel(input: OptimizationInput): MipModel {
             neighborCount++;
           }
         }
-        // If no neighbors, this row reduces to n_ab >= x[a,c_a] - 1, which is implied by n_ab >= 0.
         if (neighborCount === 0) continue;
         constraints.push({
           terms,
@@ -237,8 +201,7 @@ export function buildMipModel(input: OptimizationInput): MipModel {
         });
       }
 
-      // n[a,b] <= sum x[a,*]  (forces n_ab = 0 if a is unplaced; relevant only for negative coeffs
-      // since with placement = 1 these are slack)
+      // n[a,b] <= sum x[a,*]
       const termsA: Record<string, number> = { [auxName]: 1 };
       for (const va of cellPairsForA) termsA[va.name] = -1;
       constraints.push({ terms: termsA, op: '<=', rhs: 0, label: `adj_ub_a:${auxName}` });
@@ -257,7 +220,6 @@ function footprintFits(
   p: MipModel['plants'][number],
   cell: { i: number; j: number; xCenterIn: number; yCenterIn: number },
   bed: OptimizationInput['bed'],
-  _g: number,
 ): boolean {
   const r = p.footprintIn / 2;
   return (
@@ -275,55 +237,52 @@ function footprintCoversCell(
   target: { i: number; j: number; xCenterIn: number; yCenterIn: number },
   g: number,
 ): boolean {
-  // The plant is centered on cell (placedI, placedJ). It covers `target` if the
-  // distance between cell centers is less than (footprint radius).
   const dx = (placedI - target.i) * g;
   const dy = (placedJ - target.j) * g;
   return dx * dx + dy * dy < (p.footprintIn / 2) * (p.footprintIn / 2);
 }
 
-function perCellCoeff(
-  p: MipModel['plants'][number],
-  cell: { xCenterIn: number; yCenterIn: number },
-  input: OptimizationInput,
-): number {
-  let c = 0;
-  // Trellis attraction: closer to the trellis edge → higher coefficient
-  if (p.climber && input.bed.trellisEdge) {
-    const distFromEdge = distanceToEdge(cell, input.bed);
-    const maxDist = Math.max(input.bed.widthIn, input.bed.lengthIn);
-    c += input.weights.trellisAttraction * (1 - distFromEdge / maxDist);
-  }
-  // Region preference
-  for (const region of input.userRegions) {
-    if (region.preferredCultivarIds.includes(p.cultivarId) && pointInRegion(cell, region)) {
-      c += input.weights.regionPreference;
+/**
+ * Estimate the placement-var count without building the full model.
+ */
+export function estimatePlacementVars(input: OptimizationInput): number {
+  const { bed, plants, gridResolutionIn: g } = input;
+  const cols = Math.floor((bed.widthIn - 2 * bed.edgeClearanceIn) / g);
+  const rows = Math.floor((bed.lengthIn - 2 * bed.edgeClearanceIn) / g);
+
+  const expanded: Array<{ footprintIn: number }> = [];
+  for (const p of plants) {
+    for (let k = 0; k < p.count; k++) {
+      expanded.push({ footprintIn: p.footprintIn });
     }
   }
-  return c;
-}
 
-function distanceToEdge(
-  cell: { xCenterIn: number; yCenterIn: number },
-  bed: OptimizationInput['bed'],
-): number {
-  switch (bed.trellisEdge) {
-    case 'N': return cell.yCenterIn;
-    case 'S': return bed.lengthIn - cell.yCenterIn;
-    case 'W': return cell.xCenterIn;
-    case 'E': return bed.widthIn - cell.xCenterIn;
-    case null: default: return 0;
-  }
-}
-
-function pointInRegion(
-  cell: { xCenterIn: number; yCenterIn: number },
-  r: { xIn: number; yIn: number; widthIn: number; lengthIn: number },
-): boolean {
-  return (
-    cell.xCenterIn >= r.xIn &&
-    cell.xCenterIn <= r.xIn + r.widthIn &&
-    cell.yCenterIn >= r.yIn &&
-    cell.yCenterIn <= r.yIn + r.lengthIn
+  const plantPitch: number[] = expanded.map((p) =>
+    Math.max(1, Math.round(p.footprintIn / g / 2)),
   );
+
+  let total = 0;
+  for (let pi = 0; pi < expanded.length; pi++) {
+    const stride = plantPitch[pi];
+    let candidateCells = 0;
+    for (let i = 0; i < cols; i++) {
+      if (i % stride !== 0) continue;
+      for (let j = 0; j < rows; j++) {
+        if (j % stride !== 0) continue;
+        const xCenter = bed.edgeClearanceIn + (i + 0.5) * g;
+        const yCenter = bed.edgeClearanceIn + (j + 0.5) * g;
+        const r = expanded[pi].footprintIn / 2;
+        if (
+          xCenter - r >= bed.edgeClearanceIn &&
+          xCenter + r <= bed.widthIn - bed.edgeClearanceIn &&
+          yCenter - r >= bed.edgeClearanceIn &&
+          yCenter + r <= bed.lengthIn - bed.edgeClearanceIn
+        ) {
+          candidateCells++;
+        }
+      }
+    }
+    total += candidateCells;
+  }
+  return total;
 }
