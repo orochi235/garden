@@ -115,10 +115,13 @@ function GardenCanvasNewPrototype() {
         : { x: 0, y: 0, scale: 1 };
   }, [zoom, panX, panY]);
 
+  const BASE_GARDEN_ZOOM = 64; // px/ft at "100%"
+
   // Mirror local view → ui store so sibling UI components can read it.
   useEffect(() => {
     if (zoom <= 0) return;
     useUiStore.getState().setGardenViewMirror(zoom, panX, panY);
+    useUiStore.getState().setCanvasZoomPct(Math.round((zoom / BASE_GARDEN_ZOOM) * 100));
   }, [zoom, panX, panY]);
 
   // Initial fit. Re-runs only when width/height/garden bounds change AND we
@@ -139,27 +142,44 @@ function GardenCanvasNewPrototype() {
   // request — even rapid ones that would coalesce in a render-cycle reader.
   useEffect(() => {
     const unsub = useUiStore.subscribe((state, prev) => {
+      // Mode-specific garden requests (set-pan, set-zoom by absolute value, reset).
       const req = state.gardenViewRequest;
-      if (req === prev.gardenViewRequest) return;
-      if (!req) return;
-      // Apply.
-      if (req.kind === 'reset') {
-        const w = containerRef.current?.clientWidth ?? width;
-        const h = containerRef.current?.clientHeight ?? height;
-        if (w > 0 && h > 0) {
-          const fit = computeFitView(w, h, useGardenStore.getState().garden.widthFt, useGardenStore.getState().garden.lengthFt);
-          setZoomState(clampZoom(fit.zoom));
-          setPanXState(fit.panX);
-          setPanYState(fit.panY);
+      if (req !== prev.gardenViewRequest && req) {
+        if (req.kind === 'reset') {
+          const w = containerRef.current?.clientWidth ?? width;
+          const h = containerRef.current?.clientHeight ?? height;
+          if (w > 0 && h > 0) {
+            const fit = computeFitView(w, h, useGardenStore.getState().garden.widthFt, useGardenStore.getState().garden.lengthFt);
+            setZoomState(clampZoom(fit.zoom));
+            setPanXState(fit.panX);
+            setPanYState(fit.panY);
+          }
+        } else if (req.kind === 'set-zoom') {
+          setZoomState(clampZoom(req.value));
+        } else if (req.kind === 'set-pan') {
+          setPanXState(req.x);
+          setPanYState(req.y);
         }
-      } else if (req.kind === 'set-zoom') {
-        setZoomState(clampZoom(req.value));
-      } else if (req.kind === 'set-pan') {
-        setPanXState(req.x);
-        setPanYState(req.y);
+        useUiStore.getState().setGardenViewRequest(null);
       }
-      // Clear the slot so the same request can fire again later.
-      useUiStore.getState().setGardenViewRequest(null);
+      // Unified zoom request from StatusBar / keyboard.
+      const zoomReq = state.canvasZoomRequest;
+      if (zoomReq !== prev.canvasZoomRequest && zoomReq) {
+        if (zoomReq === 'reset-fit') {
+          const w = containerRef.current?.clientWidth ?? width;
+          const h = containerRef.current?.clientHeight ?? height;
+          if (w > 0 && h > 0) {
+            const fit = computeFitView(w, h, useGardenStore.getState().garden.widthFt, useGardenStore.getState().garden.lengthFt);
+            setZoomState(clampZoom(fit.zoom));
+            setPanXState(fit.panX);
+            setPanYState(fit.panY);
+          }
+        } else {
+          const factor = zoomReq === 'zoom-in' ? 1.25 : 0.8;
+          setZoomState((z) => clampZoom(z * factor));
+        }
+        useUiStore.getState().setCanvasZoomRequest(null);
+      }
     });
     return unsub;
   }, [width, height]);

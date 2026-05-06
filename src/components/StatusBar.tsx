@@ -5,17 +5,10 @@ import { formatMeasurement } from '../utils/units';
 
 export function StatusBar() {
   const garden = useGardenStore((s) => s.garden);
-  const zoom = useUiStore((s) => s.gardenZoom);
-  const setGardenViewRequest = useUiStore((s) => s.setGardenViewRequest);
-  const selectedIds = useUiStore((s) => s.selectedIds);
-  // StatusBar can't poke the canvas's view directly; it requests a target
-  // zoom and the canvas applies it. Multiplicative zoom buttons read the
-  // current mirrored zoom so the request is built relative to the live view.
-  const setZoom = (value: number) => setGardenViewRequest({ kind: 'set-zoom', value });
-
   const gridLabel = formatMeasurement(garden.gridCellSizeFt, garden.displayUnit, 0);
-  const BASE_ZOOM = 64; // px per foot at "100%"
-  const zoomPct = Math.round((zoom / BASE_ZOOM) * 100);
+  const zoomPct = useUiStore((s) => s.canvasZoomPct);
+  const setCanvasZoomRequest = useUiStore((s) => s.setCanvasZoomRequest);
+  const selectedIds = useUiStore((s) => s.selectedIds);
   const selectionLabel =
     selectedIds.length === 0
       ? 'No selection'
@@ -27,17 +20,17 @@ export function StatusBar() {
     <div className={styles.statusBar}>
       <span>Grid: {gridLabel}</span>
       <span className={styles.zoomControls}>
-        <button className={styles.zoomButton} onClick={() => setZoom(zoom * 0.8)}>
+        <button className={styles.zoomButton} onClick={() => setCanvasZoomRequest('zoom-out')}>
           −
         </button>
         <span className={styles.zoomLabel}>{zoomPct}%</span>
-        <button className={styles.zoomButton} onClick={() => setZoom(zoom * 1.25)}>
+        <button className={styles.zoomButton} onClick={() => setCanvasZoomRequest('zoom-in')}>
           +
         </button>
         <button
           className={styles.zoomButton}
-          onClick={() => setZoom(BASE_ZOOM)}
-          title="Reset to 100%"
+          onClick={() => setCanvasZoomRequest('reset-fit')}
+          title="Fit view"
         >
           ⊙
         </button>

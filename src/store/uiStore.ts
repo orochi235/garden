@@ -92,6 +92,19 @@ interface UiStore {
    * one slot. Setters: `setGardenViewRequest`.
    */
   gardenViewRequest: GardenViewRequest | null;
+  /**
+   * Current zoom as a display percentage — written by whichever canvas is
+   * active. Each canvas knows its own "100%" baseline (garden: 64 px/ft,
+   * seed-starting: 30 px/in) and normalises before writing. StatusBar reads
+   * this without needing to know which mode is active.
+   */
+  canvasZoomPct: number;
+  /**
+   * Unified zoom request from outside the canvas (StatusBar, keyboard). The
+   * active canvas picks it up and clears the slot. `zoom-in`/`zoom-out` apply
+   * a fixed ×1.25 / ×0.8 factor; `reset-fit` refits the view to content.
+   */
+  canvasZoomRequest: 'zoom-in' | 'zoom-out' | 'reset-fit' | null;
   plottingTool: PlottingTool | null;
   themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
@@ -216,6 +229,8 @@ interface UiStore {
   setGardenViewMirror: (zoom: number, panX: number, panY: number) => void;
   /** Outside-the-canvas: request a view change. Canvas picks it up & clears. */
   setGardenViewRequest: (req: GardenViewRequest | null) => void;
+  setCanvasZoomPct: (pct: number) => void;
+  setCanvasZoomRequest: (req: 'zoom-in' | 'zoom-out' | 'reset-fit' | null) => void;
   reset: () => void;
 }
 
@@ -248,6 +263,8 @@ function defaultState() {
     gardenPanX: 0,
     gardenPanY: 0,
     gardenViewRequest: null as GardenViewRequest | null,
+    canvasZoomPct: 100,
+    canvasZoomRequest: null as 'zoom-in' | 'zoom-out' | 'reset-fit' | null,
     plottingTool: null as PlottingTool | null,
     themeOverride: null as UiStore['themeOverride'],
     layerSelectorHovered: false,
@@ -339,6 +356,8 @@ export const useUiStore = create<UiStore>((set) => ({
   setGardenViewMirror: (zoom, panX, panY) =>
     set({ gardenZoom: zoom, gardenPanX: panX, gardenPanY: panY }),
   setGardenViewRequest: (req) => set({ gardenViewRequest: req }),
+  setCanvasZoomPct: (pct) => set({ canvasZoomPct: pct }),
+  setCanvasZoomRequest: (req) => set({ canvasZoomRequest: req }),
   setAppMode: (mode) => set({ appMode: mode }),
   setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
   setHighlightOpacity: (opacity) => set({ highlightOpacity: opacity }),

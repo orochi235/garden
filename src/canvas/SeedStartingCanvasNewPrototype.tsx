@@ -143,12 +143,13 @@ export function SeedStartingCanvasNewPrototype() {
   const viewRef = useRef(view);
   useEffect(() => { viewRef.current = view; }, [view]);
 
+  const BASE_SEED_ZOOM = 30; // px/in at "100%"
+
   const handleViewChange = (next: View) => {
-    // Clamp zoom (px-per-inch) to the seed-starting range; the kit's wheel
-    // zoom tool already clamps to its own min/max, but local edits and
-    // future tools shouldn't bypass those bounds.
     const scale = Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, next.scale));
-    setView({ x: next.x, y: next.y, scale });
+    const clamped = { x: next.x, y: next.y, scale };
+    setView(clamped);
+    useUiStore.getState().setCanvasZoomPct(Math.round((scale / BASE_SEED_ZOOM) * 100));
   };
 
   // Fit the current tray on first useful layout, on tray change, and on
@@ -190,6 +191,30 @@ export function SeedStartingCanvasNewPrototype() {
     fitViewToTray(width, height);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetTick]);
+
+  // Unified zoom requests from the status bar / keyboard.
+  const canvasZoomRequest = useUiStore((s) => s.canvasZoomRequest);
+  const prevZoomReqRef = useRef(canvasZoomRequest);
+  useEffect(() => {
+    const req = canvasZoomRequest;
+    if (!req || req === prevZoomReqRef.current) return;
+    prevZoomReqRef.current = req;
+    if (req === 'reset-fit') {
+      fitViewToTray(width, height);
+    } else {
+      const factor = req === 'zoom-in' ? 1.25 : 0.8;
+      setView((prev) => {
+        const scale = Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, prev.scale * factor));
+        const cx = prev.x + width / 2 / prev.scale;
+        const cy = prev.y + height / 2 / prev.scale;
+        const next = { x: cx - width / 2 / scale, y: cy - height / 2 / scale, scale };
+        useUiStore.getState().setCanvasZoomPct(Math.round((scale / BASE_SEED_ZOOM) * 100));
+        return next;
+      });
+    }
+    useUiStore.getState().setCanvasZoomRequest(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasZoomRequest]);
 
   // --- Tray label rename overlay ---
   const [renaming, setRenaming] = useState<{ trayId: string; value: string } | null>(null);

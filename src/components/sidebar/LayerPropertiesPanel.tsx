@@ -34,7 +34,6 @@ export function LayerPropertiesPanel() {
     return (
       <div className={styles.panel}>
         <AlmanacPanel />
-        <RenderLayersPanel />
         <DebugThemePanel />
         <ThemeDebugPanel />
       </div>
