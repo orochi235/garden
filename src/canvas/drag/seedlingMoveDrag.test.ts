@@ -154,7 +154,7 @@ describe('seedlingMoveDrag', () => {
     expect(ringStrokes).toHaveLength(0);
   });
 
-  it('renderPreview strokes a goldenrod ring on bumped cells', () => {
+  it('renderPreview does not stroke a goldenrod ring on bumped cells (bumped visual removed)', () => {
     const trayId = seedTray();
     const drag = createSeedlingMoveDrag();
     const { ctx, calls } = fakeCtx();
@@ -168,7 +168,7 @@ describe('seedlingMoveDrag', () => {
       { x: 0, y: 0, scale: 30 },
     );
     const goldStrokes = calls.filter((c) => c.fn === 'stroke' && c.strokeStyle === '#d4a55a');
-    expect(goldStrokes.length).toBeGreaterThan(0);
+    expect(goldStrokes.length).toBe(0);
   });
 
   it('renderPreview overlays a red infeasibility ring on every cell when !feasible', () => {

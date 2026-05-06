@@ -117,17 +117,6 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
         ctx.translate(cx, cy);
         renderPlant(ctx, cultivar.id, radius, cultivar.color);
         ctx.restore();
-        if (m.bumped) {
-          ctx.save();
-          ctx.strokeStyle = '#d4a55a';
-          ctx.lineWidth = 1.5 * invScale;
-          ctx.setLineDash([4 * invScale, 3 * invScale]);
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius + 2.5 * invScale, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.restore();
-        }
       }
       if (!putative.feasible) {
         ctx.save();
