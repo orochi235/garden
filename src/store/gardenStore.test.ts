@@ -274,6 +274,61 @@ describe('seed-starting actions', () => {
     expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(1);
   });
 
+  describe('reorderTrays', () => {
+    function seedThreeTrays() {
+      const a = { ...instantiatePreset('1020-36')!, id: 'tray-a', label: 'A' };
+      const b = { ...instantiatePreset('1020-36')!, id: 'tray-b', label: 'B' };
+      const c = { ...instantiatePreset('1020-36')!, id: 'tray-c', label: 'C' };
+      useGardenStore.getState().addTray(a);
+      useGardenStore.getState().addTray(b);
+      useGardenStore.getState().addTray(c);
+      return [a, b, c] as const;
+    }
+
+    it('moves a tray from one index to another', () => {
+      seedThreeTrays();
+      useGardenStore.getState().reorderTrays(0, 2);
+      const ids = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+      expect(ids).toEqual(['tray-b', 'tray-c', 'tray-a']);
+    });
+
+    it('moves a tray backwards', () => {
+      seedThreeTrays();
+      useGardenStore.getState().reorderTrays(2, 0);
+      const ids = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+      expect(ids).toEqual(['tray-c', 'tray-a', 'tray-b']);
+    });
+
+    it('no-ops when fromIndex === toIndex', () => {
+      seedThreeTrays();
+      const before = useGardenStore.getState().garden.seedStarting.trays;
+      useGardenStore.getState().reorderTrays(1, 1);
+      expect(useGardenStore.getState().garden.seedStarting.trays).toBe(before);
+    });
+
+    it('no-ops on out-of-bounds indices', () => {
+      seedThreeTrays();
+      const before = useGardenStore.getState().garden.seedStarting.trays;
+      useGardenStore.getState().reorderTrays(-1, 1);
+      useGardenStore.getState().reorderTrays(0, 99);
+      useGardenStore.getState().reorderTrays(5, 0);
+      expect(useGardenStore.getState().garden.seedStarting.trays).toBe(before);
+    });
+
+    it('creates exactly one undo step', () => {
+      seedThreeTrays();
+      const idsBefore = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+      useGardenStore.getState().reorderTrays(0, 2);
+      expect(useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id)).toEqual([
+        'tray-b',
+        'tray-c',
+        'tray-a',
+      ]);
+      useGardenStore.getState().undo();
+      expect(useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id)).toEqual(idsBefore);
+    });
+  });
+
   it('removeTray removes the tray and orphan seedlings', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);

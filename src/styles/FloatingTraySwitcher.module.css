@@ -75,6 +75,23 @@
   color: #ff8080;
 }
 
+.rowWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.row.dragging {
+  opacity: 0.4;
+}
+
+.insertionLine {
+  height: 2px;
+  margin: 1px 0;
+  background: #5ba4cf;
+  border-radius: 1px;
+  pointer-events: none;
+}
+
 .editInput {
   appearance: none;
   background: rgba(0, 0, 0, 0.35);

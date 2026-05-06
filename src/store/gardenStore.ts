@@ -48,6 +48,7 @@ interface GardenStore {
   addTraySilent: (tray: Tray) => void;
   removeTray: (trayId: string) => void;
   renameTray: (trayId: string, label: string) => void;
+  reorderTrays: (fromIndex: number, toIndex: number) => void;
   sowCell: (trayId: string, row: number, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   clearCell: (trayId: string, row: number, col: number) => void;
   moveSeedling: (
@@ -457,6 +458,18 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           trays: seedStarting.trays.map((t) => (t.id === trayId ? { ...t, label } : t)),
         },
       });
+    },
+
+    reorderTrays: (fromIndex, toIndex) => {
+      const { seedStarting } = get().garden;
+      const n = seedStarting.trays.length;
+      if (fromIndex === toIndex) return;
+      if (fromIndex < 0 || fromIndex >= n) return;
+      if (toIndex < 0 || toIndex >= n) return;
+      const next = seedStarting.trays.slice();
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      commitPatch({ seedStarting: { ...seedStarting, trays: next } });
     },
 
     sowCell: (trayId, row, col, cultivarId, opts) => {
