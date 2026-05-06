@@ -128,7 +128,7 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 ## Raised-bed feature
 
-- [ ] Expand companion/antagonist table beyond the v1 seed (~30 pairs in `src/data/companions.ts`). Source: extension-service publications, vetted gardening references.
+- [x] ~~Expand companion/antagonist table beyond the v1 seed (~30 pairs in `src/data/companions.ts`). Source: extension-service publications, vetted gardening references.~~ Resolved 2026-05-05: expanded from 30 to 186 pair entries with inline extension-service citations (UMaine #2167, Iowa State, WVU, Oregon State, UMN, Penn State, Cornell, Utah State, NC State, UNH, USDA SARE). v1 entries that used non-existent keys (`brassica`, `pole-bean`, `pea`, `beans`, `pepper`) are preserved for compatibility and re-stated under real `speciesId` keys so lookups actually hit. Ongoing — folkloric pairs without extension backing were intentionally skipped; further expansion possible as new extension publications are sourced.
 - [ ] Build a real `bands` editor for `banded-rows` arrangements (currently JSON-only).
 - [ ] Build a region-painting UI for `multi` arrangements (currently optimizer-only entrypoint).
 - [ ] Auto-migration of existing `rows`-arrangement raised beds to `multi` when companion blocks are detected.
