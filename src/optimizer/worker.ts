@@ -11,7 +11,6 @@ import type {
 } from './types';
 
 const MAX_UNIFIED_VARS = 1500;
-const SAME_SPECIES_ADJ_BUDGET = 1500;
 
 interface RunMsg { type: 'run'; input: OptimizationInput; id: string }
 interface CancelMsg { type: 'cancel'; id: string }
@@ -95,8 +94,6 @@ async function solveUnified(
     console.warn('[optimizer] candidate', n, 'unified has no prior to cut against');
   }
 
-  applySameSpeciesAdjStrip(model, n);
-
   onProgress('solve', n);
   greedyHexPack(input);
 
@@ -109,8 +106,11 @@ async function solveUnified(
   );
   const solution = trySolve(HighsModule, lpString, solveOpts(input));
   if (!solution) {
-    console.warn('[optimizer] candidate', n, 'unified solver crashed; falling back to greedy hex pack');
-    return greedyCandidate(input, performance.now() - solveStart, ['unified']);
+    // With per-solve fresh module instances, a crash here is a real solver
+    // failure (not heap corruption from a prior solve). Surface as a candidate
+    // skip rather than silently degrading the spreading penalty.
+    console.warn('[optimizer] candidate', n, 'unified solver failed; skipping candidate');
+    return null;
   }
   if (solution.Status !== 'Optimal' && solution.Status !== 'Time limit reached') {
     console.warn('[optimizer] candidate', n, 'unified status:', solution.Status);
@@ -178,8 +178,6 @@ async function solveClustered(
     if (n > 0 && prior.length > 0) {
       model.constraints.push({ ...buildNoGoodCut(prior, subInput.diversityThreshold), label: `nogood:${n}` });
     }
-
-    applySameSpeciesAdjStrip(model, n);
 
     const HighsModule = await loadHighs();
     const lpString = mipModelToLpString(model);
@@ -377,21 +375,6 @@ function buildSubInput(parent: OptimizationInput, subBed: SubBed): OptimizationI
   };
 }
 
-function applySameSpeciesAdjStrip(model: MipModel, n: number): void {
-  const sameSpeciesAux = sameSpeciesAuxNames(model);
-  const sameSpeciesAdjCount = model.constraints.filter((c) =>
-    isAdjRowForAux(c.label, sameSpeciesAux),
-  ).length;
-  if (sameSpeciesAdjCount > SAME_SPECIES_ADJ_BUDGET) {
-    console.warn(
-      '[optimizer] candidate', n,
-      `same-species adjacency rows (${sameSpeciesAdjCount}) exceed budget (${SAME_SPECIES_ADJ_BUDGET}); stripping aux+rows`,
-    );
-    model.constraints = model.constraints.filter((c) => !isAdjRowForAux(c.label, sameSpeciesAux));
-    model.aux = model.aux.filter((a) => !sameSpeciesAux.has(a.name));
-  }
-}
-
 function solveOpts(input: OptimizationInput) {
   // NOTE: do NOT pass output_flag:false or log_to_console:false. highs-js
   // v1.8.0 parses the solution from stdout; silencing it makes solve() throw
@@ -426,6 +409,26 @@ function clusteredReasonLabel(clusters: Cluster[], placedCount: number, fallback
   return `${placedCount} plants placed across ${clusters.length} groups (${keys})${fallbackNote}`;
 }
 
+/**
+ * Instantiate a fresh HiGHS-WASM module per solve.
+ *
+ * highs-js 1.8.0 has a sharp edge: when a single solve crashes mid-run
+ * (table-OOB / "Too few lines" / Aborted()), the emscripten Module's heap
+ * state can be corrupted, and any subsequent `solve()` on the same instance
+ * may also fail or hang. Creating a fresh Module per solve guarantees heap
+ * isolation — each call gets a brand-new linear memory and emscripten
+ * runtime, so a crash on solve N cannot affect solve N+1.
+ *
+ * Cost: ~10–40ms per instantiation (WASM compile + emscripten init). Acceptable
+ * given solves typically run hundreds of ms to seconds. The dynamic `import()`
+ * results are module-cached so we don't refetch the .js/.wasm bytes — only the
+ * Module() factory call is fresh.
+ *
+ * NOTE: The candidate-level worker pool (see runOptimizer.ts) already isolates
+ * heap state across Web Workers. Per-solve isolation here additionally protects
+ * the multiple solves that happen *within* a single Worker (multiple
+ * candidates, multiple clusters in solveClustered).
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadHighs(): Promise<any> {
   const [mod, wasmUrlMod] = await Promise.all([
@@ -434,6 +437,8 @@ async function loadHighs(): Promise<any> {
   ]);
   const loader = (mod as any).default ?? mod;
   const wasmUrl = (wasmUrlMod as any).default ?? wasmUrlMod;
+  // Each loader() invocation creates a NEW emscripten Module — fresh heap,
+  // fresh runtime. Do not cache the resolved instance.
   return loader({ locateFile: () => wasmUrl });
 }
 
@@ -561,27 +566,6 @@ interface HighsSolution {
   Status: string;
   Columns: Record<string, { Primal: number }>;
   ObjectiveValue: number;
-}
-
-/** Identify aux variable names whose pair represents same-species copies. */
-function sameSpeciesAuxNames(model: MipModel): Set<string> {
-  const out = new Set<string>();
-  for (const aux of model.aux) {
-    const m = aux.name.match(/^n_(\d+)_(\d+)$/);
-    if (!m) continue;
-    const a = Number(m[1]);
-    const b = Number(m[2]);
-    if (model.plants[a]?.cultivarId === model.plants[b]?.cultivarId) {
-      out.add(aux.name);
-    }
-  }
-  return out;
-}
-
-/** Match `adj:n_{a}_{b}_{i}_{j}`, `adj_ub_a:n_{a}_{b}`, or `adj_ub_b:n_{a}_{b}` rows. */
-function isAdjRowForAux(label: string, auxNames: Set<string>): boolean {
-  const m = label.match(/^(?:adj|adj_ub_a|adj_ub_b):(n_\d+_\d+)/);
-  return m != null && auxNames.has(m[1]);
 }
 
 /** LP variable names may not contain special chars — replace them. */

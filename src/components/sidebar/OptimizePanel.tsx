@@ -53,6 +53,7 @@ export function OptimizePanel({ structureId }: Props) {
     const handle = runOptimizerForBed({
       bed: structure!,
       request,
+      existingPlantings: bedPlantings,
       candidateCount: 3,
       onProgress: (phase, candidate) => setProgress({ phase, candidate }),
     });

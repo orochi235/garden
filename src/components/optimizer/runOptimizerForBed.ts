@@ -1,11 +1,19 @@
-import { runOptimizer, DEFAULT_WEIGHTS, type OptimizationInput, type OptimizationResult, type OptimizerPlant, type RunHandle } from '../../optimizer';
-import type { Structure } from '../../model/types';
+import { runOptimizer, DEFAULT_WEIGHTS, type OptimizationInput, type OptimizationResult, type OptimizerPlacement, type OptimizerPlant, type RunHandle } from '../../optimizer';
+import type { Planting, Structure } from '../../model/types';
 import type { Cultivar } from '../../model/cultivars';
 
 export interface BedOptimizerArgs {
   bed: Structure;
   /** Plants the user wants placed: cultivar + desired count. */
   request: { cultivar: Cultivar; count: number }[];
+  /**
+   * Existing plantings already arranged in this bed. Used as a hint to the
+   * greedy fallback so it preserves the user's hand-arranged layout when the
+   * MILP solve fails or is bypassed. Coordinates are in feet relative to the
+   * bed origin (same convention as `Planting.x`/`y` minus the bed's own
+   * origin); this function converts to inches.
+   */
+  existingPlantings?: Planting[];
   /** Diversity threshold (cells). Default 3. */
   diversityThreshold?: number;
   /** Time limit per candidate, sec. Default 5. */
@@ -32,6 +40,12 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
     };
   });
 
+  const existingPlacements: OptimizerPlacement[] | undefined = args.existingPlantings?.map((p) => ({
+    cultivarId: p.cultivarId,
+    xIn: p.x * FT_TO_IN,
+    yIn: p.y * FT_TO_IN,
+  }));
+
   const input: OptimizationInput = {
     bed: {
       widthIn: args.bed.width * FT_TO_IN,
@@ -45,6 +59,7 @@ export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
     mipGap: 0.01,
     candidateCount: args.candidateCount ?? 3,
     diversityThreshold: args.diversityThreshold ?? 3,
+    ...(existingPlacements ? { existingPlacements } : {}),
   };
 
   return runOptimizer(input, { onProgress: args.onProgress });

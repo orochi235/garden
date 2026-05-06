@@ -41,4 +41,65 @@ describe('greedyHexPack', () => {
       }
     }
   });
+
+  it('preserves existingPlacements at original coordinates and packs the rest', () => {
+    // Request 6 basils total; preserve 2 at quirky non-grid positions.
+    const input: OptimizationInput = {
+      ...baseInput,
+      plants: [{ cultivarId: 'basil', count: 6, footprintIn: 8, heightIn: 12 }],
+      existingPlacements: [
+        { cultivarId: 'basil', xIn: 7, yIn: 11 },
+        { cultivarId: 'basil', xIn: 23, yIn: 35 },
+      ],
+    };
+    const seed = greedyHexPack(input);
+    expect(seed.length).toBe(6);
+    // Two preserved placements appear first with their exact original coords.
+    expect(seed[0]).toMatchObject({ cultivarId: 'basil', xIn: 7, yIn: 11 });
+    expect(seed[1]).toMatchObject({ cultivarId: 'basil', xIn: 23, yIn: 35 });
+    // Remaining four don't collide with preserved ones (or each other).
+    for (let i = 0; i < seed.length; i++) {
+      for (let j = i + 1; j < seed.length; j++) {
+        const dx = seed[i].xIn - seed[j].xIn;
+        const dy = seed[i].yIn - seed[j].yIn;
+        const minDist = (seed[i].spacingIn + seed[j].spacingIn) / 2;
+        expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(minDist - 0.001);
+      }
+    }
+    // None of the new four sit at a preserved coord.
+    const newOnes = seed.slice(2);
+    for (const p of newOnes) {
+      expect(!(p.xIn === 7 && p.yIn === 11)).toBe(true);
+      expect(!(p.xIn === 23 && p.yIn === 35)).toBe(true);
+    }
+  });
+
+  it('drops overlapping existingPlacements (first-wins)', () => {
+    const input: OptimizationInput = {
+      ...baseInput,
+      plants: [{ cultivarId: 'basil', count: 6, footprintIn: 8, heightIn: 12 }],
+      existingPlacements: [
+        { cultivarId: 'basil', xIn: 10, yIn: 10 },
+        { cultivarId: 'basil', xIn: 11, yIn: 11 }, // overlaps the first
+      ],
+    };
+    const seed = greedyHexPack(input);
+    // First preserved survives at (10,10); second is dropped.
+    expect(seed[0]).toMatchObject({ xIn: 10, yIn: 10 });
+    const second = seed.find((p) => p.xIn === 11 && p.yIn === 11);
+    expect(second).toBeUndefined();
+  });
+
+  it('ignores existingPlacements with cultivars not in request', () => {
+    const input: OptimizationInput = {
+      ...baseInput,
+      plants: [{ cultivarId: 'basil', count: 3, footprintIn: 8, heightIn: 12 }],
+      existingPlacements: [
+        { cultivarId: 'mystery', xIn: 10, yIn: 10 },
+      ],
+    };
+    const seed = greedyHexPack(input);
+    expect(seed.every((p) => p.cultivarId === 'basil')).toBe(true);
+    expect(seed.length).toBe(3);
+  });
 });

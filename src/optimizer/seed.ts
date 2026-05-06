@@ -19,19 +19,53 @@ export interface SeedPlacement {
  * need to be planted further apart than that to thrive.
  */
 export function greedyHexPack(input: OptimizationInput): SeedPlacement[] {
-  const expanded: { cultivarId: string; footprintIn: number; spacingIn: number }[] = [];
-  for (const p of input.plants) {
-    const spacingIn = p.spacingIn ?? p.footprintIn;
-    for (let i = 0; i < p.count; i++) {
-      expanded.push({ cultivarId: p.cultivarId, footprintIn: p.footprintIn, spacingIn });
-    }
-  }
-  expanded.sort((a, b) => b.spacingIn - a.spacingIn);
-
+  // Pre-seed `out` with any existing placements that match a requested
+  // cultivar. Each preserved placement consumes one unit from its cultivar's
+  // remaining count, so the hex packer fills only the leftover demand into
+  // unclaimed space. First-wins on overlaps.
   const out: SeedPlacement[] = [];
   const m = input.bed.edgeClearanceIn;
   const w = input.bed.widthIn;
   const h = input.bed.lengthIn;
+
+  const remaining = new Map<string, number>();
+  for (const p of input.plants) remaining.set(p.cultivarId, p.count);
+
+  if (input.existingPlacements && input.existingPlacements.length > 0) {
+    const plantByCultivar = new Map(input.plants.map((p) => [p.cultivarId, p]));
+    for (const ep of input.existingPlacements) {
+      const plant = plantByCultivar.get(ep.cultivarId);
+      if (!plant) continue;
+      const left = remaining.get(ep.cultivarId) ?? 0;
+      if (left <= 0) continue;
+      const spacingIn = plant.spacingIn ?? plant.footprintIn;
+      const r = spacingIn / 2;
+      // Bounds check: must fit within bed (with edge clearance).
+      if (ep.xIn - r < m || ep.xIn + r > w - m) continue;
+      if (ep.yIn - r < m || ep.yIn + r > h - m) continue;
+      // First-wins overlap check against already-preserved placements.
+      if (collides(out, ep.xIn, ep.yIn, r)) continue;
+      out.push({
+        cultivarId: ep.cultivarId,
+        xIn: ep.xIn,
+        yIn: ep.yIn,
+        footprintIn: plant.footprintIn,
+        spacingIn,
+        placedAt: out.length,
+      });
+      remaining.set(ep.cultivarId, left - 1);
+    }
+  }
+
+  const expanded: { cultivarId: string; footprintIn: number; spacingIn: number }[] = [];
+  for (const p of input.plants) {
+    const spacingIn = p.spacingIn ?? p.footprintIn;
+    const left = remaining.get(p.cultivarId) ?? 0;
+    for (let i = 0; i < left; i++) {
+      expanded.push({ cultivarId: p.cultivarId, footprintIn: p.footprintIn, spacingIn });
+    }
+  }
+  expanded.sort((a, b) => b.spacingIn - a.spacingIn);
 
   for (const plant of expanded) {
     const r = plant.spacingIn / 2;

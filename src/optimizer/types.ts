@@ -60,6 +60,21 @@ export interface OptimizationInput {
    * cross-candidate diversity matters more than wall-clock.
    */
   concurrency?: number;
+  /**
+   * Hint to the greedy fallback: placements to preserve (with original
+   * coordinates) when packing. Only consumed when the optimizer falls back to
+   * `greedyHexPack` — MILP solves ignore this field. Each entry whose
+   * `cultivarId` matches a requested plant in `plants` is placed at its
+   * original `(xIn, yIn)` first, claiming the corresponding spacing radius;
+   * remaining requested plants then hex-pack into the unclaimed space.
+   *
+   * If two existing placements would overlap, first-wins (later overlapping
+   * placements are dropped). Existing placements with cultivars not in the
+   * current request are ignored. Counts in `plants` are upper bounds — if the
+   * existing placements already cover the full requested count, no new
+   * placements are added.
+   */
+  existingPlacements?: OptimizerPlacement[];
 }
 
 export interface OptimizerPlacement {
