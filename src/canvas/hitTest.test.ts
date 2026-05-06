@@ -30,6 +30,7 @@ describe('hitTestPlantings', () => {
       arrangement: null,
       wallThicknessFt: 1 / 12,
       trellisEdge: null,
+      clipChildren: true,
     },
   ];
   const zones: Zone[] = [];
@@ -124,6 +125,7 @@ describe('hitTestObjects', () => {
       arrangement: { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, marginFt: 0.25 },
       wallThicknessFt: 1 / 12,
       trellisEdge: null,
+      clipChildren: true,
     },
   ];
   const zones: Zone[] = [

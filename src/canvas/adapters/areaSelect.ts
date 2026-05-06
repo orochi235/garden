@@ -3,8 +3,8 @@ import { useUiStore } from '../../store/uiStore';
 import { hitTestArea } from '../hitTest';
 import type { AreaSelectAdapter, Op } from '@orochi235/weasel';
 
-export function createAreaSelectAdapter(): AreaSelectAdapter {
-  const adapter: AreaSelectAdapter = {
+export function createAreaSelectAdapter(): Required<AreaSelectAdapter> {
+  const adapter: Required<AreaSelectAdapter> = {
     hitTestArea(rect) {
       const { garden } = useGardenStore.getState();
       const hits = hitTestArea(rect, garden.structures, garden.zones, garden.plantings);

@@ -1,16 +1,12 @@
-import type { Blueprint, DisplayUnit } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
-import { displayToFeet, feetToDisplay } from '../../utils/units';
 import { AlmanacPanel } from './AlmanacPanel';
 import { DebugThemePanel } from './DebugThemePanel';
 import { ThemeDebugPanel } from './ThemeDebugPanel';
 import { LayerSection } from './LayerSection';
 import { RenderLayersPanel } from './RenderLayersPanel';
-
-const DISPLAY_UNITS: DisplayUnit[] = ['ft', 'in', 'm', 'cm'];
 
 const GROUND_COLORS = [
   { value: '#4A7C59', label: 'Grass' },
@@ -32,9 +28,7 @@ export function LayerPropertiesPanel() {
   const updateGarden = useGardenStore((s) => s.updateGarden);
   const renderLayerVisibility = useUiStore((s) => s.renderLayerVisibility);
   const setRenderLayerVisible = useUiStore((s) => s.setRenderLayerVisible);
-  const setBlueprint = useGardenStore((s) => s.setBlueprint);
   const appMode = useUiStore((s) => s.appMode);
-  const unit = garden.displayUnit;
 
   if (appMode === 'seed-starting') {
     return (
@@ -45,26 +39,6 @@ export function LayerPropertiesPanel() {
         <ThemeDebugPanel />
       </div>
     );
-  }
-
-  function handleLoadBlueprint() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        setBlueprint({ imageData: reader.result as string, x: 0, y: 0, scale: 1, opacity: 0.3 });
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-  }
-
-  function updateBlueprint(updates: Partial<Blueprint>) {
-    if (garden.blueprint) setBlueprint({ ...garden.blueprint, ...updates });
   }
 
   return (

@@ -56,8 +56,8 @@ function allNodes(): SceneNode[] {
   return nodes;
 }
 
-export function createGardenSceneAdapter(): GardenSceneAdapter {
-  const adapter: GardenSceneAdapter = {
+export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
+  const adapter: Required<GardenSceneAdapter> = {
     getObject(id) {
       return findNode(id);
     },

@@ -24,6 +24,7 @@ describe('createDebugLayers', () => {
       rotation: 0, color: '#fff', label: 's1', zIndex: 0, parentId: null,
       groupId: null, snapToGrid: true, surface: false, container: true,
       fill: null, arrangement: null, wallThicknessFt: 0.1, trellisEdge: null,
+      clipChildren: true,
     });
     g.zones.push({
       id: 'z1', x: 0, y: 0, width: 5, length: 5, color: '#0f0', label: 'z1',

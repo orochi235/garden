@@ -20,8 +20,8 @@ function getParent(id: string): { id: string; x: number; y: number } | undefined
   return getPlantingParent(useGardenStore.getState().garden, id);
 }
 
-export function createPlantingMoveAdapter(): PlantingMoveAdapter {
-  const adapter: PlantingMoveAdapter = {
+export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
+  const adapter: Required<PlantingMoveAdapter> = {
     getObject(id) {
       return getPlanting(id);
     },

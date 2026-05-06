@@ -56,8 +56,8 @@ describe('seedStartingSceneAdapter', () => {
   it('getParent: seedling → tray id, tray → null', () => {
     const { tray, sA } = setup();
     const a = createSeedStartingSceneAdapter();
-    expect(a.getParent(sA.id)).toBe(tray.id);
-    expect(a.getParent(tray.id)).toBeNull();
+    expect(a.getParent!(sA.id)).toBe(tray.id);
+    expect(a.getParent!(tray.id)).toBeNull();
   });
 
   it('getChildren returns seedling ids in that tray', () => {
