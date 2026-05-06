@@ -37,6 +37,7 @@ import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
 import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
 import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
+import { createPlotDrag, PLOT_DRAG_KIND, type PlotPutative } from './drag/plotDrag';
 import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
@@ -129,6 +130,7 @@ function GardenCanvasNewPrototype() {
         createGardenPaletteDrag({ getEntry: () => null }),
       [MOVE_DRAG_KIND]: createMoveDrag(),
       [RESIZE_DRAG_KIND]: createResizeDrag(),
+      [PLOT_DRAG_KIND]: createPlotDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createZoneLayers(getZones, getUi),
@@ -242,8 +244,53 @@ function GardenCanvasNewPrototype() {
   const rightDragPan = useEricRightDragPan();
   const wheelZoom = useEricWheelZoomTool();
   const clickZoom = useEricClickZoomTool();
+  // Plot (rectangle) drag — migrated onto the putative-drag framework.
+  // An `InsertBehavior` mirrors the in-flight start/current points into
+  // `uiStore.dragPreview` on every frame so the framework's `dragPreviewLayer`
+  // can render the rectangle via `plotDrag.renderPreview`. The kit's internal
+  // screen-space `insert-overlay` marquee is suppressed (fully transparent
+  // overlayStyle) so the framework owns the visual. Commit still flows
+  // through `useInsert.end` → `dispatchApplyBatch` → `insertAdapter.applyBatch`,
+  // which calls `gardenStore.checkpoint()` exactly once per gesture.
+  // See `src/canvas/drag/plotDrag.ts` for the rationale.
   const insertTool = useInsertTool(insertAdapter, {
-    onGestureEnd: () => useUiStore.getState().setPlottingTool(null),
+    onGestureEnd: () => {
+      useUiStore.getState().setPlottingTool(null);
+      // Clear the slot — the gesture (committed or cancelled) is over.
+      const ui = useUiStore.getState();
+      if (ui.dragPreview && ui.dragPreview.kind === PLOT_DRAG_KIND) {
+        ui.setDragPreview(null);
+      }
+    },
+    overlayStyle: { fill: 'transparent', stroke: 'transparent', dash: [], lineWidth: 0 },
+    behaviors: [
+      {
+        onStart: (ctx) => {
+          const tool = useUiStore.getState().plottingTool;
+          if (!tool) return;
+          const start = ctx.origin.get('gesture') as { x: number; y: number } | undefined;
+          if (!start) return;
+          const putative: PlotPutative = {
+            start: { x: start.x, y: start.y },
+            current: { x: start.x, y: start.y },
+            entityKind: tool.category === 'structures' ? 'structure' : 'zone',
+            color: tool.color,
+          };
+          useUiStore.getState().setDragPreview({ kind: PLOT_DRAG_KIND, putative });
+        },
+        onMove: (_ctx, proposed) => {
+          const tool = useUiStore.getState().plottingTool;
+          if (!tool) return;
+          const putative: PlotPutative = {
+            start: { x: proposed.start.x, y: proposed.start.y },
+            current: { x: proposed.current.x, y: proposed.current.y },
+            entityKind: tool.category === 'structures' ? 'structure' : 'zone',
+            color: tool.color,
+          };
+          useUiStore.getState().setDragPreview({ kind: PLOT_DRAG_KIND, putative });
+        },
+      },
+    ],
   });
   // Palette → garden drop tool (non-claiming pseudo-tool). Mirrors the
   // seed-starting `usePaletteDropTool`: subscribes to `palettePointerPayload`,
