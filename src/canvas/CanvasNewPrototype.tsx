@@ -36,6 +36,7 @@ import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
 import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
+import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
 import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
@@ -127,6 +128,7 @@ function GardenCanvasNewPrototype() {
       [createGardenPaletteDrag({ getEntry: () => null }).kind]:
         createGardenPaletteDrag({ getEntry: () => null }),
       [MOVE_DRAG_KIND]: createMoveDrag(),
+      [RESIZE_DRAG_KIND]: createResizeDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createZoneLayers(getZones, getUi),

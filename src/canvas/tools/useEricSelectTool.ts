@@ -38,6 +38,7 @@ import {
   requirePlantingDrop,
 } from './snapMoveBehaviors';
 import { MOVE_DRAG_KIND, type MovePutative } from '../drag/moveDrag';
+import { RESIZE_DRAG_KIND, type ResizePutative } from '../drag/resizeDrag';
 
 export type SelectScratch =
   | { kind: 'idle' }
@@ -223,6 +224,41 @@ export function useEricSelectTool(
   const zoneResizeOpts: UseResizeOptions<StructureResizePose> = {};
   const structureResize = useResize(structureResizeAdapter, structureResizeOpts);
   const zoneResize = useResize(zoneResizeAdapter, zoneResizeOpts);
+
+  // Mirror weasel's live resize overlays into `uiStore.dragPreview` so the
+  // framework's generic `dragPreviewLayer` renders the resize ghost via
+  // `resizeDrag.renderPreview`. Same pattern as the move mirror above.
+  // Commit still flows through `*Resize.end()` in `drag.onEnd`, which calls
+  // `adapter.applyBatch` → `gardenStore.checkpoint()` (one undo step).
+  const structureResizeOverlay = structureResize.overlay;
+  const zoneResizeOverlay = zoneResize.overlay;
+  useEffect(() => {
+    const ui = useUiStore.getState();
+    const ov = structureResizeOverlay ?? zoneResizeOverlay;
+    const layer: 'structures' | 'zones' | null = structureResizeOverlay
+      ? 'structures'
+      : zoneResizeOverlay
+        ? 'zones'
+        : null;
+    if (!ov || !layer) {
+      if (ui.dragPreview && ui.dragPreview.kind === RESIZE_DRAG_KIND) {
+        ui.setDragPreview(null);
+      }
+      return;
+    }
+    const p = ov.targetPose as { x: number; y: number; width: number; length?: number; height?: number };
+    const putative: ResizePutative = {
+      targetId: ov.id,
+      layer,
+      pose: {
+        x: p.x,
+        y: p.y,
+        width: p.width,
+        length: p.length ?? p.height ?? 0,
+      },
+    };
+    ui.setDragPreview({ kind: RESIZE_DRAG_KIND, putative });
+  }, [structureResizeOverlay, zoneResizeOverlay]);
 
   const areaSelect = useAreaSelect(adapter, {
     behaviors: [selectFromMarquee()],
