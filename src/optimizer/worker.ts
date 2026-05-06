@@ -3,11 +3,11 @@ import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
 import { familyCompanionPartitioner } from './partitioning/familyCompanion';
 import { proportionalStripAllocator } from './allocation/proportionalStrip';
-import { pairContribution } from './scoring/pairwiseScore';
+import { refineClusterLayout } from './scoring/postHocRefine';
 import type { MipModel } from './formulation';
 import type {
   OptimizationInput, OptimizationResult, OptimizationCandidate,
-  OptimizerPlacement, OptimizerPlant, OptimizerWeights, Cluster, SubBed,
+  OptimizerPlacement, Cluster, SubBed,
 } from './types';
 
 const MAX_UNIFIED_VARS = 1500;
@@ -215,67 +215,44 @@ async function solveClustered(
   }
 
   if (allPlacements.length === 0) return null;
-  const crossClusterScore = computeCrossClusterScore(
-    allPlacements,
-    placementClusterIdx,
-    input.plants,
-    input.weights,
-  );
-  const clusterRegions = subBeds.map((sb) => ({
+  const initialRegions = subBeds.map((sb) => ({
     key: sb.cluster.key,
     offsetIn: { x: sb.offsetIn.x, y: sb.offsetIn.y },
     widthIn: sb.bed.widthIn,
     lengthIn: sb.bed.lengthIn,
   }));
-  return {
+  // Post-hoc cluster rotation/swap pass: try to reduce cross-cluster
+  // shading + same-species penalties via rigid-body cluster transforms
+  // that preserve within-cluster scores. Time-bounded; cheap.
+  const footprintByCultivar = new Map<string, number>();
+  for (const p of input.plants) {
+    if (!footprintByCultivar.has(p.cultivarId)) footprintByCultivar.set(p.cultivarId, p.footprintIn);
+  }
+  const refined = refineClusterLayout({
     placements: allPlacements,
+    placementClusterIdx,
+    regions: initialRegions,
+    plants: input.plants,
+    weights: input.weights,
+    footprintByCultivar,
+  });
+  if (refined.acceptedMoves > 0) {
+    console.info(
+      '[optimizer] candidate', n, 'post-hoc refine: accepted', refined.acceptedMoves,
+      'moves;', 'crossClusterScore', refined.initialCrossClusterScore.toFixed(3),
+      '→', refined.finalCrossClusterScore.toFixed(3),
+      refined.timedOut ? '(timed out)' : '',
+    );
+  }
+  return {
+    placements: refined.placements,
     score: scoreSum,
-    reason: clusteredReasonLabel(clusters, allPlacements.length, fallbackKeys),
+    reason: clusteredReasonLabel(clusters, refined.placements.length, fallbackKeys),
     gap: worstGap,
     solveMs: performance.now() - solveStart,
-    crossClusterScore,
-    clusterRegions,
+    crossClusterScore: refined.finalCrossClusterScore,
+    clusterRegions: refined.regions,
   };
-}
-
-/**
- * Sum pairwise objective contributions for placements that ended up in
- * DIFFERENT clusters. Diagnostic-only — see `OptimizationCandidate.crossClusterScore`.
- * Uses the same per-pair formula as `formulation.ts` (via `pairContribution`)
- * so the number is directly comparable to in-cluster contributions.
- */
-function computeCrossClusterScore(
-  placements: OptimizerPlacement[],
-  clusterIdx: number[],
-  plants: OptimizerPlant[],
-  weights: OptimizerWeights,
-): number {
-  // Lookup: cultivarId → heightIn (input plants are unique per cultivar in
-  // practice; first match is fine).
-  const heightByCultivar = new Map<string, number | null>();
-  for (const p of plants) {
-    if (!heightByCultivar.has(p.cultivarId)) heightByCultivar.set(p.cultivarId, p.heightIn);
-  }
-  let total = 0;
-  for (let i = 0; i < placements.length; i++) {
-    for (let j = i + 1; j < placements.length; j++) {
-      if (clusterIdx[i] === clusterIdx[j]) continue;
-      const a = {
-        cultivarId: placements[i].cultivarId,
-        heightIn: heightByCultivar.get(placements[i].cultivarId) ?? null,
-      };
-      const b = {
-        cultivarId: placements[j].cultivarId,
-        heightIn: heightByCultivar.get(placements[j].cultivarId) ?? null,
-      };
-      total += pairContribution(
-        a, { xIn: placements[i].xIn, yIn: placements[i].yIn },
-        b, { xIn: placements[j].xIn, yIn: placements[j].yIn },
-        weights,
-      );
-    }
-  }
-  return total;
 }
 
 /**

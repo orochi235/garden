@@ -266,4 +266,92 @@ describe('useEricSelectTool — click-on-empty modifier matrix (A)', () => {
   });
 });
 
+describe('useEricSelectTool — click on group-sibling outline promotes selection', () => {
+  beforeEach(() => {
+    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useUiStore.getState().clearSelection();
+  });
+
+  it('plain click on a sibling outline edge promotes selection to whole group', () => {
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const c = createStructure({ type: 'bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c] } }));
+
+    // Pre-select only `a`.
+    useUiStore.getState().setSelection([a.id]);
+
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+
+    // Click just outside b's left edge — adapter.hitTest returns null (outside
+    // body), but the implicit outline of b runs through there.
+    // b is at x=10..14; click at x=9.95 (just outside, < 6 px world @ scale=50
+    // = 0.12 ft tolerance) and y=2 (mid-body vertically).
+    const ctx = makeCtx(9.95, 2, { kind: 'idle' }, adapter);
+    expect(adapter.hitTest(9.95, 2)).toBeNull();
+
+    result.current.pointer!.onDown!(makePointerEvt(), ctx);
+    expect(ctx.scratch.kind).toBe('area');
+    result.current.pointer!.onClick!(makePointerEvt(), ctx);
+
+    expect(useUiStore.getState().selectedIds.sort()).toEqual([a.id, b.id, c.id].sort());
+  });
+
+  it('shift+click on a sibling outline edge promotes (adds siblings, matches shift-click semantics)', () => {
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const c = createStructure({ type: 'bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c] } }));
+
+    useUiStore.getState().setSelection([a.id]);
+
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+
+    const ctx = makeCtx(9.95, 2, { kind: 'idle' }, adapter);
+    ctx.modifiers.shift = true;
+    result.current.pointer!.onDown!(pointer({ shiftKey: true }), ctx);
+    expect(ctx.scratch.kind).toBe('area');
+    result.current.pointer!.onClick!(pointer({ shiftKey: true }), ctx);
+
+    expect(useUiStore.getState().selectedIds.sort()).toEqual([a.id, b.id, c.id].sort());
+  });
+
+  it('plain click on truly empty space (no group siblings nearby) still clears selection', () => {
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const b = createStructure({ type: 'bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b] } }));
+
+    useUiStore.getState().setSelection([a.id]);
+
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+
+    // Far-away empty click — nowhere near any outline.
+    const ctx = makeCtx(50, 50, { kind: 'idle' }, adapter);
+    result.current.pointer!.onDown!(makePointerEvt(), ctx);
+    expect(ctx.scratch.kind).toBe('area');
+    result.current.pointer!.onClick!(makePointerEvt(), ctx);
+
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+
+  it('plain click on empty when no group siblings exist (ungrouped selection) still clears', () => {
+    const a = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4 });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a] } }));
+
+    useUiStore.getState().setSelection([a.id]);
+
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => useEricSelectTool(adapter));
+
+    const ctx = makeCtx(50, 50, { kind: 'idle' }, adapter);
+    result.current.pointer!.onDown!(makePointerEvt(), ctx);
+    result.current.pointer!.onClick!(makePointerEvt(), ctx);
+
+    expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+});
+
 void vi;
