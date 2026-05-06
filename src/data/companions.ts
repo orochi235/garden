@@ -49,46 +49,30 @@ interface PairRow {
 }
 
 const PAIRS: PairRow[] = [
-  // ---------------------------------------------------------------------------
-  // v1 seed (preserved). Some entries use legacy keys ('beans', 'pea',
-  // 'brassica', 'pepper', 'pole-bean') that do not match any current
-  // speciesId; they are kept here for historical compatibility and re-stated
-  // below under their real speciesId equivalents.
-  // ---------------------------------------------------------------------------
+  // v1 seed entries that use real speciesIds.
   { a: 'tomato', b: 'basil', rel: 'companion' },
   { a: 'tomato', b: 'carrot', rel: 'companion' },
-  { a: 'tomato', b: 'brassica', rel: 'antagonist' },
   { a: 'carrot', b: 'onion', rel: 'companion' },
   { a: 'carrot', b: 'dill', rel: 'antagonist' },
   { a: 'lettuce', b: 'radish', rel: 'companion' },
   { a: 'cucumber', b: 'nasturtium', rel: 'companion' },
   { a: 'cucumber', b: 'sage', rel: 'antagonist' },
-  { a: 'beans', b: 'corn', rel: 'companion' },
-  { a: 'beans', b: 'onion', rel: 'antagonist' },
-  { a: 'pepper', b: 'basil', rel: 'companion' },
   { a: 'squash', b: 'corn', rel: 'companion' },
-  { a: 'squash', b: 'beans', rel: 'companion' },
-  { a: 'brassica', b: 'dill', rel: 'companion' },
-  { a: 'brassica', b: 'strawberry', rel: 'antagonist' },
   { a: 'spinach', b: 'strawberry', rel: 'companion' },
-  { a: 'onion', b: 'pea', rel: 'antagonist' },
-  { a: 'pea', b: 'carrot', rel: 'companion' },
-  { a: 'pea', b: 'corn', rel: 'companion' },
   { a: 'beet', b: 'onion', rel: 'companion' },
-  { a: 'beet', b: 'pole-bean', rel: 'antagonist' },
   { a: 'asparagus', b: 'tomato', rel: 'companion' },
   { a: 'celery', b: 'leek', rel: 'companion' },
   { a: 'leek', b: 'carrot', rel: 'companion' },
   { a: 'corn', b: 'tomato', rel: 'antagonist' },
   { a: 'fennel', b: 'tomato', rel: 'antagonist' },
-  { a: 'fennel', b: 'beans', rel: 'antagonist' },
   { a: 'garlic', b: 'lettuce', rel: 'companion' },
-  { a: 'garlic', b: 'pea', rel: 'antagonist' },
   { a: 'mint', b: 'cabbage', rel: 'companion' },
 
   // ---------------------------------------------------------------------------
-  // v1 entries restated under real speciesIds (so lookups actually hit).
+  // Extension-backed pairs.
   // ---------------------------------------------------------------------------
+
+  // bean/peas + alliums (antagonist) and heavy feeders (companion)
   { a: 'bean', b: 'corn', rel: 'companion' }, // [UME] three-sisters; N-fixer + heavy feeder
   { a: 'bean', b: 'onion', rel: 'antagonist' }, // [UME][WVU] alliums inhibit legumes
   { a: 'bean', b: 'fennel', rel: 'antagonist' }, // [UME] fennel allelopathic to most legumes
@@ -102,10 +86,7 @@ const PAIRS: PairRow[] = [
   { a: 'pepper-sweet', b: 'basil', rel: 'companion' }, // [PSU] aromatic deters thrips
   { a: 'pepper-hot', b: 'basil', rel: 'companion' }, // [PSU]
 
-  // Brassica family (cabbage/broccoli/cauliflower/kale/brussels-sprouts/
-  // collard-greens/kohlrabi/bok-choy/mustard-greens/cabbage). v1 used the
-  // category key 'brassica' which does not exist as a speciesId; we re-state
-  // the salient relationships against each real species.
+  // Brassica family (cabbage/broccoli/cauliflower/kale/brussels-sprouts/etc.)
   { a: 'cabbage', b: 'tomato', rel: 'antagonist' }, // [UME][WVU] tomato inhibits cabbage growth
   { a: 'broccoli', b: 'tomato', rel: 'antagonist' }, // [UME][WVU]
   { a: 'cauliflower', b: 'tomato', rel: 'antagonist' }, // [UME]
