@@ -52,6 +52,16 @@ export function CanvasNewPrototype() {
   return <GardenCanvasNewPrototype />;
 }
 
+// Garden canvas zoom bounds (px-per-foot). Same range we historically clamped
+// in `useUiStore.setZoom`; preserved at the canvas now that view state lives
+// locally.
+const GARDEN_MIN_ZOOM = 10;
+const GARDEN_MAX_ZOOM = 200;
+
+function clampZoom(z: number): number {
+  return Math.min(GARDEN_MAX_ZOOM, Math.max(GARDEN_MIN_ZOOM, z));
+}
+
 function GardenCanvasNewPrototype() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
@@ -80,15 +90,79 @@ function GardenCanvasNewPrototype() {
   const adapter = useMemo(() => createGardenSceneAdapter(), []);
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
 
+  // View state lives locally — the canvas owns its viewport. UI siblings
+  // (StatusBar, ScaleIndicator, ReturnToGarden, useGardenOffscreen,
+  // useViewMoving) read a write-only mirror in `useUiStore.gardenZoom/PanX/PanY`
+  // that we keep in sync via `setGardenViewMirror` below. Outside actors
+  // (Cmd+0 reset, StatusBar zoom buttons, ReturnToGarden) request changes by
+  // setting `useUiStore.gardenViewRequest`; the effect below applies and
+  // clears it. Tools (wheel-zoom, drag-pan, click-zoom) talk to the canvas
+  // through Tool ctx (`ctx.view`/`ctx.setView`) and never read the store.
+  // Internally we use kit's screen-space {zoom, panX, panY} representation
+  // (matching the legacy uiStore shape) and convert to the kit's camera-coord
+  // `View` ({x, y, scale}) at the boundary.
+  const [zoom, setZoomState] = useState(0);
+  const [panX, setPanXState] = useState(0);
+  const [panY, setPanYState] = useState(0);
+
+  // Mirror to a ref so non-React readers (the palette drop tool's document
+  // pointer pipeline) can read the latest view without re-attaching listeners.
+  const viewRef = useRef<View>({ x: 0, y: 0, scale: 1 });
+  useEffect(() => {
+    viewRef.current =
+      zoom > 0
+        ? { x: -panX / zoom, y: -panY / zoom, scale: zoom }
+        : { x: 0, y: 0, scale: 1 };
+  }, [zoom, panX, panY]);
+
+  // Mirror local view → ui store so sibling UI components can read it.
+  useEffect(() => {
+    if (zoom <= 0) return;
+    useUiStore.getState().setGardenViewMirror(zoom, panX, panY);
+  }, [zoom, panX, panY]);
+
+  // Initial fit. Re-runs only when width/height/garden bounds change AND we
+  // haven't fit yet (or the canvas just got non-zero size).
   const didFitRef = useRef(false);
   useEffect(() => {
     if (didFitRef.current) return;
     if (width === 0 || height === 0) return;
     didFitRef.current = true;
     const fit = computeFitView(width, height, garden.widthFt, garden.lengthFt);
-    useUiStore.getState().setZoom(fit.zoom);
-    useUiStore.getState().setPan(fit.panX, fit.panY);
+    setZoomState(clampZoom(fit.zoom));
+    setPanXState(fit.panX);
+    setPanYState(fit.panY);
   }, [width, height, garden.widthFt, garden.lengthFt]);
+
+  // External view requests (Cmd+0 reset, StatusBar zoom buttons,
+  // ReturnToGarden setPan). Subscribe imperatively so we react to every
+  // request — even rapid ones that would coalesce in a render-cycle reader.
+  useEffect(() => {
+    const unsub = useUiStore.subscribe((state, prev) => {
+      const req = state.gardenViewRequest;
+      if (req === prev.gardenViewRequest) return;
+      if (!req) return;
+      // Apply.
+      if (req.kind === 'reset') {
+        const w = containerRef.current?.clientWidth ?? width;
+        const h = containerRef.current?.clientHeight ?? height;
+        if (w > 0 && h > 0) {
+          const fit = computeFitView(w, h, useGardenStore.getState().garden.widthFt, useGardenStore.getState().garden.lengthFt);
+          setZoomState(clampZoom(fit.zoom));
+          setPanXState(fit.panX);
+          setPanYState(fit.panY);
+        }
+      } else if (req.kind === 'set-zoom') {
+        setZoomState(clampZoom(req.value));
+      } else if (req.kind === 'set-pan') {
+        setPanXState(req.x);
+        setPanYState(req.y);
+      }
+      // Clear the slot so the same request can fire again later.
+      useUiStore.getState().setGardenViewRequest(null);
+    });
+    return unsub;
+  }, [width, height]);
 
   const gridCellSizeFt = useGardenStore((s) => s.garden.gridCellSizeFt);
 
@@ -200,19 +274,13 @@ function GardenCanvasNewPrototype() {
     return map;
   }, [gridCellSizeFt]);
 
-  // Reset-view (Cmd+0) and zoom-keys (Cmd+= / Cmd+-) live in eric's existing
-  // resetViewAction + actions registry; they write to useUiStore.zoom/pan.
-  // We mirror those into our local View on render so the prototype reflects
-  // them. View also gets updated by tools (wheel-zoom, right-drag-pan, move
-  // delta) via setView → setUi.setZoom/setPan.
-  const zoom = useUiStore((s) => s.zoom);
-  const panX = useUiStore((s) => s.panX);
-  const panY = useUiStore((s) => s.panY);
-
+  // Build the kit camera-coord `View` from local screen-space (zoom, panX, panY).
+  // Pre-fit (zoom===0) we render with a fallback margin-fit so the very first
+  // paint isn't blank; once the fit effect above runs (next frame) the real
+  // view takes over.
   const view = useMemo<View>(() => {
     if (width === 0 || height === 0) return { x: 0, y: 0, scale: 1 };
     if (zoom > 0) {
-      // useUiStore stores screen-space pan (pixels). Convert to camera-position View.
       return { x: -panX / zoom, y: -panY / zoom, scale: zoom };
     }
     const margin = 40;
@@ -227,9 +295,10 @@ function GardenCanvasNewPrototype() {
   }, [width, height, garden.widthFt, garden.lengthFt, zoom, panX, panY]);
 
   const handleViewChange = (next: View) => {
-    const ui = useUiStore.getState();
-    ui.setZoom(next.scale);
-    ui.setPan(-next.x * next.scale, -next.y * next.scale);
+    const clamped = clampZoom(next.scale);
+    setZoomState(clamped);
+    setPanXState(-next.x * clamped);
+    setPanYState(-next.y * clamped);
   };
 
   // --- Tools ---
@@ -296,10 +365,9 @@ function GardenCanvasNewPrototype() {
   });
   // Palette → garden drop tool (non-claiming pseudo-tool). Mirrors the
   // seed-starting `usePaletteDropTool`: subscribes to `palettePointerPayload`,
-  // owns ghost + threshold drag + commit. Reads `useUiStore.zoom`/`panX`/`panY`
-  // directly because garden mode keeps those as the source of truth (full
-  // view-ownership migration deferred — see docs/TODO.md).
-  useGardenPaletteDropTool({ containerRef });
+  // owns ghost + threshold drag + commit. Reads our local `viewRef` to do
+  // screen→world math (the canvas owns its viewport state).
+  useGardenPaletteDropTool({ containerRef, viewRef });
 
   const viewMode = useUiStore((s) => s.viewMode);
   const plottingTool = useUiStore((s) => s.plottingTool);

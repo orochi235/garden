@@ -13,9 +13,12 @@ import {
   type GardenPalettePutative,
 } from '../drag/gardenPaletteDrag';
 import type { DragViewport } from '../drag/putativeDrag';
+import type { View } from '../layers/worldLayerData';
 
 interface Options {
   containerRef: RefObject<HTMLDivElement | null>;
+  /** Canvas-owned camera-coord view; the tool reads it for screen→world math. */
+  viewRef: RefObject<View>;
 }
 
 /**
@@ -34,11 +37,11 @@ interface Options {
  * pipeline below; migrating them is the "plot (rectangle drag)" item in the
  * Phase 2+ TODO.
  *
- * Garden mode keeps `useUiStore.zoom`/`panX`/`panY` as the source of truth
- * for the canvas viewport. The framework drag reads them via the viewport
- * factory below. Full canvas-owned view migration is deferred (see TODO).
+ * The garden canvas owns its viewport state in local React state. The hook
+ * receives a `viewRef` from the canvas and uses it for screen→world math —
+ * matching the seed-starting `usePaletteDropTool` pattern.
  */
-export function useGardenPaletteDropTool({ containerRef }: Options): void {
+export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): void {
   const entryRef = useRef<PaletteEntry | null>(null);
   const drag = useMemo(
     () => createGardenPaletteDrag({ getEntry: () => entryRef.current }),
@@ -75,12 +78,9 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
 
     function getViewport(): DragViewport | null {
       const el = containerRef.current;
-      if (!el) return null;
-      const { panX, panY, zoom } = useUiStore.getState();
-      if (!zoom) return null;
-      // Match the View shape used by GardenCanvasNewPrototype:
-      // panX/panY are screen-space pan in pixels.
-      return { container: el, view: { x: -panX / zoom, y: -panY / zoom, scale: zoom } };
+      const view = viewRef.current;
+      if (!el || !view || view.scale <= 0) return null;
+      return { container: el, view };
     }
 
     // ----- Plantings: framework path ---------------------------------------
@@ -92,7 +92,7 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
       let unsubIcon: (() => void) | null = null;
       function ensureGhost() {
         if (ghost) return ghost;
-        const { zoom } = useUiStore.getState();
+        const zoom = viewRef.current?.scale ?? 1;
         const cultivar = getCultivar(entry.id);
         const footprintFt = cultivar?.footprintFt ?? 0.5;
         const iconScale = useUiStore.getState().plantIconScale ?? 1;
@@ -148,7 +148,13 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
 
     // ----- Structures + zones: bespoke path (unchanged) --------------------
     function worldFromClient(clientX: number, clientY: number, rect: DOMRect): [number, number] {
-      const { panX, panY, zoom } = useUiStore.getState();
+      const view = viewRef.current;
+      if (!view || view.scale <= 0) return [0, 0];
+      // Convert canvas-camera View {x, y, scale} → screenToWorld's
+      // {panX, panY, zoom} shape (screen-space pan in pixels).
+      const zoom = view.scale;
+      const panX = -view.x * zoom;
+      const panY = -view.y * zoom;
       return screenToWorld(clientX - rect.left, clientY - rect.top, { panX, panY, zoom });
     }
 
@@ -161,7 +167,7 @@ export function useGardenPaletteDropTool({ containerRef }: Options): void {
 
       function ensureGhost() {
         if (ghost) return ghost;
-        const { zoom } = useUiStore.getState();
+        const zoom = viewRef.current?.scale ?? 1;
         const cellPx = useGardenStore.getState().garden.gridCellSizeFt;
         const sizeCss = Math.max(24, Math.min(80, entry.defaultWidth * cellPx * zoom));
         ghost = createDragGhost({

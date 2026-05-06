@@ -15,10 +15,15 @@ export function ReturnToGarden({ canvasWidth, canvasHeight }: Props) {
 
   const handleClick = () => {
     const { widthFt, lengthFt } = useGardenStore.getState().garden;
-    const { zoom, setPan } = useUiStore.getState();
+    const ui = useUiStore.getState();
+    const zoom = ui.gardenZoom;
     const gardenW = widthFt * zoom;
     const gardenH = lengthFt * zoom;
-    setPan((canvasWidth - gardenW) / 2, (canvasHeight - gardenH) / 2);
+    ui.setGardenViewRequest({
+      kind: 'set-pan',
+      x: (canvasWidth - gardenW) / 2,
+      y: (canvasHeight - gardenH) / 2,
+    });
   };
 
   return (

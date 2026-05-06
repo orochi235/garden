@@ -18,6 +18,22 @@ export interface AlmanacFilters {
 }
 
 export type ViewMode = 'select' | 'select-area' | 'pan' | 'zoom' | 'draw';
+
+/**
+ * Outside-the-canvas request to mutate the garden view. Set via
+ * `setGardenViewRequest`; the garden canvas's effect applies and clears it.
+ *
+ * - `reset` — refit the garden bounds to the canvas viewport (Cmd+0).
+ * - `set-zoom` — set the zoom (px/ft) directly. The canvas keeps the world
+ *   point at the canvas center fixed when applying.
+ * - `set-pan` — set screen-space pan in pixels (matches the legacy uiStore
+ *   `panX`/`panY` semantics: the world origin renders at (panX, panY) for
+ *   the current zoom).
+ */
+export type GardenViewRequest =
+  | { kind: 'reset' }
+  | { kind: 'set-zoom'; value: number }
+  | { kind: 'set-pan'; x: number; y: number };
 export type LabelMode = 'all' | 'active-layer' | 'selection';
 export type AppMode = 'garden' | 'seed-starting';
 
@@ -55,9 +71,27 @@ interface UiStore {
   layerOpacity: LayerRecord<number>;
   layerLocked: LayerRecord<boolean>;
   selectedIds: string[];
-  zoom: number;
-  panX: number;
-  panY: number;
+  /**
+   * Read-only mirror of the garden canvas's local view state, written ONLY
+   * by `GardenCanvasNewPrototype` via `setGardenViewMirror`. UI siblings of
+   * the canvas (StatusBar, ScaleIndicator, ReturnToGarden, useGardenOffscreen,
+   * useViewMoving) read these to render scale/zoom/return-to-garden hints.
+   * Tools and gestures must NOT read these — they should plumb the view
+   * through Tool ctx or a viewRef. To request an external view change (zoom
+   * button, "return to garden", Cmd+0 reset), set `gardenViewRequest`; the
+   * canvas consumes and clears it.
+   */
+  gardenZoom: number;
+  gardenPanX: number;
+  gardenPanY: number;
+  /**
+   * Transient one-shot request slot for outside-the-canvas writes to the
+   * garden view. The canvas's effect picks it up, applies the change to its
+   * local view state, and clears the slot. Mirrors the seed-starting
+   * `seedStartingViewResetTick` pattern but with multiple request kinds in
+   * one slot. Setters: `setGardenViewRequest`.
+   */
+  gardenViewRequest: GardenViewRequest | null;
   plottingTool: PlottingTool | null;
   themeOverride: TimePeriod | 'cycle' | 'slow-cycle' | null;
   layerSelectorHovered: boolean;
@@ -178,13 +212,12 @@ interface UiStore {
   addToSelection: (id: string) => void;
   setSelection: (ids: string[]) => void;
   clearSelection: () => void;
-  setZoom: (zoom: number) => void;
-  setPan: (x: number, y: number) => void;
+  /** Canvas-only: write the local view back to the read-only mirror. */
+  setGardenViewMirror: (zoom: number, panX: number, panY: number) => void;
+  /** Outside-the-canvas: request a view change. Canvas picks it up & clears. */
+  setGardenViewRequest: (req: GardenViewRequest | null) => void;
   reset: () => void;
 }
-
-const MIN_ZOOM = 10;
-const MAX_ZOOM = 200;
 
 function defaultLayerRecord<T>(value: T): LayerRecord<T> {
   return { ground: value, blueprint: value, structures: value, zones: value, plantings: value };
@@ -211,9 +244,10 @@ function defaultState() {
     layerOpacity: defaultLayerRecord(1),
     layerLocked: defaultLayerRecord(false),
     selectedIds: [] as string[],
-    zoom: 1,
-    panX: 0,
-    panY: 0,
+    gardenZoom: 1,
+    gardenPanX: 0,
+    gardenPanY: 0,
+    gardenViewRequest: null as GardenViewRequest | null,
     plottingTool: null as PlottingTool | null,
     themeOverride: null as UiStore['themeOverride'],
     layerSelectorHovered: false,
@@ -302,8 +336,9 @@ export const useUiStore = create<UiStore>((set) => ({
     })),
   setSelection: (ids) => set({ selectedIds: ids }),
   clearSelection: () => set({ selectedIds: [] }),
-  setZoom: (zoom) => set({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)) }),
-  setPan: (x, y) => set({ panX: x, panY: y }),
+  setGardenViewMirror: (zoom, panX, panY) =>
+    set({ gardenZoom: zoom, gardenPanX: panX, gardenPanY: panY }),
+  setGardenViewRequest: (req) => set({ gardenViewRequest: req }),
   setAppMode: (mode) => set({ appMode: mode }),
   setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
   setHighlightOpacity: (opacity) => set({ highlightOpacity: opacity }),

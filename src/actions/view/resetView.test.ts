@@ -27,21 +27,14 @@ describe('resetViewAction', () => {
     container.remove();
   });
 
-  it('resets zoom and pan to fit the garden', () => {
-    // Mess up the view
-    useUiStore.getState().setZoom(5);
-    useUiStore.getState().setPan(999, 999);
-
+  it('enqueues a reset request for the garden canvas', () => {
+    // Garden mode owns view in canvas-local state; the action posts a
+    // {kind:'reset'} request via gardenViewRequest. The canvas's effect
+    // reads it, refits its local view, mirrors back to the store, and
+    // clears the slot. Here we assert the request is enqueued correctly.
+    expect(useUiStore.getState().gardenViewRequest).toBeNull();
     resetViewAction.execute(ctx);
-
-    const { zoom, panX, panY } = useUiStore.getState();
-    // Default garden is 20x20. At 800x600 with 0.85 padding:
-    // zoom = min(800*0.85/20, 600*0.85/20) = min(34, 25.5) = 25.5
-    expect(zoom).toBeCloseTo(25.5);
-    // Pan centers the garden: (800 - 20*25.5)/2 = (800-510)/2 = 145
-    expect(panX).toBeCloseTo(145);
-    // (600 - 20*25.5)/2 = (600-510)/2 = 45
-    expect(panY).toBeCloseTo(45);
+    expect(useUiStore.getState().gardenViewRequest).toEqual({ kind: 'reset' });
   });
 
   it('has meta+0 shortcut', () => {
@@ -62,9 +55,10 @@ describe('resetViewAction', () => {
     const after = useUiStore.getState();
     // Canvas owns its view locally now; reset is a "please refit" signal.
     expect(after.seedStartingViewResetTick).toBe(before + 1);
-    // Garden zoom/pan should be untouched.
-    expect(after.zoom).toBe(1);
-    expect(after.panX).toBe(0);
-    expect(after.panY).toBe(0);
+    // Garden mirror untouched in seed-starting mode; no request enqueued.
+    expect(after.gardenZoom).toBe(1);
+    expect(after.gardenPanX).toBe(0);
+    expect(after.gardenPanY).toBe(0);
+    expect(after.gardenViewRequest).toBeNull();
   });
 });

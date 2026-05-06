@@ -3,9 +3,9 @@ import { useUiStore } from '../store/uiStore';
 
 /** Returns true while the canvas view (pan/zoom) is actively changing, with a debounce delay. */
 export function useViewMoving(delay = 200) {
-  const zoom = useUiStore((s) => s.zoom);
-  const panX = useUiStore((s) => s.panX);
-  const panY = useUiStore((s) => s.panY);
+  const zoom = useUiStore((s) => s.gardenZoom);
+  const panX = useUiStore((s) => s.gardenPanX);
+  const panY = useUiStore((s) => s.gardenPanY);
   const [moving, setMoving] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const initialRef = useRef(true);

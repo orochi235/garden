@@ -114,8 +114,8 @@ export function App() {
   // Garden palette drag: hand the gesture off to the canvas via a transient
   // ui slot. The garden canvas's `useGardenPaletteDropTool` watches
   // `palettePointerPayload`, owns ghost + threshold drag + commit, and reads
-  // `useUiStore.zoom`/`panX`/`panY` directly (garden mode keeps the view in
-  // the ui store; full view-ownership migration deferred).
+  // the canvas-owned local view (via `viewRef`) for screen→world math. App
+  // doesn't read view here.
   const handlePaletteDragBegin = useCallback(
     (entry: PaletteEntry, e: React.PointerEvent) => {
       useUiStore.getState().setPalettePointerPayload({

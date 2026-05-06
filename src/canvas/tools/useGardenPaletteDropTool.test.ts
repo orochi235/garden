@@ -8,11 +8,10 @@ import { useGardenPaletteDropTool } from './useGardenPaletteDropTool';
 
 /**
  * The garden palette drop tool watches `useUiStore.palettePointerPayload` and
- * runs its own document-level pointer pipeline. It reads
- * `useUiStore.zoom`/`panX`/`panY` directly (the minimal-scope refactor; full
- * view ownership migration is deferred). Tests assert the public contract:
- * arms a payload, commits via `useGardenStore` add* on release, cleans up
- * the payload on cancel/commit.
+ * runs its own document-level pointer pipeline. It reads the canvas-owned
+ * view via the `viewRef` injected by `GardenCanvasNewPrototype`. Tests
+ * assert the public contract: arms a payload, commits via `useGardenStore`
+ * add* on release, cleans up the payload on cancel/commit.
  */
 
 function dispatchPointer(type: string, init: PointerEventInit) {
@@ -40,11 +39,16 @@ function makeContainer(rect: { left: number; top: number; width: number; height:
   return el;
 }
 
+// View used across the suite: zoom = 30 px/ft, no pan. Matches the legacy
+// uiStore mirror values these tests used to write directly.
+const TEST_VIEW = { x: 0, y: 0, scale: 30 };
+
 function setupHook(container: HTMLDivElement) {
   return renderHook(() => {
     const containerRef = useRef<HTMLDivElement | null>(container);
-    useGardenPaletteDropTool({ containerRef });
-    return { containerRef };
+    const viewRef = useRef(TEST_VIEW);
+    useGardenPaletteDropTool({ containerRef, viewRef });
+    return { containerRef, viewRef };
   });
 }
 
@@ -86,9 +90,10 @@ describe('useGardenPaletteDropTool', () => {
     useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
     useUiStore.getState().setAppMode('garden');
-    // Use a stable known view: 30 px/ft, no pan.
-    useUiStore.getState().setZoom(30);
-    useUiStore.getState().setPan(0, 0);
+    // The view comes from the local viewRef passed to the hook (TEST_VIEW =
+    // 30 px/ft, no pan). Mirror it into the store too in case any UI sibling
+    // re-reads (no test consumer here, but matches production semantics).
+    useUiStore.getState().setGardenViewMirror(30, 0, 0);
     container = makeContainer({ left: 0, top: 0, width: 800, height: 600 });
   });
 
@@ -159,14 +164,16 @@ describe('useGardenPaletteDropTool', () => {
     expect(useUiStore.getState().palettePointerPayload).toBeNull();
   });
 
-  it('reads zoom/pan from uiStore (regression: minimal-scope refactor)', () => {
-    // The garden tool intentionally still reads uiStore zoom/pan rather than a
-    // local viewRef. If those fields are ever moved out of the ui store, this
-    // test breaks loudly so the migration also updates this tool.
+  it('reads view from the injected viewRef, not uiStore', () => {
+    // After the canvas-owned-view migration, garden zoom/panX/panY are no
+    // longer on the ui store; only a read-only mirror (`gardenZoom` etc.).
+    // The tool must take view from the `viewRef` argument so gestures don't
+    // depend on the store. Assert the legacy field names are gone.
     const ui = useUiStore.getState() as unknown as Record<string, unknown>;
-    expect(typeof ui.zoom).toBe('number');
-    expect(typeof ui.panX).toBe('number');
-    expect(typeof ui.panY).toBe('number');
+    expect(ui.zoom).toBeUndefined();
+    expect(ui.panX).toBeUndefined();
+    expect(ui.panY).toBeUndefined();
+    expect(typeof ui.gardenZoom).toBe('number');
   });
 
   describe('plantings — putative-drag framework path', () => {

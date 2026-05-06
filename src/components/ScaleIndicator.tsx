@@ -8,9 +8,9 @@ interface Props {
 }
 
 export function ScaleIndicator({ canvasHeight }: Props) {
-  const zoom = useUiStore((s) => s.zoom);
-  const panX = useUiStore((s) => s.panX);
-  const panY = useUiStore((s) => s.panY);
+  const zoom = useUiStore((s) => s.gardenZoom);
+  const panX = useUiStore((s) => s.gardenPanX);
+  const panY = useUiStore((s) => s.gardenPanY);
   const garden = useGardenStore((s) => s.garden);
   const cellSize = garden.gridCellSizeFt;
   const unit = garden.displayUnit;

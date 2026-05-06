@@ -1,27 +1,20 @@
 import type { ActionDescriptor } from '@/actions/types';
-import { computeFitView } from '@orochi235/weasel';
 import { useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
 
 /**
  * Fit-to-content reset for whichever canvas the current `appMode` shows.
- * Garden mode writes `zoom`/`panX`/`panY` directly (its view still lives in
- * the ui store). Seed-starting mode bumps `seedStartingViewResetTick`; the
- * canvas owns its view in local React state and refits when the tick
- * increments.
+ * Both modes own their view in local React state. Garden mode posts a
+ * `gardenViewRequest({kind:'reset'})`; seed-starting bumps
+ * `seedStartingViewResetTick`. The canvases listen and refit themselves.
  */
 export function resetCurrentCanvasView(): void {
-  const el = document.querySelector('[data-canvas-container]');
-  if (!el) return;
   const ui = useUiStore.getState();
-  const garden = useGardenStore.getState().garden;
   if (ui.appMode === 'seed-starting') {
     ui.bumpSeedStartingViewResetTick();
     return;
   }
-  const fit = computeFitView(el.clientWidth, el.clientHeight, garden.widthFt, garden.lengthFt);
-  ui.setZoom(fit.zoom);
-  ui.setPan(fit.panX, fit.panY);
+  ui.setGardenViewRequest({ kind: 'reset' });
 }
 
 /**

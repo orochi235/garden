@@ -3,9 +3,9 @@ import { useGardenStore } from '../store/gardenStore';
 
 /** Returns true when the entire garden is outside the visible canvas area. */
 export function useGardenOffscreen(canvasWidth: number, canvasHeight: number): boolean {
-  const panX = useUiStore((s) => s.panX);
-  const panY = useUiStore((s) => s.panY);
-  const zoom = useUiStore((s) => s.zoom);
+  const panX = useUiStore((s) => s.gardenPanX);
+  const panY = useUiStore((s) => s.gardenPanY);
+  const zoom = useUiStore((s) => s.gardenZoom);
   const widthFt = useGardenStore((s) => s.garden.widthFt);
   const heightFt = useGardenStore((s) => s.garden.lengthFt);
 

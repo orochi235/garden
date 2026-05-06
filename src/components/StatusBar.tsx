@@ -5,9 +5,13 @@ import { formatMeasurement } from '../utils/units';
 
 export function StatusBar() {
   const garden = useGardenStore((s) => s.garden);
-  const zoom = useUiStore((s) => s.zoom);
-  const setZoom = useUiStore((s) => s.setZoom);
+  const zoom = useUiStore((s) => s.gardenZoom);
+  const setGardenViewRequest = useUiStore((s) => s.setGardenViewRequest);
   const selectedIds = useUiStore((s) => s.selectedIds);
+  // StatusBar can't poke the canvas's view directly; it requests a target
+  // zoom and the canvas applies it. Multiplicative zoom buttons read the
+  // current mirrored zoom so the request is built relative to the live view.
+  const setZoom = (value: number) => setGardenViewRequest({ kind: 'set-zoom', value });
 
   const gridLabel = formatMeasurement(garden.gridCellSizeFt, garden.displayUnit, 0);
   const BASE_ZOOM = 64; // px per foot at "100%"
