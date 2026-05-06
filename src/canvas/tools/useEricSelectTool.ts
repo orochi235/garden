@@ -39,6 +39,7 @@ import {
 } from './snapMoveBehaviors';
 import { MOVE_DRAG_KIND, type MovePutative } from '../drag/moveDrag';
 import { RESIZE_DRAG_KIND, type ResizePutative } from '../drag/resizeDrag';
+import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 
 export type SelectScratch =
   | { kind: 'idle' }
@@ -264,6 +265,29 @@ export function useEricSelectTool(
     behaviors: [selectFromMarquee()],
   });
 
+  // Mirror weasel's live `areaSelect.overlay` into `uiStore.dragPreview` so
+  // the framework's generic `dragPreviewLayer` renders the marquee via
+  // `areaSelectDrag.renderPreview`. Same façade pattern as the move/resize
+  // mirrors above. The selection commit still flows through `areaSelect.end()`
+  // in `drag.onEnd`, which runs the `selectFromMarquee` behavior; selection
+  // is not part of the garden undo stack.
+  const areaSelectOverlay = areaSelect.overlay;
+  useEffect(() => {
+    const ui = useUiStore.getState();
+    if (!areaSelectOverlay) {
+      if (ui.dragPreview && ui.dragPreview.kind === AREA_SELECT_DRAG_KIND) {
+        ui.setDragPreview(null);
+      }
+      return;
+    }
+    const putative: AreaSelectPutative = {
+      start: { x: areaSelectOverlay.start.worldX, y: areaSelectOverlay.start.worldY },
+      current: { x: areaSelectOverlay.current.worldX, y: areaSelectOverlay.current.worldY },
+      shiftHeld: areaSelectOverlay.shiftHeld,
+    };
+    ui.setDragPreview({ kind: AREA_SELECT_DRAG_KIND, putative });
+  }, [areaSelectOverlay]);
+
   // Clone-on-alt-drag. Wires through the optional insertAdapter; if none is
   // provided (legacy callsites) the gesture silently no-ops.
   const [cloneOverlay, setCloneOverlay] = useState<CloneOverlayItem[]>([]);
@@ -295,27 +319,10 @@ export function useEricSelectTool(
       label: 'Select Overlay (eric)',
       space: 'screen',
       draw(ctx, _data, view) {
-        // Marquee rectangle.
-        const aov = areaSelect.overlay;
-        if (aov) {
-          const x = Math.min(aov.start.worldX, aov.current.worldX);
-          const y = Math.min(aov.start.worldY, aov.current.worldY);
-          const w = Math.abs(aov.current.worldX - aov.start.worldX);
-          const h = Math.abs(aov.current.worldY - aov.start.worldY);
-          const sx = (x - view.x) * view.scale;
-          const sy = (y - view.y) * view.scale;
-          const sw = w * view.scale;
-          const sh = h * view.scale;
-          ctx.save();
-          ctx.fillStyle = 'rgba(91, 164, 207, 0.15)';
-          ctx.strokeStyle = '#5BA4CF';
-          ctx.lineWidth = 1;
-          ctx.setLineDash([3, 3]);
-          ctx.fillRect(sx, sy, sw, sh);
-          ctx.strokeRect(sx, sy, sw, sh);
-          ctx.setLineDash([]);
-          ctx.restore();
-        }
+        // Marquee rectangle is now rendered by the framework's
+        // `dragPreviewLayer` via `areaSelectDrag.renderPreview`. See
+        // `src/canvas/drag/areaSelectDrag.ts` and the `areaSelect.overlay`
+        // → `uiStore.dragPreview` mirror effect above.
 
         // Move ghosts (plantings, structures, zones) and snap-target outlines
         // are now drawn by the framework's `dragPreviewLayer` via
@@ -345,7 +352,7 @@ export function useEricSelectTool(
         }
       },
     }),
-    [areaSelect, cloneOverlay],
+    [cloneOverlay],
   );
 
   return useMemo(
