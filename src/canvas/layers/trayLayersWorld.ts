@@ -1,5 +1,5 @@
 import type { RenderLayer } from '@orochi235/weasel';
-import type { Tray } from '../../model/seedStarting';
+import type { Tray, SeedStartingState } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 import { useGardenStore } from '../../store/gardenStore';
@@ -76,6 +76,48 @@ function drawTrayGrid(ctx: CanvasRenderingContext2D, tray: Tray): void {
   }
 }
 
+const LABEL_FONT_PX = 12;
+const LABEL_GAP_PX = 6;
+const LABEL_AREA_PX = LABEL_FONT_PX + 10; // hit-test height in screen px
+
+/**
+ * Returns the tray whose label area contains the world-space point, or null.
+ * The label area is a rect below the tray body: full tray width, LABEL_AREA_PX
+ * tall (converted to world units via the current scale).
+ */
+export function hitTestTrayLabel(
+  trays: Tray[],
+  ss: SeedStartingState,
+  view: View,
+  worldX: number,
+  worldY: number,
+): Tray | null {
+  const areaH = LABEL_AREA_PX / Math.max(0.0001, view.scale);
+  for (const tray of trays) {
+    const o = trayWorldOrigin(tray, ss);
+    const labelTop = o.y + tray.heightIn + LABEL_GAP_PX / view.scale;
+    if (
+      worldX >= o.x &&
+      worldX <= o.x + tray.widthIn &&
+      worldY >= labelTop &&
+      worldY <= labelTop + areaH
+    ) {
+      return tray;
+    }
+  }
+  return null;
+}
+
+function drawTrayLabel(ctx: CanvasRenderingContext2D, tray: Tray, view: View): void {
+  const fontSize = px(view, LABEL_FONT_PX);
+  const gapY = tray.heightIn + px(view, LABEL_GAP_PX);
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(tray.label, tray.widthIn / 2, gapY);
+}
+
 export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
   return [
     {
@@ -104,6 +146,16 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
       draw(ctx, _data, _view) {
         for (const tray of getTrays()) {
           withTrayTransform(ctx, tray, () => drawTrayGrid(ctx, tray));
+        }
+      },
+    },
+    {
+      id: 'tray-labels',
+      label: 'Tray Labels',
+      alwaysOn: true,
+      draw(ctx, _data, view) {
+        for (const tray of getTrays()) {
+          withTrayTransform(ctx, tray, () => drawTrayLabel(ctx, tray, view));
         }
       },
     },

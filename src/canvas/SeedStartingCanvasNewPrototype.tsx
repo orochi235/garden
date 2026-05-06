@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { onIconLoad } from './plantRenderers';
 import {
   Canvas,
@@ -191,9 +191,25 @@ export function SeedStartingCanvasNewPrototype() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetTick]);
 
+  // --- Tray label rename overlay ---
+  const [renaming, setRenaming] = useState<{ trayId: string; value: string } | null>(null);
+  const renameTray = useGardenStore((s) => s.renameTray);
+
+  const handleLabelClick = useCallback((trayId: string) => {
+    const ss = useGardenStore.getState().garden.seedStarting;
+    const tray = ss.trays.find((t) => t.id === trayId);
+    if (tray) setRenaming({ trayId, value: tray.label });
+  }, []);
+
+  const commitRename = useCallback((trayId: string, value: string) => {
+    const trimmed = value.trim();
+    if (trimmed) renameTray(trayId, trimmed);
+    setRenaming(null);
+  }, [renameTray]);
+
   // --- Tools ---
   const moveTool = useSeedlingMoveTool(adapter);
-  const selectTool = useSeedSelectTool(adapter);
+  const selectTool = useSeedSelectTool(adapter, { onLabelClick: handleLabelClick, viewRef });
   const sowTool = useSowCellTool();
   const fillTool = useFillTrayTool();
   const rightDragPan = useEricRightDragPan();
@@ -254,6 +270,43 @@ export function SeedStartingCanvasNewPrototype() {
           selectionMode="none"
         />
       )}
+      {renaming && (() => {
+        const ss = useGardenStore.getState().garden.seedStarting;
+        const tray = ss.trays.find((t) => t.id === renaming.trayId);
+        if (!tray) return null;
+        const o = trayWorldOrigin(tray, ss);
+        const v = view;
+        const left = (o.x - v.x) * v.scale;
+        const top = (o.y + tray.heightIn - v.y) * v.scale + 6;
+        const w = tray.widthIn * v.scale;
+        return (
+          <input
+            autoFocus
+            value={renaming.value}
+            onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename(renaming.trayId, renaming.value);
+              if (e.key === 'Escape') setRenaming(null);
+            }}
+            onBlur={() => commitRename(renaming.trayId, renaming.value)}
+            style={{
+              position: 'absolute',
+              left,
+              top,
+              width: w,
+              fontSize: 12,
+              textAlign: 'center',
+              background: 'rgba(0,0,0,0.75)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.4)',
+              borderRadius: 3,
+              padding: '1px 4px',
+              boxSizing: 'border-box',
+              outline: 'none',
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

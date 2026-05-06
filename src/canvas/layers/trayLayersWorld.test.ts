@@ -24,9 +24,9 @@ function makeCtx(): CanvasRenderingContext2D {
 const view = { x: 0, y: 0, scale: 30 };
 
 describe('createTrayLayers (world)', () => {
-  it('returns 3 layers in canonical order', () => {
+  it('returns 4 layers in canonical order', () => {
     const layers = createTrayLayers(() => []);
-    expect(layers.map((l) => l.id)).toEqual(['tray-body', 'tray-wells', 'tray-grid']);
+    expect(layers.map((l) => l.id)).toEqual(['tray-body', 'tray-wells', 'tray-grid', 'tray-labels']);
   });
 
   it('tray-body draws roundRect at origin (0,0) in inches', () => {

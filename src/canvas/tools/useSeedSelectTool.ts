@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
+import type React from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { findSeedlingsInRect, hitTestCellInches } from '../seedStartingHitTest';
 import { trayWorldOrigin, type SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
 import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
+import { hitTestTrayLabel } from '../layers/trayLayersWorld';
+import type { View } from '../layers/worldLayerData';
 
 /**
  * Dedicated marquee/area-select tool for the seed-starting view.
@@ -64,8 +67,19 @@ function pointHitsSeedling(worldX: number, worldY: number): boolean {
   return false;
 }
 
-export function useSeedSelectTool(adapter: SeedStartingSceneAdapter): Tool<SeedSelectScratch> {
+export interface SeedSelectOptions {
+  /** Called when the user clicks a tray label. The canvas shows an inline rename input. */
+  onLabelClick?: (trayId: string) => void;
+  /** Current view — needed for label hit-testing (label area height is in screen px). */
+  viewRef?: React.RefObject<View>;
+}
+
+export function useSeedSelectTool(
+  adapter: SeedStartingSceneAdapter,
+  options: SeedSelectOptions = {},
+): Tool<SeedSelectScratch> {
   void adapter;
+  const { onLabelClick, viewRef } = options;
 
   return useMemo(
     () =>
@@ -80,6 +94,15 @@ export function useSeedSelectTool(adapter: SeedStartingSceneAdapter): Tool<SeedS
             // If the click landed on a seedling, defer — move tool's onClick
             // (or its onDown which already claimed) handles seedling clicks.
             if (pointHitsSeedling(ctx.worldX, ctx.worldY)) return 'pass';
+            // Check for a label-area click — trigger inline rename.
+            if (onLabelClick && viewRef?.current) {
+              const ss = useGardenStore.getState().garden.seedStarting;
+              const hit = hitTestTrayLabel(ss.trays, ss, viewRef.current, ctx.worldX, ctx.worldY);
+              if (hit) {
+                onLabelClick(hit.id);
+                return 'claim';
+              }
+            }
             // No-drag click on empty: clear selection (unless shift, to match
             // garden-mode parity).
             if (!ctx.modifiers.shift) useUiStore.getState().clearSelection();
