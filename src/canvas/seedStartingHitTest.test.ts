@@ -5,7 +5,8 @@ import {
   findSeedlingsInRect,
   hitTestCellInches,
 } from './seedStartingHitTest';
-import type { Seedling } from '../model/seedStarting';
+import { trayWorldOrigin } from './adapters/seedStartingScene';
+import type { Seedling, SeedStartingState } from '../model/seedStarting';
 
 const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
 
@@ -72,5 +73,81 @@ describe('findSeedlingsInRect', () => {
     const orphan: Seedling = { id: 'x', cultivarId: 'c', trayId: null, row: null, col: null, labelOverride: null };
     expect(findSeedlingsInRect([tray], [orphan], { x: -1000, y: -1000, width: 9999, height: 9999 }))
       .toEqual([]);
+  });
+});
+
+describe('world-coord conversion', () => {
+  // Two trays. Second tray's world origin is non-zero (auto-flow column-major
+  // layout in `seedStartingScene`). All hit-tests must use the world-aware
+  // helpers (caller subtracts origin → tray-local) to land on the correct cell.
+  const t1 = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 'a' });
+  const t2 = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 'b' });
+  const ss: SeedStartingState = { trays: [t1, t2], seedlings: [] };
+  const o2 = trayWorldOrigin(t2, ss);
+
+  it('non-zero tray origin: t2 has y > 0 (column-major auto-flow)', () => {
+    expect(o2.x).toBe(0);
+    expect(o2.y).toBeGreaterThan(0);
+  });
+
+  it('hits a cell on t2 at non-zero world origin', () => {
+    const off = trayInteriorOffsetIn(t2);
+    const p = t2.cellPitchIn;
+    const worldX = o2.x + off.x + 1.5 * p; // center col 1
+    const worldY = o2.y + off.y + 0.5 * p; // center row 0
+    // Caller pattern: subtract trayWorldOrigin before hitTestCellInches.
+    const cell = hitTestCellInches(t2, worldX - o2.x, worldY - o2.y);
+    expect(cell).toEqual({ row: 0, col: 1 });
+  });
+
+  it('cell edge hit on t2 (just inside grid boundary)', () => {
+    const off = trayInteriorOffsetIn(t2);
+    const worldX = o2.x + off.x + 0.001; // just past origin → col 0
+    const worldY = o2.y + off.y + 0.001; // just past origin → row 0
+    expect(hitTestCellInches(t2, worldX - o2.x, worldY - o2.y))
+      .toEqual({ row: 0, col: 0 });
+  });
+
+  it('miss in the gutter between t1 and t2', () => {
+    // Gutter sits between t1.heightIn and o2.y in world coords.
+    const worldX = 0;
+    const worldY = t1.heightIn + 0.5; // inside the inter-tray gutter
+    // Try both trays; both should miss.
+    expect(hitTestCellInches(t1, worldX, worldY)).toBeNull();
+    expect(hitTestCellInches(t2, worldX - o2.x, worldY - o2.y)).toBeNull();
+  });
+
+  it('miss far outside any tray in empty world space', () => {
+    expect(hitTestCellInches(t1, 9999, 9999)).toBeNull();
+    expect(hitTestCellInches(t2, 9999 - o2.x, 9999 - o2.y)).toBeNull();
+  });
+
+  it('findSeedlingsInRect with origin fn: rect on t2 selects only t2 seedlings', () => {
+    const seedlings: Seedling[] = [
+      { id: 's1-on-t1', cultivarId: 'c', trayId: t1.id, row: 0, col: 0, labelOverride: null },
+      { id: 's2-on-t2', cultivarId: 'c', trayId: t2.id, row: 0, col: 0, labelOverride: null },
+      { id: 's3-on-t2', cultivarId: 'c', trayId: t2.id, row: 1, col: 2, labelOverride: null },
+    ];
+    // World rect that fully contains t2's grid but not t1's.
+    const rect = {
+      x: o2.x,
+      y: o2.y,
+      width: t2.widthIn,
+      height: t2.heightIn,
+    };
+    const ids = findSeedlingsInRect([t1, t2], seedlings, rect, (t) => trayWorldOrigin(t, ss));
+    expect(ids.sort()).toEqual(['s2-on-t2', 's3-on-t2']);
+  });
+
+  it('findSeedlingsInRect without origin fn: legacy single-tray behavior treats all trays at (0,0)', () => {
+    // With no origin fn, both trays' cell centers land at the same local
+    // coords — confirms the back-compat path is intact.
+    const seedlings: Seedling[] = [
+      { id: 's1', cultivarId: 'c', trayId: t1.id, row: 0, col: 0, labelOverride: null },
+      { id: 's2', cultivarId: 'c', trayId: t2.id, row: 0, col: 0, labelOverride: null },
+    ];
+    const off = trayInteriorOffsetIn(t1);
+    const rect = { x: off.x, y: off.y, width: t1.cellPitchIn, height: t1.cellPitchIn };
+    expect(findSeedlingsInRect([t1, t2], seedlings, rect).sort()).toEqual(['s1', 's2']);
   });
 });

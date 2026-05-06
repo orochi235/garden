@@ -15,10 +15,11 @@ export interface EricSceneUi {
   labelFontSize: number;
   plantIconScale: number;
   showFootprintCircles: boolean;
-  /** Per-id selection-flash opacity in `[0, 1]`. Returns `0` when the id is
-   *  not currently flashing/hovered. Layers iterate their entities and call
-   *  this for each id rather than reading a single aggregated number. */
-  getOpacity: (id: string) => number;
+  /** Per-id selection-flash highlight opacity in `[0, 1]`. Returns `0` when
+   *  the id is not currently flashing/hovered. Layers iterate their entities
+   *  and call this for each id rather than reading a single aggregated number.
+   *  Mirrors the seed-starting layers' `getHighlight` callback shape. */
+  getHighlight: (id: string) => number;
   debugOverlappingLabels: boolean;
   /**
    * Ids of non-dragging structures whose AABB intersects the dragging set.

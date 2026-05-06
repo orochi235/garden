@@ -58,10 +58,10 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     {
       ...meta['zone-highlights'],
       draw(ctx, _data, view) {
-        const { getOpacity } = getUi();
+        const { getHighlight } = getUi();
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
-          const opacity = getOpacity(z.id);
+          const opacity = getHighlight(z.id);
           if (opacity <= 0) continue;
           ctx.save();
           ctx.globalAlpha = opacity;

@@ -192,6 +192,33 @@ describe('useEricCycleTool — alt+drag clone', () => {
     expect(clone).toBeDefined();
   });
 
+  it('alt+drag clone auto-expands to group siblings: 3 structures cloned from a group of 3', async () => {
+    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const b = createStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const c = createStructure({ type: 'raised-bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c] } }));
+
+    const adapter = createGardenSceneAdapter();
+    const insertAdapter = createInsertAdapter();
+    const { result } = renderHook(() => useEricCycleTool(adapter, insertAdapter));
+
+    // alt+click on `a` only.
+    const scratch: CycleScratch = { cycled: false };
+    const downCtx = makeCtx(2, 2, scratch);
+    act(() => { result.current.pointer!.onDown!(pointer(), downCtx); });
+    expect(useUiStore.getState().selectedIds).toEqual([a.id]);
+
+    // Drag → clone.
+    act(() => { result.current.drag!.onStart!(pointer(), downCtx); });
+    const moveCtx = makeCtx(50, 50, scratch);
+    act(() => { result.current.drag!.onMove!(pointer(), moveCtx); });
+    act(() => { result.current.drag!.onEnd!(pointer(), moveCtx); });
+
+    // Originals still there + 3 clones (one per group member).
+    const final = useGardenStore.getState().garden.structures;
+    expect(final.length).toBe(6);
+  });
+
   it('plain drag (no alt cycle) still calls through to pass — no clone', () => {
     const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({

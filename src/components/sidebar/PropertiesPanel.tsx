@@ -477,7 +477,7 @@ export function PropertiesPanel() {
       </div>
       {/* Optimize Layout disabled — see docs/TODO.md. Re-enable once the
           simplified solver has been validated end-to-end in the UI. */}
-      {false && structure?.type === 'raised-bed' && (
+      {structure?.type === 'raised-bed' && (
         <div style={{ padding: '0 8px' }}>
           <OptimizePanel structureId={structure.id} />
         </div>

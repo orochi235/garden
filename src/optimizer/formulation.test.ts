@@ -49,6 +49,27 @@ describe('buildMipModel', () => {
     expect(m.cells.length).toBeLessThan(4 * 4);
   });
 
+  it('accepts DEFAULT_WEIGHTS without throwing', () => {
+    expect(() => buildMipModel(tinyInput)).not.toThrow();
+  });
+
+  it('throws when a weight field is undefined', () => {
+    const bad = {
+      ...tinyInput,
+      // Simulates a test harness passing the wrong field names.
+      weights: { shading: 1 } as unknown as typeof DEFAULT_WEIGHTS,
+    };
+    expect(() => buildMipModel(bad)).toThrow(/sameSpeciesBuffer/);
+  });
+
+  it('throws when a weight field is NaN', () => {
+    const bad: OptimizationInput = {
+      ...tinyInput,
+      weights: { shading: 1, sameSpeciesBuffer: Number.NaN },
+    };
+    expect(() => buildMipModel(bad)).toThrow(/finite number/);
+  });
+
   it('emits aux vars for pairs with shading height differences', () => {
     const input = { ...tinyInput, plants: [
       { cultivarId: 'tomato', count: 1, footprintIn: 4, heightIn: 60 },

@@ -3,10 +3,11 @@ import { greedyHexPack } from './seed';
 import { buildNoGoodCut, perturbWeights } from './diversity';
 import { familyCompanionPartitioner } from './partitioning/familyCompanion';
 import { proportionalStripAllocator } from './allocation/proportionalStrip';
+import { pairContribution } from './scoring/pairwiseScore';
 import type { MipModel } from './formulation';
 import type {
   OptimizationInput, OptimizationResult, OptimizationCandidate,
-  OptimizerPlacement, Cluster, SubBed,
+  OptimizerPlacement, OptimizerPlant, OptimizerWeights, Cluster, SubBed,
 } from './types';
 
 const MAX_UNIFIED_VARS = 1500;
@@ -144,11 +145,14 @@ async function solveClustered(
   const clusters = subBeds.map((s) => s.cluster);
 
   const allPlacements: OptimizerPlacement[] = [];
+  /** Cluster index (into `subBeds`) for each placement in `allPlacements`. */
+  const placementClusterIdx: number[] = [];
   let scoreSum = 0;
   let worstGap = 0;
   const fallbackKeys: string[] = [];
 
-  for (const subBed of subBeds) {
+  for (let ci = 0; ci < subBeds.length; ci++) {
+    const subBed = subBeds[ci];
     if (isCancelled()) return null;
     const subInput = buildSubInput(input, subBed);
 
@@ -165,6 +169,7 @@ async function solveClustered(
           xIn: gp.xIn + subBed.offsetIn.x,
           yIn: gp.yIn + subBed.offsetIn.y,
         });
+        placementClusterIdx.push(ci);
       }
       continue;
     }
@@ -207,17 +212,65 @@ async function solveClustered(
         xIn: p.xIn + subBed.offsetIn.x,
         yIn: p.yIn + subBed.offsetIn.y,
       });
+      placementClusterIdx.push(ci);
     }
   }
 
   if (allPlacements.length === 0) return null;
+  const crossClusterScore = computeCrossClusterScore(
+    allPlacements,
+    placementClusterIdx,
+    input.plants,
+    input.weights,
+  );
   return {
     placements: allPlacements,
     score: scoreSum,
     reason: clusteredReasonLabel(clusters, allPlacements.length, fallbackKeys),
     gap: worstGap,
     solveMs: performance.now() - solveStart,
+    crossClusterScore,
   };
+}
+
+/**
+ * Sum pairwise objective contributions for placements that ended up in
+ * DIFFERENT clusters. Diagnostic-only — see `OptimizationCandidate.crossClusterScore`.
+ * Uses the same per-pair formula as `formulation.ts` (via `pairContribution`)
+ * so the number is directly comparable to in-cluster contributions.
+ */
+function computeCrossClusterScore(
+  placements: OptimizerPlacement[],
+  clusterIdx: number[],
+  plants: OptimizerPlant[],
+  weights: OptimizerWeights,
+): number {
+  // Lookup: cultivarId → heightIn (input plants are unique per cultivar in
+  // practice; first match is fine).
+  const heightByCultivar = new Map<string, number | null>();
+  for (const p of plants) {
+    if (!heightByCultivar.has(p.cultivarId)) heightByCultivar.set(p.cultivarId, p.heightIn);
+  }
+  let total = 0;
+  for (let i = 0; i < placements.length; i++) {
+    for (let j = i + 1; j < placements.length; j++) {
+      if (clusterIdx[i] === clusterIdx[j]) continue;
+      const a = {
+        cultivarId: placements[i].cultivarId,
+        heightIn: heightByCultivar.get(placements[i].cultivarId) ?? null,
+      };
+      const b = {
+        cultivarId: placements[j].cultivarId,
+        heightIn: heightByCultivar.get(placements[j].cultivarId) ?? null,
+      };
+      total += pairContribution(
+        a, { xIn: placements[i].xIn, yIn: placements[i].yIn },
+        b, { xIn: placements[j].xIn, yIn: placements[j].yIn },
+        weights,
+      );
+    }
+  }
+  return total;
 }
 
 /**

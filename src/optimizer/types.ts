@@ -68,6 +68,17 @@ export interface OptimizationCandidate {
   gap: number;
   /** Solve time, ms. */
   solveMs: number;
+  /**
+   * Diagnostic-only sum of pairwise objective contributions for plant pairs
+   * that landed in DIFFERENT clusters. The clustered solver optimizes each
+   * sub-bed independently, so cross-cluster pairs cannot influence the MIP
+   * objective; this number reports what those contributions WOULD have been
+   * at the chosen placements (using the same shading + same-species-buffer
+   * formulas as in-cluster pairs). Useful for comparing candidates but does
+   * not feed back into `score`. Undefined for unified (non-clustered)
+   * solves. Typically ≤ 0 because the two terms are penalties.
+   */
+  crossClusterScore?: number;
 }
 
 export interface OptimizationResult {

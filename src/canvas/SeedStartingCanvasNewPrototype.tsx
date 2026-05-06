@@ -20,6 +20,7 @@ import {
 } from './adapters/seedStartingScene';
 import { createTrayLayers } from './layers/trayLayersWorld';
 import { createSeedlingLayers, type SeedlingLayerUi } from './layers/seedlingLayersWorld';
+import { createSystemLayers } from './layers/systemLayersWorld';
 import type { View } from './layers/worldLayerData';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
@@ -111,6 +112,7 @@ export function SeedStartingCanvasNewPrototype() {
       ...createTrayLayers(getTrays),
       ...createSeedlingLayers(getTrays, getSeedlings, getSeedlingUi, getHighlight),
       createDragPreviewLayer(dragPreviewRegistry as never),
+      ...createSystemLayers(),
     ];
     const debugLayers = createDebugLayers('seed-starting', () => useGardenStore.getState().garden);
     if (isDebugEnabled('handles')) {

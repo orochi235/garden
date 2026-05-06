@@ -14,7 +14,7 @@ import {
 } from '../layouts/trayDropTargets';
 import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/seedStarting';
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
-import type { SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
+import { trayWorldOrigin, type SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
 
 export interface SeedlingMoveScratch {
   active: boolean;
@@ -51,7 +51,8 @@ const initScratch = (): SeedlingMoveScratch => ({
 function findSeedlingAt(worldX: number, worldY: number): { tray: Tray; seedling: Seedling } | null {
   const ss = useGardenStore.getState().garden.seedStarting;
   for (const tray of ss.trays) {
-    const cell = hitTestCellInches(tray, worldX, worldY);
+    const o = trayWorldOrigin(tray, ss);
+    const cell = hitTestCellInches(tray, worldX - o.x, worldY - o.y);
     if (!cell) continue;
     const slot = tray.slots[cell.row * tray.cols + cell.col];
     if (slot.state !== 'sown' || !slot.seedlingId) continue;
@@ -327,7 +328,8 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
               ctx.scratch.affordance = null;
             }
 
-            const cell = hitTestCellInches(tray, ctx.worldX, ctx.worldY);
+            const o = trayWorldOrigin(tray, ss);
+            const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);
             if (!cell) {
               useUiStore.getState().setSeedFillPreview(null);
               useUiStore.getState().setSeedMovePreview(null);
@@ -389,7 +391,9 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
                 width: m.x - m.startX,
                 height: m.y - m.startY,
               };
-              const ids = findSeedlingsInRect(ss.trays, ss.seedlings, rect);
+              const ids = findSeedlingsInRect(ss.trays, ss.seedlings, rect, (t) =>
+                trayWorldOrigin(t, ss),
+              );
               const ui = useUiStore.getState();
               if (m.shift) {
                 const merged = Array.from(new Set([...ui.selectedIds, ...ids]));
@@ -430,7 +434,8 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
               return 'claim';
             }
 
-            const cell = hitTestCellInches(tray, ctx.worldX, ctx.worldY);
+            const oEnd = trayWorldOrigin(tray, ss);
+            const cell = hitTestCellInches(tray, ctx.worldX - oEnd.x, ctx.worldY - oEnd.y);
             if (ctx.scratch.isGroup) {
               if (!cell) {
                 cleanup();

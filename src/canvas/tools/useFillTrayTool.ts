@@ -3,6 +3,7 @@ import { defineTool, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { hitTestCellInches } from '../seedStartingHitTest';
+import { trayWorldOrigin } from '../adapters/seedStartingScene';
 import {
   getTrayDropTargets,
   hitTrayDropTarget,
@@ -34,7 +35,8 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
             if (!cultivarId) return 'pass';
             const ss = useGardenStore.getState().garden.seedStarting;
             for (const tray of ss.trays) {
-              const cell = hitTestCellInches(tray, ctx.worldX, ctx.worldY);
+              const o = trayWorldOrigin(tray, ss);
+              const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);
               if (!cell) continue;
               ctx.scratch.active = true;
               ctx.scratch.trayId = tray.id;

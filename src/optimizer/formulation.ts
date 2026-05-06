@@ -1,5 +1,26 @@
-import type { OptimizationInput } from './types';
-import { normalizeShadingTerm } from './weights';
+import type { OptimizationInput, OptimizerWeights } from './types';
+import { ADJACENCY_IN, pairCoeff } from './scoring/pairwiseScore';
+
+/**
+ * Validate that every numeric field on `OptimizerWeights` is a finite number.
+ * Catches test harnesses that pass weights with the wrong field names — an
+ * undefined field would otherwise flow into `auxCoeff -= undefined` → NaN
+ * and serialize as `obj: − NaN n_0_1`.
+ */
+function validateWeights(weights: OptimizerWeights): void {
+  if (weights == null || typeof weights !== 'object') {
+    throw new Error(`buildMipModel: weights must be an object, got ${String(weights)}`);
+  }
+  const requiredFields: (keyof OptimizerWeights)[] = ['shading', 'sameSpeciesBuffer'];
+  for (const field of requiredFields) {
+    const v = weights[field];
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      throw new Error(
+        `buildMipModel: weights.${field} must be a finite number, got ${String(v)}`,
+      );
+    }
+  }
+}
 
 export interface MipVar {
   /** Encoded as `x_<plantIdx>_<cellI>_<cellJ>`. */
@@ -39,6 +60,7 @@ export interface MipModel {
 
 export function buildMipModel(input: OptimizationInput): MipModel {
   const { bed, plants, gridResolutionIn: g, weights } = input;
+  validateWeights(weights);
   const cells: MipModel['cells'] = [];
   const cols = Math.floor((bed.widthIn - 2 * bed.edgeClearanceIn) / g);
   const rows = Math.floor((bed.lengthIn - 2 * bed.edgeClearanceIn) / g);
@@ -134,7 +156,7 @@ export function buildMipModel(input: OptimizationInput): MipModel {
   // Pairwise auxiliary variables for shading + same-species buffer (both negative
   // coefficients — the one-sided coupling we use is correct for negatives only).
   const aux: MipAuxVar[] = [];
-  const adjacencyIn = 24;
+  const adjacencyIn = ADJACENCY_IN;
 
   const cellByIJ = new Map<string, typeof cells[number]>();
   for (const cell of cells) cellByIJ.set(`${cell.i}_${cell.j}`, cell);
@@ -153,22 +175,16 @@ export function buildMipModel(input: OptimizationInput): MipModel {
       const plantA = expanded[a];
       const plantB = expanded[b];
 
-      const hasShading =
-        plantA.heightIn != null &&
-        plantB.heightIn != null &&
-        plantA.heightIn !== plantB.heightIn;
-      const sameSpecies = plantA.cultivarId === plantB.cultivarId;
+      const auxCoeff = pairCoeff(plantA, plantB, weights);
 
-      let auxCoeff = 0;
-      if (sameSpecies) auxCoeff -= weights.sameSpeciesBuffer;
-      if (hasShading) {
-        const hA = plantA.heightIn!;
-        const hB = plantB.heightIn!;
-        const shadingPenalty = normalizeShadingTerm(Math.max(hA, hB), Math.min(hA, hB));
-        auxCoeff -= weights.shading * shadingPenalty;
+      if (auxCoeff === 0) continue;
+      if (!Number.isFinite(auxCoeff)) {
+        // Weights are validated at entry; reaching here means a non-finite value
+        // crept in via shading normalization or a future code path.
+        throw new Error(
+          `buildMipModel: non-finite aux coefficient ${auxCoeff} for pair (${a},${b})`,
+        );
       }
-
-      if (!Number.isFinite(auxCoeff) || auxCoeff === 0) continue;
 
       const auxName = `n_${a}_${b}`;
       aux.push({ name: auxName, c: auxCoeff });

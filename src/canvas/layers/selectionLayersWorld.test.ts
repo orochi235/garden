@@ -62,7 +62,7 @@ function ui(over: Partial<ReturnType<GetUi>> = {}): ReturnType<GetUi> {
     labelFontSize: 13,
     plantIconScale: 1,
     showFootprintCircles: true,
-    getOpacity: () => 0,
+    getHighlight: () => 0,
     debugOverlappingLabels: false,
     dragClashIds: [],
     ...over,
@@ -97,6 +97,56 @@ describe('createSelectionOutlineLayer', () => {
     const layer = createSelectionOutlineLayer(() => [], () => [z], () => [], () => ui({ selectedIds: ['z1'] }));
     layer.draw(ctx, {}, view);
     expect(ctx.ellipse).toHaveBeenCalled();
+  });
+});
+
+describe('createSelectionOutlineLayer — implicit (group-sibling) styling', () => {
+  it('draws a second outline pass for group siblings of the explicit selection', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', groupId: 'g1', x: 0, y: 0, width: 2, length: 2 });
+    const b = makeStructure({ id: 'b', groupId: 'g1', x: 5, y: 0, width: 2, length: 2 });
+    const layer = createSelectionOutlineLayer(
+      () => [], () => [], () => [a, b], () => ui({ selectedIds: ['a'] }),
+    );
+    layer.draw(ctx, {}, view);
+    // Two strokeRect calls: one for implicit sibling `b`, one for explicit `a`.
+    expect((ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2);
+  });
+
+  it('uses solid stroke (no dash) at reduced opacity for the implicit pass', () => {
+    const ctx = makeCtx();
+    const seenAlphas: number[] = [];
+    Object.defineProperty(ctx, 'globalAlpha', {
+      get() { return 1; },
+      set(v: number) { seenAlphas.push(v); },
+      configurable: true,
+    });
+    const a = makeStructure({ id: 'a', groupId: 'g1', x: 0, y: 0, width: 2, length: 2 });
+    const b = makeStructure({ id: 'b', groupId: 'g1', x: 5, y: 0, width: 2, length: 2 });
+    const layer = createSelectionOutlineLayer(
+      () => [], () => [], () => [a, b], () => ui({ selectedIds: ['a'] }),
+    );
+    layer.draw(ctx, {}, view);
+    // Implicit pass sets alpha < 1 (we chose 0.6).
+    expect(seenAlphas.some((v) => v > 0 && v < 1)).toBe(true);
+    // Implicit pass uses an empty dash array (solid stroke); explicit pass
+    // uses a non-empty dash. Both kinds of setLineDash calls should appear.
+    const dashCalls = (ctx.setLineDash as ReturnType<typeof vi.fn>).mock.calls;
+    const hasDashed = dashCalls.some((c) => Array.isArray(c[0]) && c[0].length === 2);
+    const hasSolid = dashCalls.some((c) => Array.isArray(c[0]) && c[0].length === 0);
+    expect(hasDashed).toBe(true);
+    expect(hasSolid).toBe(true);
+  });
+
+  it('does not draw an implicit outline for ungrouped selections', () => {
+    const ctx = makeCtx();
+    const a = makeStructure({ id: 'a', x: 0, y: 0, width: 2, length: 2 });
+    const layer = createSelectionOutlineLayer(
+      () => [], () => [], () => [a], () => ui({ selectedIds: ['a'] }),
+    );
+    layer.draw(ctx, {}, view);
+    // Only the explicit outline draws — single strokeRect call.
+    expect((ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
 });
 

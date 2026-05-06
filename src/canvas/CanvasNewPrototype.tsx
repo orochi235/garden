@@ -26,7 +26,7 @@ import {
   createAllHandlesLayer,
 } from './layers/selectionLayersWorld';
 import { isDebugEnabled } from './debug';
-import { createSystemLayer } from './layers/systemLayersWorld';
+import { createSystemLayers } from './layers/systemLayersWorld';
 import type { GetUi, View } from './layers/worldLayerData';
 import { useEricSelectTool } from './tools/useEricSelectTool';
 import { useEricCycleTool } from './tools/useEricCycleTool';
@@ -98,17 +98,17 @@ function GardenCanvasNewPrototype() {
     };
     const getUi: GetUi = () => {
       const u = useUiStore.getState();
-      // Per-id flash opacity — layers call `getOpacity(id)` per entity. The
+      // Per-id flash opacity — layers call `getHighlight(id)` per entity. The
       // highlight store already keys flashes/hovers by id; we just pass the
       // reader through so each layer can pulse independently.
-      const getOpacity = (id: string) => useHighlightStore.getState().computeOpacity(id);
+      const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
       return {
         selectedIds: u.selectedIds,
         labelMode: u.labelMode,
         labelFontSize: u.labelFontSize,
         plantIconScale: u.plantIconScale,
         showFootprintCircles: u.showFootprintCircles,
-        getOpacity,
+        getHighlight,
         debugOverlappingLabels: u.debugOverlappingLabels,
         dragClashIds: u.dragClashIds,
       };
@@ -132,7 +132,7 @@ function GardenCanvasNewPrototype() {
       createGroupOutlineLayer(getStructures, getUi),
       createSelectionOutlineLayer(getPlantings, getZones, getStructures, getUi),
       createSelectionHandlesLayer(getZones, getStructures, getUi),
-      createSystemLayer(),
+      ...createSystemLayers(),
     ];
     const debugLayers = createDebugLayers('garden', () => useGardenStore.getState().garden);
     if (isDebugEnabled('handles')) {

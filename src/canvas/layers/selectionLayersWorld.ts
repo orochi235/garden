@@ -7,6 +7,7 @@ import type { Seedling, Tray } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import type { GetUi, LayerDescriptor, View } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
+import { expandToGroups } from '../../utils/groups';
 
 /**
  * Single source of truth for selection-related layer metadata. Order here
@@ -49,13 +50,25 @@ export function createSelectionOutlineLayer(
       const zones = getZones();
       const structures = getStructures();
 
+      // Implicit drag set = group siblings of any selected grouped structure
+      // that aren't themselves explicitly selected. These are dragged/cloned/
+      // deleted along with the explicit selection (see expandToGroups + the
+      // select tool / cycle tool / delete action wiring), so we render them
+      // with a distinct subdued style so users can see "what will move/delete
+      // along with my pick".
+      const expanded = expandToGroups(selectedIds, structures);
+      const explicitSet = new Set(selectedIds);
+      const implicitSet = new Set(expanded.filter((id) => !explicitSet.has(id)));
+
       const parentMap = new Map<string, { x: number; y: number; width: number; length: number; shape?: string }>();
       for (const z of zones) parentMap.set(z.id, z);
       for (const s of structures) {
         if (s.container) parentMap.set(s.id, s);
       }
 
-      const selectedPlantings = plantings.filter((p) => selectedIds.includes(p.id));
+      // Plantings are not group-aware (groups only apply to structures), so
+      // implicitSet never contains planting ids; only the explicit set draws.
+      const selectedPlantings = plantings.filter((p) => explicitSet.has(p.id));
       for (const p of selectedPlantings) {
         const parent = parentMap.get(p.parentId);
         if (!parent) continue;
@@ -74,8 +87,33 @@ export function createSelectionOutlineLayer(
       }
 
       const allObjects: Array<{ id: string; x: number; y: number; width: number; length: number; label?: string; shape?: string }> = [...structures, ...zones];
-      const selected = allObjects.filter((obj) => selectedIds.includes(obj.id));
 
+      // Pass 1 — implicit (group-sibling) outlines. Solid stroke at 0.6 alpha
+      // distinguishes them from the explicit dashed-100% outlines without
+      // adding a competing color.
+      const implicitObjs = allObjects.filter((obj) => implicitSet.has(obj.id));
+      if (implicitObjs.length > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        for (const obj of implicitObjs) {
+          const isCircle = obj.shape === 'circle';
+          const inset = px(view, 1);
+          ctx.strokeStyle = '#5BA4CF';
+          ctx.lineWidth = px(view, 2);
+          ctx.setLineDash([]);
+          if (isCircle) {
+            ctx.beginPath();
+            ctx.ellipse(obj.x + obj.width / 2, obj.y + obj.length / 2, obj.width / 2 + inset, obj.length / 2 + inset, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            ctx.strokeRect(obj.x - inset, obj.y - inset, obj.width + inset * 2, obj.length + inset * 2);
+          }
+        }
+        ctx.restore();
+      }
+
+      // Pass 2 — explicit (UI-selected) outlines. Original dashed style.
+      const selected = allObjects.filter((obj) => explicitSet.has(obj.id));
       for (const obj of selected) {
         const isCircle = obj.shape === 'circle';
         const inset = px(view, 1);

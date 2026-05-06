@@ -17,14 +17,20 @@ export interface BedOptimizerArgs {
 
 export function runOptimizerForBed(args: BedOptimizerArgs): RunHandle {
   const FT_TO_IN = 12;
-  const plants: OptimizerPlant[] = args.request.map(({ cultivar, count }) => ({
-    cultivarId: cultivar.id,
-    count,
-    footprintIn: cultivar.footprintFt * FT_TO_IN,
-    spacingIn: cultivar.spacingFt * FT_TO_IN,
-    heightIn: cultivar.heightFt != null ? cultivar.heightFt * FT_TO_IN : null,
-    category: cultivar.category,
-  }));
+  const plants: OptimizerPlant[] = args.request.map(({ cultivar, count }) => {
+    // Prefer cultivar-level override (e.g. determinate vs. indeterminate
+    // tomato) when present; otherwise fall back to the resolved species
+    // default already merged into `cultivar.heightFt`.
+    const heightFt = cultivar.heightFtOverride ?? cultivar.heightFt;
+    return {
+      cultivarId: cultivar.id,
+      count,
+      footprintIn: cultivar.footprintFt * FT_TO_IN,
+      spacingIn: cultivar.spacingFt * FT_TO_IN,
+      heightIn: heightFt != null ? heightFt * FT_TO_IN : null,
+      category: cultivar.category,
+    };
+  });
 
   const input: OptimizationInput = {
     bed: {

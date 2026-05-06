@@ -17,6 +17,10 @@ import {
   createGroupOutlineLayer,
   createSelectionHandlesLayer,
 } from './selectionLayersWorld';
+import {
+  SYSTEM_LAYER_DESCRIPTORS,
+  createSystemLayers,
+} from './systemLayersWorld';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 
 const ui: ReturnType<GetUi> = {
@@ -25,7 +29,7 @@ const ui: ReturnType<GetUi> = {
   labelFontSize: 13,
   plantIconScale: 1,
   showFootprintCircles: true,
-  getOpacity: () => 0,
+  getHighlight: () => 0,
   debugOverlappingLabels: false,
   dragClashIds: [],
 };
@@ -65,6 +69,11 @@ describe('layer descriptor / factory invariants', () => {
   it('planting factory matches PLANTING_LAYER_DESCRIPTORS exactly', () => {
     const layers = createPlantingLayers(() => [], () => [], () => [], () => ui);
     assertMatches(PLANTING_LAYER_DESCRIPTORS, layers);
+  });
+
+  it('system factory matches SYSTEM_LAYER_DESCRIPTORS exactly', () => {
+    const layers = createSystemLayers();
+    assertMatches(SYSTEM_LAYER_DESCRIPTORS, layers);
   });
 
   it('selection factories match SELECTION_LAYER_DESCRIPTORS exactly', () => {

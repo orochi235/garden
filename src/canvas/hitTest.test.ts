@@ -163,4 +163,27 @@ describe('hitTestObjects', () => {
     ];
     expect(hitTestObjects(4, 4, two, [], 'structures')?.id).toBe('top');
   });
+
+  // World-coord conversion confirmation: hits should depend ONLY on world
+  // coordinates and entity bounds, not on view-transform state.
+  describe('world-coord invariance', () => {
+    const view = useUiStore.getState();
+    it('hits structure at its world center regardless of zoom/pan', () => {
+      // s1 occupies world rect (2,2)-(6,6); center is (4,4)
+      view.setZoom(0.5); view.setPan(123, -45);
+      expect(hitTestObjects(4, 4, structures, zones, 'structures')?.id).toBe('s1');
+      view.setZoom(4); view.setPan(-200, 999);
+      expect(hitTestObjects(4, 4, structures, zones, 'structures')?.id).toBe('s1');
+      view.reset();
+    });
+    it('hits the structure edge at world (2, 4)', () => {
+      expect(hitTestObjects(2, 4, structures, zones, 'structures')?.id).toBe('s1');
+    });
+    it('misses just outside the structure at world (1.999, 4)', () => {
+      expect(hitTestObjects(1.999, 4, structures, zones, 'structures')).toBeNull();
+    });
+    it('misses in empty world space', () => {
+      expect(hitTestObjects(50, 50, structures, zones, 'structures')).toBeNull();
+    });
+  });
 });

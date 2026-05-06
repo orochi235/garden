@@ -13,6 +13,13 @@ interface CultivarRaw {
   footprintFt?: number;
   spacingFt?: number;
   heightFt?: number;
+  /**
+   * Cultivar-level mature-height override (feet). When set, takes precedence
+   * over the species default for optimizer scoring (shading) and any other
+   * consumer that wants the cultivar-specific value. Null/undefined means
+   * fall back to the species `heightFt`.
+   */
+  heightFtOverride?: number;
   climber?: boolean;
   iconImage?: string;
   iconBgColor?: string;
@@ -32,6 +39,12 @@ export interface Cultivar {
   spacingFt: number;
   /** Mature height in feet. Undefined when neither cultivar nor species supplies a value. */
   heightFt: number | undefined;
+  /**
+   * Cultivar-level height override (feet), preserved from the raw entry so
+   * downstream consumers (e.g. the optimizer adapter) can prefer it over the
+   * species default. Undefined/absent means no override; use `heightFt` instead.
+   */
+  heightFtOverride?: number;
   climber: boolean;
   iconImage: string | null;
   iconBgColor: string | null;
@@ -54,7 +67,8 @@ function resolveCultivar(raw: CultivarRaw): Cultivar {
     color: raw.color ?? species.color,
     footprintFt: raw.footprintFt ?? species.footprintFt,
     spacingFt: raw.spacingFt ?? species.spacingFt,
-    heightFt: raw.heightFt ?? species.heightFt,
+    heightFt: raw.heightFtOverride ?? raw.heightFt ?? species.heightFt,
+    heightFtOverride: raw.heightFtOverride,
     climber: raw.climber ?? species.climber ?? false,
     iconImage: raw.iconImage ?? species.iconImage,
     iconBgColor: raw.iconBgColor ?? species.iconBgColor,

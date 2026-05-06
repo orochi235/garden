@@ -285,7 +285,7 @@ export function createPlantingLayers(
           const parent = parentMap.get(group[0]?.parentId ?? '');
           if (!parent) continue;
           for (const p of group) {
-            const opacity = data.getOpacity(p.id);
+            const opacity = data.getHighlight(p.id);
             if (opacity <= 0) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
@@ -329,7 +329,7 @@ export function createPlantingLayers(
             const isSelected = data.selectedIds.includes(p.id);
             const showThis = data.labelMode === 'all' || data.labelMode === 'active-layer'
               || (data.labelMode === 'selection' && isSelected)
-              || data.getOpacity(p.id) > 0;
+              || data.getHighlight(p.id) > 0;
             if (!showThis) continue;
 
             const species = getSpecies(cultivar.speciesId);

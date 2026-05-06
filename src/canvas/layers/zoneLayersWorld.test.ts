@@ -32,7 +32,7 @@ const baseUi: ReturnType<GetUi> = {
   labelFontSize: 13,
   plantIconScale: 1,
   showFootprintCircles: true,
-  getOpacity: () => 0,
+  getHighlight: () => 0,
   debugOverlappingLabels: false,
   dragClashIds: [],
 };
@@ -61,7 +61,7 @@ describe('createZoneLayers (world)', () => {
     expect(ctx.setLineDash).toHaveBeenCalledWith([1.2, 0.6]);
   });
 
-  it('zone-highlights skips zones with getOpacity(id)=0', () => {
+  it('zone-highlights skips zones with getHighlight(id)=0', () => {
     const ctx = makeCtx();
     const z = makeZone();
     const layer = createZoneLayers(() => [z], () => baseUi).find((l) => l.id === 'zone-highlights')!;
@@ -69,13 +69,13 @@ describe('createZoneLayers (world)', () => {
     expect(ctx.save).not.toHaveBeenCalled();
   });
 
-  it('zone-highlights draws only the zones whose getOpacity(id)>0', () => {
+  it('zone-highlights draws only the zones whose getHighlight(id)>0', () => {
     const ctx = makeCtx();
     const za = makeZone({ id: 'a', x: 0, y: 0 });
     const zb = makeZone({ id: 'b', x: 5, y: 5 });
     const ui: ReturnType<GetUi> = {
       ...baseUi,
-      getOpacity: (id: string) => (id === 'a' ? 0.5 : 0),
+      getHighlight: (id: string) => (id === 'a' ? 0.5 : 0),
     };
     const layer = createZoneLayers(() => [za, zb], () => ui).find((l) => l.id === 'zone-highlights')!;
     layer.draw(ctx, {}, view);

@@ -279,7 +279,7 @@ export function createStructureLayers(
       ...meta['structure-highlights'],
       draw(ctx, _data, view) {
         const ui = getUi();
-        const { getOpacity } = ui;
+        const { getHighlight } = ui;
         const clashIds = ui.dragClashIds ?? [];
         const drawClashes = clashIds.length > 0;
 
@@ -318,7 +318,7 @@ export function createStructureLayers(
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
           for (const s of members) {
-            if (getOpacity(s.id) > 0) { any = true; break; }
+            if (getHighlight(s.id) > 0) { any = true; break; }
           }
           if (any) break;
         }
@@ -332,7 +332,7 @@ export function createStructureLayers(
         for (const item of queue) {
           if (item.type === 'single') {
             const s = item.structure;
-            const op = getOpacity(s.id);
+            const op = getHighlight(s.id);
             if (op <= 0) continue;
             ctx.globalAlpha = op;
             if (s.shape === 'circle') {
@@ -347,7 +347,7 @@ export function createStructureLayers(
             // outline pulses as a unit when any member flashes.
             let groupOp = 0;
             for (const s of item.members) {
-              const o = getOpacity(s.id);
+              const o = getHighlight(s.id);
               if (o > groupOp) groupOp = o;
             }
             if (groupOp <= 0) continue;

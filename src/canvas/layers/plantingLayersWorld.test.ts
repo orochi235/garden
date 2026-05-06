@@ -9,7 +9,7 @@ const baseUi: ReturnType<GetUi> = {
   labelFontSize: 13,
   plantIconScale: 1,
   showFootprintCircles: true,
-  getOpacity: () => 0,
+  getHighlight: () => 0,
   debugOverlappingLabels: false,
   dragClashIds: [],
 };

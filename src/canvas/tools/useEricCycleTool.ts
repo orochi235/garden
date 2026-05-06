@@ -12,6 +12,7 @@ import { getCultivar } from '../../model/cultivars';
 import { renderPlant } from '../plantRenderers';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
 import type { GardenInsertAdapter } from '../adapters/insert';
+import { expandToGroups } from '../../utils/groups';
 
 export interface CycleScratch { cycled: boolean }
 
@@ -128,7 +129,12 @@ export function useEricCycleTool(
             if (insertAdapter) {
               const ids = useUiStore.getState().selectedIds;
               if (ids.length > 0) {
-                clone.start(ctx.worldX, ctx.worldY, ids, 'plantings', ctx.modifiers);
+                // Expand to group siblings so alt-drag clones the whole
+                // group, not just the cycled member. Consistent with
+                // useEricSelectTool's move/clone expansion.
+                const structures = useGardenStore.getState().garden.structures;
+                const expanded = expandToGroups(ids, structures);
+                clone.start(ctx.worldX, ctx.worldY, expanded, 'plantings', ctx.modifiers);
               }
             }
             return 'claim';

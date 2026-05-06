@@ -50,7 +50,7 @@ const baseUi: ReturnType<GetUi> = {
   labelFontSize: 13,
   plantIconScale: 1,
   showFootprintCircles: true,
-  getOpacity: () => 0,
+  getHighlight: () => 0,
   debugOverlappingLabels: false,
   dragClashIds: [],
 };
@@ -86,23 +86,23 @@ describe('createStructureLayers (world)', () => {
     expect(ctx.lineWidth).toBeCloseTo(0.1);
   });
 
-  it('structure-highlights skips when no structure has getOpacity(id)>0', () => {
+  it('structure-highlights skips when no structure has getHighlight(id)>0', () => {
     const ctx = makeCtx();
     const s = makeStructure();
-    const ui: ReturnType<GetUi> = { ...baseUi, getOpacity: () => 0 };
+    const ui: ReturnType<GetUi> = { ...baseUi, getHighlight: () => 0 };
     const layer = createStructureLayers(() => [s], () => ui)
       .find((l) => l.id === 'structure-highlights')!;
     layer.draw(ctx, {}, view);
     expect(ctx.save).not.toHaveBeenCalled();
   });
 
-  it('structure-highlights draws only structures whose getOpacity(id)>0', () => {
+  it('structure-highlights draws only structures whose getHighlight(id)>0', () => {
     const ctx = makeCtx();
     const a = makeStructure({ id: 'a', x: 0, y: 0 });
     const b = makeStructure({ id: 'b', x: 5, y: 5 });
     const ui: ReturnType<GetUi> = {
       ...baseUi,
-      getOpacity: (id: string) => (id === 'a' ? 0.5 : 0),
+      getHighlight: (id: string) => (id === 'a' ? 0.5 : 0),
     };
     const layer = createStructureLayers(() => [a, b], () => ui)
       .find((l) => l.id === 'structure-highlights')!;

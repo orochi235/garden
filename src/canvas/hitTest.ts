@@ -1,3 +1,16 @@
+/**
+ * Garden hit-tests. Every entity-level public function in this module operates
+ * in **world coordinates** (feet). Callers must convert pointer events from
+ * screen→world via the active view transform *before* invoking these helpers.
+ *
+ * The lone exception is {@link hitTestHandles}: resize handles are rendered at
+ * a fixed pixel size regardless of zoom, so handle hit-testing is intrinsically
+ * a screen-space operation. It accepts both screen coords and a `ViewTransform`
+ * to project the world-space object bounds into screen space for comparison.
+ *
+ * No function in this module reads `useUiStore.zoom`/`panX`/`panY` — only layer
+ * locks. View-transform plumbing stays at the gesture/view boundary.
+ */
 import { getCultivar } from '../model/cultivars';
 import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';

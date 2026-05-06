@@ -9,6 +9,7 @@ import { STRUCTURE_LAYER_DESCRIPTORS } from '../../canvas/layers/structureLayers
 import { ZONE_LAYER_DESCRIPTORS } from '../../canvas/layers/zoneLayersWorld';
 import { PLANTING_LAYER_DESCRIPTORS } from '../../canvas/layers/plantingLayersWorld';
 import { SELECTION_LAYER_DESCRIPTORS } from '../../canvas/layers/selectionLayersWorld';
+import { SYSTEM_LAYER_DESCRIPTORS } from '../../canvas/layers/systemLayersWorld';
 import type { LayerDescriptor } from '../../canvas/layers/worldLayerData';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
@@ -29,6 +30,7 @@ const DESCRIPTOR_GROUPS: { name: string; descriptors: readonly LayerDescriptor[]
   { name: 'Zones', descriptors: ZONE_LAYER_DESCRIPTORS },
   { name: 'Plantings', descriptors: PLANTING_LAYER_DESCRIPTORS },
   { name: 'Selection', descriptors: SELECTION_LAYER_DESCRIPTORS },
+  { name: 'System', descriptors: SYSTEM_LAYER_DESCRIPTORS },
 ];
 
 const DESCRIPTOR_GROUP_IDS: Set<string> = new Set(
@@ -39,7 +41,6 @@ const DESCRIPTOR_GROUP_IDS: Set<string> = new Set(
 const FALLBACK_GROUPS: { name: string; match: (id: string) => boolean }[] = [
   { name: 'Trays', match: (id) => id.startsWith('tray-') },
   { name: 'Seedlings', match: (id) => id.startsWith('seedling') },
-  { name: 'System', match: (id) => id.startsWith('system') },
   { name: 'Debug', match: (id) => id.startsWith('debug') },
 ];
 

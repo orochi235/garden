@@ -7,8 +7,15 @@ export interface CellHit {
 }
 
 /**
- * Cell hit-test in tray-local inches. The tray's local origin is the
+ * Cell hit-test in **tray-local inches**. The tray's local origin is the
  * top-left of its outer bounds; the cell grid is inset by `trayInteriorOffsetIn`.
+ *
+ * To hit-test from world-space coordinates, subtract the tray's world origin
+ * (see `trayWorldOrigin(tray, ss)` in `adapters/seedStartingScene.ts`) before
+ * calling this function — i.e. `hitTestCellInches(tray, worldX - o.x, worldY - o.y)`.
+ *
+ * This module is view-transform-free: no `zoom`/`panX`/`panY` references.
+ * Conversion from screen→world happens at the gesture/view boundary.
  */
 export function hitTestCellInches(tray: Tray, xIn: number, yIn: number): CellHit | null {
   const off = trayInteriorOffsetIn(tray);
@@ -30,15 +37,28 @@ export function cellCenterInches(tray: Tray, row: number, col: number): { x: num
   };
 }
 
+/** Per-tray world origin used by `findSeedlingsInRect` to place cell centers
+ *  in world space. Provided by callers (typically via
+ *  `trayWorldOrigin(tray, ss)`) so this module stays free of seedStarting-state
+ *  imports and keeps no view-transform dependency. */
+export type TrayOriginFn = (tray: Tray) => { x: number; y: number };
+
 export interface WorldRect { x: number; y: number; width: number; height: number }
 
-/** Returns the ids of all seedlings whose cell center falls inside the given
- *  world-space rect. Tray world origin is treated as (0,0) (matching
- *  `seedStartingScene` adapter). */
+/**
+ * Returns the ids of all seedlings whose **world-space** cell centers fall
+ * inside the given world-space rect. The rect may have negative width/height
+ * (reversed drag); we normalize before comparison.
+ *
+ * If `getOrigin` is omitted, every tray's world origin is treated as `(0,0)`
+ * — matching the legacy single-tray behavior. Multi-tray callers should pass
+ * `(tray) => trayWorldOrigin(tray, ss)` so cell centers translate correctly.
+ */
 export function findSeedlingsInRect(
   trays: Tray[],
   seedlings: Seedling[],
   rect: WorldRect,
+  getOrigin?: TrayOriginFn,
 ): string[] {
   const x0 = Math.min(rect.x, rect.x + rect.width);
   const x1 = Math.max(rect.x, rect.x + rect.width);
@@ -50,8 +70,11 @@ export function findSeedlingsInRect(
     if (!s.trayId || s.row == null || s.col == null) continue;
     const tray = trayById.get(s.trayId);
     if (!tray) continue;
-    const c = cellCenterInches(tray, s.row, s.col);
-    if (c.x >= x0 && c.x <= x1 && c.y >= y0 && c.y <= y1) out.push(s.id);
+    const local = cellCenterInches(tray, s.row, s.col);
+    const o = getOrigin ? getOrigin(tray) : { x: 0, y: 0 };
+    const cx = o.x + local.x;
+    const cy = o.y + local.y;
+    if (cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1) out.push(s.id);
   }
   return out;
 }
