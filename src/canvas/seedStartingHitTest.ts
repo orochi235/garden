@@ -46,6 +46,34 @@ export type TrayOriginFn = (tray: Tray) => { x: number; y: number };
 export interface WorldRect { x: number; y: number; width: number; height: number }
 
 /**
+ * World-coord cell hit-test across every tray. Searches each tray's grid
+ * (after subtracting its world origin via `getOrigin`) and returns the first
+ * tray whose cell-grid contains the point. Returns `null` when the point
+ * misses every tray (e.g. inter-tray gutter, far outside).
+ *
+ * Used by the seedling-move tool to support cross-tray drops: the dragged
+ * seedling can be released into any tray's cell, not just its source tray.
+ *
+ * `getOrigin` is required (no single-tray fallback) — multi-tray hit-testing
+ * only makes sense when callers know how to translate tray-local coords to
+ * world space. Pass `(tray) => trayWorldOrigin(tray, ss)` from
+ * `adapters/seedStartingScene.ts`.
+ */
+export function hitTestCellAcrossTrays(
+  trays: Tray[],
+  worldX: number,
+  worldY: number,
+  getOrigin: TrayOriginFn,
+): { trayId: string; row: number; col: number } | null {
+  for (const tray of trays) {
+    const o = getOrigin(tray);
+    const cell = hitTestCellInches(tray, worldX - o.x, worldY - o.y);
+    if (cell) return { trayId: tray.id, row: cell.row, col: cell.col };
+  }
+  return null;
+}
+
+/**
  * Returns the ids of all seedlings whose **world-space** cell centers fall
  * inside the given world-space rect. The rect may have negative width/height
  * (reversed drag); we normalize before comparison.

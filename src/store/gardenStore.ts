@@ -62,6 +62,28 @@ interface GardenStore {
     trayId: string,
     moves: Array<{ seedlingId: string; toRow: number; toCol: number }>,
   ) => void;
+  /**
+   * Move seedlings across trays in a single undoable batch. Each move names
+   * a `seedlingId`, its source tray, destination tray, and destination
+   * (toRow,toCol). Within-tray entries (`fromTrayId === toTrayId`) work too
+   * — they're applied alongside cross-tray moves so a mixed batch is a single
+   *  undo step.
+   *
+   * Conflict policy: cross-tray moves require their target cell in the
+   * destination tray to be empty (or occupied only by another moving
+   * seedling). If any cross-tray target collides with a non-moving seedling,
+   * the entire batch is rejected (no partial application). Bumping is
+   * intra-tray-only — cross-tray drops do not displace existing seedlings.
+   */
+  moveSeedlingsAcrossTrays: (
+    moves: Array<{
+      seedlingId: string;
+      fromTrayId: string;
+      toTrayId: string;
+      toRow: number;
+      toCol: number;
+    }>,
+  ) => void;
   fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
@@ -584,6 +606,97 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings,
         },
+      });
+    },
+
+    moveSeedlingsAcrossTrays: (moves) => {
+      if (moves.length === 0) return;
+      const { seedStarting } = get().garden;
+      const seedlingById = new Map(seedStarting.seedlings.map((s) => [s.id, s]));
+      const trayById = new Map(seedStarting.trays.map((t) => [t.id, t]));
+
+      // Validate every move references known entities and fits in its dest.
+      for (const m of moves) {
+        const tray = trayById.get(m.toTrayId);
+        if (!tray) return;
+        if (!trayById.has(m.fromTrayId)) return;
+        if (!seedlingById.has(m.seedlingId)) return;
+        if (m.toRow < 0 || m.toRow >= tray.rows) return;
+        if (m.toCol < 0 || m.toCol >= tray.cols) return;
+      }
+
+      // Skip true no-ops (every move keeps its seedling in place).
+      let anyChange = false;
+      for (const m of moves) {
+        const s = seedlingById.get(m.seedlingId)!;
+        if (s.trayId !== m.toTrayId || s.row !== m.toRow || s.col !== m.toCol) {
+          anyChange = true;
+          break;
+        }
+      }
+      if (!anyChange) return;
+
+      const movingIds = new Set(moves.map((m) => m.seedlingId));
+
+      // Conflict check: every destination cell must be free, or occupied by a
+      // moving seedling. Reject the whole batch on any collision with a
+      // non-mover. Also detect duplicate destinations within the batch.
+      const destKey = (trayId: string, r: number, c: number) => `${trayId}:${r},${c}`;
+      const destSeen = new Set<string>();
+      for (const m of moves) {
+        const k = destKey(m.toTrayId, m.toRow, m.toCol);
+        if (destSeen.has(k)) return; // two moves into same dest cell
+        destSeen.add(k);
+        const tray = trayById.get(m.toTrayId)!;
+        const slot = tray.slots[m.toRow * tray.cols + m.toCol];
+        if (slot.state === 'sown' && slot.seedlingId && !movingIds.has(slot.seedlingId)) {
+          return; // collision with a non-mover → reject batch
+        }
+      }
+
+      // Apply: clone every affected tray's slots; clear sources first, then
+      // place destinations.
+      const affectedTrayIds = new Set<string>();
+      for (const m of moves) {
+        affectedTrayIds.add(m.fromTrayId);
+        affectedTrayIds.add(m.toTrayId);
+      }
+      const slotsByTrayId = new Map<string, Tray['slots']>();
+      for (const id of affectedTrayIds) {
+        const t = trayById.get(id)!;
+        slotsByTrayId.set(id, t.slots.slice());
+      }
+
+      for (const m of moves) {
+        const s = seedlingById.get(m.seedlingId)!;
+        if (s.trayId && s.row != null && s.col != null) {
+          const slots = slotsByTrayId.get(s.trayId);
+          if (slots) {
+            const idx = s.row * trayById.get(s.trayId)!.cols + s.col;
+            if (slots[idx]?.seedlingId === m.seedlingId) {
+              slots[idx] = { state: 'empty', seedlingId: null };
+            }
+          }
+        }
+      }
+      for (const m of moves) {
+        const slots = slotsByTrayId.get(m.toTrayId)!;
+        const tray = trayById.get(m.toTrayId)!;
+        slots[m.toRow * tray.cols + m.toCol] = { state: 'sown', seedlingId: m.seedlingId };
+      }
+
+      const newTrays = seedStarting.trays.map((t) => {
+        const slots = slotsByTrayId.get(t.id);
+        return slots ? { ...t, slots } : t;
+      });
+      const newSeedlings = seedStarting.seedlings.map((s) => {
+        if (!movingIds.has(s.id)) return s;
+        const m = moves.find((mm) => mm.seedlingId === s.id)!;
+        return { ...s, trayId: m.toTrayId, row: m.toRow, col: m.toCol };
+      });
+
+      commitPatch({
+        seedStarting: { ...seedStarting, trays: newTrays, seedlings: newSeedlings },
       });
     },
 

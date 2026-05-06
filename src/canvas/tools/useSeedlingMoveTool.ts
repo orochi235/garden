@@ -4,6 +4,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
   findSeedlingsInRect,
+  hitTestCellAcrossTrays,
   hitTestCellInches,
 } from '../seedStartingHitTest';
 import { DRAG_SPREAD_GUTTER_RATIO } from '../layouts/trayDropTargets';
@@ -353,8 +354,39 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
               ctx.scratch.affordance = null;
             }
 
+            // Cross-tray hit-test for single-seedling drags. Group drags stay
+            // intra-source-tray (anchor-delta semantics don't generalize
+            // across trays of different shapes/sizes).
+            const crossHit = !ctx.scratch.isGroup
+              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) => trayWorldOrigin(t, ss))
+              : null;
             const o = trayWorldOrigin(tray, ss);
-            const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);
+            const cell = ctx.scratch.isGroup
+              ? hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y)
+              : (crossHit && crossHit.trayId === tray.id ? { row: crossHit.row, col: crossHit.col } : null);
+            // Cross-tray drop: target is a different tray. Render a single-cell
+            // ghost on the destination via setMoveGhost (feasibility = dest
+            // cell empty). Don't set the (intra-tray) seedFillPreview.
+            if (!ctx.scratch.isGroup && crossHit && crossHit.trayId !== tray.id) {
+              const destTray = ss.trays.find((t) => t.id === crossHit.trayId);
+              if (destTray) {
+                const destSlot = destTray.slots[crossHit.row * destTray.cols + crossHit.col];
+                const destFree = destSlot.state === 'empty';
+                setMoveGhost({
+                  trayId: destTray.id,
+                  feasible: destFree,
+                  cells: [{
+                    row: crossHit.row,
+                    col: crossHit.col,
+                    cultivarId: ctx.scratch.cultivarId!,
+                    bumped: false,
+                  }],
+                });
+                useUiStore.getState().setSeedFillPreview(null);
+                scratchRef.current = ctx.scratch;
+                return 'claim';
+              }
+            }
             if (!cell) {
               useUiStore.getState().setSeedFillPreview(null);
               setMoveGhost(null);
@@ -460,6 +492,33 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             }
 
             const oEnd = trayWorldOrigin(tray, ss);
+            // Cross-tray drop on commit: single-seedling drags only.
+            const crossHitEnd = !ctx.scratch.isGroup
+              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) => trayWorldOrigin(t, ss))
+              : null;
+            if (
+              !ctx.scratch.isGroup
+              && crossHitEnd
+              && crossHitEnd.trayId !== trayId
+            ) {
+              const destTray = ss.trays.find((t) => t.id === crossHitEnd.trayId);
+              if (destTray) {
+                const destSlot = destTray.slots[crossHitEnd.row * destTray.cols + crossHitEnd.col];
+                if (destSlot.state === 'empty') {
+                  useGardenStore.getState().moveSeedlingsAcrossTrays([
+                    {
+                      seedlingId: ctx.scratch.draggedId!,
+                      fromTrayId: trayId,
+                      toTrayId: crossHitEnd.trayId,
+                      toRow: crossHitEnd.row,
+                      toCol: crossHitEnd.col,
+                    },
+                  ]);
+                }
+                cleanup();
+                return 'claim';
+              }
+            }
             const cell = hitTestCellInches(tray, ctx.worldX - oEnd.x, ctx.worldY - oEnd.y);
             if (ctx.scratch.isGroup) {
               if (!cell) {

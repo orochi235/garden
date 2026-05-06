@@ -3,6 +3,7 @@ import { createTray, trayInteriorOffsetIn } from '../model/seedStarting';
 import {
   cellCenterInches,
   findSeedlingsInRect,
+  hitTestCellAcrossTrays,
   hitTestCellInches,
 } from './seedStartingHitTest';
 import { trayWorldOrigin } from './adapters/seedStartingScene';
@@ -137,6 +138,29 @@ describe('world-coord conversion', () => {
     };
     const ids = findSeedlingsInRect([t1, t2], seedlings, rect, (t) => trayWorldOrigin(t, ss));
     expect(ids.sort()).toEqual(['s2-on-t2', 's3-on-t2']);
+  });
+
+  it('hitTestCellAcrossTrays returns t2 when point is on t2', () => {
+    const off = trayInteriorOffsetIn(t2);
+    const p = t2.cellPitchIn;
+    const worldX = o2.x + off.x + 1.5 * p;
+    const worldY = o2.y + off.y + 0.5 * p;
+    expect(hitTestCellAcrossTrays([t1, t2], worldX, worldY, (t) => trayWorldOrigin(t, ss)))
+      .toEqual({ trayId: t2.id, row: 0, col: 1 });
+  });
+
+  it('hitTestCellAcrossTrays returns t1 when point is on t1', () => {
+    const off = trayInteriorOffsetIn(t1);
+    const p = t1.cellPitchIn;
+    const worldX = off.x + 0.5 * p;
+    const worldY = off.y + 0.5 * p;
+    expect(hitTestCellAcrossTrays([t1, t2], worldX, worldY, (t) => trayWorldOrigin(t, ss)))
+      .toEqual({ trayId: t1.id, row: 0, col: 0 });
+  });
+
+  it('hitTestCellAcrossTrays returns null in inter-tray gutter', () => {
+    expect(hitTestCellAcrossTrays([t1, t2], 0, t1.heightIn + 0.5, (t) => trayWorldOrigin(t, ss)))
+      .toBeNull();
   });
 
   it('findSeedlingsInRect without origin fn: legacy single-tray behavior treats all trays at (0,0)', () => {

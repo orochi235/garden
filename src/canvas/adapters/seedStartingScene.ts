@@ -199,17 +199,38 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
           const o = trayWorldOrigin(targetTray, ss);
           const target = findEmptyCellNearest(targetTray, pose.x - o.x, pose.y - o.y, s.id);
           if (!target) return;
-          if (s.trayId !== targetTray.id || s.row == null || s.col == null) return;
+          if (!s.trayId || s.row == null || s.col == null) return;
           if (s.trayId === targetTray.id && s.row === target.row && s.col === target.col) return;
-          store.moveSeedling(targetTray.id, s.row, s.col, target.row, target.col);
+          if (s.trayId === targetTray.id) {
+            // Within-tray move uses the swap-aware path.
+            store.moveSeedling(s.trayId, s.row, s.col, target.row, target.col);
+          } else {
+            // Cross-tray move: route through the batched action so it's a
+            // single undo step. Note: the seed-starting flow does not
+            // currently invoke setPose for cross-tray moves —
+            // `useSeedlingMoveTool` calls the store action directly. This
+            // branch keeps the adapter consistent if a future kit-driven
+            // path lands.
+            store.moveSeedlingsAcrossTrays([
+              {
+                seedlingId: s.id,
+                fromTrayId: s.trayId,
+                toTrayId: targetTray.id,
+                toRow: target.row,
+                toCol: target.col,
+              },
+            ]);
+          }
           return;
         }
       }
     },
     setParent(_id, _parentId) {
-      // Reparent across trays not supported via setParent — setPose handles
-      // intra-tray placement and the seed-starting flow does not move
-      // seedlings between trays through the move pipeline.
+      // No-op by design: cross-tray reparenting goes through
+      // `gardenStore.moveSeedlingsAcrossTrays`, called directly by
+      // `useSeedlingMoveTool.drag.onEnd` when a single-seedling drag commits
+      // on a cell of a tray different from the source. The kit Tool gesture
+      // engine never invokes this entrypoint for the seed-starting flow.
     },
     findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
       const node = findNode(draggedId);
