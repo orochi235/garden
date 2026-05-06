@@ -4,12 +4,10 @@ import type { OptimizationInput } from './types';
 import { DEFAULT_WEIGHTS } from './types';
 
 const tinyInput: OptimizationInput = {
-  bed: { widthIn: 16, lengthIn: 16, trellis: null, edgeClearanceIn: 0 },
-  plants: [{ cultivarId: 'a', count: 2, footprintIn: 4, heightIn: null, climber: false }],
+  bed: { widthIn: 16, lengthIn: 16, edgeClearanceIn: 0 },
+  plants: [{ cultivarId: 'a', count: 2, footprintIn: 4, heightIn: null }],
   weights: DEFAULT_WEIGHTS,
   gridResolutionIn: 4,
-  companions: { pairs: {} },
-  userRegions: [],
   timeLimitSec: 5,
   mipGap: 0.01,
   candidateCount: 1,
@@ -51,11 +49,11 @@ describe('buildMipModel', () => {
     expect(m.cells.length).toBeLessThan(4 * 4);
   });
 
-  it('emits aux vars for pairs subject to companion/antagonist relationships', () => {
+  it('emits aux vars for pairs with shading height differences', () => {
     const input = { ...tinyInput, plants: [
-      { cultivarId: 'tomato', count: 1, footprintIn: 4, heightIn: 60, climber: false },
-      { cultivarId: 'basil', count: 1, footprintIn: 4, heightIn: 12, climber: false },
-    ], companions: { pairs: { 'basil|tomato': 'companion' as const } } };
+      { cultivarId: 'tomato', count: 1, footprintIn: 4, heightIn: 60 },
+      { cultivarId: 'basil', count: 1, footprintIn: 4, heightIn: 12 },
+    ] };
     const m = buildMipModel(input);
     const auxNames = m.aux.map((a) => a.name);
     expect(auxNames.some((n) => n.startsWith('n_0_1'))).toBe(true);
@@ -65,13 +63,13 @@ describe('buildMipModel', () => {
 describe('estimatePlacementVars', () => {
   it('matches the actual model var count', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 96, edgeClearanceIn: 0 },
       plants: [
-        { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null, climber: false },
-        { cultivarId: 'basil', count: 6, footprintIn: 6, heightIn: null, climber: false },
+        { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null },
+        { cultivarId: 'basil', count: 6, footprintIn: 6, heightIn: null },
       ],
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     const estimated = estimatePlacementVars(input);
     const actual = buildMipModel(input).vars.length;
@@ -80,10 +78,10 @@ describe('estimatePlacementVars', () => {
 
   it('returns 0 when there are no plants', () => {
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 96, edgeClearanceIn: 0 },
       plants: [],
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     expect(estimatePlacementVars(input)).toBe(0);
   });

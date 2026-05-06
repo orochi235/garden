@@ -12,12 +12,10 @@ import type { OptimizationInput } from './types';
 import { DEFAULT_WEIGHTS } from './types';
 
 const smokeInput: OptimizationInput = {
-  bed: { widthIn: 16, lengthIn: 16, trellis: null, edgeClearanceIn: 0 },
-  plants: [{ cultivarId: 'a', count: 2, footprintIn: 4, heightIn: null, climber: false }],
+  bed: { widthIn: 16, lengthIn: 16, edgeClearanceIn: 0 },
+  plants: [{ cultivarId: 'a', count: 2, footprintIn: 4, heightIn: null }],
   weights: DEFAULT_WEIGHTS,
   gridResolutionIn: 4,
-  companions: { pairs: {} },
-  userRegions: [],
   timeLimitSec: 5,
   mipGap: 0.01,
   candidateCount: 1,

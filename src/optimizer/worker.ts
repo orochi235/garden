@@ -79,6 +79,13 @@ async function solveUnified(
   const solveStart = performance.now();
   const model = buildMipModel(input);
 
+  // Bypass: no pairwise penalties → MIP would just enforce non-overlap, which
+  // hex pack already satisfies. Skip the solver.
+  if (model.aux.length === 0) {
+    console.info('[optimizer] candidate', n, 'unified bypass: no aux, hex-packing');
+    return greedyCandidate(input, performance.now() - solveStart, []);
+  }
+
   const prior = priorActiveByKey.get('unified') ?? [];
   if (n > 0 && prior.length > 0) {
     model.constraints.push({ ...buildNoGoodCut(prior, input.diversityThreshold), label: `nogood:${n}` });
@@ -147,6 +154,20 @@ async function solveClustered(
 
     onProgress(`solve cluster ${subBed.cluster.key}`, n);
     const model = buildMipModel(subInput);
+
+    // Bypass per cluster: no pairwise penalties → hex-pack inside this sub-bed.
+    if (model.aux.length === 0) {
+      console.info('[optimizer] candidate', n, 'cluster', subBed.cluster.key, 'bypass: no aux, hex-packing');
+      const greedy = greedyHexPack(subInput);
+      for (const gp of greedy) {
+        allPlacements.push({
+          cultivarId: gp.cultivarId,
+          xIn: gp.xIn + subBed.offsetIn.x,
+          yIn: gp.yIn + subBed.offsetIn.y,
+        });
+      }
+      continue;
+    }
 
     const prior = priorActiveByKey.get(subBed.cluster.key) ?? [];
     if (n > 0 && prior.length > 0) {
@@ -227,12 +248,11 @@ function splitOversizedSubBeds(subBeds: SubBed[], parent: OptimizationInput): Su
       const pieceCluster: Cluster = {
         key: `${subBed.cluster.key}#${i + 1}`,
         plants: piecePlants,
-        climberCount: piecePlants.reduce((s, p) => s + (p.climber ? p.count : 0), 0),
       };
       const start = i * pieceLen;
       const pieceBed = stripIsHorizontal
-        ? { ...subBed.bed, lengthIn: pieceLen, trellis: i === 0 ? subBed.bed.trellis : null }
-        : { ...subBed.bed, widthIn: pieceLen, trellis: i === 0 ? subBed.bed.trellis : null };
+        ? { ...subBed.bed, lengthIn: pieceLen }
+        : { ...subBed.bed, widthIn: pieceLen };
       const pieceOffset = stripIsHorizontal
         ? { x: subBed.offsetIn.x, y: subBed.offsetIn.y + start }
         : { x: subBed.offsetIn.x + start, y: subBed.offsetIn.y };
@@ -245,7 +265,6 @@ function splitOversizedSubBeds(subBeds: SubBed[], parent: OptimizationInput): Su
       'plants:', sb.cluster.plants.length, '(', sb.cluster.plants.reduce((s, p) => s + p.count, 0), 'units)',
       'bed:', sb.bed.widthIn.toFixed(1), '×', sb.bed.lengthIn.toFixed(1),
       'offset:', sb.offsetIn.x.toFixed(1), ',', sb.offsetIn.y.toFixed(1),
-      'trellis:', sb.bed.trellis ? 'yes' : 'no',
     );
   }
   return out;
@@ -291,23 +310,10 @@ function distributeUnitsAcrossPieces<T extends { cultivarId: string; count: numb
 }
 
 function buildSubInput(parent: OptimizationInput, subBed: SubBed): OptimizationInput {
-  const translatedRegions = parent.userRegions
-    .map((r) => ({
-      xIn: r.xIn - subBed.offsetIn.x,
-      yIn: r.yIn - subBed.offsetIn.y,
-      widthIn: r.widthIn,
-      lengthIn: r.lengthIn,
-      preferredCultivarIds: r.preferredCultivarIds,
-    }))
-    .filter((r) =>
-      r.xIn + r.widthIn > 0 && r.yIn + r.lengthIn > 0 &&
-      r.xIn < subBed.bed.widthIn && r.yIn < subBed.bed.lengthIn,
-    );
   return {
     ...parent,
     bed: subBed.bed,
     plants: subBed.cluster.plants,
-    userRegions: translatedRegions,
   };
 }
 
@@ -557,14 +563,7 @@ function activeVarNames(
     .map((v) => v.name);
 }
 
-function reasonLabel(input: OptimizationInput, placements: OptimizerPlacement[]): string {
-  const parts: string[] = [];
+function reasonLabel(_input: OptimizationInput, placements: OptimizerPlacement[]): string {
   if (placements.length === 0) return 'no placements found';
-  parts.push(`${placements.length} plants placed`);
-  if (input.bed.trellis && input.bed.trellis.kind === 'edge') {
-    parts.push(`trellis ${input.bed.trellis.edge}`);
-  }
-  const companionPairs = Object.values(input.companions.pairs).filter((r) => r === 'companion').length;
-  if (companionPairs > 0) parts.push(`${companionPairs} companion pairs`);
-  return parts.join(', ');
+  return `${placements.length} plants placed`;
 }

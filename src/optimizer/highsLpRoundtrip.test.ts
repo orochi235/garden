@@ -3,6 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildMipModel } from './formulation';
 import { mipModelToLpString } from './worker';
+import { repairPlacements } from './repair';
 import { DEFAULT_WEIGHTS, type OptimizationInput, type OptimizerPlant } from './types';
 
 // Where the dumped LP gets written for offline inspection. Kept inside the
@@ -32,22 +33,32 @@ function build8TomatoInput(): OptimizationInput {
     'cherry-tomato.sun-gold',
     'cherry-tomato.grape',
   ];
+  // Heights chosen to mirror real species data after the 2026-05-05 backfill —
+  // tomatoes range 4–7ft. Mixing heights makes the shading aux term fire across
+  // most pairs, which is the realistic case post-backfill.
+  const heights: Record<string, number> = {
+    'tomato.san-marzano': 60,
+    'tomato.brandywine': 84,
+    'tomato.black-krim': 72,
+    'tomato.cherokee-purple': 84,
+    'tomato.beefsteak': 72,
+    'tomato.roma': 48,
+    'cherry-tomato.sun-gold': 72,
+    'cherry-tomato.grape': 60,
+  };
   const plants: OptimizerPlant[] = ids.map((id) => ({
     cultivarId: id,
     count: 1,
     footprintIn: 12,
     spacingIn: 24,
-    heightIn: null,
-    climber: false,
+    heightIn: heights[id] ?? null,
     category: 'fruits',
   }));
   return {
-    bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+    bed: { widthIn: 48, lengthIn: 96, edgeClearanceIn: 0 },
     plants,
     weights: DEFAULT_WEIGHTS,
     gridResolutionIn: 4,
-    companions: { pairs: {} },
-    userRegions: [],
     timeLimitSec: 5,
     mipGap: 0.01,
     candidateCount: 1,
@@ -147,6 +158,37 @@ function summarizeObjectiveContribution(
   return `obj contribution: vars=${varSum.toFixed(3)} aux=${auxSum.toFixed(3)} total=${(varSum + auxSum).toFixed(3)}`;
 }
 
+// ASCII picture of the bed. Each grid cell becomes one char: '.' empty,
+// otherwise a single-letter tag derived from the cultivar id (deduped per
+// scenario so identical cultivars share a tag). Reading "is this neat?" is
+// just eyeballing rows/columns of letters.
+function gridAscii(
+  input: OptimizationInput,
+  placements: InspectedPlacement[],
+): string {
+  const g = input.gridResolutionIn;
+  const cols = Math.floor((input.bed.widthIn - 2 * input.bed.edgeClearanceIn) / g);
+  const rowsN = Math.floor((input.bed.lengthIn - 2 * input.bed.edgeClearanceIn) / g);
+  const rows: string[][] = Array.from({ length: rowsN }, () => Array(cols).fill('.'));
+  const tagFor = new Map<string, string>();
+  let next = 0;
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  for (const p of placements) {
+    if (!tagFor.has(p.cultivarId)) tagFor.set(p.cultivarId, alphabet[next++ % alphabet.length]);
+  }
+  for (const p of placements) {
+    const j = Math.floor(p.xIn / g);
+    const i = Math.floor(p.yIn / g);
+    if (i >= 0 && i < rowsN && j >= 0 && j < cols) rows[i][j] = tagFor.get(p.cultivarId)!;
+  }
+  const legend = [...tagFor.entries()]
+    .map(([id, t]) => `${t}=${id.split('.')[1] ?? id}`)
+    .join(' ');
+  const border = '+' + '-'.repeat(cols) + '+';
+  const body = rows.map((r) => '|' + r.join('') + '|').join('\n');
+  return `${border}\n${body}\n${border}\n${legend}`;
+}
+
 function summarizePlacements(ps: InspectedPlacement[]): string {
   const lines: string[] = [];
   lines.push(`count=${ps.length}`);
@@ -210,14 +252,12 @@ describe('HiGHS LP roundtrip — 8-tomato repro', () => {
   // to the all-zero baseline, it's not actually wired up for this scenario.
   it('weight-isolation sweep on the 8-tomato scenario', async () => {
     const highs = await loadHighs();
-    const zero = { shading: 0, companion: 0, antagonist: 0, sameSpeciesBuffer: 0, trellisAttraction: 0, regionPreference: 0 };
+    const zero = { shading: 0, sameSpeciesBuffer: 0 };
     const presets: Array<[string, typeof zero]> = [
       ['all-zero', { ...zero }],
       ['default', { ...DEFAULT_WEIGHTS }],
       ['shading-only', { ...zero, shading: 1 }],
-      ['companion-only', { ...zero, companion: 1 }],
       ['sameSpecies-only', { ...zero, sameSpeciesBuffer: 1 }],
-      ['trellis-only', { ...zero, trellisAttraction: 1 }],
     ];
     const base = build8TomatoInput();
     for (const [name, w] of presets) {
@@ -231,6 +271,11 @@ describe('HiGHS LP roundtrip — 8-tomato repro', () => {
         .join(' | ');
       console.log(`[${name}] obj=${sol.ObjectiveValue.toFixed(3)} aux=${model.aux.length} ${summarizeObjectiveContribution(model, sol.Columns)}`);
       console.log(`  ${sigxy}`);
+      console.log('  [solver]');
+      console.log(gridAscii({ ...base, weights: w }, placements));
+      const repaired = repairPlacements({ ...base, weights: w }, placements);
+      console.log('  [repaired]');
+      console.log(gridAscii({ ...base, weights: w }, repaired));
     }
   }, 60_000);
 

@@ -5,19 +5,11 @@
  * import any project types — only plain numbers, strings, and arrays.
  */
 
-export type Edge = 'N' | 'E' | 'S' | 'W';
-
-export type TrellisLocation =
-  | { kind: 'edge'; edge: Edge }
-  | { kind: 'line'; orientation: 'horizontal' | 'vertical'; offsetIn: number };
-
 export interface OptimizerBed {
   /** Bed width along the X axis, in inches. */
   widthIn: number;
   /** Bed length along the Y axis, in inches. */
   lengthIn: number;
-  /** Trellis location, or null if no trellis. */
-  trellis: TrellisLocation | null;
   /** Per-edge clearance, inches. Default 0. */
   edgeClearanceIn: number;
 }
@@ -33,44 +25,14 @@ export interface OptimizerPlant {
   spacingIn?: number;
   /** Mature height in inches. Used by the sun-shading term. */
   heightIn: number | null;
-  /** True if the plant prefers a trellis edge. */
-  climber: boolean;
   /** Plant category for clustering (e.g. 'vegetables', 'herbs'). Optional. */
   category?: string;
-}
-
-export interface UserRegion {
-  /** Bed-local rect in inches. */
-  xIn: number;
-  yIn: number;
-  widthIn: number;
-  lengthIn: number;
-  /** Cultivar ids that should prefer this region. */
-  preferredCultivarIds: string[];
 }
 
 export interface OptimizerWeights {
   /** All weights are unitless multipliers, default 1.0. Set to 0 to disable a term. */
   shading: number;
-  companion: number;
-  antagonist: number;
   sameSpeciesBuffer: number;
-  trellisAttraction: number;
-  regionPreference: number;
-  /**
-   * Mild attractive reward for any pair of plants within the same model
-   * (i.e. same cluster) sitting within adjacency range. Without it, pairs
-   * with no companion/shading/same-species relationship contribute nothing
-   * to the objective and the solver returns an arbitrary feasible layout.
-   * Default is intentionally smaller than the relational weights so a real
-   * companion bond still dominates.
-   */
-  clusterCohesion: number;
-}
-
-/** Companion / antagonist relationships keyed by canonical "a|b" pair (a,b sorted). */
-export interface CompanionTable {
-  pairs: Record<string, 'companion' | 'antagonist'>;
 }
 
 export interface OptimizationInput {
@@ -79,10 +41,6 @@ export interface OptimizationInput {
   weights: OptimizerWeights;
   /** Cell size for discretization, inches. Default 4. */
   gridResolutionIn: number;
-  /** Optional: relationship lookup. Missing pairs are treated as neutral. */
-  companions: CompanionTable;
-  /** Optional: user-painted preference regions. */
-  userRegions: UserRegion[];
   /** Maximum solve time per candidate, seconds. */
   timeLimitSec: number;
   /** MIP optimality gap tolerance (0.01 = 1%). */
@@ -104,7 +62,7 @@ export interface OptimizationCandidate {
   placements: OptimizerPlacement[];
   /** Total objective score (higher = better). */
   score: number;
-  /** Human-readable reason summary, e.g., "max sun, companions paired". */
+  /** Human-readable reason summary, e.g., "8 plants placed". */
   reason: string;
   /** Solver gap actually achieved (e.g. 0.008 = 0.8%). */
   gap: number;
@@ -121,8 +79,6 @@ export interface OptimizationResult {
 export interface Cluster {
   /** Plants assigned to this cluster. */
   plants: OptimizerPlant[];
-  /** Total number of climber-flagged plant copies (sum of count where climber=true). */
-  climberCount: number;
   /** Stable identifier for the cluster, used for diagnostic logging and per-cluster no-good cuts. */
   key: string;
 }
@@ -137,10 +93,5 @@ export interface SubBed {
 
 export const DEFAULT_WEIGHTS: OptimizerWeights = {
   shading: 1,
-  companion: 1,
-  antagonist: 1,
   sameSpeciesBuffer: 1,
-  trellisAttraction: 1,
-  regionPreference: 1,
-  clusterCohesion: 0.25,
 };

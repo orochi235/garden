@@ -11,30 +11,30 @@ import { DEFAULT_WEIGHTS, type OptimizationInput, type OptimizerPlant } from './
 describe('clustered pipeline wiring', () => {
   it('estimates above the threshold for a many-plant input', () => {
     const plants: OptimizerPlant[] = [
-      { cultivarId: 'tomato', count: 6, footprintIn: 12, heightIn: null, climber: false, category: 'vegetables' },
-      { cultivarId: 'pepper', count: 4, footprintIn: 12, heightIn: null, climber: false, category: 'vegetables' },
-      { cultivarId: 'basil', count: 8, footprintIn: 6, heightIn: null, climber: false, category: 'herbs' },
-      { cultivarId: 'thyme', count: 4, footprintIn: 6, heightIn: null, climber: false, category: 'herbs' },
+      { cultivarId: 'tomato', count: 6, footprintIn: 12, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'pepper', count: 4, footprintIn: 12, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'basil', count: 8, footprintIn: 6, heightIn: null, category: 'herbs' },
+      { cultivarId: 'thyme', count: 4, footprintIn: 6, heightIn: null, category: 'herbs' },
     ];
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 96, edgeClearanceIn: 0 },
       plants,
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     expect(estimatePlacementVars(input)).toBeGreaterThan(500);
   });
 
   it('partitions and allocates produce non-overlapping covering sub-beds', () => {
     const plants: OptimizerPlant[] = [
-      { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null, climber: false, category: 'vegetables' },
-      { cultivarId: 'basil', count: 8, footprintIn: 6, heightIn: null, climber: false, category: 'herbs' },
+      { cultivarId: 'tomato', count: 4, footprintIn: 12, heightIn: null, category: 'vegetables' },
+      { cultivarId: 'basil', count: 8, footprintIn: 6, heightIn: null, category: 'herbs' },
     ];
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 96, edgeClearanceIn: 0 },
       plants,
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     const clusters = familyCompanionPartitioner(input);
     const subBeds = proportionalStripAllocator(input.bed, clusters);
@@ -49,13 +49,13 @@ describe('clustered pipeline wiring', () => {
 
   it('one-cluster input falls back to a single sub-bed equal to the parent', () => {
     const plants: OptimizerPlant[] = [
-      { cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, climber: false, category: 'vegetables' },
+      { cultivarId: 'tomato', count: 8, footprintIn: 12, heightIn: null, category: 'vegetables' },
     ];
     const input: OptimizationInput = {
-      bed: { widthIn: 48, lengthIn: 96, trellis: null, edgeClearanceIn: 0 },
+      bed: { widthIn: 48, lengthIn: 96, edgeClearanceIn: 0 },
       plants,
-      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4, companions: { pairs: {} },
-      userRegions: [], timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
+      weights: DEFAULT_WEIGHTS, gridResolutionIn: 4,
+      timeLimitSec: 5, mipGap: 0.01, candidateCount: 1, diversityThreshold: 3,
     };
     const clusters = familyCompanionPartitioner(input);
     const subBeds = proportionalStripAllocator(input.bed, clusters);
