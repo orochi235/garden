@@ -24,12 +24,14 @@ import { createSystemLayers } from './layers/systemLayersWorld';
 import type { View } from './layers/worldLayerData';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
+import { useSeedSelectTool } from './tools/useSeedSelectTool';
 import { useSowCellTool } from './tools/useSowCellTool';
 import { useFillTrayTool } from './tools/useFillTrayTool';
 import { usePaletteDropTool } from './tools/usePaletteDropTool';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createSeedFillTrayDrag } from './drag/seedFillTrayDrag';
 import { createSeedlingMoveDrag } from './drag/seedlingMoveDrag';
+import { createAreaSelectDrag } from './drag/areaSelectDrag';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { createAllHandlesLayer } from './layers/selectionLayersWorld';
@@ -107,6 +109,7 @@ export function SeedStartingCanvasNewPrototype() {
       [createSeedFillTrayDrag({ getCultivarId: () => null }).kind]:
         createSeedFillTrayDrag({ getCultivarId: () => null }),
       [createSeedlingMoveDrag().kind]: createSeedlingMoveDrag(),
+      [createAreaSelectDrag().kind]: createAreaSelectDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createTrayLayers(getTrays),
@@ -190,6 +193,7 @@ export function SeedStartingCanvasNewPrototype() {
 
   // --- Tools ---
   const moveTool = useSeedlingMoveTool(adapter);
+  const selectTool = useSeedSelectTool(adapter);
   const sowTool = useSowCellTool();
   const fillTool = useFillTrayTool();
   const rightDragPan = useEricRightDragPan();
@@ -205,18 +209,20 @@ export function SeedStartingCanvasNewPrototype() {
   const viewMode = useUiStore((s) => s.viewMode);
   const activeToolId = viewMode === 'zoom' ? clickZoom.id : moveTool.id;
 
-  // moveTool is the primary active tool: it handles seedling drag,
-  // click-to-select, and marquee area-select on empty space. Sow tool runs
-  // alongside (claims only when seedDragCultivarId is set); fill tool
-  // occupies the shift modifier slot. When the toolbar arms zoom mode the
-  // click-zoom tool takes over the active slot.
+  // moveTool is the primary active tool: it handles seedling drag and
+  // click-to-select on seedlings. selectTool runs in alwaysOn AFTER moveTool
+  // so it claims pointer-down events that moveTool passes (i.e. empty tray
+  // background) and draws a marquee on drag. Sow tool runs alongside (claims
+  // only when seedDragCultivarId is set); fill tool occupies the shift
+  // modifier slot. When the toolbar arms zoom mode the click-zoom tool takes
+  // over the active slot.
   const tools = useTools({
     active: activeToolId,
     registry: {
       [moveTool.id]: moveTool,
       [clickZoom.id]: clickZoom,
     },
-    alwaysOn: [sowTool, fillTool, rightDragPan, wheelZoom],
+    alwaysOn: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
   });
 
   // Subscribe so React re-renders when highlight pulses; computeOpacity reads

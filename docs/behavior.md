@@ -22,6 +22,7 @@ Running list of intended application behaviors.
 - Cmd/Ctrl+X cuts the selection: snapshots it onto the clipboard, deletes the originals, and clears the selection (undoable as a single batch)
 - Dragging a grouped structure moves all members of its group; a marquee that touches any group member selects all members
 - In select-area mode, drag-from-body draws a marquee instead of moving the object.
+- In the seed-starting view, dragging from empty tray background draws a marquee that selects every seedling whose cell-center falls inside the rect on release; shift-drag adds to the existing selection. A click-on-empty (no drag) clears selection.
 
 ## Cursor
 
