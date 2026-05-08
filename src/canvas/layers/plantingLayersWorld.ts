@@ -135,7 +135,7 @@ export function createPlantingLayers(
           if (!parent.layout) continue;
           const bounds = getPlantableBounds(parent);
           const occSet = occupied.get(id) ?? new Set<string>();
-          const overlay = computeContainerOverlay(parent.layout as any, bounds, { occupiedSlots: occSet });
+          const overlay = computeContainerOverlay(parent.layout, bounds, { occupiedSlots: occSet });
 
           for (const item of overlay.items) {
             if (item.type === 'slot-dot') {
@@ -144,13 +144,6 @@ export function createPlantingLayers(
               ctx.arc(item.x, item.y, r, 0, Math.PI * 2);
               ctx.fillStyle = item.occupied ? 'rgba(255,255,255,0.1)' : 'rgba(127,176,105,0.4)';
               ctx.fill();
-            } else if (item.type === 'grid-line') {
-              ctx.beginPath();
-              ctx.moveTo(item.x1, item.y1);
-              ctx.lineTo(item.x2, item.y2);
-              ctx.strokeStyle = 'rgba(127,176,105,0.15)';
-              ctx.lineWidth = px(view, 1);
-              ctx.stroke();
             } else if (item.type === 'highlight-slot') {
               const r = Math.max(px(view, 3), item.radiusFt / 2);
               ctx.beginPath();

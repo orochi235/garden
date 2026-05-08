@@ -1,14 +1,14 @@
 /**
  * Container overlays — visual aids rendered on top of container bodies
- * but below plantings. Each arrangement type defines what overlays it
+ * but below plantings. Each layout type defines what overlays it
  * supports. The system is generic: the same mechanism can render slot
- * dots, grid lines, drop targets, snap guides, etc.
+ * dots, drop targets, snap guides, etc.
  *
  * An overlay is pure data describing what to draw. The renderer
  * (in the canvas layer) interprets the data and paints it.
  */
 
-import { computeSlots, type Arrangement, type ParentBounds, type Slot } from './arrangement';
+import { getSlots, type Layout, type ParentBounds } from './layout';
 
 // --- Overlay primitives ---
 
@@ -20,14 +20,6 @@ export interface SlotDot {
   occupied: boolean;
 }
 
-export interface GridLine {
-  type: 'grid-line';
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
-
 export interface HighlightSlot {
   type: 'highlight-slot';
   x: number;
@@ -35,7 +27,7 @@ export interface HighlightSlot {
   radiusFt: number;
 }
 
-export type OverlayPrimitive = SlotDot | GridLine | HighlightSlot;
+export type OverlayPrimitive = SlotDot | HighlightSlot;
 
 // --- Container overlay ---
 
@@ -60,64 +52,25 @@ export interface DragOverlayContext extends OverlayContext {
 }
 
 /**
- * Compute the static overlay for a container's arrangement.
- * Shows slot positions and grid structure.
+ * Compute the static overlay for a container's layout.
+ * Shows slot positions for single/snap-points layouts.
+ * Grid overlay is owned by the weasel grid layer; nothing to add here.
  */
 export function computeContainerOverlay(
-  arrangement: Arrangement | null,
+  layout: Layout | null,
   bounds: ParentBounds,
   ctx: OverlayContext,
 ): ContainerOverlay {
-  if (!arrangement || arrangement.type === 'free') {
+  if (!layout || layout.type === 'grid') {
+    // Grid overlay is owned by the weasel grid layer; nothing to add here.
     return { items: [] };
   }
 
-  const slots = computeSlots(arrangement, bounds);
-  const items: OverlayPrimitive[] = [];
-
-  for (const slot of slots) {
-    const relKey = `${slot.x - bounds.x},${slot.y - bounds.y}`;
-    items.push({
-      type: 'slot-dot',
-      x: slot.x,
-      y: slot.y,
-      occupied: ctx.occupiedSlots.has(relKey),
-    });
-  }
-
-  // Add grid lines for rows and grid arrangements
-  if (arrangement.type === 'rows') {
-    const m = arrangement.marginFt;
-    for (let y = bounds.y + m + arrangement.spacingFt / 2; y <= bounds.y + bounds.length - m; y += arrangement.spacingFt) {
-      items.push({
-        type: 'grid-line',
-        x1: bounds.x + m,
-        y1: y,
-        x2: bounds.x + bounds.width - m,
-        y2: y,
-      });
-    }
-  } else if (arrangement.type === 'grid') {
-    const m = arrangement.marginFt;
-    for (let x = bounds.x + m + arrangement.spacingXFt / 2; x <= bounds.x + bounds.width - m; x += arrangement.spacingXFt) {
-      items.push({
-        type: 'grid-line',
-        x1: x,
-        y1: bounds.y + m,
-        x2: x,
-        y2: bounds.y + bounds.length - m,
-      });
-    }
-    for (let y = bounds.y + m + arrangement.spacingYFt / 2; y <= bounds.y + bounds.length - m; y += arrangement.spacingYFt) {
-      items.push({
-        type: 'grid-line',
-        x1: bounds.x + m,
-        y1: y,
-        x2: bounds.x + bounds.width - m,
-        y2: y,
-      });
-    }
-  }
+  const slots = getSlots(layout, bounds);
+  const items: OverlayPrimitive[] = slots.map((s) => {
+    const relKey = `${s.x - bounds.x},${s.y - bounds.y}`;
+    return { type: 'slot-dot', x: s.x, y: s.y, occupied: ctx.occupiedSlots.has(relKey) };
+  });
 
   return { items };
 }
@@ -127,38 +80,31 @@ export function computeContainerOverlay(
  * unoccupied slot as a drop target.
  */
 export function computeDragOverlay(
-  arrangement: Arrangement | null,
+  layout: Layout | null,
   bounds: ParentBounds,
   ctx: DragOverlayContext,
 ): ContainerOverlay {
-  if (!arrangement || arrangement.type === 'free') {
+  if (!layout || layout.type === 'grid') {
     return { items: [] };
   }
 
-  const slots = computeSlots(arrangement, bounds);
+  const slots = getSlots(layout, bounds);
   const target = nearestUnoccupied(slots, ctx.cursorX, ctx.cursorY, ctx.occupiedSlots, bounds);
+  if (!target) return { items: [] };
 
-  const items: OverlayPrimitive[] = [];
-  if (target) {
-    items.push({
-      type: 'highlight-slot',
-      x: target.x,
-      y: target.y,
-      radiusFt: ctx.radiusFt,
-    });
-  }
-
-  return { items };
+  return {
+    items: [{ type: 'highlight-slot', x: target.x, y: target.y, radiusFt: ctx.radiusFt }],
+  };
 }
 
 function nearestUnoccupied(
-  slots: Slot[],
+  slots: { x: number; y: number }[],
   cx: number,
   cy: number,
   occupied: Set<string>,
   bounds: ParentBounds,
-): Slot | null {
-  let best: Slot | null = null;
+): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
   let bestDist = Infinity;
   for (const slot of slots) {
     const relKey = `${slot.x - bounds.x},${slot.y - bounds.y}`;
