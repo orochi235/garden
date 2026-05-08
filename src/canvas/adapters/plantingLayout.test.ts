@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { plantingLayoutFor } from './plantingLayout';
-import type { Garden, Structure } from '../../model/types';
+import type { Garden } from '../../model/types';
 
 function makeGarden(): Garden {
   return {
@@ -13,17 +13,28 @@ function makeGarden(): Garden {
         id: 'pot-1', type: 'pot', shape: 'circle',
         x: 10, y: 10, width: 4, length: 4,
         color: '#888', zIndex: 0, label: '',
-        surface: null, fill: null, wallThicknessFt: 0.25,
-        groupId: null, container: true,
-        arrangement: { type: 'free' },
+        surface: false, fill: null, wallThicknessFt: 0.25,
+        groupId: null, parentId: null, container: true,
+        rotation: 0, snapToGrid: true, clipChildren: true,
+        layout: { type: 'single' },
       },
       {
         id: 'bed-1', type: 'raised-bed', shape: 'rectangle',
         x: 20, y: 20, width: 6, length: 4,
         color: '#888', zIndex: 0, label: '',
-        surface: null, fill: null, wallThicknessFt: 0.5,
-        groupId: null, container: true,
-        arrangement: { type: 'grid', spacingXFt: 1, spacingYFt: 1, marginFt: 0.5 },
+        surface: false, fill: null, wallThicknessFt: 0.5,
+        groupId: null, parentId: null, container: true,
+        rotation: 0, snapToGrid: true, clipChildren: true,
+        layout: { type: 'grid', cellSizeFt: 1 },
+      },
+      {
+        id: 'free-1', type: 'raised-bed', shape: 'rectangle',
+        x: 30, y: 30, width: 4, length: 4,
+        color: '#888', zIndex: 0, label: '',
+        surface: false, fill: null, wallThicknessFt: 0,
+        groupId: null, parentId: null, container: true,
+        rotation: 0, snapToGrid: true, clipChildren: true,
+        layout: null,
       },
     ],
     zones: [],
@@ -37,7 +48,11 @@ describe('plantingLayoutFor', () => {
     expect(plantingLayoutFor(makeGarden, 'nope')).toBeNull();
   });
 
-  it('free arrangement: single drop target at container center', () => {
+  it('returns null for containers with null layout (free positioning)', () => {
+    expect(plantingLayoutFor(makeGarden, 'free-1')).toBeNull();
+  });
+
+  it('single layout: one drop target at container center', () => {
     const garden = makeGarden();
     const layout = plantingLayoutFor(() => garden, 'pot-1')!;
     expect(layout).not.toBeNull();
@@ -58,7 +73,7 @@ describe('plantingLayoutFor', () => {
     expect(layout.contains!({ x: 10, y: 10, width: 4, height: 4 } as never, { x: 10.05, y: 10.05 })).toBe(false);
   });
 
-  it('grid arrangement: drop targets are free slots only', () => {
+  it('grid layout: drop targets are free slots only', () => {
     const garden = makeGarden();
     const layout = plantingLayoutFor(() => garden, 'bed-1')!;
     const targets = layout.getDropTargets(
@@ -91,30 +106,6 @@ describe('plantingLayoutFor', () => {
       { pose: { x: 12, y: 12 }, origin: { x: 12, y: 12 } },
     );
     expect(ops).toHaveLength(2);
-  });
-
-  it('preserves regionId on drop target metadata for multi arrangements', () => {
-    const garden = makeGarden();
-    // Swap bed-1 to a multi arrangement with two single-slot regions
-    const bed = garden.structures.find((s) => s.id === 'bed-1') as Structure;
-    bed.arrangement = {
-      type: 'multi',
-      regions: [
-        { id: 'left', bounds: { x: 0, y: 0, w: 0.5, h: 1 }, arrangement: { type: 'single' } },
-        { id: 'right', bounds: { x: 0.5, y: 0, w: 0.5, h: 1 }, arrangement: { type: 'single' } },
-      ],
-    };
-    const layout = plantingLayoutFor(() => garden, 'bed-1')!;
-    const targets = layout.getDropTargets(
-      { id: 'bed-1', bounds: { x: 20, y: 20, width: 6, height: 4 } },
-      [],
-      { id: 'p', originPose: { x: 0, y: 0 }, pose: { x: 0, y: 0 }, sourceContainerId: null },
-    );
-    expect(targets).toHaveLength(2);
-    const leftTarget = targets.find((t) => (t.meta as { regionId?: string } | undefined)?.regionId === 'left');
-    const rightTarget = targets.find((t) => (t.meta as { regionId?: string } | undefined)?.regionId === 'right');
-    expect(leftTarget).toBeDefined();
-    expect(rightTarget).toBeDefined();
   });
 
   it('commitDrop omits reparent when source is the same container', () => {

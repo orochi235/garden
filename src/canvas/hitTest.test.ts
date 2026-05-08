@@ -27,9 +27,8 @@ describe('hitTestPlantings', () => {
       surface: false,
       container: true,
       fill: 'soil',
-      arrangement: null,
+      layout: null,
       wallThicknessFt: 1 / 12,
-      trellisEdge: null,
       clipChildren: true,
     },
   ];
@@ -89,7 +88,7 @@ describe('hitTestPlantings', () => {
       {
         id: 'z1', x: 5, y: 5, width: 4, length: 4, color: '#fff',
         label: '', zIndex: 0, parentId: null, soilType: null,
-        sunExposure: null, arrangement: null, pattern: null,
+        sunExposure: null, layout: null, pattern: null,
       },
     ];
     const zonePlanting: Planting[] = [
@@ -122,9 +121,8 @@ describe('hitTestObjects', () => {
       surface: false,
       container: true,
       fill: 'soil',
-      arrangement: { type: 'rows', spacingFt: 0.5, itemSpacingFt: 0.5, marginFt: 0.25 },
+      layout: { type: 'grid', cellSizeFt: 0.5 },
       wallThicknessFt: 1 / 12,
-      trellisEdge: null,
       clipChildren: true,
     },
   ];
@@ -141,7 +139,7 @@ describe('hitTestObjects', () => {
       parentId: null,
       soilType: null,
       sunExposure: null,
-      arrangement: { type: 'grid', spacingXFt: 0.5, spacingYFt: 0.5, marginFt: 0.25 },
+      layout: { type: 'grid', cellSizeFt: 0.5 },
       pattern: null,
     },
   ];

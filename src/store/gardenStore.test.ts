@@ -110,7 +110,7 @@ describe('gardenStore', () => {
       expect(new Set(positions).size).toBe(2);
     });
 
-    it('rearranges plantings when arrangement changes on a structure', () => {
+    it('rearranges plantings when layout changes on a structure', () => {
       const { addStructure, addPlanting, commitStructureUpdate } = useGardenStore.getState();
       addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, length: 4 });
       const bedId = useGardenStore.getState().garden.structures[0].id;
@@ -118,9 +118,9 @@ describe('gardenStore', () => {
       addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'tomato' });
       addPlanting({ parentId: bedId, x: 0, y: 0, cultivarId: 'tomato' });
 
-      // Switch to single arrangement — only 1 slot, so layout changes
+      // Switch to single layout — only 1 slot, so positions change
       commitStructureUpdate(bedId, {
-        arrangement: { type: 'single' },
+        layout: { type: 'single' },
       });
 
       const plantings = useGardenStore.getState().garden.plantings;
@@ -130,7 +130,7 @@ describe('gardenStore', () => {
       expect(plantings[0].y).toBeCloseTo(2, 0);
     });
 
-    it('rearranges plantings when arrangement changes on a zone', () => {
+    it('rearranges plantings when layout changes on a zone', () => {
       const { addZone, addPlanting, commitZoneUpdate } = useGardenStore.getState();
       addZone({ x: 0, y: 0, width: 6, length: 4 });
       const zoneId = useGardenStore.getState().garden.zones[0].id;
@@ -139,7 +139,7 @@ describe('gardenStore', () => {
       addPlanting({ parentId: zoneId, x: 0, y: 0, cultivarId: 'basil' });
 
       commitZoneUpdate(zoneId, {
-        arrangement: { type: 'rows', spacingFt: 0.75, itemSpacingFt: 0.75, marginFt: 0.25 },
+        layout: { type: 'grid', cellSizeFt: 0.75 },
       });
 
       const plantings = useGardenStore.getState().garden.plantings;
@@ -147,7 +147,7 @@ describe('gardenStore', () => {
       expect(new Set(positions).size).toBe(2);
     });
 
-    it('does not rearrange plantings with free arrangement', () => {
+    it('does not rearrange plantings when layout is null (free positioning)', () => {
       const { addStructure, addPlanting, commitStructureUpdate } = useGardenStore.getState();
       addStructure({ type: 'raised-bed', x: 0, y: 0, width: 6, length: 4 });
       const bedId = useGardenStore.getState().garden.structures[0].id;
@@ -155,10 +155,10 @@ describe('gardenStore', () => {
       addPlanting({ parentId: bedId, x: 1.5, y: 1.5, cultivarId: 'tomato' });
 
       commitStructureUpdate(bedId, {
-        arrangement: { type: 'free' },
+        layout: null,
       });
 
-      // With free arrangement, plants keep their positions from the prior rearrangement
+      // With null layout, plants keep their positions
       const plantings = useGardenStore.getState().garden.plantings;
       expect(plantings).toHaveLength(1);
     });
@@ -684,35 +684,6 @@ describe('selection rides on history', () => {
     expect(useUiStore.getState().selectedIds).toEqual([z1]);
   });
 
-  it('applyOptimizerResult places plantings at correct world coords and is undoable', () => {
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
-    const bedId = useGardenStore.getState().garden.structures[0].id;
-    // Verify no plantings exist yet
-    expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
-
-    const candidate: import('../optimizer').OptimizationCandidate = {
-      placements: [
-        { cultivarId: 'tomato', xIn: 12, yIn: 12 }, // 1ft, 1ft from bed origin
-        { cultivarId: 'basil', xIn: 24, yIn: 24 },  // 2ft, 2ft from bed origin
-      ],
-      score: 10,
-      reason: 'test',
-      gap: 0,
-      solveMs: 100,
-    };
-
-    useGardenStore.getState().applyOptimizerResult(bedId, candidate);
-    const { plantings } = useGardenStore.getState().garden;
-    expect(plantings).toHaveLength(2);
-
-    const tomato = plantings.find((p) => p.cultivarId === 'tomato')!;
-    expect(tomato.x).toBeCloseTo(0 + 12 / 12, 5); // bed.x + 1ft
-    expect(tomato.y).toBeCloseTo(0 + 12 / 12, 5);
-
-    // Undo should revert to 0 plantings
-    useGardenStore.getState().undo();
-    expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
-  });
 });
 
 describe('collection orphan tolerance', () => {

@@ -188,7 +188,7 @@ describe('useGardenPaletteDropTool', () => {
         length: 8,
       });
       const z = useGardenStore.getState().garden.zones[0];
-      useGardenStore.getState().updateZone(z.id, { arrangement: null });
+      useGardenStore.getState().updateZone(z.id, { layout: null });
     }
 
     it('writes dragPreview as the pointer moves and clears it on commit', () => {

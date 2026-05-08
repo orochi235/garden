@@ -23,13 +23,13 @@ describe('createDebugLayers', () => {
       id: 's1', type: 'pot', shape: 'circle', x: 1, y: 2, width: 3, length: 4,
       rotation: 0, color: '#fff', label: 's1', zIndex: 0, parentId: null,
       groupId: null, snapToGrid: true, surface: false, container: true,
-      fill: null, arrangement: null, wallThicknessFt: 0.1, trellisEdge: null,
+      fill: null, layout: null, wallThicknessFt: 0.1,
       clipChildren: true,
     });
     g.zones.push({
       id: 'z1', x: 0, y: 0, width: 5, length: 5, color: '#0f0', label: 'z1',
       zIndex: 0, parentId: null, soilType: null, sunExposure: null,
-      arrangement: null, pattern: null,
+      layout: null, pattern: null,
     });
     const layers = createDebugLayers('garden', () => g);
     const hitbox = layers.find((l) => l.id === 'debug-hitboxes');

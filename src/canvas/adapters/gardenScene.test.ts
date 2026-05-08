@@ -86,9 +86,9 @@ describe('gardenSceneAdapter', () => {
     const { bed, bed2, planting } = setup();
     const a = createGardenSceneAdapter();
 
-    // Give bed2 a rows arrangement so rearrangePlantings would normally fire.
+    // Give bed2 a grid layout so rearrangePlantings would normally fire.
     useGardenStore.getState().commitStructureUpdate(bed2.id, {
-      arrangement: { type: 'rows', spacingFt: 1, itemSpacingFt: 1, marginFt: 0.25 },
+      layout: { type: 'grid', cellSizeFt: 1 },
     });
 
     const worldBefore = a.getPose(planting.id);

@@ -133,8 +133,8 @@ export function hitTestPlantings(
     if (!parent) continue;
     const cultivar = getCultivar(p.cultivarId);
 
-    // Single-arrangement container with one plant fills the container
-    const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+    // Single-layout container with one plant fills the container
+    const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
     const half = isSingleFill
       ? Math.min(parent.width, parent.length) / 2
       : (cultivar?.footprintFt ?? 0.5) / 2;
@@ -325,7 +325,7 @@ export function hitTestStack(
       const parent = parentMap.get(p.parentId);
       if (!parent) continue;
       const cultivar = getCultivar(p.cultivarId);
-      const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+      const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
       const half = isSingleFill
         ? Math.min(parent.width, parent.length) / 2
         : (cultivar?.footprintFt ?? 0.5) / 2;
