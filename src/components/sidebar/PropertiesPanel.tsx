@@ -1,6 +1,5 @@
-import type { Arrangement, ArrangementType } from '../../model/arrangement';
-import { defaultArrangement } from '../../model/arrangement';
 import { getCultivar } from '../../model/cultivars';
+import type { Layout, LayoutType } from '../../model/layout';
 import type { FillType } from '../../model/types';
 import { FILL_COLORS } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
@@ -8,7 +7,6 @@ import { useUiStore } from '../../store/uiStore';
 import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
 import { SelectionPanel } from './SelectionPanel';
-import { OptimizePanel } from './OptimizePanel';
 
 const FILL_TYPES: FillType[] = ['soil', 'sand', 'rocks', 'peat', 'potting-mix'];
 
@@ -20,23 +18,6 @@ const FILL_LABELS: Record<FillType, string> = {
   'potting-mix': 'Potting mix',
 };
 
-const ARRANGEMENT_TYPES: ArrangementType[] = [
-  'rows', 'grid', 'ring', 'single', 'free',
-  'square-foot', 'hex', 'trellised-back', 'banded-rows', 'multi',
-];
-
-const ARRANGEMENT_LABELS: Record<ArrangementType, string> = {
-  rows: 'Rows',
-  grid: 'Grid',
-  ring: 'Ring',
-  single: 'Single',
-  free: 'Free',
-  'square-foot': 'Square-foot',
-  hex: 'Hex (staggered)',
-  'trellised-back': 'Trellised back',
-  'banded-rows': 'Banded rows',
-  multi: 'Multi-region',
-};
 
 export function PropertiesPanel() {
   const garden = useGardenStore((s) => s.garden);
@@ -280,184 +261,40 @@ export function PropertiesPanel() {
 
         {((structure && (structure.container || structure.surface)) || zone) && (
           <>
+            {/* Layout */}
             <span className={f.label}>Layout</span>
             <select
-              className={`${f.select} ${f.span12}`}
-              value={obj.arrangement?.type ?? 'free'}
+              value={obj.layout?.type ?? 'none'}
               onChange={(e) => {
-                const arrType = e.target.value as ArrangementType;
-                updateObj({ arrangement: defaultArrangement(arrType) });
+                const t = e.target.value as LayoutType | 'none';
+                if (t === 'none') { updateObj({ layout: null }); return; }
+                const next: Layout =
+                  t === 'single' ? { type: 'single' }
+                  : t === 'grid' ? { type: 'grid', cellSizeFt: 1 }
+                  : { type: 'snap-points', points: [] };
+                updateObj({ layout: next });
               }}
             >
-              {ARRANGEMENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {ARRANGEMENT_LABELS[t]}
-                </option>
-              ))}
+              <option value="none">None</option>
+              <option value="single">Single</option>
+              <option value="grid">Grid</option>
+              <option value="snap-points">Snap Points</option>
             </select>
-            {obj.arrangement && obj.arrangement.type === 'rows' && (
-              <>
-                <span className={f.label}>Spacing</span>
-                <span className={`${f.miniLabel} ${f.span2}`}>↕</span>
+
+            {obj.layout?.type === 'grid' && (
+              <label className={f.fieldRow}>
+                <span className={f.label}>Cell size (ft)</span>
                 <input
-                  className={`${f.input} ${f.span4}`}
                   type="number"
-                  step="0.25"
-                  min="0.25"
-                  value={obj.arrangement.spacingFt}
+                  min={0.25}
+                  step={0.25}
+                  value={obj.layout.cellSizeFt}
                   onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'rows' };
-                    updateObj({ arrangement: { ...arr, spacingFt: parseFloat(e.target.value) || 0.25 } });
+                    const v = parseFloat(e.target.value) || 1;
+                    updateObj({ layout: { type: 'grid', cellSizeFt: v } });
                   }}
                 />
-                <span className={`${f.miniLabel} ${f.span2}`}>↔</span>
-                <input
-                  className={`${f.input} ${f.span4}`}
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  value={obj.arrangement.itemSpacingFt}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'rows' };
-                    updateObj({ arrangement: { ...arr, itemSpacingFt: parseFloat(e.target.value) || 0.25 } });
-                  }}
-                />
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'grid' && (
-              <>
-                <span className={f.label}>Spacing</span>
-                <span className={`${f.miniLabel} ${f.span2}`}>X</span>
-                <input
-                  className={`${f.input} ${f.span4}`}
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  value={obj.arrangement.spacingXFt}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'grid' };
-                    updateObj({ arrangement: { ...arr, spacingXFt: parseFloat(e.target.value) || 0.25 } });
-                  }}
-                />
-                <span className={`${f.miniLabel} ${f.span2}`}>Y</span>
-                <input
-                  className={`${f.input} ${f.span4}`}
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  value={obj.arrangement.spacingYFt}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'grid' };
-                    updateObj({ arrangement: { ...arr, spacingYFt: parseFloat(e.target.value) || 0.25 } });
-                  }}
-                />
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'ring' && (
-              <>
-                <span className={f.label}>Count</span>
-                <input
-                  className={`${f.input} ${f.span12}`}
-                  type="number"
-                  step="1"
-                  min="1"
-                  value={obj.arrangement.count}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'ring' };
-                    updateObj({ arrangement: { ...arr, count: parseInt(e.target.value) || 1 } });
-                  }}
-                />
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'square-foot' && (
-              <>
-                <span className={f.label}>Cell size</span>
-                <input
-                  className={`${f.input} ${f.span12}`}
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  value={obj.arrangement.cellSizeFt}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'square-foot' };
-                    updateObj({ arrangement: { ...arr, cellSizeFt: parseFloat(e.target.value) || 1 } });
-                  }}
-                />
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'hex' && (
-              <>
-                <span className={f.label}>Pitch (ft)</span>
-                <input
-                  className={`${f.input} ${f.span12}`}
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  value={obj.arrangement.pitchFt === 'auto' ? '' : obj.arrangement.pitchFt}
-                  placeholder="auto"
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'hex' };
-                    const val = parseFloat(e.target.value);
-                    updateObj({ arrangement: { ...arr, pitchFt: isNaN(val) ? 'auto' : val } });
-                  }}
-                />
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'trellised-back' && (
-              <>
-                <span className={f.label}>Trellis edge</span>
-                <select
-                  className={`${f.select} ${f.span12}`}
-                  value={obj.arrangement.trellisEdge}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'trellised-back' };
-                    updateObj({ arrangement: { ...arr, trellisEdge: e.target.value as 'N' | 'E' | 'S' | 'W' } });
-                  }}
-                >
-                  {(['N', 'E', 'S', 'W'] as const).map((edge) => (
-                    <option key={edge} value={edge}>{edge}</option>
-                  ))}
-                </select>
-                <span className={f.label}>Front rows</span>
-                <select
-                  className={`${f.select} ${f.span12}`}
-                  value={obj.arrangement.frontStrategy}
-                  onChange={(e) => {
-                    const arr = obj.arrangement as Arrangement & { type: 'trellised-back' };
-                    updateObj({ arrangement: { ...arr, frontStrategy: e.target.value as 'rows' | 'square-foot' | 'hex' } });
-                  }}
-                >
-                  <option value="rows">Rows</option>
-                  <option value="square-foot">Square-foot</option>
-                  <option value="hex">Hex</option>
-                </select>
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'banded-rows' && (
-              <>
-                <span className={f.label}>Bands (JSON)</span>
-                <textarea
-                  className={`${f.input} ${f.span12}`}
-                  rows={4}
-                  style={{ fontFamily: 'monospace', fontSize: '0.8em' }}
-                  defaultValue={JSON.stringify(obj.arrangement.bands, null, 2)}
-                  onBlur={(e) => {
-                    try {
-                      const arr = obj.arrangement as Arrangement & { type: 'banded-rows' };
-                      const bands = JSON.parse(e.target.value);
-                      updateObj({ arrangement: { ...arr, bands } });
-                    } catch { /* ignore invalid JSON */ }
-                  }}
-                />
-              </>
-            )}
-            {obj.arrangement && obj.arrangement.type === 'multi' && (
-              <>
-                <span className={f.label}></span>
-                <span className={`${f.span12}`} style={{ fontSize: '0.85em', opacity: 0.7 }}>
-                  Use the optimizer or paint regions on canvas — coming soon.
-                </span>
-              </>
+              </label>
             )}
           </>
         )}
@@ -475,13 +312,6 @@ export function PropertiesPanel() {
           Delete
         </button>
       </div>
-      {/* Optimize Layout disabled — see docs/TODO.md. Re-enable once the
-          simplified solver has been validated end-to-end in the UI. */}
-      {structure?.type === 'raised-bed' && (
-        <div style={{ padding: '0 8px' }}>
-          <OptimizePanel structureId={structure.id} />
-        </div>
-      )}
     </div>
   );
 }
