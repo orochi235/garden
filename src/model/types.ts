@@ -1,5 +1,4 @@
-import type { Arrangement, ParentBounds } from './arrangement';
-import { defaultArrangement } from './arrangement';
+import type { Layout, ParentBounds } from './layout';
 import { getCultivar } from './cultivars';
 import type { Cultivar } from './cultivars';
 import type { SeedStartingState } from './seedStarting';
@@ -37,10 +36,8 @@ export interface Structure {
   surface: boolean;
   container: boolean;
   fill: FillType | null;
-  arrangement: Arrangement | null;
+  layout: Layout | null;
   wallThicknessFt: number;
-  /** For raised beds: which edge has a trellis attached, if any. Used by trellis-aware strategies and the optimizer. */
-  trellisEdge: 'N' | 'E' | 'S' | 'W' | null;
   /** When false, plantings inside this container render without being clipped to the container's interior. Default true. */
   clipChildren: boolean;
 }
@@ -67,7 +64,7 @@ export interface Zone {
   parentId: string | null;
   soilType: string | null;
   sunExposure: string | null;
-  arrangement: Arrangement | null;
+  layout: Layout | null;
   pattern: string | null;
 }
 
@@ -146,12 +143,6 @@ export const DEFAULT_WALL_THICKNESS_FT: Record<string, number> = {
   'felt-planter': 0.04,
 };
 
-const DEFAULT_ARRANGEMENTS: Record<string, () => Arrangement> = {
-  'raised-bed': () => defaultArrangement('rows'),
-  pot: () => defaultArrangement('single'),
-  'felt-planter': () => defaultArrangement('single'),
-};
-
 export function createStructure(opts: {
   type: string;
   x: number;
@@ -179,9 +170,12 @@ export function createStructure(opts: {
     surface: SURFACE_TYPES.has(opts.type),
     container: CONTAINER_TYPES.has(opts.type),
     fill: CONTAINER_TYPES.has(opts.type) ? 'soil' : null,
-    arrangement: DEFAULT_ARRANGEMENTS[opts.type]?.() ?? null,
+    layout: opts.type === 'pot' || opts.type === 'felt-planter'
+      ? { type: 'single' }
+      : opts.type === 'raised-bed'
+      ? { type: 'grid', cellSizeFt: 1 }
+      : null,
     wallThicknessFt: DEFAULT_WALL_THICKNESS_FT[opts.type] ?? 0,
-    trellisEdge: null,
     clipChildren: true,
   };
 }
@@ -199,7 +193,7 @@ export function createZone(opts: { x: number; y: number; width: number; length: 
     parentId: null,
     soilType: null,
     sunExposure: null,
-    arrangement: defaultArrangement('grid'),
+    layout: { type: 'grid', cellSizeFt: 1 },
     pattern: opts.pattern ?? null,
   };
 }
