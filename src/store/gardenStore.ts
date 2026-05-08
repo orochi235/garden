@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { computeSlots } from '../model/arrangement';
-import type { Arrangement } from '../model/arrangement';
+import { getSlots, getGridCells } from '../model/layout';
+import type { Layout } from '../model/layout';
 import { createSeedling, emptySeedStartingState, getCell, setCell } from '../model/seedStarting';
 import type { Seedling, Tray } from '../model/seedStarting';
 import type { Cultivar } from '../model/cultivars';
@@ -87,7 +87,6 @@ interface GardenStore {
   fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
-  applyOptimizerResult: (structureId: string, candidate: import('../optimizer').OptimizationCandidate) => void;
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -239,17 +238,22 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   function rearrangePlantings(
     plantings: Planting[],
     parentId: string,
-    parent: { x: number; y: number; width: number; length: number; shape?: string; arrangement: Arrangement | null; wallThicknessFt?: number },
+    parent: { x: number; y: number; width: number; length: number; shape?: string; layout: Layout | null; wallThicknessFt?: number },
   ): Planting[] {
-    const arrangement = parent.arrangement;
-    if (!arrangement || arrangement.type === 'free') return plantings;
+    const layout = parent.layout;
+    if (!layout) return plantings;
 
     const bounds = getPlantableBounds(parent);
-    const slots = computeSlots(arrangement, bounds);
+
+    let slots: { x: number; y: number }[];
+    if (layout.type === 'grid') {
+      slots = getGridCells(layout.cellSizeFt, bounds);
+    } else {
+      slots = getSlots(layout, bounds);
+    }
 
     const children = plantings.filter((p) => p.parentId === parentId);
     const others = plantings.filter((p) => p.parentId !== parentId);
-
     const rearranged = children.map((p, i) => {
       if (i >= slots.length) return p;
       const local = worldToLocalForParent(parent, slots[i].x, slots[i].y);
@@ -304,7 +308,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     commitStructureUpdate: (id, updates) => {
       if (isLocked('structures')) return;
       const newStructures = mapCollection(get().garden.structures, id, updates);
-      if ('arrangement' in updates) {
+      if ('layout' in updates) {
         const parent = newStructures.find((s) => s.id === id);
         if (parent) {
           const newPlantings = rearrangePlantings(get().garden.plantings, id, parent);
@@ -340,7 +344,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     commitZoneUpdate: (id, updates) => {
       if (isLocked('zones')) return;
       const newZones = mapCollection(get().garden.zones, id, updates);
-      if ('arrangement' in updates) {
+      if ('layout' in updates) {
         const parent = newZones.find((z) => z.id === id);
         if (parent) {
           const newPlantings = rearrangePlantings(get().garden.plantings, id, parent);
@@ -424,24 +428,6 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     removePlanting: (id) => {
       if (isLocked('plantings')) return;
       commitPatch({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
-    },
-
-    applyOptimizerResult: (structureId, candidate) => {
-      const { garden } = get();
-      const structure = garden.structures.find((s) => s.id === structureId);
-      if (!structure) return;
-      const IN_TO_FT = 1 / 12;
-      // Remove existing plantings for this bed, add optimizer placements
-      const retained = garden.plantings.filter((p) => p.parentId !== structureId);
-      const newPlantings = candidate.placements.map((pl) =>
-        createPlanting({
-          parentId: structureId,
-          cultivarId: pl.cultivarId,
-          x: pl.xIn * IN_TO_FT,
-          y: pl.yIn * IN_TO_FT,
-        }),
-      );
-      commitPatch({ plantings: [...retained, ...newPlantings] });
     },
 
     // --- Seed Starting ---
