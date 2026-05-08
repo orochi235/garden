@@ -4,8 +4,8 @@
  * `MoveAdapter.getLayout`; the strategy drives drop-targeting, snap, and the
  * commit ops (reparent + transform).
  *
- * Strategies bridge eric's `Arrangement` model to weasel: `computeSlots` is
- * the authority on where children go, this file just shapes that into the
+ * Strategies bridge eric's `Layout` model to weasel: `getSlots`/`getGridCells`
+ * are the authority on where children go, this file just shapes that into the
  * `DropTarget` / `LayoutStrategy` contract weasel expects.
  */
 import {
@@ -16,25 +16,12 @@ import {
   type LayoutSnap,
 } from '@orochi235/weasel';
 import type { Op } from '@orochi235/weasel';
-import { computeSlots, type Arrangement } from '../../model/arrangement';
+import { getSlots, getGridCells, type Layout } from '../../model/layout';
 import { getPlantableBounds } from '../../model/types';
 import type { Garden, Structure, Zone } from '../../model/types';
-import { getCultivar, type Cultivar } from '../../model/cultivars';
 import type { PlantingPose } from './plantingMove';
 
-type Container = (Structure | Zone) & { arrangement: Arrangement | null };
-
-/** Resolve the cultivars of all plantings inside a container, for auto-pitch strategies. */
-function cultivarsForContainer(garden: Garden, container: Container): Cultivar[] {
-  const cultivars: Cultivar[] = [];
-  for (const p of garden.plantings) {
-    if (p.parentId === container.id) {
-      const c = getCultivar(p.cultivarId);
-      if (c) cultivars.push(c);
-    }
-  }
-  return cultivars;
-}
+type Container = (Structure | Zone) & { layout: Layout | null };
 
 function findContainer(garden: Garden, id: string): Container | null {
   const s = garden.structures.find((x) => x.id === id);
@@ -66,7 +53,7 @@ export function plantingLayoutFor(
   containerId: string,
 ): LayoutStrategy<PlantingPose> | null {
   const probe = findContainer(getGarden(), containerId);
-  if (!probe || !probe.arrangement) return null;
+  if (!probe || !probe.layout) return null;
 
   const snap = nearestSlotSnap();
 
@@ -100,31 +87,23 @@ export function plantingLayoutFor(
     getDropTargets(_container, children, dragged) {
       const garden = getGarden();
       const c = findContainer(garden, containerId);
-      if (!c) return [];
-
-      if (c.arrangement?.type === 'free') {
-        // Free arrangement: anchor at center as a single drop target.
-        const cx = c.x + c.width / 2;
-        const cy = c.y + c.length / 2;
-        return [{ pose: { x: cx, y: cy }, origin: { x: cx, y: cy } }];
-      }
+      if (!c || !c.layout) return [];
 
       const bounds = getPlantableBounds(c);
-      const cultivars = cultivarsForContainer(garden, c);
-      const slots = computeSlots(c.arrangement!, bounds, cultivars);
       const occupied = new Set(
         children.filter((ch) => ch.id !== dragged.id).map((ch) => `${ch.pose.x},${ch.pose.y}`),
       );
-      const out: DropTarget<PlantingPose>[] = [];
-      for (const s of slots) {
-        if (occupied.has(`${s.x},${s.y}`)) continue;
-        out.push({
-          pose: { x: s.x, y: s.y },
-          origin: { x: s.x, y: s.y },
-          meta: s.regionId ? { regionId: s.regionId } : undefined,
-        });
+
+      let pts: { x: number; y: number }[];
+      if (c.layout.type === 'grid') {
+        pts = getGridCells(c.layout.cellSizeFt, bounds);
+      } else {
+        pts = getSlots(c.layout, bounds);
       }
-      return out;
+
+      return pts
+        .filter((p) => !occupied.has(`${p.x},${p.y}`))
+        .map((p) => ({ pose: { x: p.x, y: p.y }, origin: { x: p.x, y: p.y } }));
     },
 
     reflowFor() {
