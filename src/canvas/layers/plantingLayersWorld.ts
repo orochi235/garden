@@ -33,7 +33,7 @@ interface PlantingParent {
   width: number;
   length: number;
   shape?: string;
-  arrangement: import('../../model/arrangement').Arrangement | null;
+  layout: import('../../model/layout').Layout | null;
   wallThicknessFt?: number;
 }
 
@@ -92,7 +92,7 @@ function applyContainerClip(ctx: CanvasRenderingContext2D, parent: PlantingParen
 function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<string, number>, plantIconScale: number): number {
   const cultivar = getCultivar(p.cultivarId);
   const footprint = cultivar?.footprintFt ?? 0.5;
-  const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+  const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
   return isSingleFill
     ? (Math.min(parent.width, parent.length) / 2) * plantIconScale
     : (footprint / 2) * plantIconScale;
@@ -132,10 +132,10 @@ export function createPlantingLayers(
         }
 
         for (const { id, parent } of containers) {
-          if (!parent.arrangement || parent.arrangement.type === 'free') continue;
+          if (!parent.layout) continue;
           const bounds = getPlantableBounds(parent);
           const occSet = occupied.get(id) ?? new Set<string>();
-          const overlay = computeContainerOverlay(parent.arrangement, bounds, { occupiedSlots: occSet });
+          const overlay = computeContainerOverlay(parent.layout as any, bounds, { occupiedSlots: occSet });
 
           for (const item of overlay.items) {
             if (item.type === 'slot-dot') {
@@ -181,7 +181,7 @@ export function createPlantingLayers(
           for (const p of group) {
             const cultivar = getCultivar(p.cultivarId);
             const spacing = cultivar?.spacingFt ?? 0.5;
-            const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+            const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
             if (isSingleFill) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const spacingHalf = (spacing / 2) * data.plantIconScale;
@@ -253,7 +253,7 @@ export function createPlantingLayers(
             if (!cultivar) continue;
             const footprint = cultivar.footprintFt ?? 0.5;
             const spacing = cultivar.spacingFt ?? 0.5;
-            const isSingleFill = parent.arrangement?.type === 'single' && childCount.get(p.parentId) === 1;
+            const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
             if (isSingleFill) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), (footprint / 2) * data.plantIconScale);
