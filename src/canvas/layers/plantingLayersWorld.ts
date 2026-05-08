@@ -151,6 +151,13 @@ export function createPlantingLayers(
               ctx.strokeStyle = 'rgba(127,176,105,0.8)';
               ctx.lineWidth = px(view, 2);
               ctx.stroke();
+            } else if (item.type === 'grid-line') {
+              ctx.beginPath();
+              ctx.moveTo(item.x1, item.y1);
+              ctx.lineTo(item.x2, item.y2);
+              ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+              ctx.lineWidth = px(view, 1);
+              ctx.stroke();
             }
           }
         }
