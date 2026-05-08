@@ -182,12 +182,6 @@ interface UiStore {
   /** Almanac panel filters that constrain which seedables show in the palette. */
   almanacFilters: AlmanacFilters;
   collectionEditorOpen: boolean;
-  optimizerResult: import('../optimizer').OptimizationResult | null;
-  optimizerResultStructureId: string | null;
-  optimizerSelectedCandidate: number;
-  setOptimizerResult: (r: import('../optimizer').OptimizationResult | null, structureId?: string | null) => void;
-  setOptimizerSelectedCandidate: (n: number) => void;
-  clearOptimizerResult: () => void;
   setCollectionEditorOpen: (open: boolean) => void;
   setShowSeedlingWarnings: (show: boolean) => void;
   setHighlightOpacity: (opacity: number) => void;
@@ -305,9 +299,6 @@ function defaultState() {
       lastFrostDate: null,
     } as AlmanacFilters,
     collectionEditorOpen: readCollectionParam(),
-    optimizerResult: null,
-    optimizerResultStructureId: null,
-    optimizerSelectedCandidate: 0,
   };
 }
 
@@ -376,9 +367,6 @@ export const useUiStore = create<UiStore>((set) => ({
     set({
       almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
     }),
-  setOptimizerResult: (r, structureId = null) => set({ optimizerResult: r, optimizerResultStructureId: r ? structureId : null, optimizerSelectedCandidate: 0 }),
-  setOptimizerSelectedCandidate: (n) => set({ optimizerSelectedCandidate: n }),
-  clearOptimizerResult: () => set({ optimizerResult: null, optimizerResultStructureId: null, optimizerSelectedCandidate: 0 }),
   setCollectionEditorOpen: (open) => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);

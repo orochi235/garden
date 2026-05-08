@@ -43,8 +43,6 @@ import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
-import { createOptimizerGhostLayer } from './layers/optimizerGhostLayer';
-import { createOptimizerClusterRegionsLayer } from './layers/optimizerClusterRegionsLayer';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
@@ -78,8 +76,6 @@ function GardenCanvasNewPrototype() {
   useUiStore((s) => s.dragClashIds);
   useUiStore((s) => s.highlightOpacity);
   useUiStore((s) => s.showFootprintCircles);
-  useUiStore((s) => s.optimizerResult);
-  useUiStore((s) => s.optimizerSelectedCandidate);
   useUiStore((s) => s.dragPreview);
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
@@ -189,15 +185,7 @@ function GardenCanvasNewPrototype() {
   const layers = useMemo(() => {
     const getStructures = () => useGardenStore.getState().garden.structures;
     const getZones = () => useGardenStore.getState().garden.zones;
-    // Hide existing plantings of the bed currently showing an optimizer
-    // preview, so the ghost layout reads cleanly without the prior contents
-    // bleeding through.
-    const getPlantings = () => {
-      const all = useGardenStore.getState().garden.plantings;
-      const previewBedId = useUiStore.getState().optimizerResultStructureId;
-      if (!previewBedId) return all;
-      return all.filter((p) => p.parentId !== previewBedId);
-    };
+    const getPlantings = () => useGardenStore.getState().garden.plantings;
     const getUi: GetUi = () => {
       const u = useUiStore.getState();
       // Per-id flash opacity — layers call `getHighlight(id)` per entity. The
@@ -233,17 +221,6 @@ function GardenCanvasNewPrototype() {
       ...createStructureLayers(getStructures, getUi),
       ...createPlantingLayers(getPlantings, getZones, getStructures, getUi),
       createDragPreviewLayer(dragPreviewRegistry as never),
-      createOptimizerGhostLayer(
-        getStructures,
-        () => {
-          const u = useUiStore.getState();
-          return {
-            result: u.optimizerResult,
-            selectedCandidate: u.optimizerSelectedCandidate,
-            structureId: u.optimizerResultStructureId,
-          };
-        },
-      ),
       createGroupOutlineLayer(getStructures, getUi),
       createSelectionOutlineLayer(getPlantings, getZones, getStructures, getUi),
       createSelectionHandlesLayer(getZones, getStructures, getUi),
@@ -256,19 +233,6 @@ function GardenCanvasNewPrototype() {
         getZones,
         getPlantings,
       }));
-    }
-    if (isDebugEnabled('clusters')) {
-      debugLayers.push(createOptimizerClusterRegionsLayer(
-        getStructures,
-        () => {
-          const u = useUiStore.getState();
-          return {
-            result: u.optimizerResult,
-            selectedCandidate: u.optimizerSelectedCandidate,
-            structureId: u.optimizerResultStructureId,
-          };
-        },
-      ));
     }
     // Publish the full set (base + debug) so the sidebar Render Layers panel
     // can list whatever's actually being drawn. Done before wrapping so the
