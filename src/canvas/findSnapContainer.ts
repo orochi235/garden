@@ -1,4 +1,4 @@
-import { computeSlots } from '../model/arrangement';
+import { getSlots, getGridCells } from '../model/layout';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
@@ -57,7 +57,7 @@ export function findSnapContainer(
     width: number;
     length: number;
     shape: 'rectangle' | 'circle';
-    arrangement: import('../model/arrangement').Arrangement | null;
+    layout: import('../model/layout').Layout | null;
     distance: number;
   };
 
@@ -79,7 +79,7 @@ export function findSnapContainer(
       width: s.width,
       length: s.length,
       shape: s.shape === 'circle' ? 'circle' : 'rectangle',
-      arrangement: s.arrangement,
+      layout: s.layout,
       distance: dist,
     });
   }
@@ -100,7 +100,7 @@ export function findSnapContainer(
       width: z.width,
       length: z.length,
       shape: 'rectangle',
-      arrangement: z.arrangement,
+      layout: z.layout,
       distance: dist,
     });
   }
@@ -148,25 +148,24 @@ function findAvailableSlot(
     width: number;
     length: number;
     shape: 'rectangle' | 'circle';
-    arrangement: import('../model/arrangement').Arrangement | null;
+    layout: import('../model/layout').Layout | null;
   },
   planting: Planting,
   garden: Garden,
 ): { x: number; y: number } | null {
-  const arrangement = container.arrangement;
-  if (!arrangement) return null;
-
-  if (arrangement.type === 'free') {
-    // Free arrangement always has room — slot at container center
-    return {
-      x: container.width / 2,
-      y: container.length / 2,
-    };
+  const layout = container.layout;
+  if (!layout) {
+    // No layout — slot at container center
+    const cx = container.x + container.width / 2;
+    const cy = container.y + container.length / 2;
+    return { x: cx, y: cy };
   }
 
   const bounds = getPlantableBounds(container);
 
-  const slots = computeSlots(arrangement, bounds);
+  const slots = layout.type === 'grid'
+    ? getGridCells(layout.cellSizeFt, bounds)
+    : getSlots(layout, bounds);
 
   // Count existing children in this container (not counting the planting being dragged)
   const existingChildren = garden.plantings.filter(
