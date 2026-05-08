@@ -155,10 +155,8 @@ function findAvailableSlot(
 ): { x: number; y: number } | null {
   const layout = container.layout;
   if (!layout) {
-    // No layout — slot at container center
-    const cx = container.x + container.width / 2;
-    const cy = container.y + container.length / 2;
-    return { x: cx, y: cy };
+    // No layout — slot at container center (local coords)
+    return { x: container.width / 2, y: container.length / 2 };
   }
 
   const bounds = getPlantableBounds(container);

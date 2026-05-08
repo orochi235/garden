@@ -264,6 +264,7 @@ export function PropertiesPanel() {
             {/* Layout */}
             <span className={f.label}>Layout</span>
             <select
+              className={`${f.select} ${f.span12}`}
               value={obj.layout?.type ?? 'none'}
               onChange={(e) => {
                 const t = e.target.value as LayoutType | 'none';
@@ -282,9 +283,10 @@ export function PropertiesPanel() {
             </select>
 
             {obj.layout?.type === 'grid' && (
-              <label className={f.fieldRow}>
+              <label className={f.fullRow}>
                 <span className={f.label}>Cell size (ft)</span>
                 <input
+                  className={f.input}
                   type="number"
                   min={0.25}
                   step={0.25}
