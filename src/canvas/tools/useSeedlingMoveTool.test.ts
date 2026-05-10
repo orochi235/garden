@@ -19,43 +19,18 @@ import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTarget
  *     active (or a palette-drag is active);
  *   - hover state: `scratch.affordance` written by `drag.onMove` flows into
  *     the overlay rendering (verified by checking that hovered/non-hovered
- *     markers receive different fill colors).
+ *     markers receive different fill colors in the DrawCommand tree).
  */
 
-interface DrawOp {
-  kind: 'fill' | 'stroke' | 'fillRect' | 'strokeRect';
-  fillStyle?: string;
-  strokeStyle?: string;
-}
+type DrawCommand = { kind: string; fill?: { fill: string; color: string }; stroke?: { paint: { color: string } }; children?: DrawCommand[]; alpha?: number; transform?: unknown };
 
-function makeFakeCtx(): { ctx: CanvasRenderingContext2D; ops: DrawOp[]; fills: string[] } {
-  const ops: DrawOp[] = [];
+function collectFills(cmds: DrawCommand[]): string[] {
   const fills: string[] = [];
-  const stack: { fillStyle: string; strokeStyle: string }[] = [];
-  let fillStyle = '';
-  let strokeStyle = '';
-  const ctx = {
-    save() { stack.push({ fillStyle, strokeStyle }); },
-    restore() { const s = stack.pop(); if (s) { fillStyle = s.fillStyle; strokeStyle = s.strokeStyle; } },
-    translate() {},
-    rotate() {},
-    beginPath() {},
-    moveTo() {},
-    lineTo() {},
-    closePath() {},
-    arc() {},
-    setLineDash() {},
-    fill() { ops.push({ kind: 'fill', fillStyle }); fills.push(fillStyle); },
-    stroke() { ops.push({ kind: 'stroke', strokeStyle }); },
-    fillRect() { ops.push({ kind: 'fillRect', fillStyle }); fills.push(fillStyle); },
-    strokeRect() { ops.push({ kind: 'strokeRect', strokeStyle }); },
-    get fillStyle() { return fillStyle; },
-    set fillStyle(v: string) { fillStyle = v; },
-    get strokeStyle() { return strokeStyle; },
-    set strokeStyle(v: string) { strokeStyle = v; },
-    lineWidth: 1,
-  } as unknown as CanvasRenderingContext2D;
-  return { ctx, ops, fills };
+  for (const cmd of cmds) {
+    if (cmd.fill) fills.push(cmd.fill.color);
+    if (cmd.children) fills.push(...collectFills(cmd.children));
+  }
+  return fills;
 }
 
 function makePointerDown(): PointerEvent {
@@ -109,9 +84,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const tool = result.current;
     expect(tool.overlay).toBeDefined();
 
-    const { ctx, ops } = makeFakeCtx();
-    tool.overlay!.draw(ctx, undefined as never, { x: 0, y: 0, scale: 50 });
-    expect(ops).toHaveLength(0);
+    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    expect(cmds).toHaveLength(0);
   });
 
   it('overlay draws gutter markers when a single-seedling drag is active', () => {
@@ -141,9 +115,9 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     expect(scratch.isGroup).toBe(false);
     expect(scratch.draggedId).toBe(seedling.id);
 
-    const { ctx, fills } = makeFakeCtx();
-    tool.overlay!.draw(ctx, undefined as never, { x: 0, y: 0, scale: 50 });
-    // Markers were drawn — at least one fill happened with the base marker color.
+    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const fills = collectFills(cmds as DrawCommand[]);
+    // Markers were drawn — at least one fill with the base marker color.
     expect(fills.some((f) => f === '#d4a55a')).toBe(true);
     // No marker is hovered yet → no hover-fill color emitted.
     expect(fills.some((f) => f === '#ffd27a')).toBe(false);
@@ -181,8 +155,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     tool.drag!.onMove!(makePointerMove(), ctxMove);
     expect(scratch.affordance?.kind).toBe('row');
 
-    const { ctx, fills } = makeFakeCtx();
-    tool.overlay!.draw(ctx, undefined as never, { x: 0, y: 0, scale: 50 });
+    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const fills = collectFills(cmds as DrawCommand[]);
     // Both base and hover colors were emitted (row marker hovered, others not).
     expect(fills).toContain('#d4a55a');
     expect(fills).toContain('#ffd27a');
@@ -210,8 +184,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     expect(scratch.isGroup).toBe(true);
     expect(scratch.active).toBe(true);
 
-    const { ctx, fills } = makeFakeCtx();
-    tool.overlay!.draw(ctx, undefined as never, { x: 0, y: 0, scale: 50 });
+    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const fills = collectFills(cmds as DrawCommand[]);
     // Group drags suppress the gutter overlay (single-seedling-only feature).
     expect(fills.some((f) => f === '#d4a55a')).toBe(false);
     expect(fills.some((f) => f === '#ffd27a')).toBe(false);
@@ -343,8 +317,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     // Arm a palette drag — overlay's secondary trigger.
     useUiStore.getState().setSeedDragCultivarId('tomato');
 
-    const { ctx, fills } = makeFakeCtx();
-    tool.overlay!.draw(ctx, undefined as never, { x: 0, y: 0, scale: 50 });
+    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const fills = collectFills(cmds as DrawCommand[]);
     expect(fills.some((f) => f === '#d4a55a')).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
-import { defineTool, type Dims, type RenderLayer, type Tool, type View } from '@orochi235/weasel';
+import { defineTool, PathBuilder, type Dims, type RenderLayer, type Tool, type View } from '@orochi235/weasel';
+import { type DrawCommand } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
@@ -84,36 +85,40 @@ function findSeedlingAt(worldX: number, worldY: number): { tray: Tray; seedling:
   return null;
 }
 
-function drawMarker(
-  ctx: CanvasRenderingContext2D,
+function markerCommands(
   cx: number,
   cy: number,
   length: number,
   width: number,
   rotation: number,
-  fill: string,
-  stroke: string,
-): void {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(rotation);
+  fillColor: string,
+  strokeColor: string,
+): DrawCommand[] {
   const plateW = width * 2.6;
   const top = -length / 2;
   const tip = length / 2;
   const shoulder = tip - plateW / 2;
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = stroke;
-  ctx.fillStyle = fill;
-  ctx.beginPath();
-  ctx.moveTo(-plateW / 2, top);
-  ctx.lineTo(plateW / 2, top);
-  ctx.lineTo(plateW / 2, shoulder);
-  ctx.lineTo(0, tip);
-  ctx.lineTo(-plateW / 2, shoulder);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
+  // Build path in local (0,0) coords, then wrap in a transform group.
+  const path = new PathBuilder()
+    .moveTo(-plateW / 2, top)
+    .lineTo(plateW / 2, top)
+    .lineTo(plateW / 2, shoulder)
+    .lineTo(0, tip)
+    .lineTo(-plateW / 2, shoulder)
+    .close()
+    .build();
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  // Column-major 3×3: [cos, sin, 0, -sin, cos, 0, cx, cy, 1]
+  const transform = new Float32Array([cos, sin, 0, -sin, cos, 0, cx, cy, 1]);
+  return [{
+    kind: 'group',
+    transform,
+    children: [
+      { kind: 'path', path, fill: { fill: 'solid', color: fillColor } },
+      { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: 1 } },
+    ],
+  }];
 }
 
 export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<SeedlingMoveScratch> {
@@ -127,7 +132,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
       id: 'seedling-move-gutter-overlay',
       label: 'Seedling Gutter Affordances',
       space: 'screen',
-      draw(_data, view: View, _dims: Dims) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const s = scratchRef.current;
         // Marquee rendering moved to `useSeedSelectTool` + the framework's
         // `dragPreviewLayer` (kind = AREA_SELECT_DRAG_KIND). This overlay only
@@ -138,7 +143,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
         //  2. palette-drag (cultivar being dropped in from the palette)
         const seedlingDragActive = s.active && !s.isGroup && !!s.trayId;
         const paletteDragActive = ui.seedDragCultivarId != null;
-        if (!seedlingDragActive && !paletteDragActive) return;
+        if (!seedlingDragActive && !paletteDragActive) return [];
 
         // Resolve the target tray and the currently-hovered affordance.
         let trayId: string | null = null;
@@ -161,9 +166,9 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             if (fp.scope === 'row' || fp.scope === 'col') affIndex = fp.index;
           }
         }
-        if (!trayId) return;
+        if (!trayId) return [];
         const tray = useGardenStore.getState().garden.seedStarting.trays.find((t) => t.id === trayId);
-        if (!tray) return;
+        if (!tray) return [];
         const scale = view.scale;
         const cellPx = tray.cellPitchIn * scale;
         const gutterPx = cellPx * DRAG_SPREAD_GUTTER_RATIO;
@@ -180,6 +185,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
 
         // Iterate gutter targets — chevron position = target origin in world,
         // converted to screen. Hovered target lights up.
+        const cmds: DrawCommand[] = [];
         for (const t of getTrayDropTargets(tray)) {
           if (t.meta.kind === 'cell') continue;
           const cx = (t.origin.x - view.x) * scale;
@@ -200,8 +206,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             widthScale = 1.35;
             isHover = affKind === 'all';
           }
-          drawMarker(
-            ctx,
+          cmds.push(...markerCommands(
             cx,
             cy,
             markerLen * lenScale,
@@ -209,8 +214,9 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
             rotation,
             isHover ? hoverFill : baseFill,
             baseStroke,
-          );
+          ));
         }
+        return cmds;
       },
     }),
     [],
