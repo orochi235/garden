@@ -1,6 +1,8 @@
-import type { RenderLayer } from '@orochi235/weasel';
-import type { LayerDescriptor, View } from './worldLayerData';
+import { type RenderLayer, PathBuilder } from '@orochi235/weasel';
+import type { LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
+
+type DrawCommand = ReturnType<RenderLayer<unknown>['draw']>[number];
 
 /**
  * Single source of truth for system-layer metadata. Order here = canonical
@@ -23,20 +25,17 @@ function createOriginLayer(meta: LayerDescriptor): RenderLayer<unknown> {
   return {
     ...meta,
     space: 'screen',
-    draw(ctx, _data, view: View) {
+    draw(_data, view, _dims): DrawCommand[] {
       const ox = (0 - view.x) * view.scale;
       const oy = (0 - view.y) * view.scale;
       const r = 4;
-      ctx.save();
-      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(ox - r, oy);
-      ctx.lineTo(ox + r, oy);
-      ctx.moveTo(ox, oy - r);
-      ctx.lineTo(ox, oy + r);
-      ctx.stroke();
-      ctx.restore();
+      const stroke = { paint: { fill: 'solid' as const, color: 'rgba(0,0,0,0.3)' }, width: 1 };
+      const horiz = new PathBuilder().moveTo(ox - r, oy).lineTo(ox + r, oy).build();
+      const vert = new PathBuilder().moveTo(ox, oy - r).lineTo(ox, oy + r).build();
+      return [
+        { kind: 'path', path: horiz, stroke },
+        { kind: 'path', path: vert, stroke },
+      ];
     },
   };
 }
