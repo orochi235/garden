@@ -7,12 +7,12 @@ import pixelmatch from 'pixelmatch';
 // Deferred — require selection/view-state serializer extensions:
 // - 'garden-mixed-selected'
 // - 'garden-zoomed-in'
-// - 'seed-sown-cells' (requires UI mode switch to seed-starting)
-const FIXTURES = [
-  'garden-empty',
-  'garden-mixed',
-  'seed-empty',
-  'seed-with-seedlings',
+interface Fixture { name: string; mode?: 'garden' | 'seed-starting'; }
+const FIXTURES: Fixture[] = [
+  { name: 'garden-empty' },
+  { name: 'garden-mixed' },
+  { name: 'seed-empty', mode: 'seed-starting' },
+  { name: 'seed-with-seedlings', mode: 'seed-starting' },
 ];
 
 const BASELINE_DIR = path.join(import.meta.dirname, 'baselines');
@@ -20,9 +20,10 @@ const DIFF_DIR = path.join(import.meta.dirname, 'diffs');
 const PIXEL_THRESHOLD = 0.1;
 const FAIL_RATIO = 0.02;
 
-for (const name of FIXTURES) {
+for (const { name, mode } of FIXTURES) {
   test(`fixture: ${name}`, async ({ page }) => {
-    await page.goto(`/?fixture=${name}`);
+    const url = mode ? `/?fixture=${name}&mode=${mode}` : `/?fixture=${name}`;
+    await page.goto(url);
     await page.waitForSelector('[data-canvas-ready="true"]', { timeout: 10_000 });
     const canvas = page.locator('canvas').first();
     const actualBuf = await canvas.screenshot();

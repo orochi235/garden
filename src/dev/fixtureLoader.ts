@@ -11,6 +11,9 @@
 
 import { deserializeGarden } from '../utils/file';
 import { useGardenStore } from '../store/gardenStore';
+import { useUiStore, type AppMode } from '../store/uiStore';
+
+const VALID_MODES: ReadonlySet<AppMode> = new Set(['garden', 'seed-starting']);
 
 export async function loadFixtureFromUrl(
   url: URL = new URL(window.location.href),
@@ -30,5 +33,10 @@ export async function loadFixtureFromUrl(
   const json = await res.text();
   const garden = deserializeGarden(json);
   useGardenStore.setState({ garden });
+
+  const mode = url.searchParams.get('mode');
+  if (mode && VALID_MODES.has(mode as AppMode)) {
+    useUiStore.getState().setAppMode(mode as AppMode);
+  }
   return true;
 }
