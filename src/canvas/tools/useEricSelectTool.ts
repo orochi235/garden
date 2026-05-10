@@ -20,6 +20,7 @@ import {
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
+import { plantingWorldPose } from '../../utils/plantingPose';
 import { renderPlant } from '../plantRenderers';
 import {
   type GardenSceneAdapter,
@@ -340,8 +341,13 @@ export function useEricSelectTool(
             const cultivar = getCultivar(planting.cultivarId);
             if (!cultivar) continue;
             const footprintFt = cultivar.footprintFt ?? 0.5;
-            const sx = (item.x - view.x) * view.scale;
-            const sy = (item.y - view.y) * view.scale;
+            // item.x/y = planting.x/y (local coords) + drag delta.
+            // Recover the delta and apply to the world-space position.
+            const world = plantingWorldPose(garden, planting);
+            const wx = world.x + (item.x - planting.x);
+            const wy = world.y + (item.y - planting.y);
+            const sx = (wx - view.x) * view.scale;
+            const sy = (wy - view.y) * view.scale;
             const radiusPx = (footprintFt / 2) * view.scale;
             ctx.save();
             ctx.globalAlpha = 0.5;

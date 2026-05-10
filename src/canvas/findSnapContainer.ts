@@ -140,6 +140,15 @@ export function findSnapContainer(
   return null;
 }
 
+/** True if a circle (cx,cy,r) overlaps an AABB cell centered at (cellCx,cellCy) with half-width halfCell. */
+function circleIntersectsCell(cx: number, cy: number, r: number, cellCx: number, cellCy: number, halfCell: number): boolean {
+  const nearX = Math.max(cellCx - halfCell, Math.min(cx, cellCx + halfCell));
+  const nearY = Math.max(cellCy - halfCell, Math.min(cy, cellCy + halfCell));
+  const dx = cx - nearX;
+  const dy = cy - nearY;
+  return dx * dx + dy * dy <= r * r;
+}
+
 function findAvailableSlot(
   container: {
     id: string;
@@ -160,26 +169,55 @@ function findAvailableSlot(
   }
 
   const bounds = getPlantableBounds(container);
-
-  const slots = layout.type === 'grid'
-    ? getGridCells(layout.cellSizeFt, bounds)
-    : getSlots(layout, bounds);
-
-  // Count existing children in this container (not counting the planting being dragged)
   const existingChildren = garden.plantings.filter(
     (p) => p.parentId === container.id && p.id !== planting.id,
   );
 
-  if (existingChildren.length >= slots.length) return null;
-
-  // Find first unoccupied slot
-  const occupiedSet = new Set(existingChildren.map((p) => `${p.x},${p.y}`));
-  for (const slot of slots) {
-    const relX = slot.x - container.x;
-    const relY = slot.y - container.y;
-    if (!occupiedSet.has(`${relX},${relY}`)) {
-      return { x: relX, y: relY };
+  if (layout.type !== 'grid') {
+    const slots = getSlots(layout, bounds);
+    if (existingChildren.length >= slots.length) return null;
+    const occupiedSet = new Set(existingChildren.map((p) => `${p.x},${p.y}`));
+    for (const slot of slots) {
+      const relX = slot.x - container.x;
+      const relY = slot.y - container.y;
+      if (!occupiedSet.has(`${relX},${relY}`)) return { x: relX, y: relY };
     }
+    return null;
+  }
+
+  // Grid mode: footprint-based cell occupancy.
+  // Each existing plant claims all cells whose AABB overlaps its footprint circle.
+  const cells = getGridCells(layout.cellSizeFt, bounds);
+  const halfCell = layout.cellSizeFt / 2;
+
+  const occupiedKeys = new Set<string>();
+  for (const child of existingChildren) {
+    const childCultivar = getCultivar(child.cultivarId);
+    const r = childCultivar ? childCultivar.footprintFt / 2 : halfCell;
+    const wx = container.x + child.x;
+    const wy = container.y + child.y;
+    for (const cell of cells) {
+      if (circleIntersectsCell(wx, wy, r, cell.x, cell.y, halfCell)) {
+        occupiedKeys.add(`${cell.x},${cell.y}`);
+      }
+    }
+  }
+
+  const dragCultivar = getCultivar(planting.cultivarId);
+  const dragRadius = dragCultivar ? dragCultivar.footprintFt / 2 : halfCell;
+
+  for (const candidate of cells) {
+    let fits = true;
+    for (const cell of cells) {
+      if (
+        circleIntersectsCell(candidate.x, candidate.y, dragRadius, cell.x, cell.y, halfCell) &&
+        occupiedKeys.has(`${cell.x},${cell.y}`)
+      ) {
+        fits = false;
+        break;
+      }
+    }
+    if (fits) return { x: candidate.x - container.x, y: candidate.y - container.y };
   }
 
   return null;
