@@ -1,19 +1,7 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand } from '../util/weaselLocal';
-import { PathBuilder, rectPath } from '@orochi235/weasel';
+import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
+import { rectPath } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
-
-function circlePath(cx: number, cy: number, rx: number, ry: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - ry)
-    .curveTo(cx + rx * k, cy - ry, cx + rx, cy - ry * k, cx + rx, cy)
-    .curveTo(cx + rx, cy + ry * k, cx + rx * k, cy + ry, cx, cy + ry)
-    .curveTo(cx - rx * k, cy + ry, cx - rx, cy + ry * k, cx - rx, cy)
-    .curveTo(cx - rx, cy - ry * k, cx - rx * k, cy - ry, cx, cy - ry)
-    .close()
-    .build();
-}
 
 /**
  * Phase-2-migrated drag: structure / zone resize.
@@ -92,7 +80,7 @@ export function createResizeDrag(): Drag<ResizeInput, ResizePutative> {
         const structure = garden.structures.find((s) => s.id === targetId);
         if (!structure) return [];
         const path = (structure as { shape?: string }).shape === 'circle'
-          ? circlePath(pose.x + pose.width / 2, pose.y + pose.length / 2, pose.width / 2, pose.length / 2)
+          ? ellipsePolygon(pose.x + pose.width / 2, pose.y + pose.length / 2, pose.width / 2, pose.length / 2)
           : rectPath(pose.x, pose.y, pose.width, pose.length);
         return [{ kind: 'group', alpha: 0.55, children: [
           { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },

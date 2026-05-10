@@ -1,20 +1,8 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand } from '../util/weaselLocal';
-import { PathBuilder, rectPath } from '@orochi235/weasel';
+import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
+import { rectPath } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-
-function circlePath(cx: number, cy: number, rx: number, ry: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - ry)
-    .curveTo(cx + rx * k, cy - ry, cx + rx, cy - ry * k, cx + rx, cy)
-    .curveTo(cx + rx, cy + ry * k, cx + rx * k, cy + ry, cx, cy + ry)
-    .curveTo(cx - rx * k, cy + ry, cx - rx, cy + ry * k, cx - rx, cy)
-    .curveTo(cx - rx, cy - ry * k, cx - rx * k, cy - ry, cx, cy - ry)
-    .close()
-    .build();
-}
 
 /**
  * Phase-2-migrated drag: structure / zone / planting move (single + multi-select).
@@ -117,7 +105,7 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
           const dash = 6 / Math.max(0.0001, view.scale);
           const gap = 4 / Math.max(0.0001, view.scale);
           const snapPath = (c as { shape?: string }).shape === 'circle'
-            ? circlePath(c.x + c.width / 2, c.y + c.length / 2, c.width / 2, c.length / 2)
+            ? ellipsePolygon(c.x + c.width / 2, c.y + c.length / 2, c.width / 2, c.length / 2)
             : rectPath(c.x, c.y, c.width, c.length);
           cmds.push({ kind: 'path', path: snapPath, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: snapStroke, dash: [dash, gap] } });
         }
@@ -137,7 +125,7 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
           const footprintFt = cultivar.footprintFt ?? 0.5;
           const radius = footprintFt / 2;
           const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
-          const path = circlePath(pose.x, pose.y, radius, radius);
+          const path = ellipsePolygon(pose.x, pose.y, radius, radius);
           cmds.push({ kind: 'group', alpha: 0.65, children: [
             { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
             { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1 / view.scale, radius * 0.06) } },
@@ -148,7 +136,7 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
         const structure = garden.structures.find((s) => s.id === id);
         if (structure) {
           const path = (structure as { shape?: string }).shape === 'circle'
-            ? circlePath(pose.x + structure.width / 2, pose.y + structure.length / 2, structure.width / 2, structure.length / 2)
+            ? ellipsePolygon(pose.x + structure.width / 2, pose.y + structure.length / 2, structure.width / 2, structure.length / 2)
             : rectPath(pose.x, pose.y, structure.width, structure.length);
           cmds.push({ kind: 'group', alpha: 0.55, children: [
             { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },

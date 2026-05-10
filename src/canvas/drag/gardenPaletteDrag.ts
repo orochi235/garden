@@ -3,20 +3,7 @@ import { getCultivar } from '../../model/cultivars';
 import { getPlantingPosition } from '../../utils/planting';
 import type { PaletteEntry } from '../../components/palette/paletteData';
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand } from '../util/weaselLocal';
-import { PathBuilder } from '@orochi235/weasel';
-
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
+import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
 
 /**
  * Phase-2 migrated drag: palette → garden canvas (plantings only).
@@ -124,7 +111,7 @@ export function createGardenPaletteDrag(opts: {
       const radius = putative.footprintRadiusFt;
       const bgColor = cultivar?.iconBgColor ?? cultivar?.color ?? putative.color;
       const strokeColor = cultivar?.color ?? putative.color;
-      const path = circlePath(putative.x, putative.y, radius);
+      const path = circlePolygon(putative.x, putative.y, radius);
       return [{ kind: 'group', alpha: 0.7, children: [
         { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
         { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(0.01, radius * 0.06) } },

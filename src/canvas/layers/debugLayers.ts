@@ -3,7 +3,7 @@ import {
   PathBuilder,
   rectPath,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
 import type { Garden } from '../../model/types';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
@@ -45,19 +45,6 @@ function bboxesSeedStarting(g: Garden): Bbox[] {
   return out;
 }
 
-/** Approximate a full circle as 4 cubic-bezier segments. */
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  // Kappa constant for circle approximation with cubic bezier.
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
 
 function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown> {
   return {
@@ -122,7 +109,7 @@ function makeAxesLayer(): RenderLayer<unknown> {
       const lw = px(2);
       const xAxis = new PathBuilder().moveTo(0, 0).lineTo(100, 0).build();
       const yAxis = new PathBuilder().moveTo(0, 0).lineTo(0, 100).build();
-      const dot = circlePath(0, 0, px(4));
+      const dot = circlePolygon(0, 0, px(4));
       const children: DrawCommand[] = [
         {
           kind: 'path', path: xAxis,

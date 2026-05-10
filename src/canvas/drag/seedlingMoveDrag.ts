@@ -1,22 +1,9 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand } from '../util/weaselLocal';
-import { PathBuilder } from '@orochi235/weasel';
+import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
-
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
 
 /**
  * Phase-2-migrated drag: seed-mode multi-seedling move ghost — the resolved
@@ -126,7 +113,7 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
         const cx = o.x + off.x + m.col * p + p / 2;
         const cy = o.y + off.y + m.row * p + p / 2;
         const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
-        const path = circlePath(cx, cy, radius);
+        const path = circlePolygon(cx, cy, radius);
         cellGlyphs.push(
           { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
           { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(invScale, radius * 0.06) } },
@@ -140,7 +127,7 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
         for (const m of putative.cells) {
           const cx = o.x + off.x + m.col * p + p / 2;
           const cy = o.y + off.y + m.row * p + p / 2;
-          infeasibleRings.push({ kind: 'path', path: circlePath(cx, cy, radius + 2.5 * invScale), stroke: { paint: { fill: 'solid', color: 'rgba(220, 60, 60, 0.7)' }, width: 2 * invScale } });
+          infeasibleRings.push({ kind: 'path', path: circlePolygon(cx, cy, radius + 2.5 * invScale), stroke: { paint: { fill: 'solid', color: 'rgba(220, 60, 60, 0.7)' }, width: 2 * invScale } });
         }
         cmds.push(...infeasibleRings);
       }

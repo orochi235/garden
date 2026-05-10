@@ -1,9 +1,8 @@
 import {
   type RenderLayer,
-  PathBuilder,
   rectPath,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
 import { getCultivar } from '../../model/cultivars';
 import { plantingWorldPose } from '../../utils/plantingPose';
@@ -34,34 +33,6 @@ function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
 }
 
-/** Approximate a full circle as 4 cubic-bezier segments. */
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498 * r;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
-
-/** Approximate a full ellipse as 4 cubic-bezier segments. */
-function ellipsePath(
-  cx: number, cy: number, rx: number, ry: number,
-): ReturnType<PathBuilder['build']> {
-  const kx = 0.5522847498 * rx;
-  const ky = 0.5522847498 * ry;
-  return new PathBuilder()
-    .moveTo(cx, cy - ry)
-    .curveTo(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy)
-    .curveTo(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry)
-    .curveTo(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy)
-    .curveTo(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry)
-    .close()
-    .build();
-}
 
 /**
  * World-space dashed selection outlines + planting selection rings + bottom
@@ -111,7 +82,7 @@ export function createSelectionOutlineLayer(
         const radius = Math.max(px(view, 3), footprint / 2);
         children.push({
           kind: 'path',
-          path: circlePath(wx, wy, radius + px(view, 2)),
+          path: circlePolygon(wx, wy, radius + px(view, 2)),
           stroke: { paint: { fill: 'solid', color: selColor }, width: lw, dash },
         });
       }
@@ -125,7 +96,7 @@ export function createSelectionOutlineLayer(
           const isCircle = obj.shape === 'circle';
           const inset = px(view, 1);
           const path = isCircle
-            ? ellipsePath(
+            ? ellipsePolygon(
                 obj.x + obj.width / 2, obj.y + obj.length / 2,
                 obj.width / 2 + inset, obj.length / 2 + inset,
               )
@@ -145,7 +116,7 @@ export function createSelectionOutlineLayer(
         const isCircle = obj.shape === 'circle';
         const inset = px(view, 1);
         const path = isCircle
-          ? ellipsePath(
+          ? ellipsePolygon(
               obj.x + obj.width / 2, obj.y + obj.length / 2,
               obj.width / 2 + inset, obj.length / 2 + inset,
             )

@@ -5,8 +5,8 @@
  * Falls back to a simple colored circle when no image is available.
  */
 
-import { PathBuilder } from '@orochi235/weasel';
 import type { DrawCommand } from './util/weaselLocal';
+import { circlePolygon } from './util/weaselLocal';
 import { getCultivar } from '../model/cultivars';
 
 
@@ -127,18 +127,6 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
 // DrawCommand builder — world-layer consumers use this instead of ctx API
 // ---------------------------------------------------------------------------
 
-/** Approximate a full circle as 4 cubic-bezier segments (local helper). */
-function circlePathLocal(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498 * r;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
 
 /**
  * Build DrawCommands for a single plant glyph centered at (cx, cy) in world
@@ -164,7 +152,7 @@ export function plantDrawCommands(
   const cmds: DrawCommand[] = [
     {
       kind: 'path',
-      path: circlePathLocal(cx, cy, radius),
+      path: circlePolygon(cx, cy, radius),
       fill: { fill: 'solid', color: bgColor },
     },
   ];
@@ -182,7 +170,7 @@ export function plantDrawCommands(
   } else {
     cmds.push({
       kind: 'path',
-      path: circlePathLocal(cx, cy, radius),
+      path: circlePolygon(cx, cy, radius),
       stroke: { paint: { fill: 'solid', color }, width: Math.max(1, radius * 0.06) },
     });
   }

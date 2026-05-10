@@ -5,7 +5,7 @@ import {
   PathBuilder,
   rectPath,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
@@ -84,18 +84,6 @@ function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<str
     : (footprint / 2) * plantIconScale;
 }
 
-/** Approximate a full circle as 4 cubic-bezier segments. */
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498 * r;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
 
 /**
  * Render a plant glyph as DrawCommands, translated to (wx, wy).
@@ -161,14 +149,14 @@ export function createPlantingLayers(
               const color = item.occupied ? 'rgba(255,255,255,0.1)' : 'rgba(127,176,105,0.4)';
               children.push({
                 kind: 'path',
-                path: circlePath(item.x, item.y, r),
+                path: circlePolygon(item.x, item.y, r),
                 fill: { fill: 'solid', color },
               });
             } else if (item.type === 'highlight-slot') {
               const r = Math.max(px(view, 3), item.radiusFt / 2);
               children.push({
                 kind: 'path',
-                path: circlePath(item.x, item.y, r),
+                path: circlePolygon(item.x, item.y, r),
                 stroke: { paint: { fill: 'solid', color: 'rgba(127,176,105,0.8)' }, width: px(view, 2) },
               });
             } else if (item.type === 'grid-line') {
@@ -211,7 +199,7 @@ export function createPlantingLayers(
             const spacingHalf = (spacing / 2) * data.plantIconScale;
 
             const path = parent.shape === 'circle'
-              ? circlePath(wx, wy, spacingHalf)
+              ? circlePolygon(wx, wy, spacingHalf)
               : rectPath(wx - spacingHalf, wy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
             children.push({
               kind: 'path',
@@ -328,7 +316,7 @@ export function createPlantingLayers(
               alpha: opacity,
               children: [{
                 kind: 'path',
-                path: circlePath(wx, wy, radius + px(view, 1)),
+                path: circlePolygon(wx, wy, radius + px(view, 1)),
                 stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
               }],
             });
@@ -431,7 +419,7 @@ export function createPlantingLayers(
             if (r > 0) {
               children.push({
                 kind: 'path',
-                path: circlePath(cx, cy, r),
+                path: circlePolygon(cx, cy, r),
                 stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
               });
             }

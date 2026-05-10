@@ -1,8 +1,7 @@
 import {
   type RenderLayer,
-  PathBuilder,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
 import type { Seedling, Tray } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
@@ -47,18 +46,6 @@ function translateMat3(tx: number, ty: number): Float32Array {
   return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
 }
 
-/** Approximate a full circle as 4 cubic-bezier segments. */
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498 * r;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
 
 interface SownCellEntry { row: number; col: number; seedling: Seedling }
 
@@ -105,7 +92,7 @@ function plantGlyphCommands(
 function warningRingCommand(cx: number, cy: number, radiusIn: number, view: View): DrawCommand {
   return {
     kind: 'path',
-    path: circlePath(cx, cy, radiusIn + px(view, 2)),
+    path: circlePolygon(cx, cy, radiusIn + px(view, 2)),
     stroke: { paint: { fill: 'solid', color: SEEDLING_WARNING_COLOR }, width: px(view, 1.5) },
   };
 }
@@ -113,7 +100,7 @@ function warningRingCommand(cx: number, cy: number, radiusIn: number, view: View
 function selectionRingCommand(cx: number, cy: number, radius: number, view: View): DrawCommand {
   return {
     kind: 'path',
-    path: circlePath(cx, cy, radius + px(view, 3)),
+    path: circlePolygon(cx, cy, radius + px(view, 3)),
     stroke: {
       paint: { fill: 'solid', color: '#5BA4CF' },
       width: px(view, 2),

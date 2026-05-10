@@ -1,9 +1,8 @@
 import {
   type RenderLayer,
-  PathBuilder,
   rectPath,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
 import { paintFor } from '../patterns';
 import type { Dims, View } from '@orochi235/weasel';
 import { FILL_COLORS } from '../../model/types';
@@ -59,25 +58,6 @@ function pxToWorld(view: View, px: number): number {
   return px / Math.max(0.0001, view.scale);
 }
 
-/** Approximate a full ellipse as 4 cubic-bezier segments. */
-function ellipsePath(
-  cx: number, cy: number, rx: number, ry: number,
-): ReturnType<PathBuilder['build']> {
-  const kx = 0.5522847498 * rx;
-  const ky = 0.5522847498 * ry;
-  return new PathBuilder()
-    .moveTo(cx, cy - ry)
-    .curveTo(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy)
-    .curveTo(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry)
-    .curveTo(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy)
-    .curveTo(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry)
-    .close()
-    .build();
-}
-
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  return ellipsePath(cx, cy, r, r);
-}
 
 function getQueue(getStructures: () => Structure[]): { queue: StructureRenderItem[] } {
   const { renderQueue } = buildStructureRenderQueue(getStructures());
@@ -113,7 +93,7 @@ export function createStructureLayers(
               const r = Math.min(s.width, s.length) / 2;
               children.push({
                 kind: 'path',
-                path: circlePath(cx, cy, r),
+                path: circlePolygon(cx, cy, r),
                 fill: { fill: 'solid', color: s.color },
                 stroke: {
                   paint: { fill: 'solid', color: s.type === 'pot' ? '#8a3a18' : '#333333' },
@@ -125,7 +105,7 @@ export function createStructureLayers(
                 if (d > 4) {
                   children.push({
                     kind: 'path',
-                    path: circlePath(cx, cy, r),
+                    path: circlePolygon(cx, cy, r),
                     fill: paintFor('chunks', {
                       bg: s.color, color: '#1a1a1a', density: 0.35, chunkSize: 1, size: 24, seed: 7,
                     }),
@@ -166,7 +146,7 @@ export function createStructureLayers(
               const soilColor = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
               children.push({
                 kind: 'path',
-                path: circlePath(cx, cy, innerR),
+                path: circlePolygon(cx, cy, innerR),
                 fill: { fill: 'solid', color: soilColor },
               });
               if (s.fill === 'potting-mix') {
@@ -174,7 +154,7 @@ export function createStructureLayers(
                 if (innerD > 4) {
                   children.push({
                     kind: 'path',
-                    path: circlePath(cx, cy, innerR),
+                    path: circlePolygon(cx, cy, innerR),
                     fill: paintFor('chunks', { bg: soilColor }),
                   });
                 }
@@ -203,7 +183,7 @@ export function createStructureLayers(
               const cy = y + h / 2;
               children.push({
                 kind: 'path',
-                path: ellipsePath(cx, cy, w / 2, h / 2),
+                path: ellipsePolygon(cx, cy, w / 2, h / 2),
                 fill: { fill: 'solid', color: s.color },
                 ...(s.surface ? {} : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
               });
@@ -222,7 +202,7 @@ export function createStructureLayers(
             const allSurfaces = item.members.every((m) => m.surface);
             for (const s of item.members) {
               const path = s.shape === 'circle'
-                ? ellipsePath(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
                 : rectPath(s.x, s.y, s.width, s.length);
               children.push({
                 kind: 'path',
@@ -246,7 +226,7 @@ export function createStructureLayers(
           for (const s of members) {
             if (!s.surface) continue;
             const path = s.shape === 'circle'
-              ? ellipsePath(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
               : rectPath(s.x, s.y, s.width, s.length);
             children.push({
               kind: 'path',
@@ -277,7 +257,7 @@ export function createStructureLayers(
               if (innerD > 4) {
                 children.push({
                   kind: 'path',
-                  path: circlePath(cx, cy, innerR),
+                  path: circlePolygon(cx, cy, innerR),
                   fill: paintFor('hatch', { color: '#00FF00' }),
                 });
               }
@@ -318,7 +298,7 @@ export function createStructureLayers(
             const s = byId.get(id);
             if (!s) continue;
             const path = s.shape === 'circle'
-              ? ellipsePath(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
               : rectPath(s.x, s.y, s.width, s.length);
             clashChildren.push({
               kind: 'path',
@@ -351,7 +331,7 @@ export function createStructureLayers(
             const op = getHighlight(s.id);
             if (op <= 0) continue;
             const path = s.shape === 'circle'
-              ? ellipsePath(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
               : rectPath(s.x, s.y, s.width, s.length);
             children.push({
               kind: 'group',
@@ -373,7 +353,7 @@ export function createStructureLayers(
             const memberCmds: DrawCommand[] = item.members.map((s) => ({
               kind: 'path' as const,
               path: s.shape === 'circle'
-                ? ellipsePath(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
                 : rectPath(s.x, s.y, s.width, s.length),
               stroke: { paint: { fill: 'solid' as const, color: '#FFD700' }, width: pxToWorld(view, 4) },
             }));

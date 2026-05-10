@@ -1,8 +1,7 @@
 import {
   type RenderLayer,
-  PathBuilder,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, viewToMat3, circlePolygon, roundRectPolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
 import type { Tray, SeedStartingState } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
@@ -20,45 +19,12 @@ function translateMat3(tx: number, ty: number): Float32Array {
   return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
 }
 
-/** Approximate a full circle as 4 cubic-bezier segments. */
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
-
-/** Approximate a rounded-rect as 4 line segments + 4 bezier corners. */
-function roundRectPath(
-  x: number, y: number, w: number, h: number, r: number,
-): ReturnType<PathBuilder['build']> {
-  // Clamp radius so it doesn't exceed half the shorter side.
-  r = Math.min(r, w / 2, h / 2);
-  const k = 0.5522847498 * r;
-  return new PathBuilder()
-    .moveTo(x + r, y)
-    .lineTo(x + w - r, y)
-    .curveTo(x + w - r + k, y, x + w, y + r - k, x + w, y + r)
-    .lineTo(x + w, y + h - r)
-    .curveTo(x + w, y + h - r + k, x + w - r + k, y + h, x + w - r, y + h)
-    .lineTo(x + r, y + h)
-    .curveTo(x + r - k, y + h, x, y + h - r + k, x, y + h - r)
-    .lineTo(x, y + r)
-    .curveTo(x, y + r - k, x + r - k, y, x + r, y)
-    .close()
-    .build();
-}
 
 function trayBodyCommands(tray: Tray, view: View): DrawCommand[] {
   const w = tray.widthIn;
   const h = tray.heightIn;
   const radius = Math.min(w, h) * 0.04;
-  const path = roundRectPath(0, 0, w, h, radius);
+  const path = roundRectPolygon(0, 0, w, h, radius);
   return [
     {
       kind: 'path',
@@ -81,7 +47,7 @@ function trayWellsCommands(tray: Tray, view: View): DrawCommand[] {
       const cy = off.y + r * p + p / 2;
       cmds.push({
         kind: 'path',
-        path: circlePath(cx, cy, wellRadius),
+        path: circlePolygon(cx, cy, wellRadius),
         fill: { fill: 'solid', color: 'rgba(0,0,0,0.22)' },
         stroke: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.45)' }, width: lw },
       });
@@ -101,7 +67,7 @@ function trayGridCommands(tray: Tray): DrawCommand[] {
       const cy = off.y + r * p + p / 2;
       cmds.push({
         kind: 'path',
-        path: circlePath(cx, cy, dotRadius),
+        path: circlePolygon(cx, cy, dotRadius),
         fill: { fill: 'solid', color: 'rgba(91,164,207,0.5)' },
       });
     }
