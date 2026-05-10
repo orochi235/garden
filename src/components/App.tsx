@@ -19,6 +19,7 @@ import { StatusBar } from './StatusBar';
 import { Sidebar } from './sidebar/Sidebar';
 import { ViewToolbar } from './ViewToolbar';
 import { LayerSelector } from './LayerSelector';
+import { loadFixtureFromUrl } from '../dev/fixtureLoader';
 
 const MIN_PANEL = 160;
 const MIN_LEFT_PANEL = 200;
@@ -45,6 +46,18 @@ export function App() {
   const savedRightWidth = useRef(DEFAULT_PANEL);
   const prevAppMode = useRef(appMode);
 
+  // In production there is no fixture loader, so we're always ready.
+  // In dev, hold first render until the fixture check resolves — this
+  // prevents the autosave garden from flashing before the fixture hydrates.
+  const [fixtureReady, setFixtureReady] = useState<boolean>(import.meta.env.PROD);
+  const fixtureLoadedRef = useRef(false);
+  useEffect(() => {
+    if (import.meta.env.PROD) return;
+    loadFixtureFromUrl().then((loaded) => {
+      fixtureLoadedRef.current = loaded;
+    }).finally(() => setFixtureReady(true));
+  }, []);
+
   useEffect(() => {
     if (prevAppMode.current === appMode) return;
     if (appMode === 'seed-starting') {
@@ -70,6 +83,15 @@ export function App() {
   }, [appMode]);
 
   useEffect(() => {
+    // Skip the autosave/seed restore when a fixture was loaded — the fixture
+    // already hydrated the store and we don't want the autosave to overwrite it.
+    if (!fixtureReady) return;
+    if (fixtureLoadedRef.current) {
+      // Still wire up mode param and collection for fixture runs.
+      if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
+      return;
+    }
+
     // The garden store hydrates synchronously from localStorage during
     // its `create()` call (see initialGarden()), so first render already
     // shows the user's persisted garden — no flash. We only need the
@@ -97,7 +119,7 @@ export function App() {
         setShowWelcome(true);
       }
     });
-  }, [loadGarden, setCollection]);
+  }, [fixtureReady, loadGarden, setCollection]);
 
   useEffect(() => {
     autosave(garden);
@@ -179,6 +201,8 @@ export function App() {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
+
+  if (!fixtureReady) return null;
 
   const layerATheme = layerFlip ? theme : (prevTheme ?? theme);
   const layerBTheme = layerFlip ? (prevTheme ?? theme) : theme;
