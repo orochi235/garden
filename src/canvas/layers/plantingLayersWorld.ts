@@ -528,24 +528,31 @@ export function createPlantingLayers(
 }
 
 /**
- * Filled annulus (ring) drawn as a polygon with the outer ring vertices
- * followed by the inner ring vertices in reverse winding. Used to mask plant
- * icons that overhang circular pots/felt-planters.
+ * Filled annulus (ring), drawn as N independent trapezoid wedges. We can't
+ * use a single polygon with a hole — earcut would treat the whole vertex
+ * list as one contour and the bridging edge from the last outer vertex to
+ * the first inner vertex would get tessellated as a real edge, leaving a
+ * fill gap near where the bridge sits. Wedges sidestep that.
  */
 function annulusFill(cx: number, cy: number, rInner: number, rOuter: number, color: string): DrawCommand[] {
-  const samples = 32;
-  const pts: { x: number; y: number }[] = [];
+  const samples = 64;
+  const cmds: DrawCommand[] = [];
+  const fill = { fill: 'solid' as const, color };
   for (let i = 0; i < samples; i++) {
-    const t = (i / samples) * Math.PI * 2;
-    pts.push({ x: cx + Math.cos(t) * rOuter, y: cy + Math.sin(t) * rOuter });
+    const t0 = (i / samples) * Math.PI * 2;
+    const t1 = ((i + 1) / samples) * Math.PI * 2;
+    const cos0 = Math.cos(t0), sin0 = Math.sin(t0);
+    const cos1 = Math.cos(t1), sin1 = Math.sin(t1);
+    cmds.push({
+      kind: 'path',
+      path: polygonFromPoints([
+        { x: cx + cos0 * rOuter, y: cy + sin0 * rOuter },
+        { x: cx + cos1 * rOuter, y: cy + sin1 * rOuter },
+        { x: cx + cos1 * rInner, y: cy + sin1 * rInner },
+        { x: cx + cos0 * rInner, y: cy + sin0 * rInner },
+      ]),
+      fill,
+    });
   }
-  for (let i = samples - 1; i >= 0; i--) {
-    const t = (i / samples) * Math.PI * 2;
-    pts.push({ x: cx + Math.cos(t) * rInner, y: cy + Math.sin(t) * rInner });
-  }
-  return [{
-    kind: 'path',
-    path: polygonFromPoints(pts),
-    fill: { fill: 'solid', color },
-  }];
+  return cmds;
 }
