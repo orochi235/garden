@@ -164,13 +164,16 @@ export function plantDrawCommands(
   const cultivar = getCultivar(cultivarId);
   const bgColor = iconBgColor ?? cultivar?.iconBgColor ?? color;
 
-  const cmds: DrawCommand[] = [
-    {
+  const cmds: DrawCommand[] = [];
+  // Skip the bg fill when caller asked for transparent or null — the renderer's
+  // parseColor doesn't accept the 'transparent' keyword.
+  if (bgColor && bgColor !== 'transparent') {
+    cmds.push({
       kind: 'path',
       path: circlePolygon(cx, cy, radius),
       fill: { fill: 'solid', color: bgColor },
-    },
-  ];
+    });
+  }
 
   const bitmap = getIconBitmap(cultivarId);
   if (bitmap) {
