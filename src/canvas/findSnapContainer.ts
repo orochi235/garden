@@ -36,12 +36,18 @@ export function findSnapContainer(
   const footprintRadius = (cultivar?.footprintFt ?? 0.5) / 2;
   const attractionRadius = footprintRadius * SNAP_RADIUS_MULTIPLIER;
 
-  // Only exclude the current parent if the planting is still inside it.
-  // If the planting has been dragged outside its parent, allow snapping back.
+  // Only exclude the current parent if the planting is still inside it AND
+  // the parent's layout doesn't support same-container repositioning.
+  // - 'single' / 'snap-points' / legacy 'grid': re-snapping inside the same
+  //   container is a no-op (only one slot per plant), so excluding the parent
+  //   keeps drags from "sticking" to their origin.
+  // - 'cell-grid': internal drops are the whole point — the user picks any
+  //   cell. Don't exclude.
   const excludeParentId = (() => {
     const parent = garden.structures.find((s) => s.id === planting.parentId)
       ?? garden.zones.find((z) => z.id === planting.parentId);
     if (!parent) return planting.parentId;
+    if (parent.layout?.type === 'cell-grid') return null;
     const { x: pw, y: ph } = plantingWorldPose(garden, planting);
     const inside = 'shape' in parent && parent.shape === 'circle'
       ? pointInEllipse(pw, ph, parent.x, parent.y, parent.width, parent.length)
