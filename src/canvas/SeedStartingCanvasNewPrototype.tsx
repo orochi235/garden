@@ -263,7 +263,7 @@ export function SeedStartingCanvasNewPrototype() {
       [moveTool.id]: moveTool,
       [clickZoom.id]: clickZoom,
     },
-    alwaysOn: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
+    ambient: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
   });
 
   // Subscribe so React re-renders when highlight pulses; computeOpacity reads

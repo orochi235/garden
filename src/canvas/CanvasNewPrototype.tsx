@@ -386,7 +386,7 @@ function GardenCanvasNewPrototype() {
       [insertTool.id]: insertTool,
       [clickZoom.id]: clickZoom,
     },
-    alwaysOn: [rightDragPan, wheelZoom],
+    ambient: [rightDragPan, wheelZoom],
   });
 
   return (

@@ -101,7 +101,6 @@ export function useEricCycleTool(
     () =>
       defineTool<CycleScratch>({
         id: 'eric-cycle',
-        modifier: 'alt',
         initScratch: () => ({ cycled: false }),
         overlay,
         pointer: {

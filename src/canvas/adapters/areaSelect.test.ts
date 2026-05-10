@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createAreaSelectAdapter } from './areaSelect';
-import { createSetSelectionOp } from '@orochi235/weasel';
+import { asNodeId, createSetSelectionOp } from '@orochi235/weasel';
 
 describe('createAreaSelectAdapter', () => {
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe('createAreaSelectAdapter', () => {
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const before = useGardenStore.getState().garden;
     const a = createAreaSelectAdapter();
-    a.applyOps([createSetSelectionOp({ from: [], to: ['z'] })]);
+    a.applyOps([createSetSelectionOp({ from: [], to: [asNodeId('z')] })]);
     expect(useUiStore.getState().selectedIds).toEqual(['z']);
     // Garden state unchanged → undo is a no-op (garden returns to same shape).
     useGardenStore.getState().undo();

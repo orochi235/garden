@@ -624,7 +624,7 @@ describe('selection rides on history', () => {
     // TDD: cut = snapshot + delete in one applyBatch call (single history entry).
     // Undoing cut restores both the zone and the prior selection.
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
-    const { createDeleteOp, createSetSelectionOp } = await import('@orochi235/weasel');
+    const { asNodeId, createDeleteOp, createSetSelectionOp } = await import('@orochi235/weasel');
 
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
@@ -638,7 +638,7 @@ describe('selection rides on history', () => {
     const ids = [z1];
     const cutOps = [
       ...ids.map((id) => createDeleteOp({ object: adapter.getObject(id)! })),
-      createSetSelectionOp({ from: ids, to: [] }),
+      createSetSelectionOp({ from: ids.map(asNodeId), to: [] }),
     ];
     adapter.applyBatch!(cutOps, 'Cut');
 
@@ -658,7 +658,7 @@ describe('selection rides on history', () => {
     // (now-deleted) pasted ids selected. Routes through the same applyBatch
     // path the weasel clipboard uses.
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
-    const { createInsertOp, createSetSelectionOp } = await import('@orochi235/weasel');
+    const { asNodeId, createInsertOp, createSetSelectionOp } = await import('@orochi235/weasel');
 
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
@@ -670,7 +670,7 @@ describe('selection rides on history', () => {
     const snap = adapter.snapshotSelection([z1]);
     const [pasted] = adapter.commitPaste(snap, { dx: 1, dy: 1 });
     adapter.applyBatch!(
-      [createInsertOp({ object: pasted }), createSetSelectionOp({ from: [z1], to: [pasted.id] })],
+      [createInsertOp({ object: pasted }), createSetSelectionOp({ from: [asNodeId(z1)], to: [asNodeId(pasted.id)] })],
       'Paste',
     );
     expect(useGardenStore.getState().garden.zones).toHaveLength(2);

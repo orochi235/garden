@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
 import { createInsertAdapter } from '../canvas/adapters/insert';
-import { useClipboard } from '@orochi235/weasel';
+import { asNodeId, useClipboard } from '@orochi235/weasel';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
@@ -105,7 +105,7 @@ export function App() {
 
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
   const clipboard = useClipboard(insertAdapter, {
-    getSelection: () => useUiStore.getState().selectedIds,
+    getSelection: () => useUiStore.getState().selectedIds.map(asNodeId),
     onPaste: (newIds) => useUiStore.getState().setSelection(newIds),
   });
   const actionCtx = useMemo(() => ({ clipboard }), [clipboard]);
