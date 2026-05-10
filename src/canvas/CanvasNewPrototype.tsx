@@ -86,7 +86,7 @@ function GardenCanvasNewPrototype() {
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
 
-  const [, setIconTick] = useState(0);
+  const [iconTick, setIconTick] = useState(0);
   useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
 
   const adapter = useMemo(() => createGardenSceneAdapter(), []);
@@ -262,7 +262,11 @@ function GardenCanvasNewPrototype() {
     map.grid = gridConfig;
     list.forEach((l) => { map[l.id] = { layer: l }; });
     return map;
-  }, [gridCellSizeFt]);
+    // iconTick is intentional — bumps when an icon bitmap finishes decoding
+    // so the layers map gets a fresh reference and weasel re-paints. The
+    // layer closures read getIconBitmap() at draw time; without a new ref,
+    // weasel skips the paint and the icon never appears.
+  }, [gridCellSizeFt, iconTick]);
 
   // Build the kit camera-coord `View` from local screen-space (zoom, panX, panY).
   // Pre-fit (zoom===0) we render with a fallback margin-fit so the very first

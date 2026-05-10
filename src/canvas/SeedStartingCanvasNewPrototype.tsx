@@ -76,7 +76,7 @@ export function SeedStartingCanvasNewPrototype() {
   useUiStore((s) => s.renderLayerVisibility);
   useHighlightTick();
 
-  const [, setIconTick] = useState(0);
+  const [iconTick, setIconTick] = useState(0);
   useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
 
   // Adapter is stateless wrt mount — recreate is fine.
@@ -132,7 +132,8 @@ export function SeedStartingCanvasNewPrototype() {
     const map: Record<string, { layer: RenderLayer<unknown> }> = {};
     list.forEach((l) => { map[l.id] = { layer: l }; });
     return map;
-  }, []);
+    // iconTick — see plant-icon redraw note in CanvasNewPrototype.
+  }, [iconTick]);
 
   // View state lives locally — the canvas owns its own viewport. Outside actors
   // (palette drag, reset action) talk to us via `palettePointerPayload` and

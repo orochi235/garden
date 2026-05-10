@@ -89,7 +89,8 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
       bitmapCache.set(cultivarId, bitmap);
       pendingBitmaps.delete(cultivarId);
       for (const cb of loadCallbacks) cb();
-    }).catch(() => {
+    }).catch((err) => {
+      console.warn(`[plantRenderers] createImageBitmap failed for ${cultivarId}:`, err);
       pendingBitmaps.delete(cultivarId);
     });
   };
@@ -185,7 +186,7 @@ export function plantDrawCommands(
     cmds.push({
       kind: 'path',
       path: circlePolygon(cx, cy, radius),
-      stroke: { paint: { fill: 'solid', color }, width: Math.max(1, radius * 0.06) },
+      stroke: { paint: { fill: 'solid', color }, width: radius * 0.06 },
     });
   }
 
