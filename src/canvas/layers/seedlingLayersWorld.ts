@@ -1,4 +1,9 @@
-import type { RenderLayer } from '@orochi235/weasel';
+import {
+  type RenderLayer,
+  PathBuilder,
+} from '@orochi235/weasel';
+import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import type { Dims, View } from '@orochi235/weasel';
 import type { Seedling, Tray } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { getCultivar } from '../../model/cultivars';
@@ -7,45 +12,8 @@ import {
   hasSeedlingWarnings,
   SEEDLING_WARNING_COLOR,
 } from '../../model/seedlingWarnings';
-import { renderPlant } from '../plantRenderers';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 import { useGardenStore } from '../../store/gardenStore';
-import type { View } from './worldLayerData';
-
-function withTrayTransform(
-  ctx: CanvasRenderingContext2D,
-  tray: Tray,
-  draw: () => void,
-): void {
-  const ss = useGardenStore.getState().garden.seedStarting;
-  const o = trayWorldOrigin(tray, ss);
-  ctx.save();
-  ctx.translate(o.x, o.y);
-  draw();
-  ctx.restore();
-}
-
-interface SownCellEntry { row: number; col: number; seedling: Seedling }
-
-function collectSownCells(
-  tray: Tray,
-  seedlings: Seedling[],
-  hiddenIds?: Iterable<string>,
-): SownCellEntry[] {
-  const byId = new Map(seedlings.map((s) => [s.id, s]));
-  const hidden = hiddenIds ? new Set(hiddenIds) : null;
-  const out: SownCellEntry[] = [];
-  for (let r = 0; r < tray.rows; r++) {
-    for (let c = 0; c < tray.cols; c++) {
-      const slot = tray.slots[r * tray.cols + c];
-      if (slot.state !== 'sown' || !slot.seedlingId) continue;
-      if (hidden?.has(slot.seedlingId)) continue;
-      const seedling = byId.get(slot.seedlingId);
-      if (seedling) out.push({ row: r, col: c, seedling });
-    }
-  }
-  return out;
-}
 
 export interface SeedFillPreview {
   trayId: string;
@@ -73,33 +41,111 @@ function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
 }
 
-function strokeWarningRing(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  radiusIn: number,
-  view: View,
-): void {
-  ctx.save();
-  ctx.strokeStyle = SEEDLING_WARNING_COLOR;
-  ctx.lineWidth = px(view, 1.5);
-  ctx.beginPath();
-  ctx.arc(cx, cy, radiusIn + px(view, 2), 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
+/** Column-major 3×3 translation matrix. */
+function translateMat3(tx: number, ty: number): Float32Array {
+  return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
 }
 
-function drawSeedlingsForTray(
-  ctx: CanvasRenderingContext2D,
+/** Approximate a full circle as 4 cubic-bezier segments. */
+function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498 * r;
+  return new PathBuilder()
+    .moveTo(cx, cy - r)
+    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
+    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
+    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
+    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
+    .close()
+    .build();
+}
+
+interface SownCellEntry { row: number; col: number; seedling: Seedling }
+
+function collectSownCells(
+  tray: Tray,
+  seedlings: Seedling[],
+  hiddenIds?: Iterable<string>,
+): SownCellEntry[] {
+  const byId = new Map(seedlings.map((s) => [s.id, s]));
+  const hidden = hiddenIds ? new Set(hiddenIds) : null;
+  const out: SownCellEntry[] = [];
+  for (let r = 0; r < tray.rows; r++) {
+    for (let c = 0; c < tray.cols; c++) {
+      const slot = tray.slots[r * tray.cols + c];
+      if (slot.state !== 'sown' || !slot.seedlingId) continue;
+      if (hidden?.has(slot.seedlingId)) continue;
+      const seedling = byId.get(slot.seedlingId);
+      if (seedling) out.push({ row: r, col: c, seedling });
+    }
+  }
+  return out;
+}
+
+/**
+ * Render a plant glyph as DrawCommands.
+ * NOTE(concern): renderPlant uses HTMLImageElement + ctx.drawImage internally.
+ * Until plantRenderers is ported to return DrawCommands or an ImageBitmap cache
+ * is wired, we approximate with the fallback circle glyph only.
+ * Image rendering is flagged as DONE_WITH_CONCERNS.
+ */
+function plantGlyphCommands(
+  cultivarId: string,
+  radius: number,
+  alpha: number,
+): DrawCommand[] {
+  const cultivar = getCultivar(cultivarId);
+  const bgColor = cultivar?.iconBgColor ?? cultivar?.color ?? '#4A7C59';
+  const strokeColor = cultivar?.color ?? '#4A7C59';
+  // Draw bg circle + fallback stroke circle (matches drawFallback behaviour)
+  const cmds: DrawCommand[] = [
+    {
+      kind: 'path',
+      path: circlePath(0, 0, radius),
+      fill: { fill: 'solid', color: bgColor },
+    },
+    {
+      kind: 'path',
+      path: circlePath(0, 0, radius),
+      stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(1, radius * 0.06) },
+    },
+  ];
+  if (alpha < 1) {
+    return [{ kind: 'group', alpha, children: cmds }];
+  }
+  return cmds;
+}
+
+function warningRingCommand(cx: number, cy: number, radiusIn: number, view: View): DrawCommand {
+  return {
+    kind: 'path',
+    path: circlePath(cx, cy, radiusIn + px(view, 2)),
+    stroke: { paint: { fill: 'solid', color: SEEDLING_WARNING_COLOR }, width: px(view, 1.5) },
+  };
+}
+
+function selectionRingCommand(cx: number, cy: number, radius: number, view: View): DrawCommand {
+  return {
+    kind: 'path',
+    path: circlePath(cx, cy, radius + px(view, 3)),
+    stroke: {
+      paint: { fill: 'solid', color: '#5BA4CF' },
+      width: px(view, 2),
+      dash: [px(view, 5), px(view, 3)],
+    },
+  };
+}
+
+function seedlingCommandsForTray(
   tray: Tray,
   seedlings: Seedling[],
   ui: SeedlingLayerUi,
   view: View,
   getHighlight?: GetSeedlingHighlight,
-): void {
+): DrawCommand[] {
   const p = tray.cellPitchIn;
   const off = trayInteriorOffsetIn(tray);
   const radius = (p * 0.85) / 2;
+  const cmds: DrawCommand[] = [];
 
   for (const { row, col, seedling } of collectSownCells(tray, seedlings, ui.hiddenSeedlingIds)) {
     const cultivar = getCultivar(seedling.cultivarId);
@@ -108,48 +154,37 @@ function drawSeedlingsForTray(
     const cy = off.y + row * p + p / 2;
 
     const flash = getHighlight ? getHighlight(seedling.id) : 0;
-    ctx.save();
-    ctx.translate(cx, cy);
-    if (flash > 0) ctx.globalAlpha = Math.max(0.2, 1 - flash * 0.6);
-    renderPlant(ctx, seedling.cultivarId, radius, cultivar.color);
-    ctx.restore();
+    const alpha = flash > 0 ? Math.max(0.2, 1 - flash * 0.6) : 1;
+
+    const glyphChildren = plantGlyphCommands(seedling.cultivarId, radius, alpha);
+    // Place glyph at cell centre
+    cmds.push({
+      kind: 'group',
+      transform: translateMat3(cx, cy),
+      children: glyphChildren,
+    });
 
     if (ui.showWarnings && hasSeedlingWarnings(seedling, tray)) {
-      strokeWarningRing(ctx, cx, cy, radius, view);
+      cmds.push(warningRingCommand(cx, cy, radius, view));
     }
 
     if (ui.selectedIds.includes(seedling.id)) {
-      ctx.save();
-      ctx.strokeStyle = '#5BA4CF';
-      ctx.lineWidth = px(view, 2);
-      ctx.setLineDash([px(view, 5), px(view, 3)]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius + px(view, 3), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+      cmds.push(selectionRingCommand(cx, cy, radius, view));
     }
   }
+  return cmds;
 }
 
-function drawSeedlingLabelsForTray(
-  ctx: CanvasRenderingContext2D,
+function seedlingLabelCommandsForTray(
   tray: Tray,
   seedlings: Seedling[],
   ui: SeedlingLayerUi,
   view: View,
-): void {
+): DrawCommand[] {
   const p = tray.cellPitchIn;
   const off = trayInteriorOffsetIn(tray);
   const fontPx = Math.max(8, px(view, 11));
-
-  ctx.save();
-  ctx.fillStyle = '#fff';
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-  ctx.lineWidth = px(view, 2);
-  ctx.font = `${fontPx}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  const cmds: DrawCommand[] = [];
 
   for (const { row, col, seedling } of collectSownCells(tray, seedlings, ui.hiddenSeedlingIds)) {
     const cultivar = getCultivar(seedling.cultivarId);
@@ -157,22 +192,31 @@ function drawSeedlingLabelsForTray(
     const cx = off.x + col * p + p / 2;
     const cy = off.y + row * p + p / 2;
     const label = seedling.labelOverride ?? cultivar.name.slice(0, 4);
-    ctx.strokeText(label, cx, cy);
-    ctx.fillText(label, cx, cy);
+    // Flagged: text commands require registerFont() wired at app boot.
+    cmds.push({
+      kind: 'text',
+      x: cx,
+      y: cy,
+      text: label,
+      style: {
+        fontSize: fontPx,
+        align: 'center' as const,
+        fill: { fill: 'solid' as const, color: '#ffffff' },
+      },
+    });
   }
-  ctx.restore();
+  return cmds;
 }
 
-function drawFillPreview(
-  ctx: CanvasRenderingContext2D,
+function fillPreviewCommandsForTray(
   tray: Tray,
   preview: SeedFillPreview,
   showWarnings: boolean,
   view: View,
-): void {
-  if (preview.trayId !== tray.id) return;
+): DrawCommand[] {
+  if (preview.trayId !== tray.id) return [];
   const cultivar = getCultivar(preview.cultivarId);
-  if (!cultivar) return;
+  if (!cultivar) return [];
   const p = tray.cellPitchIn;
   const off = trayInteriorOffsetIn(tray);
   const radius = (p * 0.85) / 2;
@@ -182,8 +226,7 @@ function drawFillPreview(
   const cellC = preview.col ?? 0;
   const previewWarn = showWarnings && cultivarHasTrayWarning(cultivar.id, tray);
 
-  ctx.save();
-  ctx.globalAlpha = 0.4;
+  const innerCmds: DrawCommand[] = [];
   for (let r = 0; r < tray.rows; r++) {
     for (let c = 0; c < tray.cols; c++) {
       if (scope === 'row' && r !== idx) continue;
@@ -193,16 +236,25 @@ function drawFillPreview(
       if (slot.state === 'sown' && !preview.replace) continue;
       const cx = off.x + c * p + p / 2;
       const cy = off.y + r * p + p / 2;
-      ctx.save();
-      ctx.translate(cx, cy);
-      renderPlant(ctx, cultivar.id, radius, cultivar.color);
-      ctx.restore();
+      const glyphChildren = plantGlyphCommands(cultivar.id, radius, 1);
+      innerCmds.push({
+        kind: 'group',
+        transform: translateMat3(cx, cy),
+        children: glyphChildren,
+      });
       if (previewWarn) {
-        strokeWarningRing(ctx, cx, cy, radius, view);
+        innerCmds.push(warningRingCommand(cx, cy, radius, view));
       }
     }
   }
-  ctx.restore();
+  if (innerCmds.length === 0) return [];
+  return [{ kind: 'group', alpha: 0.4, children: innerCmds }];
+}
+
+function trayWorldTranslate(tray: Tray): Float32Array {
+  const ss = useGardenStore.getState().garden.seedStarting;
+  const o = trayWorldOrigin(tray, ss);
+  return translateMat3(o.x, o.y);
 }
 
 export function createSeedlingLayers(
@@ -216,36 +268,49 @@ export function createSeedlingLayers(
       id: 'seedlings',
       label: 'Seedlings',
       alwaysOn: true,
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
         const seedlings = getSeedlings();
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawSeedlingsForTray(ctx, tray, seedlings, ui, view, getHighlight));
-        }
+        const trayChildren: DrawCommand[] = getTrays().map((tray) => ({
+          kind: 'group' as const,
+          transform: trayWorldTranslate(tray),
+          children: seedlingCommandsForTray(tray, seedlings, ui, view, getHighlight),
+        }));
+        return [{ kind: 'group', transform: viewToMat3(view), children: trayChildren }];
       },
     },
     {
       id: 'seedling-labels',
       label: 'Seedling Labels',
       defaultVisible: false,
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
         const seedlings = getSeedlings();
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawSeedlingLabelsForTray(ctx, tray, seedlings, ui, view));
-        }
+        const trayChildren: DrawCommand[] = getTrays().map((tray) => ({
+          kind: 'group' as const,
+          transform: trayWorldTranslate(tray),
+          children: seedlingLabelCommandsForTray(tray, seedlings, ui, view),
+        }));
+        return [{ kind: 'group', transform: viewToMat3(view), children: trayChildren }];
       },
     },
     {
       id: 'seedling-fill-preview',
       label: 'Seedling Fill Preview',
       alwaysOn: true,
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
-        if (!ui.fillPreview) return;
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawFillPreview(ctx, tray, ui.fillPreview!, ui.showWarnings, view));
-        }
+        if (!ui.fillPreview) return [];
+        const trayChildren: DrawCommand[] = getTrays().flatMap((tray) => {
+          const cmds = fillPreviewCommandsForTray(tray, ui.fillPreview!, ui.showWarnings, view);
+          if (cmds.length === 0) return [];
+          return [{
+            kind: 'group' as const,
+            transform: trayWorldTranslate(tray),
+            children: cmds,
+          }];
+        });
+        return [{ kind: 'group', transform: viewToMat3(view), children: trayChildren }];
       },
     },
   ];
