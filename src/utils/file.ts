@@ -1,8 +1,47 @@
 import { emptySeedStartingState } from '../model/seedStarting';
 import type { Garden } from '../model/types';
+import { getCultivar } from '../model/cultivars';
+import type { Cultivar } from '../model/cultivars';
+
+/**
+ * Project the collection to the on-disk form: builtin cultivars become
+ * `{ id }` references; custom cultivars (id not in the global database)
+ * keep their full data so the file is self-contained for them.
+ *
+ * The runtime shape stays `Cultivar[]` — we re-hydrate on deserialize.
+ * Older files with full Cultivar objects for builtins are still accepted.
+ */
+function projectCollectionForExport(collection: Cultivar[] | undefined): Array<{ id: string } | Cultivar> {
+  return (collection ?? []).map((c) => (getCultivar(c.id) ? { id: c.id } : c));
+}
+
+function hydrateCollection(raw: unknown): Cultivar[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Cultivar[] = [];
+  for (const entry of raw) {
+    const id = (entry as { id?: string } | string | null)?.constructor === String
+      ? (entry as unknown as string)
+      : (entry as { id?: string } | null)?.id;
+    if (!id) continue;
+    const builtin = getCultivar(id);
+    if (builtin) {
+      out.push(builtin);
+      continue;
+    }
+    // Custom cultivar — must have the full Cultivar shape inline.
+    if (typeof entry === 'object' && entry !== null && typeof (entry as Cultivar).color === 'string') {
+      out.push(entry as Cultivar);
+    }
+  }
+  return out;
+}
 
 export function serializeGarden(garden: Garden): string {
-  return JSON.stringify(garden, null, 2);
+  return JSON.stringify(
+    { ...garden, collection: projectCollectionForExport(garden.collection) },
+    null,
+    2,
+  );
 }
 
 export function deserializeGarden(json: string): Garden {
@@ -12,6 +51,7 @@ export function deserializeGarden(json: string): Garden {
     throw new Error('Invalid garden file: missing required fields');
   }
   if (!data.seedStarting) data.seedStarting = emptySeedStartingState();
+  data.collection = hydrateCollection(data.collection);
   return data as Garden;
 }
 
