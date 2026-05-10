@@ -4,6 +4,7 @@ import {
   type View,
   PathBuilder,
   rectPath,
+  polygonFromPoints,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
@@ -467,8 +468,13 @@ export function createPlantingLayers(
 
     {
       ...meta['container-walls'],
-      // Inner rim stroke (at the soil/wall boundary), drawn AFTER plantings so
-      // it visually crops plant icons that overhang the soil edge.
+      // For containers with `clipChildren`, draw the wall AREA (not just the
+      // inner rim stroke) on top of plantings so any icon overhang gets visually
+      // clipped to the inner soil. The wall area is filled with the container's
+      // color; an inner-rim stroke marks the soil/wall boundary on top.
+      //
+      // Rect walls: 4 strips (top/bottom/left/right). Circular walls: an
+      // annulus polygon (outer ring vertices + inner ring vertices in reverse).
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const structures = getStructures();
         const children: DrawCommand[] = [];
@@ -476,29 +482,70 @@ export function createPlantingLayers(
           if (!s.container || (s.wallThicknessFt ?? 0) <= 0) continue;
           const strokeColor = s.type === 'pot' ? '#8a3a18' : '#333333';
           const lw = px(view, 1);
+          const wallWidth = s.wallThicknessFt;
           if (s.type === 'pot' || s.type === 'felt-planter') {
-            const rimWidth = Math.max(px(view, 1.5), s.wallThicknessFt);
             const cx = s.x + s.width / 2;
             const cy = s.y + s.length / 2;
-            const r = Math.min(s.width, s.length) / 2 - rimWidth;
-            if (r > 0) {
+            const rOuter = Math.min(s.width, s.length) / 2;
+            const rInner = rOuter - wallWidth;
+            if (rInner > 0 && s.clipChildren !== false) {
+              children.push(...annulusFill(cx, cy, rInner, rOuter, s.color));
+            }
+            if (rInner > 0) {
               children.push({
                 kind: 'path',
-                path: circlePolygon(cx, cy, r),
+                path: circlePolygon(cx, cy, rInner),
                 stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
               });
             }
           } else {
-            const wallWidth = Math.max(px(view, 2), s.wallThicknessFt);
-            children.push({
-              kind: 'path',
-              path: rectPath(s.x + wallWidth, s.y + wallWidth, s.width - wallWidth * 2, s.length - wallWidth * 2),
-              stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
-            });
+            const innerX = s.x + wallWidth;
+            const innerY = s.y + wallWidth;
+            const innerW = s.width - wallWidth * 2;
+            const innerH = s.length - wallWidth * 2;
+            if (innerW > 0 && innerH > 0 && s.clipChildren !== false) {
+              // Four rectangular wall strips, filled with the container color.
+              children.push(
+                { kind: 'path', path: rectPath(s.x, s.y, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
+                { kind: 'path', path: rectPath(s.x, s.y + s.length - wallWidth, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
+                { kind: 'path', path: rectPath(s.x, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
+                { kind: 'path', path: rectPath(s.x + s.width - wallWidth, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
+              );
+            }
+            if (innerW > 0 && innerH > 0) {
+              children.push({
+                kind: 'path',
+                path: rectPath(innerX, innerY, innerW, innerH),
+                stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
+              });
+            }
           }
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
   ];
+}
+
+/**
+ * Filled annulus (ring) drawn as a polygon with the outer ring vertices
+ * followed by the inner ring vertices in reverse winding. Used to mask plant
+ * icons that overhang circular pots/felt-planters.
+ */
+function annulusFill(cx: number, cy: number, rInner: number, rOuter: number, color: string): DrawCommand[] {
+  const samples = 32;
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < samples; i++) {
+    const t = (i / samples) * Math.PI * 2;
+    pts.push({ x: cx + Math.cos(t) * rOuter, y: cy + Math.sin(t) * rOuter });
+  }
+  for (let i = samples - 1; i >= 0; i--) {
+    const t = (i / samples) * Math.PI * 2;
+    pts.push({ x: cx + Math.cos(t) * rInner, y: cy + Math.sin(t) * rInner });
+  }
+  return [{
+    kind: 'path',
+    path: polygonFromPoints(pts),
+    fill: { fill: 'solid', color },
+  }];
 }

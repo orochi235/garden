@@ -9,6 +9,8 @@ import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL
 import { structuresCollide } from '../utils/collision';
 import { loadAutosave, persistCollection } from '../utils/file';
 import { worldToLocalForParent } from '../utils/plantingPose';
+import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
+import { getCultivar } from '../model/cultivars';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
 
@@ -234,23 +236,26 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     return items.map((item) => (item.id === id ? { ...item, ...updates } : item));
   }
 
-  /** Rearrange all plantings in a parent by snapping them to computed slots. */
+  /**
+   * Rearrange all plantings in a parent by snapping them to computed slots.
+   *
+   * For `'cell-grid'` layouts this is a NO-OP — those plants keep their
+   * explicit user-chosen positions. Row-major auto-snapping would destroy
+   * the placement and pile everything in the top-left.
+   */
   function rearrangePlantings(
     plantings: Planting[],
     parentId: string,
     parent: { x: number; y: number; width: number; length: number; shape?: string; layout: Layout | null; wallThicknessFt?: number },
   ): Planting[] {
     const layout = parent.layout;
-    if (!layout) return plantings;
+    if (!layout || layout.type === 'cell-grid') return plantings;
 
     const bounds = getPlantableBounds(parent);
 
-    let slots: { x: number; y: number }[];
-    if (layout.type === 'grid') {
-      slots = getGridCells(layout.cellSizeFt, bounds);
-    } else {
-      slots = getSlots(layout, bounds);
-    }
+    const slots = layout.type === 'grid'
+      ? getGridCells(layout.cellSizeFt, bounds)
+      : getSlots(layout, bounds);
 
     const children = plantings.filter((p) => p.parentId === parentId);
     const others = plantings.filter((p) => p.parentId !== parentId);
@@ -369,9 +374,27 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     addPlanting: (opts) => {
       if (isLocked('plantings')) return;
       const { plantings, structures, zones } = get().garden;
-      const newPlantings = [...plantings, createPlanting(opts)];
       const parent = structures.find((s) => s.id === opts.parentId)
         ?? zones.find((z) => z.id === opts.parentId);
+      // For cell-grid parents, snap the new planting to the nearest valid free
+      // cell — preserves the "no two plants overlap" invariant for programmatic
+      // adds (the drag tool already snaps via getPlantingPosition, but tests
+      // and other callers that pass raw coords need this safety net).
+      let snappedOpts = opts;
+      if (parent && parent.layout?.type === 'cell-grid') {
+        const cellSize = parent.layout.cellSizeFt;
+        const bounds = getPlantableBounds(parent);
+        const siblings = plantings
+          .filter((p) => p.parentId === opts.parentId)
+          .map((p) => resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y))
+          .filter((f): f is NonNullable<typeof f> => f !== null);
+        const { occupied } = computeOccupancy({ bounds, cellSizeFt: cellSize, plantings: siblings });
+        const cultivar = getCultivar(opts.cultivarId);
+        const r = (cultivar?.footprintFt ?? 0.5) / 2;
+        const cell = nearestFreeCellCenter(bounds, cellSize, occupied, r, parent.x + opts.x, parent.y + opts.y);
+        if (cell) snappedOpts = { ...opts, x: cell.x - parent.x, y: cell.y - parent.y };
+      }
+      const newPlantings = [...plantings, createPlanting(snappedOpts)];
       if (parent) {
         commitPatch({ plantings: rearrangePlantings(newPlantings, opts.parentId, parent) });
       } else {
