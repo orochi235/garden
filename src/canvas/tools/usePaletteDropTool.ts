@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { createDragGhost } from '@orochi235/weasel';
+import { createDragGhost } from '../drag/dragGhost';
 import { onIconLoad, renderPlant } from '../plantRenderers';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
@@ -87,7 +87,7 @@ export function usePaletteDropTool({ containerRef, viewRef }: Options): void {
         const radius = (cellPx * 0.85) / 2;
         ghost = createDragGhost({
           sizeCss: radius * 2,
-          paint: (ctx) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
+          paint: (ctx: CanvasRenderingContext2D) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
         });
         unsubIcon = onIconLoad(() => ghost?.repaint());
         return ghost;
