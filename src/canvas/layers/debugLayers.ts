@@ -74,7 +74,7 @@ function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
         path: rectPath(b.x, b.y, b.w, b.h),
         stroke,
       }));
-      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), alpha: 0.3, children }];
+      return [{ kind: 'group', transform: viewToMat3(view), alpha: 0.3, children }];
     },
   };
 }
@@ -107,7 +107,7 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
           },
         },
       ];
-      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+      return [{ kind: 'group', transform: viewToMat3(view), children }];
     },
   };
 }
@@ -150,7 +150,7 @@ function makeAxesLayer(): RenderLayer<unknown> {
           text: '(0,0)', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
         },
       ];
-      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+      return [{ kind: 'group', transform: viewToMat3(view), children }];
     },
   };
 }
@@ -187,7 +187,7 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
           stroke,
         });
       }
-      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+      return [{ kind: 'group', transform: viewToMat3(view), children }];
     },
   };
 }

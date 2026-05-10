@@ -51,7 +51,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
             },
           },
         ]);
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
@@ -65,7 +65,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
             path: rectPath(z.x, z.y, z.width, z.length),
             fill: paintFor(z.pattern as PatternId),
           }));
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
@@ -89,7 +89,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
               },
             ],
           }));
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
@@ -113,7 +113,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
               fill: { fill: 'solid' as const, color: '#ffffff' },
             },
           }));
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
   ];

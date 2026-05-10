@@ -176,7 +176,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
         const children = getTrays().map((tray) =>
           trayGroupCommand(tray, trayBodyCommands(tray, view)),
         );
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
@@ -186,7 +186,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
         const children = getTrays().map((tray) =>
           trayGroupCommand(tray, trayWellsCommands(tray, view)),
         );
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
@@ -197,7 +197,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
         const children = getTrays().map((tray) =>
           trayGroupCommand(tray, trayGridCommands(tray)),
         );
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
@@ -208,7 +208,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
         const children = getTrays().map((tray) =>
           trayGroupCommand(tray, trayLabelCommands(tray, view)),
         );
-        return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
   ];
