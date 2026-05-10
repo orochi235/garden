@@ -20,3 +20,10 @@ export function viewToMat3(view: View): Float32Array {
  * so layer files can import it from one place.
  */
 export type DrawCommand = ReturnType<RenderLayer<unknown>['draw']>[number];
+
+/**
+ * `TextureHandle` is also declared but not exported. Derive it from the pattern
+ * factory return shape.
+ */
+import { createTilePattern } from '@orochi235/weasel';
+export type TextureHandle = NonNullable<ReturnType<typeof createTilePattern>>;

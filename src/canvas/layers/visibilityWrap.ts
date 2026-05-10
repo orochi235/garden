@@ -1,4 +1,5 @@
 import type { RenderLayer } from '@orochi235/weasel';
+import type { DrawCommand } from '../util/weaselLocal';
 
 /**
  * Wraps each layer's `draw` so it short-circuits when the user has hidden it
@@ -18,12 +19,12 @@ export function wrapLayersWithVisibility(
     const innerDraw = layer.draw;
     return {
       ...layer,
-      draw(ctx: CanvasRenderingContext2D, data: unknown, view: { x: number; y: number; scale: number }) {
+      draw(data, view, dims): DrawCommand[] {
         const vis = getVisibility()[layer.id];
         const visible = vis ?? defaultVis;
-        if (!visible) return;
-        innerDraw(ctx, data, view);
+        if (!visible) return [];
+        return innerDraw(data, view, dims);
       },
-    } as RenderLayer<unknown>;
+    };
   });
 }

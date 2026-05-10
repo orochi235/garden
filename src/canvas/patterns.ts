@@ -8,7 +8,8 @@
  */
 
 import { hatch, crosshatch, dots, chunks } from '@orochi235/weasel/patterns-builtin';
-import type { Paint, TextureHandle } from '@orochi235/weasel';
+import type { Paint } from '@orochi235/weasel';
+import type { TextureHandle } from './util/weaselLocal';
 
 export type PatternId = 'hatch' | 'crosshatch' | 'dots' | 'chunks';
 
