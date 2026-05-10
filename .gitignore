@@ -45,3 +45,4 @@ toolbar-*.png
 .claude/scheduled_tasks.lock
 tests/visual/diffs/
 test-results/
+cabbage-*.png
