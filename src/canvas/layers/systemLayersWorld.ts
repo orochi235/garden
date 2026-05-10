@@ -1,8 +1,7 @@
 import { type RenderLayer, PathBuilder } from '@orochi235/weasel';
+import type { DrawCommand } from '../util/weaselLocal';
 import type { LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
-
-type DrawCommand = ReturnType<RenderLayer<unknown>['draw']>[number];
 
 /**
  * Single source of truth for system-layer metadata. Order here = canonical
