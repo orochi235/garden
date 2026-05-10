@@ -291,7 +291,14 @@ function GardenCanvasNewPrototype() {
     // dragPreview is intentional — when a palette drop ghost is hovering, the
     // conflict overlay needs to recompute, which means weasel needs to see a
     // new layers ref. Without this dep, hovering doesn't update the overlay.
-  }, [gridCellSizeFt, iconTick, dragPreview]);
+    //
+    // garden.plantings/structures/zones are intentional — when a planting
+    // moves within its container (or any structure/zone changes), the store
+    // mutates these arrays. Without including them, the layers ref stays
+    // stable and weasel never repaints, even though the data is fresh.
+    // Cross-container moves "just worked" because the parentId-change path
+    // bumps other state; same-container moves only changed x/y.
+  }, [gridCellSizeFt, iconTick, dragPreview, garden.plantings, garden.structures, garden.zones]);
 
   // Build the kit camera-coord `View` from local screen-space (zoom, panX, panY).
   // Pre-fit (zoom===0) we render with a fallback margin-fit so the very first
