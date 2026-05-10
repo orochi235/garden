@@ -1,7 +1,20 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import { type DrawCommand } from '../util/weaselLocal';
+import { PathBuilder, rectPath } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-import { renderPlant } from '../plantRenderers';
+
+function circlePath(cx: number, cy: number, rx: number, ry: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498;
+  return new PathBuilder()
+    .moveTo(cx, cy - ry)
+    .curveTo(cx + rx * k, cy - ry, cx + rx, cy - ry * k, cx + rx, cy)
+    .curveTo(cx + rx, cy + ry * k, cx + rx * k, cy + ry, cx, cy + ry)
+    .curveTo(cx - rx * k, cy + ry, cx - rx, cy + ry * k, cx - rx, cy)
+    .curveTo(cx - rx, cy - ry * k, cx - rx * k, cy - ry, cx, cy - ry)
+    .close()
+    .build();
+}
 
 /**
  * Phase-2-migrated drag: structure / zone / planting move (single + multi-select).
@@ -89,9 +102,10 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
      * `view` is provided for things that should stay screen-constant (none
      * here — strokes are intentionally world-scaled to match the legacy look).
      */
-    renderPreview(ctx, putative, _view): void {
+    renderPreview(putative, view): DrawCommand[] {
       const garden = useGardenStore.getState().garden;
       const poses = new Map(putative.posesById);
+      const cmds: DrawCommand[] = [];
 
       // Snap-target outline on the destination container/zone.
       if (putative.accepted && putative.destContainerId) {
@@ -99,28 +113,19 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
           garden.structures.find((s) => s.id === putative.destContainerId) ??
           garden.zones.find((z) => z.id === putative.destContainerId);
         if (c) {
-          ctx.save();
-          ctx.strokeStyle = '#5BA4CF';
-          // Stroke width and dash sizes are intentionally tiny in world feet
-          // so they read as a ~2px dashed outline at typical zooms.
-          ctx.lineWidth = 2 / Math.max(0.0001, _view.scale);
-          const dash = 6 / Math.max(0.0001, _view.scale);
-          const gap = 4 / Math.max(0.0001, _view.scale);
-          ctx.setLineDash([dash, gap]);
-          if ((c as { shape?: string }).shape === 'circle') {
-            ctx.beginPath();
-            ctx.ellipse(c.x + c.width / 2, c.y + c.length / 2, c.width / 2, c.length / 2, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          } else {
-            ctx.strokeRect(c.x, c.y, c.width, c.length);
-          }
-          ctx.setLineDash([]);
-          ctx.restore();
+          const snapStroke = 2 / Math.max(0.0001, view.scale);
+          const dash = 6 / Math.max(0.0001, view.scale);
+          const gap = 4 / Math.max(0.0001, view.scale);
+          const snapPath = (c as { shape?: string }).shape === 'circle'
+            ? circlePath(c.x + c.width / 2, c.y + c.length / 2, c.width / 2, c.length / 2)
+            : rectPath(c.x, c.y, c.width, c.length);
+          cmds.push({ kind: 'path', path: snapPath, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: snapStroke, dash: [dash, gap] } });
         }
       }
 
-      // Per-id ghosts. Plantings render as their cultivar icon at footprint
-      // radius; structures and zones render as a translucent body outline.
+      // Per-id ghosts. Plantings render as cultivar circle at footprint radius;
+      // structures and zones render as a translucent body outline.
+      const ghostStroke = 1.5 / Math.max(0.0001, view.scale);
       for (const id of putative.draggedIds) {
         const pose = poses.get(id);
         if (!pose) continue;
@@ -130,55 +135,39 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
           const cultivar = getCultivar(planting.cultivarId);
           if (!cultivar) continue;
           const footprintFt = cultivar.footprintFt ?? 0.5;
-          ctx.save();
-          ctx.globalAlpha = 0.65;
-          ctx.translate(pose.x, pose.y);
-          renderPlant(ctx, planting.cultivarId, footprintFt / 2, cultivar.color);
-          ctx.restore();
+          const radius = footprintFt / 2;
+          const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
+          const path = circlePath(pose.x, pose.y, radius, radius);
+          cmds.push({ kind: 'group', alpha: 0.65, children: [
+            { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
+            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1 / view.scale, radius * 0.06) } },
+          ]});
           continue;
         }
 
         const structure = garden.structures.find((s) => s.id === id);
         if (structure) {
-          ctx.save();
-          ctx.globalAlpha = 0.55;
-          ctx.fillStyle = '#cfe2ec';
-          ctx.strokeStyle = '#5BA4CF';
-          ctx.lineWidth = 1.5 / Math.max(0.0001, _view.scale);
-          if ((structure as { shape?: string }).shape === 'circle') {
-            ctx.beginPath();
-            ctx.ellipse(
-              pose.x + structure.width / 2,
-              pose.y + structure.length / 2,
-              structure.width / 2,
-              structure.length / 2,
-              0,
-              0,
-              Math.PI * 2,
-            );
-            ctx.fill();
-            ctx.stroke();
-          } else {
-            ctx.fillRect(pose.x, pose.y, structure.width, structure.length);
-            ctx.strokeRect(pose.x, pose.y, structure.width, structure.length);
-          }
-          ctx.restore();
+          const path = (structure as { shape?: string }).shape === 'circle'
+            ? circlePath(pose.x + structure.width / 2, pose.y + structure.length / 2, structure.width / 2, structure.length / 2)
+            : rectPath(pose.x, pose.y, structure.width, structure.length);
+          cmds.push({ kind: 'group', alpha: 0.55, children: [
+            { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },
+            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: ghostStroke } },
+          ]});
           continue;
         }
 
         const zone = garden.zones.find((z) => z.id === id);
         if (zone) {
-          ctx.save();
-          ctx.globalAlpha = 0.4;
-          ctx.fillStyle = zone.color;
-          ctx.strokeStyle = '#5BA4CF';
-          ctx.lineWidth = 1.5 / Math.max(0.0001, _view.scale);
-          ctx.fillRect(pose.x, pose.y, zone.width, zone.length);
-          ctx.strokeRect(pose.x, pose.y, zone.width, zone.length);
-          ctx.restore();
+          const path = rectPath(pose.x, pose.y, zone.width, zone.length);
+          cmds.push({ kind: 'group', alpha: 0.4, children: [
+            { kind: 'path', path, fill: { fill: 'solid', color: zone.color } },
+            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: ghostStroke } },
+          ]});
           continue;
         }
       }
+      return cmds;
     },
 
     // No-op: the actual commit lives in `useMove.end()` (called from

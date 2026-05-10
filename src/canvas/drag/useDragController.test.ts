@@ -27,7 +27,7 @@ function makeFakeDrag(overrides: Partial<Drag<unknown, FakePutative>> = {}): Fak
         shift: (input as { shift: boolean }).shift,
       };
     },
-    renderPreview() {},
+    renderPreview() { return []; },
     commit(p) { drag.commits.push(p); },
     ...overrides,
   };
@@ -94,7 +94,7 @@ describe('useDragController', () => {
       kind: 'order',
       read() { order.push('read'); return { tag: 'r' }; },
       compute(input) { order.push('compute'); return { tag: input.tag }; },
-      renderPreview() {},
+      renderPreview() { return []; },
       commit() { order.push('commit'); },
       onPutativeChange(p) { order.push(p ? 'slot-set' : 'slot-clear'); },
     };
@@ -183,7 +183,7 @@ describe('useDragController', () => {
       kind: 'fake',
       read() { return {}; },
       compute() { return null; },
-      renderPreview() {},
+      renderPreview() { return []; },
       commit() {},
     };
     const { result } = renderHook(() => useDragController({ fake: drag as never }));

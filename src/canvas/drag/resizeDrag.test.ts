@@ -44,83 +44,41 @@ describe('resizeDrag', () => {
     });
   });
 
-  it('renderPreview draws a structure ghost at the projected bounds (rect)', () => {
+  it('renderPreview emits DrawCommands for a structure ghost (rect)', () => {
     useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     const s = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((g) => ({ garden: { ...g.garden, structures: [s] } }));
 
     const drag = createResizeDrag();
-    const calls: { fn: string; args: unknown[] }[] = [];
-    const ctx = {
-      save: () => calls.push({ fn: 'save', args: [] }),
-      restore: () => calls.push({ fn: 'restore', args: [] }),
-      fillRect: (...args: unknown[]) => calls.push({ fn: 'fillRect', args }),
-      strokeRect: (...args: unknown[]) => calls.push({ fn: 'strokeRect', args }),
-      beginPath: () => {},
-      ellipse: () => {},
-      fill: () => {},
-      stroke: () => {},
-      strokeStyle: '',
-      fillStyle: '',
-      lineWidth: 0,
-      globalAlpha: 1,
-    } as unknown as CanvasRenderingContext2D;
-
     const putative: ResizePutative = {
       targetId: s.id,
       layer: 'structures',
       pose: { x: 2, y: 3, width: 8, length: 6 },
     };
-    drag.renderPreview(ctx, putative, { x: 0, y: 0, scale: 50 });
-
-    const filled = calls.find((c) => c.fn === 'fillRect');
-    const stroked = calls.find((c) => c.fn === 'strokeRect');
-    expect(filled?.args).toEqual([2, 3, 8, 6]);
-    expect(stroked?.args).toEqual([2, 3, 8, 6]);
+    const cmds = drag.renderPreview(putative, { x: 0, y: 0, scale: 50 });
+    expect(cmds).toHaveLength(1);
+    expect(cmds[0].kind).toBe('group');
   });
 
-  it('renderPreview draws a zone ghost at the projected bounds', () => {
+  it('renderPreview emits DrawCommands for a zone ghost', () => {
     useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     const z = createZone({ x: 0, y: 0, width: 4, length: 4, color: '#7FB069' });
     useGardenStore.setState((g) => ({ garden: { ...g.garden, zones: [z] } }));
 
     const drag = createResizeDrag();
-    const calls: { fn: string; args: unknown[] }[] = [];
-    const ctx = {
-      save: () => calls.push({ fn: 'save', args: [] }),
-      restore: () => calls.push({ fn: 'restore', args: [] }),
-      fillRect: (...args: unknown[]) => calls.push({ fn: 'fillRect', args }),
-      strokeRect: (...args: unknown[]) => calls.push({ fn: 'strokeRect', args }),
-      strokeStyle: '',
-      fillStyle: '',
-      lineWidth: 0,
-      globalAlpha: 1,
-    } as unknown as CanvasRenderingContext2D;
-
     const putative: ResizePutative = {
       targetId: z.id,
       layer: 'zones',
       pose: { x: 1, y: 1, width: 5, length: 5 },
     };
-    drag.renderPreview(ctx, putative, { x: 0, y: 0, scale: 50 });
-
-    const filled = calls.find((c) => c.fn === 'fillRect');
-    const stroked = calls.find((c) => c.fn === 'strokeRect');
-    expect(filled?.args).toEqual([1, 1, 5, 5]);
-    expect(stroked?.args).toEqual([1, 1, 5, 5]);
+    const cmds = drag.renderPreview(putative, { x: 0, y: 0, scale: 50 });
+    expect(cmds).toHaveLength(1);
+    expect(cmds[0].kind).toBe('group');
   });
 
-  it('renderPreview is a no-op when the targetId resolves to nothing', () => {
+  it('renderPreview returns [] when the targetId resolves to nothing', () => {
     const drag = createResizeDrag();
-    const calls: string[] = [];
-    const ctx = new Proxy({}, {
-      get(_t, prop) {
-        calls.push(String(prop));
-        return () => {};
-      },
-    }) as unknown as CanvasRenderingContext2D;
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       {
         targetId: 'nonexistent',
         layer: 'structures',
@@ -128,8 +86,7 @@ describe('resizeDrag', () => {
       },
       { x: 0, y: 0, scale: 50 },
     );
-    // The structure-not-found branch returns before touching ctx.
-    expect(calls).toEqual([]);
+    expect(cmds).toEqual([]);
   });
 
   it('commit is a no-op (real commit lives in useResize.end)', () => {

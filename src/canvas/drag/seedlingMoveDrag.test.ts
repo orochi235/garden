@@ -8,44 +8,6 @@ import {
   type SeedlingMovePutative,
 } from './seedlingMoveDrag';
 
-interface CtxCall { fn: string; strokeStyle?: string }
-
-function fakeCtx() {
-  const calls: CtxCall[] = [];
-  let fillStyle = '';
-  let strokeStyle = '';
-  let lineWidth = 0;
-  let globalAlpha = 1;
-  const stack: Array<{ fillStyle: string; strokeStyle: string; lineWidth: number; globalAlpha: number }> = [];
-  const ctx = {
-    save() { stack.push({ fillStyle, strokeStyle, lineWidth, globalAlpha }); calls.push({ fn: 'save' }); },
-    restore() {
-      const s = stack.pop();
-      if (s) { fillStyle = s.fillStyle; strokeStyle = s.strokeStyle; lineWidth = s.lineWidth; globalAlpha = s.globalAlpha; }
-      calls.push({ fn: 'restore' });
-    },
-    translate() { calls.push({ fn: 'translate' }); },
-    beginPath() { calls.push({ fn: 'beginPath' }); },
-    arc() { calls.push({ fn: 'arc' }); },
-    moveTo() {},
-    lineTo() {},
-    closePath() {},
-    fill() { calls.push({ fn: 'fill' }); },
-    stroke() { calls.push({ fn: 'stroke', strokeStyle }); },
-    setLineDash() {},
-    fillRect() { calls.push({ fn: 'fillRect' }); },
-    strokeRect() { calls.push({ fn: 'strokeRect' }); },
-    get fillStyle() { return fillStyle; },
-    set fillStyle(v: string) { fillStyle = v; },
-    get strokeStyle() { return strokeStyle; },
-    set strokeStyle(v: string) { strokeStyle = v; },
-    get lineWidth() { return lineWidth; },
-    set lineWidth(v: number) { lineWidth = v; },
-    get globalAlpha() { return globalAlpha; },
-    set globalAlpha(v: number) { globalAlpha = v; },
-  } as unknown as CanvasRenderingContext2D;
-  return { ctx, calls };
-}
 
 function seedTray(): string {
   const garden = blankGarden();
@@ -107,11 +69,9 @@ describe('seedlingMoveDrag', () => {
     });
   });
 
-  it('renderPreview is a no-op when tray is not found', () => {
+  it('renderPreview returns [] when tray is not found', () => {
     const drag = createSeedlingMoveDrag();
-    const { ctx, calls } = fakeCtx();
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       {
         trayId: 'missing-tray',
         feasible: true,
@@ -119,64 +79,38 @@ describe('seedlingMoveDrag', () => {
       },
       { x: 0, y: 0, scale: 30 },
     );
-    expect(calls.find((c) => c.fn === 'arc')).toBeUndefined();
+    expect(cmds).toEqual([]);
   });
 
-  it('renderPreview is a no-op for empty cells (no tray translate)', () => {
+  it('renderPreview returns [] for empty cells', () => {
     const trayId = seedTray();
     const drag = createSeedlingMoveDrag();
-    const { ctx, calls } = fakeCtx();
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       { trayId, feasible: true, cells: [] },
       { x: 0, y: 0, scale: 30 },
     );
-    expect(calls.find((c) => c.fn === 'translate')).toBeUndefined();
+    expect(cmds).toEqual([]);
   });
 
-  it('renderPreview draws a feasible move ghost without a red ring', () => {
+  it('renderPreview emits a group DrawCommand for a feasible move ghost', () => {
     const trayId = seedTray();
     const drag = createSeedlingMoveDrag();
-    const { ctx, calls } = fakeCtx();
     const putative: SeedlingMovePutative = {
       trayId,
       feasible: true,
       cells: [{ row: 1, col: 2, cultivarId: 'tomato', bumped: false }],
     };
-    drag.renderPreview(ctx, putative, { x: 0, y: 0, scale: 30 });
-    // Cultivar icon body translate present, but no goldenrod (#d4a55a) or red
-    // rejection ring stroke. (renderPlant may stroke its glyph internally —
-    // we only filter for the move-drag's own ring colors here.)
-    expect(calls.filter((c) => c.fn === 'translate').length).toBeGreaterThan(0);
-    const ringStrokes = calls.filter(
-      (c) => c.fn === 'stroke' && (c.strokeStyle === '#d4a55a' || c.strokeStyle === 'rgba(220, 60, 60, 0.7)'),
-    );
-    expect(ringStrokes).toHaveLength(0);
+    const cmds = drag.renderPreview(putative, { x: 0, y: 0, scale: 30 });
+    expect(cmds.length).toBeGreaterThan(0);
+    expect(cmds[0].kind).toBe('group');
+    // No infeasibility rings emitted for a feasible ghost.
+    expect(cmds).toHaveLength(1);
   });
 
-  it('renderPreview does not stroke a goldenrod ring on bumped cells (bumped visual removed)', () => {
+  it('renderPreview emits infeasibility ring commands for every cell when !feasible', () => {
     const trayId = seedTray();
     const drag = createSeedlingMoveDrag();
-    const { ctx, calls } = fakeCtx();
-    drag.renderPreview(
-      ctx,
-      {
-        trayId,
-        feasible: true,
-        cells: [{ row: 0, col: 0, cultivarId: 'tomato', bumped: true }],
-      },
-      { x: 0, y: 0, scale: 30 },
-    );
-    const goldStrokes = calls.filter((c) => c.fn === 'stroke' && c.strokeStyle === '#d4a55a');
-    expect(goldStrokes.length).toBe(0);
-  });
-
-  it('renderPreview overlays a red infeasibility ring on every cell when !feasible', () => {
-    const trayId = seedTray();
-    const drag = createSeedlingMoveDrag();
-    const { ctx, calls } = fakeCtx();
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       {
         trayId,
         feasible: false,
@@ -187,11 +121,11 @@ describe('seedlingMoveDrag', () => {
       },
       { x: 0, y: 0, scale: 30 },
     );
-    // Two infeasibility-ring strokes (one per cell), regardless of bumped.
-    const redStrokes = calls.filter(
-      (c) => c.fn === 'stroke' && c.strokeStyle === 'rgba(220, 60, 60, 0.7)',
-    );
-    expect(redStrokes.length).toBe(2);
+    // ghost group + 2 red infeasibility rings
+    expect(cmds).toHaveLength(3);
+    expect(cmds[0].kind).toBe('group');
+    expect(cmds[1].kind).toBe('path');
+    expect(cmds[2].kind).toBe('path');
   });
 
   it('commit is a no-op (state mutation lives in useSeedlingMoveTool.drag.onEnd)', () => {

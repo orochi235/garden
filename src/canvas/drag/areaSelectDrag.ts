@@ -1,4 +1,6 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import { type DrawCommand } from '../util/weaselLocal';
+import { rectPath } from '@orochi235/weasel';
 
 /**
  * Phase-2-migrated drag: area-select marquee — the rubber-band rectangle drawn
@@ -84,25 +86,21 @@ export function createAreaSelectDrag(): Drag<AreaSelectInput, AreaSelectPutative
      * Inverted rects (current point above-and-left of start) render correctly
      * via Math.min / Math.abs.
      */
-    renderPreview(ctx, putative, view): void {
+    renderPreview(putative, view): DrawCommand[] {
       const { start, current } = putative;
       const x = Math.min(start.x, current.x);
       const y = Math.min(start.y, current.y);
       const w = Math.abs(current.x - start.x);
       const h = Math.abs(current.y - start.y);
-      if (w === 0 || h === 0) return;
+      if (w === 0 || h === 0) return [];
 
       const invScale = 1 / Math.max(0.0001, view.scale);
-      ctx.save();
-      ctx.fillStyle = 'rgba(91, 164, 207, 0.15)';
-      ctx.strokeStyle = '#5BA4CF';
-      ctx.lineWidth = 1 * invScale;
       const dash = 3 * invScale;
-      ctx.setLineDash([dash, dash]);
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeRect(x, y, w, h);
-      ctx.setLineDash([]);
-      ctx.restore();
+      const path = rectPath(x, y, w, h);
+      return [
+        { kind: 'path', path, fill: { fill: 'solid', color: 'rgba(91, 164, 207, 0.15)' } },
+        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: invScale, dash: [dash, dash] } },
+      ];
     },
 
     // No-op: selection commit lives in `useAreaSelect.end()` (called from

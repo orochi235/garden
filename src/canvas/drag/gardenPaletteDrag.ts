@@ -1,9 +1,22 @@
-import { renderPlant } from '../plantRenderers';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import { getPlantingPosition } from '../../utils/planting';
 import type { PaletteEntry } from '../../components/palette/paletteData';
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import { type DrawCommand } from '../util/weaselLocal';
+import { PathBuilder } from '@orochi235/weasel';
+
+function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498;
+  return new PathBuilder()
+    .moveTo(cx, cy - r)
+    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
+    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
+    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
+    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
+    .close()
+    .build();
+}
 
 /**
  * Phase-2 migrated drag: palette → garden canvas (plantings only).
@@ -106,15 +119,16 @@ export function createGardenPaletteDrag(opts: {
       };
     },
 
-    renderPreview(ctx, putative, _view): void {
-      // Draw in world space — the canvas pipeline already applied the world
-      // transform. Translate to the world position and render at world-foot
-      // radius (renderPlant takes radius in the ctx's current units).
-      ctx.save();
-      ctx.translate(putative.x, putative.y);
-      ctx.globalAlpha = 0.7;
-      renderPlant(ctx, putative.cultivarId, putative.footprintRadiusFt, putative.color);
-      ctx.restore();
+    renderPreview(putative, _view): DrawCommand[] {
+      const cultivar = getCultivar(putative.cultivarId);
+      const radius = putative.footprintRadiusFt;
+      const bgColor = cultivar?.iconBgColor ?? cultivar?.color ?? putative.color;
+      const strokeColor = cultivar?.color ?? putative.color;
+      const path = circlePath(putative.x, putative.y, radius);
+      return [{ kind: 'group', alpha: 0.7, children: [
+        { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
+        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(0.01, radius * 0.06) } },
+      ]}];
     },
 
     commit(putative: GardenPalettePutative): void {

@@ -1,5 +1,19 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import { type DrawCommand } from '../util/weaselLocal';
+import { PathBuilder, rectPath } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
+
+function circlePath(cx: number, cy: number, rx: number, ry: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498;
+  return new PathBuilder()
+    .moveTo(cx, cy - ry)
+    .curveTo(cx + rx * k, cy - ry, cx + rx, cy - ry * k, cx + rx, cy)
+    .curveTo(cx + rx, cy + ry * k, cx + rx * k, cy + ry, cx, cy + ry)
+    .curveTo(cx - rx * k, cy + ry, cx - rx, cy + ry * k, cx - rx, cy)
+    .curveTo(cx - rx, cy - ry * k, cx - rx * k, cy - ry, cx, cy - ry)
+    .close()
+    .build();
+}
 
 /**
  * Phase-2-migrated drag: structure / zone resize.
@@ -69,50 +83,31 @@ export function createResizeDrag(): Drag<ResizeInput, ResizePutative> {
      * `space: 'screen'`). Stroke width is scaled inversely by view to read as
      * a constant ~1.5px outline at typical zooms.
      */
-    renderPreview(ctx, putative, view): void {
+    renderPreview(putative, view): DrawCommand[] {
       const garden = useGardenStore.getState().garden;
       const { pose, layer, targetId } = putative;
+      const strokeWidth = 1.5 / Math.max(0.0001, view.scale);
 
       if (layer === 'structures') {
         const structure = garden.structures.find((s) => s.id === targetId);
-        if (!structure) return;
-        ctx.save();
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = '#cfe2ec';
-        ctx.strokeStyle = '#5BA4CF';
-        ctx.lineWidth = 1.5 / Math.max(0.0001, view.scale);
-        if ((structure as { shape?: string }).shape === 'circle') {
-          ctx.beginPath();
-          ctx.ellipse(
-            pose.x + pose.width / 2,
-            pose.y + pose.length / 2,
-            pose.width / 2,
-            pose.length / 2,
-            0,
-            0,
-            Math.PI * 2,
-          );
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          ctx.fillRect(pose.x, pose.y, pose.width, pose.length);
-          ctx.strokeRect(pose.x, pose.y, pose.width, pose.length);
-        }
-        ctx.restore();
-        return;
+        if (!structure) return [];
+        const path = (structure as { shape?: string }).shape === 'circle'
+          ? circlePath(pose.x + pose.width / 2, pose.y + pose.length / 2, pose.width / 2, pose.length / 2)
+          : rectPath(pose.x, pose.y, pose.width, pose.length);
+        return [{ kind: 'group', alpha: 0.55, children: [
+          { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },
+          { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: strokeWidth } },
+        ]}];
       }
 
       // zones
       const zone = garden.zones.find((z) => z.id === targetId);
-      if (!zone) return;
-      ctx.save();
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = zone.color;
-      ctx.strokeStyle = '#5BA4CF';
-      ctx.lineWidth = 1.5 / Math.max(0.0001, view.scale);
-      ctx.fillRect(pose.x, pose.y, pose.width, pose.length);
-      ctx.strokeRect(pose.x, pose.y, pose.width, pose.length);
-      ctx.restore();
+      if (!zone) return [];
+      const path = rectPath(pose.x, pose.y, pose.width, pose.length);
+      return [{ kind: 'group', alpha: 0.4, children: [
+        { kind: 'path', path, fill: { fill: 'solid', color: zone.color } },
+        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: strokeWidth } },
+      ]}];
     },
 
     // No-op: the actual commit lives in `useResize.end()` (called from

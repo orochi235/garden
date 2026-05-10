@@ -91,16 +91,9 @@ describe('seedFillTrayDrag', () => {
     }
   });
 
-  it('renderPreview is a no-op (legacy layer renders during Phase 1)', () => {
+  it('renderPreview returns [] (legacy layer renders during Phase 1)', () => {
     const drag = createSeedFillTrayDrag({ getCultivarId: () => 'tomato' });
-    const calls: string[] = [];
-    const ctx = new Proxy({}, {
-      get(_t, prop) {
-        calls.push(String(prop));
-        return () => {};
-      },
-    }) as unknown as CanvasRenderingContext2D;
-    drag.renderPreview(ctx, { trayId: 't', cultivarId: 'tomato', scope: 'all', replace: false }, { x: 0, y: 0, scale: 1 });
-    expect(calls).toHaveLength(0);
+    const cmds = drag.renderPreview({ trayId: 't', cultivarId: 'tomato', scope: 'all', replace: false }, { x: 0, y: 0, scale: 1 });
+    expect(cmds).toEqual([]);
   });
 });
