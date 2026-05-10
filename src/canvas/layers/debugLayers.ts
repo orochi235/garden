@@ -1,4 +1,10 @@
-import type { Dims, RenderLayer, View } from '@orochi235/weasel';
+import {
+  type RenderLayer,
+  PathBuilder,
+  rectPath,
+} from '@orochi235/weasel';
+import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import type { Dims, View } from '@orochi235/weasel';
 import type { Garden } from '../../model/types';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { isDebugEnabled } from '../debug';
@@ -39,20 +45,36 @@ function bboxesSeedStarting(g: Garden): Bbox[] {
   return out;
 }
 
+/** Approximate a full circle as 4 cubic-bezier segments. */
+function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
+  // Kappa constant for circle approximation with cubic bezier.
+  const k = 0.5522847498;
+  return new PathBuilder()
+    .moveTo(cx, cy - r)
+    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
+    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
+    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
+    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
+    .close()
+    .build();
+}
+
 function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown> {
   return {
     id: 'debug-hitboxes',
     label: 'Debug: Hitboxes',
     alwaysOn: true,
-    draw(_data, view: View, _dims: Dims) {
+    draw(_data, view: View, _dims: Dims): DrawCommand[] {
       const g = getGarden();
       const items = mode === 'garden' ? bboxesGarden(g) : bboxesSeedStarting(g);
-      ctx.save();
-      ctx.globalAlpha = 0.3;
-      ctx.strokeStyle = '#ff0040';
-      ctx.lineWidth = 1 / Math.max(0.0001, view.scale);
-      for (const b of items) ctx.strokeRect(b.x, b.y, b.w, b.h);
-      ctx.restore();
+      const lw = 1 / Math.max(0.0001, view.scale);
+      const stroke = { paint: { fill: 'solid' as const, color: '#ff0040' }, width: lw };
+      const children: DrawCommand[] = items.map((b) => ({
+        kind: 'path',
+        path: rectPath(b.x, b.y, b.w, b.h),
+        stroke,
+      }));
+      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), alpha: 0.3, children }];
     },
   };
 }
@@ -62,22 +84,30 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
     id: 'debug-bounds',
     label: 'Debug: Bounds',
     alwaysOn: true,
-    draw(_data, view: View, _dims: Dims) {
+    draw(_data, view: View, _dims: Dims): DrawCommand[] {
       const g = getGarden();
       let x: number, y: number, w: number, h: number;
       if (mode === 'garden') {
         x = 0; y = 0; w = g.widthFt; h = g.lengthFt;
       } else {
         const t = g.seedStarting.trays[0];
-        if (!t) return;
+        if (!t) return [];
         x = 0; y = 0; w = t.widthIn; h = t.heightIn;
       }
-      ctx.save();
-      ctx.strokeStyle = '#00ffff';
-      ctx.lineWidth = 2 / Math.max(0.0001, view.scale);
-      ctx.setLineDash([4 / view.scale, 4 / view.scale]);
-      ctx.strokeRect(x, y, w, h);
-      ctx.restore();
+      const lw = 2 / Math.max(0.0001, view.scale);
+      const dashSize = 4 / view.scale;
+      const children: DrawCommand[] = [
+        {
+          kind: 'path',
+          path: rectPath(x, y, w, h),
+          stroke: {
+            paint: { fill: 'solid', color: '#00ffff' },
+            width: lw,
+            dash: [dashSize, dashSize],
+          },
+        },
+      ];
+      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
     },
   };
 }
@@ -87,25 +117,40 @@ function makeAxesLayer(): RenderLayer<unknown> {
     id: 'debug-axes',
     label: 'Debug: Axes',
     alwaysOn: true,
-    draw(_data, view: View, _dims: Dims) {
+    draw(_data, view: View, _dims: Dims): DrawCommand[] {
       const px = (n: number) => n / Math.max(0.0001, view.scale);
-      ctx.save();
-      // X axis (red), Y axis (green) from origin extending 100 world units.
-      ctx.lineWidth = px(2);
-      ctx.strokeStyle = '#ff4040';
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(100, 0); ctx.stroke();
-      ctx.strokeStyle = '#40ff40';
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 100); ctx.stroke();
-      // Origin dot.
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.arc(0, 0, px(4), 0, Math.PI * 2); ctx.fill();
-      // Labels.
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `${px(12)}px sans-serif`;
-      ctx.fillText('+x', 100 - px(20), -px(4));
-      ctx.fillText('+y', px(4), 100 - px(4));
-      ctx.fillText('(0,0)', px(6), -px(6));
-      ctx.restore();
+      const lw = px(2);
+      const xAxis = new PathBuilder().moveTo(0, 0).lineTo(100, 0).build();
+      const yAxis = new PathBuilder().moveTo(0, 0).lineTo(0, 100).build();
+      const dot = circlePath(0, 0, px(4));
+      const children: DrawCommand[] = [
+        {
+          kind: 'path', path: xAxis,
+          stroke: { paint: { fill: 'solid', color: '#ff4040' }, width: lw },
+        },
+        {
+          kind: 'path', path: yAxis,
+          stroke: { paint: { fill: 'solid', color: '#40ff40' }, width: lw },
+        },
+        {
+          kind: 'path', path: dot,
+          fill: { fill: 'solid', color: '#ffffff' },
+        },
+        // Labels — flagged: text rendering requires registerFont() wired at app boot.
+        {
+          kind: 'text', x: 100 - px(20), y: -px(4),
+          text: '+x', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
+        },
+        {
+          kind: 'text', x: px(4), y: 100 - px(4),
+          text: '+y', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
+        },
+        {
+          kind: 'text', x: px(6), y: -px(6),
+          text: '(0,0)', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
+        },
+      ];
+      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
     },
   };
 }
@@ -115,26 +160,34 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
     id: 'debug-grid',
     label: 'Debug: Grid',
     alwaysOn: true,
-    draw(_data, view: View, _dims: Dims) {
+    draw(_data, view: View, _dims: Dims): DrawCommand[] {
       const g = getGarden();
       let step: number, w: number, h: number;
       if (mode === 'garden') {
         step = g.gridCellSizeFt; w = g.widthFt; h = g.lengthFt;
       } else {
         const t = g.seedStarting.trays[0];
-        if (!t) return;
+        if (!t) return [];
         step = t.cellPitchIn; w = t.widthIn; h = t.heightIn;
       }
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,0,0.3)';
-      ctx.lineWidth = 1 / Math.max(0.0001, view.scale);
+      const lw = 1 / Math.max(0.0001, view.scale);
+      const stroke = { paint: { fill: 'solid' as const, color: 'rgba(255,255,0,0.3)' }, width: lw };
+      const children: DrawCommand[] = [];
       for (let x = 0; x <= w + 1e-6; x += step) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        children.push({
+          kind: 'path',
+          path: new PathBuilder().moveTo(x, 0).lineTo(x, h).build(),
+          stroke,
+        });
       }
       for (let y = 0; y <= h + 1e-6; y += step) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        children.push({
+          kind: 'path',
+          path: new PathBuilder().moveTo(0, y).lineTo(w, y).build(),
+          stroke,
+        });
       }
-      ctx.restore();
+      return [{ kind: 'group', transform: new Float32Array(viewToMat3(view)), children }];
     },
   };
 }
