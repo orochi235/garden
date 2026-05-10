@@ -1,7 +1,9 @@
 import { emptySeedStartingState } from '../model/seedStarting';
-import type { Garden } from '../model/types';
+import type { Garden, Structure, Zone } from '../model/types';
+import { PLANTABLE_TYPES, getPlantableBounds } from '../model/types';
 import { getCultivar } from '../model/cultivars';
 import type { Cultivar } from '../model/cultivars';
+import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
 
 /**
  * Project the collection to the on-disk form: builtin cultivars become
@@ -52,8 +54,79 @@ export function deserializeGarden(json: string): Garden {
   }
   if (!data.seedStarting) data.seedStarting = emptySeedStartingState();
   data.collection = hydrateCollection(data.collection);
+  migrateLayoutsToCellGrid(data as Garden);
+  snapPlantingsToCellGrid(data as Garden);
   return data as Garden;
 }
+
+const DEFAULT_CELL_SIZE_FT = 1 / 6; // 2 inches
+
+/**
+ * Give plantable structures (and zones) a default cell-grid layout when they
+ * load without one — covers files saved before cell-grid existed and files
+ * with the legacy `arrangement: ...` shape that's no longer in the model.
+ * Existing valid layouts (`single`, `snap-points`, `grid`, `cell-grid`)
+ * are preserved.
+ */
+function migrateLayoutsToCellGrid(garden: Garden): void {
+  const KNOWN_LAYOUT_TYPES = new Set(['single', 'grid', 'cell-grid', 'snap-points']);
+  for (const s of garden.structures) {
+    if (!PLANTABLE_TYPES.has(s.type)) continue;
+    const t = s.layout?.type;
+    if (t && KNOWN_LAYOUT_TYPES.has(t)) continue;
+    // Pots and felt-planters keep their classic 'single' default; raised-beds
+    // (and anything else plantable) get cell-grid.
+    if (s.type === 'pot' || s.type === 'felt-planter') {
+      s.layout = { type: 'single' };
+    } else {
+      s.layout = { type: 'cell-grid', cellSizeFt: DEFAULT_CELL_SIZE_FT };
+    }
+  }
+  for (const z of garden.zones) {
+    const t = z.layout?.type;
+    if (t && KNOWN_LAYOUT_TYPES.has(t)) continue;
+    z.layout = { type: 'cell-grid', cellSizeFt: DEFAULT_CELL_SIZE_FT };
+  }
+}
+
+/**
+ * For each plant in a `cell-grid` parent, snap its position to the nearest
+ * valid cell that doesn't conflict with already-snapped plants. Walks plants
+ * in array order; earlier plants claim their cells first. Plants whose
+ * cultivar is unknown are left in place.
+ */
+function snapPlantingsToCellGrid(garden: Garden): void {
+  const parents = new Map<string, Structure | Zone>();
+  for (const s of garden.structures) parents.set(s.id, s);
+  for (const z of garden.zones) parents.set(z.id, z);
+
+  // Per-parent footprint accumulator (world coords) for the running occupancy.
+  const placedByParent = new Map<string, ReturnType<typeof resolveFootprint>[]>();
+
+  for (const p of garden.plantings) {
+    const parent = parents.get(p.parentId);
+    if (!parent || parent.layout?.type !== 'cell-grid') continue;
+    const cultivar = getCultivar(p.cultivarId);
+    if (!cultivar) continue;
+    const cellSize = parent.layout.cellSizeFt;
+    const bounds = getPlantableBounds(parent as Parameters<typeof getPlantableBounds>[0]);
+    const placed = (placedByParent.get(p.parentId) ?? []).filter(
+      (f): f is NonNullable<typeof f> => f !== null,
+    );
+    const { occupied } = computeOccupancy({ bounds, cellSizeFt: cellSize, plantings: placed });
+    const r = (cultivar.footprintFt ?? 0.5) / 2;
+    const worldX = parent.x + p.x;
+    const worldY = parent.y + p.y;
+    const cell = nearestFreeCellCenter(bounds, cellSize, occupied, r, worldX, worldY);
+    if (cell) {
+      p.x = cell.x - parent.x;
+      p.y = cell.y - parent.y;
+    }
+    const fp = resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y);
+    if (fp) placedByParent.set(p.parentId, [...placed, fp]);
+  }
+}
+
 
 function migrateHeightToLength(data: Record<string, unknown>): void {
   if (data.lengthFt == null && data.heightFt != null) {

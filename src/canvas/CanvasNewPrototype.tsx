@@ -82,7 +82,7 @@ function GardenCanvasNewPrototype() {
   useUiStore((s) => s.dragClashIds);
   useUiStore((s) => s.highlightOpacity);
   useUiStore((s) => s.showFootprintCircles);
-  useUiStore((s) => s.dragPreview);
+  const dragPreview = useUiStore((s) => s.dragPreview);
   // Pulse → re-render layers while flashes are active.
   useHighlightTick();
 
@@ -276,7 +276,10 @@ function GardenCanvasNewPrototype() {
     // so the layers map gets a fresh reference and weasel re-paints. The
     // layer closures read getIconBitmap() at draw time; without a new ref,
     // weasel skips the paint and the icon never appears.
-  }, [gridCellSizeFt, iconTick]);
+    // dragPreview is intentional — when a palette drop ghost is hovering, the
+    // conflict overlay needs to recompute, which means weasel needs to see a
+    // new layers ref. Without this dep, hovering doesn't update the overlay.
+  }, [gridCellSizeFt, iconTick, dragPreview]);
 
   // Build the kit camera-coord `View` from local screen-space (zoom, panX, panY).
   // Pre-fit (zoom===0) we render with a fallback margin-fit so the very first

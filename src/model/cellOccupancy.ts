@@ -237,3 +237,34 @@ export function canPlaceFootprint(
   }
   return true;
 }
+
+/**
+ * Find the cell center nearest to `(preferX, preferY)` (in world coords)
+ * whose footprint disk doesn't overlap any cell already in `occupied`.
+ * Returns null when no valid cell fits.
+ */
+export function nearestFreeCellCenter(
+  bounds: ParentBounds,
+  cellSizeFt: number,
+  occupied: Set<CellKey>,
+  rFootprint: number,
+  preferX: number,
+  preferY: number,
+): { x: number; y: number } | null {
+  const validCells = validCellsForContainer(bounds, cellSizeFt);
+  if (validCells.length === 0) return null;
+  const sorted = [...validCells].sort((a, b) => {
+    const da = (a.x - preferX) ** 2 + (a.y - preferY) ** 2;
+    const db = (b.x - preferX) ** 2 + (b.y - preferY) ** 2;
+    return da - db;
+  });
+  for (const cell of sorted) {
+    const wanted = cellsTouchingCircle(cell.x, cell.y, rFootprint, cellSizeFt, validCells);
+    let clear = true;
+    for (const k of wanted) {
+      if (occupied.has(k)) { clear = false; break; }
+    }
+    if (clear) return { x: cell.x, y: cell.y };
+  }
+  return null;
+}
