@@ -16,10 +16,11 @@ const baseUi: ReturnType<GetUi> = {
 };
 
 describe('createPlantingLayers (world)', () => {
-  it('returns 7 layers in canonical order', () => {
+  it('returns 8 layers in canonical order', () => {
     const layers = createPlantingLayers(() => [], () => [], () => [], () => baseUi);
     expect(layers.map((l) => l.id)).toEqual([
       'container-overlays',
+      'planting-conflicts',
       'planting-spacing',
       'planting-icons',
       'planting-measurements',

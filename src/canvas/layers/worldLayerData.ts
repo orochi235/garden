@@ -27,6 +27,13 @@ export interface EricSceneUi {
    * Rendered as a red-tinted clash highlight by `structure-highlights`.
    */
   dragClashIds: string[];
+  /**
+   * In-flight palette-drop drag putative, when the user is dragging a new
+   * planting from the palette over a container. Lets the conflict overlay
+   * include the ghost in occupancy compute so red/yellow shading appears
+   * before the user releases.
+   */
+  dragPlantingGhost?: { parentId: string; cultivarId: string; x: number; y: number } | null;
 }
 
 export type GetUi = () => EricSceneUi;

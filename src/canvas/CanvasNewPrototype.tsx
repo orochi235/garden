@@ -198,6 +198,15 @@ function GardenCanvasNewPrototype() {
       // highlight store already keys flashes/hovers by id; we just pass the
       // reader through so each layer can pulse independently.
       const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
+      // Surface the palette-drop drag putative so the conflict overlay can
+      // include the ghost in its occupancy compute (red/yellow before commit).
+      let dragPlantingGhost: { parentId: string; cultivarId: string; x: number; y: number } | null = null;
+      if (u.dragPreview && u.dragPreview.kind === 'garden-palette-plant') {
+        const put = u.dragPreview.putative as { parentId?: string; cultivarId?: string; x?: number; y?: number };
+        if (put && put.parentId && put.cultivarId && typeof put.x === 'number' && typeof put.y === 'number') {
+          dragPlantingGhost = { parentId: put.parentId, cultivarId: put.cultivarId, x: put.x, y: put.y };
+        }
+      }
       return {
         selectedIds: u.selectedIds,
         labelMode: u.labelMode,
@@ -207,6 +216,7 @@ function GardenCanvasNewPrototype() {
         getHighlight,
         debugOverlappingLabels: u.debugOverlappingLabels,
         dragClashIds: u.dragClashIds,
+        dragPlantingGhost,
       };
     };
 

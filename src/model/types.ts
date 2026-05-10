@@ -135,7 +135,12 @@ const DEFAULT_STRUCTURE_SHAPES: Record<string, StructureShape> = {
 };
 
 const SURFACE_TYPES = new Set(['patio', 'path']);
-const CONTAINER_TYPES = new Set(['raised-bed', 'pot', 'felt-planter']);
+/**
+ * Structure types that hold plantings. The cell-grid occupancy / conflict
+ * overlay machinery only fires on these. Add a type here to make it plantable.
+ */
+export const PLANTABLE_TYPES: ReadonlySet<string> = new Set(['raised-bed', 'pot', 'felt-planter']);
+const CONTAINER_TYPES = PLANTABLE_TYPES;
 
 export const DEFAULT_WALL_THICKNESS_FT: Record<string, number> = {
   'raised-bed': 1 / 12,
@@ -173,7 +178,7 @@ export function createStructure(opts: {
     layout: opts.type === 'pot' || opts.type === 'felt-planter'
       ? { type: 'single' }
       : opts.type === 'raised-bed'
-      ? { type: 'grid', cellSizeFt: 0.25 }
+      ? { type: 'cell-grid', cellSizeFt: 1 / 6 }
       : null,
     wallThicknessFt: DEFAULT_WALL_THICKNESS_FT[opts.type] ?? 0,
     clipChildren: true,
@@ -193,7 +198,7 @@ export function createZone(opts: { x: number; y: number; width: number; length: 
     parentId: null,
     soilType: null,
     sunExposure: null,
-    layout: { type: 'grid', cellSizeFt: 0.25 },
+    layout: { type: 'cell-grid', cellSizeFt: 1 / 6 },
     pattern: opts.pattern ?? null,
   };
 }

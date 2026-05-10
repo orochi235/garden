@@ -71,7 +71,7 @@ export function computeContainerOverlay(
 ): ContainerOverlay {
   if (!layout) return { items: [] };
 
-  if (layout.type === 'grid') {
+  if (layout.type === 'grid' || layout.type === 'cell-grid') {
     return { items: computeGridLines(layout.cellSizeFt, bounds) };
   }
 

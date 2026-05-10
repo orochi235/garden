@@ -7,6 +7,7 @@ import {
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
+import { computeOccupancy, resolveFootprint } from '../../model/cellOccupancy';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
@@ -23,6 +24,7 @@ import { plantDrawCommands } from '../plantRenderers';
  */
 export const PLANTING_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
   { id: 'container-overlays', label: 'Container Overlays' },
+  { id: 'planting-conflicts', label: 'Spacing Conflicts' },
   { id: 'planting-spacing', label: 'Planting Spacing' },
   { id: 'planting-icons', label: 'Planting Icons', alwaysOn: true },
   { id: 'planting-measurements', label: 'Planting Measurements', defaultVisible: false },
@@ -170,6 +172,69 @@ export function createPlantingLayers(
                 stroke: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.18)' }, width: px(view, 1) },
               });
             }
+          }
+        }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
+      },
+    },
+
+    {
+      ...meta['planting-conflicts'],
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
+        const ui = getUi();
+        const plantings = getPlantings();
+        const zones = getZones();
+        const structures = getStructures();
+        const { parentMap, plantingsByParent } = buildParentLookup(plantings, zones, structures);
+
+        const ghost = ui.dragPlantingGhost ?? null;
+
+        const children: DrawCommand[] = [];
+        // Include any container that hosts plantings, OR the parent of an
+        // in-flight palette-drop ghost (so its conflicts show up even when
+        // the container has no real plantings yet).
+        const parentIds = new Set<string>(plantingsByParent.keys());
+        if (ghost) parentIds.add(ghost.parentId);
+
+        for (const parentId of parentIds) {
+          const parent = parentMap.get(parentId);
+          if (!parent || parent.layout?.type !== 'cell-grid') continue;
+          const bounds = getPlantableBounds(parent);
+          const cellSize = parent.layout.cellSizeFt;
+          const group = plantingsByParent.get(parentId) ?? [];
+          const footprints = group
+            .map((p) => resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y))
+            .filter((f): f is NonNullable<typeof f> => f !== null);
+          if (ghost && ghost.parentId === parentId) {
+            const ghostFp = resolveFootprint(
+              { cultivarId: ghost.cultivarId, x: ghost.x, y: ghost.y },
+              parent.x, parent.y,
+            );
+            if (ghostFp) footprints.push(ghostFp);
+          }
+          const { validCells, footprintConflict, spacingConflict } = computeOccupancy({
+            bounds, cellSizeFt: cellSize, plantings: footprints,
+          });
+          if (footprintConflict.size === 0 && spacingConflict.size === 0) continue;
+          const cellByKey = new Map(validCells.map((c) => [`${c.col},${c.row}`, c]));
+          // Yellow first, red on top so overlapping cells appear red.
+          for (const k of spacingConflict) {
+            const c = cellByKey.get(k);
+            if (!c) continue;
+            children.push({
+              kind: 'path',
+              path: rectPath(c.x - cellSize / 2, c.y - cellSize / 2, cellSize, cellSize),
+              fill: { fill: 'solid', color: 'rgba(255, 215, 0, 0.35)' },
+            });
+          }
+          for (const k of footprintConflict) {
+            const c = cellByKey.get(k);
+            if (!c) continue;
+            children.push({
+              kind: 'path',
+              path: rectPath(c.x - cellSize / 2, c.y - cellSize / 2, cellSize, cellSize),
+              fill: { fill: 'solid', color: 'rgba(220, 50, 50, 0.5)' },
+            });
           }
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];

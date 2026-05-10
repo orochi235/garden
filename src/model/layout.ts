@@ -9,6 +9,7 @@ export interface ParentBounds {
 export type Layout =
   | { type: 'single' }
   | { type: 'grid'; cellSizeFt: number }
+  | { type: 'cell-grid'; cellSizeFt: number }
   | { type: 'snap-points'; points: { x: number; y: number }[] };
 
 export type LayoutType = Layout['type'];
@@ -27,6 +28,10 @@ export function getSlots(
     case 'snap-points':
       return layout.points.map((p) => ({ x: bounds.x + p.x, y: bounds.y + p.y }));
     case 'grid':
+    case 'cell-grid':
+      // For cell-grid, getSlots returns the same cell-center anchor points as
+      // legacy grid. The footprint-occupancy logic that distinguishes the two
+      // strategies lives in `cellOccupancy.ts`, not in slot enumeration.
       return getGridCells(layout.cellSizeFt, bounds);
   }
 }
