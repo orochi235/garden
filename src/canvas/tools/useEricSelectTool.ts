@@ -9,6 +9,7 @@ import {
   cornerResizeHandles,
   hitCornerHandle,
   selectFromMarquee,
+  PathBuilder,
   type Dims,
   type Tool,
   type RenderLayer,
@@ -19,11 +20,11 @@ import {
   type InsertAdapter,
   type View,
 } from '@orochi235/weasel';
+import { type DrawCommand } from '../util/weaselLocal';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import { plantingWorldPose } from '../../utils/plantingPose';
-import { renderPlant } from '../plantRenderers';
 import {
   type GardenSceneAdapter,
   type ScenePose,
@@ -143,6 +144,18 @@ function trackPlantingSnap(adapter: GardenSceneAdapter): MoveBehavior<ScenePose>
 // strategy (`getLayout()` on the adapter).
 
 interface CloneOverlayItem { id: string; x: number; y: number }
+
+function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498;
+  return new PathBuilder()
+    .moveTo(cx, cy - r)
+    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
+    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
+    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
+    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
+    .close()
+    .build();
+}
 
 export function useEricSelectTool(
   adapter: GardenSceneAdapter,
@@ -321,7 +334,7 @@ export function useEricSelectTool(
       id: 'eric-select-overlay',
       label: 'Select Overlay (eric)',
       space: 'screen',
-      draw(_data, view: View, _dims: Dims) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         // Marquee rectangle is now rendered by the framework's
         // `dragPreviewLayer` via `areaSelectDrag.renderPreview`. See
         // `src/canvas/drag/areaSelectDrag.ts` and the `areaSelect.overlay`
@@ -335,29 +348,31 @@ export function useEricSelectTool(
         // Clone overlay: dashed dim ghosts of the selection at offset positions
         // while alt-drag is in flight. The originals stay rendered in their
         // normal layers, so this just draws the prospective copies.
-        if (cloneOverlay.length > 0) {
-          const garden = useGardenStore.getState().garden;
-          for (const item of cloneOverlay) {
-            const planting = garden.plantings.find((p) => p.id === item.id);
-            if (!planting) continue;
-            const cultivar = getCultivar(planting.cultivarId);
-            if (!cultivar) continue;
-            const footprintFt = cultivar.footprintFt ?? 0.5;
-            // item.x/y = planting.x/y (local coords) + drag delta.
-            // Recover the delta and apply to the world-space position.
-            const world = plantingWorldPose(garden, planting);
-            const wx = world.x + (item.x - planting.x);
-            const wy = world.y + (item.y - planting.y);
-            const sx = (wx - view.x) * view.scale;
-            const sy = (wy - view.y) * view.scale;
-            const radiusPx = (footprintFt / 2) * view.scale;
-            ctx.save();
-            ctx.globalAlpha = 0.5;
-            ctx.translate(sx, sy);
-            renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
-            ctx.restore();
-          }
+        if (cloneOverlay.length === 0) return [];
+        const garden = useGardenStore.getState().garden;
+        const children: DrawCommand[] = [];
+        for (const item of cloneOverlay) {
+          const planting = garden.plantings.find((p) => p.id === item.id);
+          if (!planting) continue;
+          const cultivar = getCultivar(planting.cultivarId);
+          if (!cultivar) continue;
+          const footprintFt = cultivar.footprintFt ?? 0.5;
+          // item.x/y = planting.x/y (local coords) + drag delta.
+          // Recover the delta and apply to the world-space position.
+          const world = plantingWorldPose(garden, planting);
+          const wx = world.x + (item.x - planting.x);
+          const wy = world.y + (item.y - planting.y);
+          const sx = (wx - view.x) * view.scale;
+          const sy = (wy - view.y) * view.scale;
+          const radiusPx = (footprintFt / 2) * view.scale;
+          const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
+          const path = circlePath(sx, sy, radiusPx);
+          children.push(
+            { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
+            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1, radiusPx * 0.06) } },
+          );
         }
+        return [{ kind: 'group', alpha: 0.5, children }];
       },
     }),
     [cloneOverlay],
