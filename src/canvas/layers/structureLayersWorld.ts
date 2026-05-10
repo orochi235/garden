@@ -1,6 +1,6 @@
 import { FILL_COLORS } from '../../model/types';
 import type { Structure } from '../../model/types';
-import type { RenderLayer } from '@orochi235/weasel';
+import type { Dims, RenderLayer } from '@orochi235/weasel';
 import type { GetUi, LayerDescriptor, View } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 import { renderLabel } from '@orochi235/weasel';
@@ -178,7 +178,7 @@ export function createStructureLayers(
       // Walls draw the outer ring/frame for containers (pot/felt-planter/
       // raised-bed). Soil disc/rect lives in `structure-bodies` so toggling
       // walls off reveals just the soil.
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const { queue } = getQueue(getStructures);
         ctx.save();
         ctx.lineWidth = pxToWorld(view, 1);
@@ -218,7 +218,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-bodies'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const { queue } = getQueue(getStructures);
         for (const item of queue) {
           if (item.type === 'single') drawSingleBody(ctx, item.structure, view);
@@ -228,7 +228,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-surfaces'],
-      draw(ctx, _data, _view) {
+      draw(_data, _view: View, _dims: Dims) {
         const { queue } = getQueue(getStructures);
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
@@ -244,7 +244,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-plantable-area'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const { queue } = getQueue(getStructures);
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
@@ -277,7 +277,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-highlights'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const ui = getUi();
         const { getHighlight } = ui;
         const clashIds = ui.dragClashIds ?? [];
@@ -376,7 +376,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-labels'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const { labelMode, labelFontSize, debugOverlappingLabels } = getUi();
         if (labelMode === 'none' || labelMode === 'selection') return;
         const { queue } = getQueue(getStructures);

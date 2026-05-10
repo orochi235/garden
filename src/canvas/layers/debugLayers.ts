@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@orochi235/weasel';
+import type { Dims, RenderLayer, View } from '@orochi235/weasel';
 import type { Garden } from '../../model/types';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { isDebugEnabled } from '../debug';
@@ -44,7 +44,7 @@ function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
     id: 'debug-hitboxes',
     label: 'Debug: Hitboxes',
     alwaysOn: true,
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const g = getGarden();
       const items = mode === 'garden' ? bboxesGarden(g) : bboxesSeedStarting(g);
       ctx.save();
@@ -62,7 +62,7 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
     id: 'debug-bounds',
     label: 'Debug: Bounds',
     alwaysOn: true,
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const g = getGarden();
       let x: number, y: number, w: number, h: number;
       if (mode === 'garden') {
@@ -87,7 +87,7 @@ function makeAxesLayer(): RenderLayer<unknown> {
     id: 'debug-axes',
     label: 'Debug: Axes',
     alwaysOn: true,
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const px = (n: number) => n / Math.max(0.0001, view.scale);
       ctx.save();
       // X axis (red), Y axis (green) from origin extending 100 world units.
@@ -115,7 +115,7 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
     id: 'debug-grid',
     label: 'Debug: Grid',
     alwaysOn: true,
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const g = getGarden();
       let step: number, w: number, h: number;
       if (mode === 'garden') {

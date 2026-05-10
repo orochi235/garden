@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@orochi235/weasel';
+import type { Dims, RenderLayer } from '@orochi235/weasel';
 import { renderLabel } from '@orochi235/weasel';
 import { renderPatternOverlay, type PatternId } from '../patterns';
 import type { Zone } from '../../model/types';
@@ -27,7 +27,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
   return [
     {
       ...meta['zone-bodies'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
           ctx.fillStyle = z.color;
@@ -45,7 +45,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     },
     {
       ...meta['zone-patterns'],
-      draw(ctx, _data, _view) {
+      draw(_data, _view: View, _dims: Dims) {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
           if (!z.pattern) continue;
@@ -57,7 +57,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     },
     {
       ...meta['zone-highlights'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const { getHighlight } = getUi();
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         for (const z of sorted) {
@@ -75,7 +75,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     },
     {
       ...meta['zone-labels'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const ui = getUi();
         if (ui.labelMode === 'none' || ui.labelMode === 'selection') return;
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);

@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { defineTool, type RenderLayer, type Tool } from '@orochi235/weasel';
+import { defineTool, type Dims, type RenderLayer, type Tool, type View } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
@@ -127,7 +127,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
       id: 'seedling-move-gutter-overlay',
       label: 'Seedling Gutter Affordances',
       space: 'screen',
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const s = scratchRef.current;
         // Marquee rendering moved to `useSeedSelectTool` + the framework's
         // `dragPreviewLayer` (kind = AREA_SELECT_DRAG_KIND). This overlay only

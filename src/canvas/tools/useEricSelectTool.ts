@@ -9,6 +9,7 @@ import {
   cornerResizeHandles,
   hitCornerHandle,
   selectFromMarquee,
+  type Dims,
   type Tool,
   type RenderLayer,
   type ResizeAnchor,
@@ -16,6 +17,7 @@ import {
   type UseResizeOptions,
   type MoveBehavior,
   type InsertAdapter,
+  type View,
 } from '@orochi235/weasel';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
@@ -319,7 +321,7 @@ export function useEricSelectTool(
       id: 'eric-select-overlay',
       label: 'Select Overlay (eric)',
       space: 'screen',
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         // Marquee rectangle is now rendered by the framework's
         // `dragPreviewLayer` via `areaSelectDrag.renderPreview`. See
         // `src/canvas/drag/areaSelectDrag.ts` and the `areaSelect.overlay`

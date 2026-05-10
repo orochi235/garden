@@ -4,7 +4,7 @@ import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
 import { getSpecies } from '../../model/species';
 import { createMarkdownRenderer, renderLabel, type TextRenderer } from '@orochi235/weasel';
-import type { RenderLayer } from '@orochi235/weasel';
+import type { Dims, RenderLayer } from '@orochi235/weasel';
 import { renderPlant } from '../plantRenderers';
 import { plantingWorldPose } from '../../utils/plantingPose';
 import type { GetUi, LayerDescriptor, View } from './worldLayerData';
@@ -108,7 +108,7 @@ export function createPlantingLayers(
   return [
     {
       ...meta['container-overlays'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
@@ -166,7 +166,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-spacing'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
@@ -208,7 +208,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-icons'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
@@ -238,7 +238,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-measurements'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
@@ -274,7 +274,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-highlights'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
@@ -304,7 +304,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-labels'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const data = getUi();
         if (data.labelMode === 'none') return;
         const plantings = getPlantings();
@@ -380,7 +380,7 @@ export function createPlantingLayers(
       // it visually crops plant icons that overhang the soil edge. The outer
       // rim stroke + rim fill live in `structure-walls`; this layer is only
       // the inner edge.
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         const structures = getStructures();
         for (const s of structures) {
           if (!s.container || (s.wallThicknessFt ?? 0) <= 0) continue;

@@ -1,6 +1,6 @@
 import { getCultivar } from '../../model/cultivars';
 import { renderLabel } from '@orochi235/weasel';
-import type { RenderLayer } from '@orochi235/weasel';
+import type { Dims, RenderLayer } from '@orochi235/weasel';
 import { plantingWorldPose } from '../../utils/plantingPose';
 import type { Planting, Structure, Zone } from '../../model/types';
 import type { Seedling, Tray } from '../../model/seedStarting';
@@ -42,7 +42,7 @@ export function createSelectionOutlineLayer(
 ): RenderLayer<unknown> {
   return {
     ...SELECTION_META['selection-outlines'],
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const { selectedIds, labelFontSize } = getUi();
       if (selectedIds.length === 0) return;
 
@@ -156,7 +156,7 @@ export function createGroupOutlineLayer(
 ): RenderLayer<unknown> {
   return {
     ...SELECTION_META['group-outlines'],
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const { selectedIds } = getUi();
       if (selectedIds.length === 0) return;
 
@@ -201,7 +201,7 @@ export function createSelectionHandlesLayer(
   return {
     ...SELECTION_META['selection-handles'],
     space: 'screen',
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const ui = getUi();
       if (ui.selectedIds.length === 0) return;
 
@@ -271,7 +271,7 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
     label: 'Debug: All Handles',
     alwaysOn: true,
     space: 'screen',
-    draw(ctx, _data, view) {
+    draw(_data, view: View, _dims: Dims) {
       const hs = 5;
       ctx.save();
       ctx.globalAlpha = 0.45;

@@ -3,8 +3,10 @@ import {
   defineTool,
   useClone,
   cloneByAltDrag,
+  type Dims,
   type Tool,
   type RenderLayer,
+  type View,
 } from '@orochi235/weasel';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
@@ -72,7 +74,7 @@ export function useEricCycleTool(
       label: 'Cycle-Clone Overlay (eric)',
       space: 'screen',
       alwaysOn: true,
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims) {
         if (cloneOverlay.length === 0) return;
         const garden = useGardenStore.getState().garden;
         for (const item of cloneOverlay) {
