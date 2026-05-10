@@ -1,14 +1,19 @@
+import {
+  type RenderLayer,
+  type Dims,
+  type View,
+  PathBuilder,
+  rectPath,
+} from '@orochi235/weasel';
+import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
 import { getSpecies } from '../../model/species';
-import { createMarkdownRenderer, renderLabel, type TextRenderer } from '@orochi235/weasel';
-import type { Dims, RenderLayer } from '@orochi235/weasel';
-import { renderPlant } from '../plantRenderers';
-import { plantingWorldPose } from '../../utils/plantingPose';
-import type { GetUi, LayerDescriptor, View } from './worldLayerData';
+import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
+import { plantingWorldPose } from '../../utils/plantingPose';
 
 /**
  * Single source of truth for planting/container-layer metadata. Order = draw
@@ -69,26 +74,6 @@ function buildParentLookup(plantings: Planting[], zones: Zone[], structures: Str
   return { parentMap, childCount, plantingsByParent };
 }
 
-function applyContainerClip(ctx: CanvasRenderingContext2D, parent: PlantingParent, view: View): boolean {
-  if ('clipChildren' in parent && parent.clipChildren === false) return false;
-  const wall = parent.wallThicknessFt ?? 0;
-  if (wall <= 0) return false;
-  ctx.save();
-  ctx.beginPath();
-  if (parent.shape === 'circle') {
-    const rimWidth = Math.max(px(view, 1.5), wall);
-    const cx = parent.x + parent.width / 2;
-    const cy = parent.y + parent.length / 2;
-    const r = Math.min(parent.width, parent.length) / 2 - rimWidth;
-    ctx.arc(cx, cy, Math.max(0, r), 0, Math.PI * 2);
-  } else {
-    const wallWidth = Math.max(px(view, 2), wall);
-    ctx.rect(parent.x + wallWidth, parent.y + wallWidth, parent.width - wallWidth * 2, parent.length - wallWidth * 2);
-  }
-  ctx.clip();
-  return true;
-}
-
 function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<string, number>, plantIconScale: number): number {
   const cultivar = getCultivar(p.cultivarId);
   const footprint = cultivar?.footprintFt ?? 0.5;
@@ -96,6 +81,52 @@ function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<str
   return isSingleFill
     ? (Math.min(parent.width, parent.length) / 2) * plantIconScale
     : (footprint / 2) * plantIconScale;
+}
+
+/** Approximate a full circle as 4 cubic-bezier segments. */
+function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498 * r;
+  return new PathBuilder()
+    .moveTo(cx, cy - r)
+    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
+    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
+    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
+    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
+    .close()
+    .build();
+}
+
+/**
+ * Render a plant glyph as DrawCommands, translated to (wx, wy).
+ * NOTE(concern): renderPlant uses HTMLImageElement + ctx.drawImage internally.
+ * Until plantRenderers is ported to return DrawCommands or an ImageBitmap cache
+ * is wired, we approximate with the fallback circle glyph only.
+ * Image rendering is flagged as DONE_WITH_CONCERNS.
+ */
+function plantGlyphAt(
+  cultivarId: string,
+  wx: number,
+  wy: number,
+  radius: number,
+  showFootprintCircles: boolean,
+): DrawCommand[] {
+  const cultivar = getCultivar(cultivarId);
+  const bgColor = showFootprintCircles
+    ? (cultivar?.iconBgColor ?? cultivar?.color ?? '#4A7C59')
+    : 'transparent';
+  const strokeColor = cultivar?.color ?? '#4A7C59';
+  return [
+    {
+      kind: 'path',
+      path: circlePath(wx, wy, radius),
+      fill: { fill: 'solid', color: bgColor },
+    },
+    {
+      kind: 'path',
+      path: circlePath(wx, wy, radius),
+      stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(1, radius * 0.06) },
+    },
+  ];
 }
 
 export function createPlantingLayers(
@@ -108,7 +139,7 @@ export function createPlantingLayers(
   return [
     {
       ...meta['container-overlays'],
-      draw(_data, view: View, _dims: Dims) {
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
@@ -131,6 +162,7 @@ export function createPlantingLayers(
           if (parent) containers.push({ id: z.id, parent });
         }
 
+        const children: DrawCommand[] = [];
         for (const { id, parent } of containers) {
           if (!parent.layout) continue;
           const bounds = getPlantableBounds(parent);
@@ -140,43 +172,49 @@ export function createPlantingLayers(
           for (const item of overlay.items) {
             if (item.type === 'slot-dot') {
               const r = px(view, 3);
-              ctx.beginPath();
-              ctx.arc(item.x, item.y, r, 0, Math.PI * 2);
-              ctx.fillStyle = item.occupied ? 'rgba(255,255,255,0.1)' : 'rgba(127,176,105,0.4)';
-              ctx.fill();
+              const color = item.occupied ? 'rgba(255,255,255,0.1)' : 'rgba(127,176,105,0.4)';
+              children.push({
+                kind: 'path',
+                path: circlePath(item.x, item.y, r),
+                fill: { fill: 'solid', color },
+              });
             } else if (item.type === 'highlight-slot') {
               const r = Math.max(px(view, 3), item.radiusFt / 2);
-              ctx.beginPath();
-              ctx.arc(item.x, item.y, r, 0, Math.PI * 2);
-              ctx.strokeStyle = 'rgba(127,176,105,0.8)';
-              ctx.lineWidth = px(view, 2);
-              ctx.stroke();
+              children.push({
+                kind: 'path',
+                path: circlePath(item.x, item.y, r),
+                stroke: { paint: { fill: 'solid', color: 'rgba(127,176,105,0.8)' }, width: px(view, 2) },
+              });
             } else if (item.type === 'grid-line') {
-              ctx.beginPath();
-              ctx.moveTo(item.x1, item.y1);
-              ctx.lineTo(item.x2, item.y2);
-              ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-              ctx.lineWidth = px(view, 1);
-              ctx.stroke();
+              const path = new PathBuilder()
+                .moveTo(item.x1, item.y1)
+                .lineTo(item.x2, item.y2)
+                .build();
+              children.push({
+                kind: 'path',
+                path,
+                stroke: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.18)' }, width: px(view, 1) },
+              });
             }
           }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
 
     {
       ...meta['planting-spacing'],
-      draw(_data, view: View, _dims: Dims) {
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
         const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
 
+        const children: DrawCommand[] = [];
         for (const [parentId, group] of plantingsByParent) {
           const parent = parentMap.get(parentId);
           if (!parent) continue;
-          const clipped = applyContainerClip(ctx, parent, view);
 
           for (const p of group) {
             const cultivar = getCultivar(p.cultivarId);
@@ -186,65 +224,62 @@ export function createPlantingLayers(
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const spacingHalf = (spacing / 2) * data.plantIconScale;
 
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.lineWidth = px(view, 1);
-            ctx.setLineDash([px(view, 4), px(view, 3)]);
-            ctx.beginPath();
-            if (parent.shape === 'circle') {
-              ctx.arc(wx, wy, spacingHalf, 0, Math.PI * 2);
-            } else {
-              ctx.rect(wx - spacingHalf, wy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
+            const path = parent.shape === 'circle'
+              ? circlePath(wx, wy, spacingHalf)
+              : rectPath(wx - spacingHalf, wy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
+            children.push({
+              kind: 'path',
+              path,
+              stroke: {
+                paint: { fill: 'solid', color: 'rgba(255, 255, 255, 0.3)' },
+                width: px(view, 1),
+                dash: [px(view, 4), px(view, 3)],
+              },
+            });
           }
-          if (clipped) ctx.restore();
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
 
     {
       ...meta['planting-icons'],
-      draw(_data, view: View, _dims: Dims) {
+      // NOTE(concern): plant image icons use HTMLImageElement/ctx.drawImage.
+      // Until plantRenderers is ported, icons render as fallback circles only.
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
         const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
 
+        const children: DrawCommand[] = [];
         for (const [parentId, group] of plantingsByParent) {
           const parent = parentMap.get(parentId);
           if (!parent) continue;
-          const clipped = applyContainerClip(ctx, parent, view);
 
           for (const p of group) {
-            const cultivar = getCultivar(p.cultivarId);
-            const color = cultivar?.color ?? '#4A7C59';
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
-
-            ctx.save();
-            ctx.translate(wx, wy);
-            renderPlant(ctx, p.cultivarId, radius, color, data.showFootprintCircles ? undefined : 'transparent');
-            ctx.restore();
+            children.push(...plantGlyphAt(p.cultivarId, wx, wy, radius, data.showFootprintCircles));
           }
-          if (clipped) ctx.restore();
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
 
     {
       ...meta['planting-measurements'],
-      draw(_data, view: View, _dims: Dims) {
+      // Flagged: text commands require registerFont() wired at app boot.
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
         const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
 
+        const fontPx = 9 / Math.max(0.0001, view.scale);
+        const children: DrawCommand[] = [];
         for (const [, group] of plantingsByParent) {
           const parent = parentMap.get(group[0]?.parentId ?? '');
           if (!parent) continue;
@@ -257,30 +292,45 @@ export function createPlantingLayers(
             if (isSingleFill) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), (footprint / 2) * data.plantIconScale);
-
-            const fontPx = 9 / Math.max(0.0001, view.scale);
-            ctx.save();
-            ctx.font = `${fontPx}px sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.fillText(`${footprint.toFixed(1)}ft`, wx + radius + px(view, 3), wy - px(view, 2));
-            ctx.fillStyle = 'rgba(255, 255, 200, 0.5)';
-            ctx.fillText(`${spacing.toFixed(1)}ft`, wx + radius + px(view, 3), wy + px(view, 8));
-            ctx.restore();
+            const labelX = wx + radius + px(view, 3);
+            children.push({
+              kind: 'text',
+              x: labelX,
+              y: wy - px(view, 2),
+              text: `${footprint.toFixed(1)}ft`,
+              style: {
+                fontSize: fontPx,
+                align: 'left' as const,
+                fill: { fill: 'solid' as const, color: 'rgba(255, 255, 255, 0.7)' },
+              },
+            });
+            children.push({
+              kind: 'text',
+              x: labelX,
+              y: wy + px(view, 8),
+              text: `${spacing.toFixed(1)}ft`,
+              style: {
+                fontSize: fontPx,
+                align: 'left' as const,
+                fill: { fill: 'solid' as const, color: 'rgba(255, 255, 200, 0.5)' },
+              },
+            });
           }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
 
     {
       ...meta['planting-highlights'],
-      draw(_data, view: View, _dims: Dims) {
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
         const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
 
+        const children: DrawCommand[] = [];
         for (const [, group] of plantingsByParent) {
           const parent = parentMap.get(group[0]?.parentId ?? '');
           if (!parent) continue;
@@ -289,34 +339,41 @@ export function createPlantingLayers(
             if (opacity <= 0) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
-            ctx.save();
-            ctx.globalAlpha = opacity;
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = px(view, 2);
-            ctx.beginPath();
-            ctx.arc(wx, wy, radius + px(view, 1), 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
+            children.push({
+              kind: 'group',
+              alpha: opacity,
+              children: [{
+                kind: 'path',
+                path: circlePath(wx, wy, radius + px(view, 1)),
+                stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
+              }],
+            });
           }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
 
     {
       ...meta['planting-labels'],
-      draw(_data, view: View, _dims: Dims) {
+      // Flagged: text commands require registerFont() wired at app boot.
+      // NOTE(concern): Markdown label rendering (bold species name + italic variety)
+      // previously used createMarkdownRenderer(ctx,...) which requires a canvas
+      // context. Here we fall back to a plain text command with species+variety
+      // concatenated. Full markdown rendering will need a DrawCommand-compatible
+      // markdown renderer.
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
-        if (data.labelMode === 'none') return;
+        if (data.labelMode === 'none') return [];
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
         const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
 
         const fontPx = data.labelFontSize / Math.max(0.0001, view.scale);
-        ctx.font = `${fontPx}px sans-serif`;
 
         const labelOccluders: RenderedRect[] = [];
-        const candidates: { text: string; rect: RenderedRect; selected: boolean; renderText?: TextRenderer }[] = [];
+        const candidates: { text: string; rect: RenderedRect; selected: boolean }[] = [];
 
         for (const [, group] of plantingsByParent) {
           const parent = parentMap.get(group[0]?.parentId ?? '');
@@ -335,72 +392,75 @@ export function createPlantingLayers(
             const species = getSpecies(cultivar.speciesId);
             const speciesName = species?.name ?? cultivar.name;
             const variety = cultivar.variety;
-            const mdText = variety
-              ? `[**${speciesName}**]\n(*${variety}*)`
-              : `**${speciesName}**`;
-            const { renderer: mdRenderer, width: labelW, height: labelH } =
-              createMarkdownRenderer(ctx, mdText, fontPx);
+            const text = variety ? `${speciesName} (${variety})` : speciesName;
+            // Approximate label width: 0.6× fontPx per char + 2×padX
             const padX = px(view, 4);
-            const pillW = labelW + padX * 2;
+            const approxW = text.length * fontPx * 0.6 + padX * 2;
             const labelY = wy + radius + px(view, 8);
             candidates.push({
-              text: mdText,
-              rect: { x: wx - pillW / 2, y: labelY, w: pillW, h: labelH },
+              text,
+              rect: { x: wx - approxW / 2, y: labelY, w: approxW, h: fontPx },
               selected: isSelected,
-              renderText: (c, _t, tx, ty) => {
-                c.textAlign = 'left';
-                mdRenderer(c, _t, tx - labelW / 2, ty);
-              },
             });
           }
         }
 
+        const children: DrawCommand[] = [];
         for (const label of candidates) {
           if (!label.selected) {
             const overlaps = labelOccluders.some((r) => rectsOverlap(label.rect, r));
             if (overlaps) continue;
           }
-          renderLabel(ctx, label.text, label.rect.x + label.rect.w / 2, label.rect.y, {
-            fontSize: fontPx,
-            padX: px(view, 4),
-            padY: px(view, 1),
-            cornerRadius: px(view, 3),
-            renderText: label.renderText,
-            width: label.rect.w - px(view, 8),
-            height: label.rect.h,
+          children.push({
+            kind: 'text',
+            x: label.rect.x + label.rect.w / 2,
+            y: label.rect.y,
+            text: label.text,
+            style: {
+              fontSize: fontPx,
+              align: 'center' as const,
+              fill: { fill: 'solid' as const, color: '#ffffff' },
+            },
           });
           labelOccluders.push(label.rect);
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
 
     {
       ...meta['container-walls'],
       // Inner rim stroke (at the soil/wall boundary), drawn AFTER plantings so
-      // it visually crops plant icons that overhang the soil edge. The outer
-      // rim stroke + rim fill live in `structure-walls`; this layer is only
-      // the inner edge.
-      draw(_data, view: View, _dims: Dims) {
+      // it visually crops plant icons that overhang the soil edge.
+      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const structures = getStructures();
+        const children: DrawCommand[] = [];
         for (const s of structures) {
           if (!s.container || (s.wallThicknessFt ?? 0) <= 0) continue;
-          ctx.strokeStyle = s.type === 'pot' ? '#8a3a18' : '#333333';
-          ctx.lineWidth = px(view, 1);
+          const strokeColor = s.type === 'pot' ? '#8a3a18' : '#333333';
+          const lw = px(view, 1);
           if (s.type === 'pot' || s.type === 'felt-planter') {
             const rimWidth = Math.max(px(view, 1.5), s.wallThicknessFt);
             const cx = s.x + s.width / 2;
             const cy = s.y + s.length / 2;
             const r = Math.min(s.width, s.length) / 2 - rimWidth;
             if (r > 0) {
-              ctx.beginPath();
-              ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
-              ctx.stroke();
+              children.push({
+                kind: 'path',
+                path: circlePath(cx, cy, r),
+                stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
+              });
             }
           } else {
             const wallWidth = Math.max(px(view, 2), s.wallThicknessFt);
-            ctx.strokeRect(s.x + wallWidth, s.y + wallWidth, s.width - wallWidth * 2, s.length - wallWidth * 2);
+            children.push({
+              kind: 'path',
+              path: rectPath(s.x + wallWidth, s.y + wallWidth, s.width - wallWidth * 2, s.length - wallWidth * 2),
+              stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
+            });
           }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
   ];

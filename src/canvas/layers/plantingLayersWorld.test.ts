@@ -3,6 +3,7 @@ import { createPlantingLayers } from './plantingLayersWorld';
 import type { GetUi } from './worldLayerData';
 
 const view = { x: 0, y: 0, scale: 10 };
+const dims = { width: 100, height: 100 };
 const baseUi: ReturnType<GetUi> = {
   selectedIds: [],
   labelMode: 'none',
@@ -40,19 +41,8 @@ describe('createPlantingLayers (world)', () => {
 
   it('renders no-op cleanly with empty inputs', () => {
     const layers = createPlantingLayers(() => [], () => [], () => [], () => baseUi);
-    // Should not throw on any layer's draw call
     for (const layer of layers) {
-      const ctx = {
-        save: () => {}, restore: () => {}, beginPath: () => {},
-        arc: () => {}, ellipse: () => {}, rect: () => {},
-        moveTo: () => {}, lineTo: () => {},
-        stroke: () => {}, fill: () => {}, fillRect: () => {}, strokeRect: () => {},
-        setLineDash: () => {}, translate: () => {}, fillText: () => {},
-        measureText: () => ({ width: 0 }),
-        clip: () => {},
-        canvas: { width: 100, height: 100 } as HTMLCanvasElement,
-      } as unknown as CanvasRenderingContext2D;
-      expect(() => layer.draw(ctx, {}, view)).not.toThrow();
+      expect(() => layer.draw({}, view, dims)).not.toThrow();
     }
   });
 });
