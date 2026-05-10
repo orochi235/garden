@@ -101,6 +101,15 @@ export function plantingLayoutFor(
 
       const bounds = getPlantableBounds(c);
 
+      // cell-grid: every valid cell is a drop target; nearestSlotSnap picks
+      // the one under the cursor. We don't filter out occupied cells — the
+      // conflict overlay shows red when the user drops onto another plant
+      // and they decide whether to release.
+      if (c.layout.type === 'cell-grid') {
+        const pts = getSlots(c.layout, bounds);
+        return pts.map((p) => ({ pose: { x: p.x, y: p.y }, origin: { x: p.x, y: p.y } }));
+      }
+
       if (c.layout.type !== 'grid') {
         const pts = getSlots(c.layout, bounds);
         const occupied = new Set(
