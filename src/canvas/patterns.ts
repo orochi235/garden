@@ -2,13 +2,13 @@
  * Garden-side pattern overlay helper.
  *
  * Wraps weasel's `patterns-builtin` factories with garden's palette defaults
- * and exposes the old `renderPatternOverlay(ctx, kind, region, opts)` shape.
- * Centralizing here keeps consumer call sites unchanged while the kit stays
- * domain-agnostic (weasel's factories require explicit `color`).
+ * and exposes `getPattern` (returns a TextureHandle) + `paintFor`
+ * (returns a ready-to-use Paint). Cache keyed by id+params so each unique
+ * tile is registered exactly once with the renderer.
  */
 
 import { hatch, crosshatch, dots, chunks } from '@orochi235/weasel/patterns-builtin';
-import { renderFilledRegion, type Paint, type Region } from '@orochi235/weasel';
+import type { Paint, TextureHandle } from '@orochi235/weasel';
 
 export type PatternId = 'hatch' | 'crosshatch' | 'dots' | 'chunks';
 
@@ -19,11 +19,6 @@ export interface PatternParamMap {
   chunks: { color?: string; bg?: string; size?: number; density?: number; chunkSize?: number; seed?: number };
 }
 
-export interface PatternOptions<P extends PatternId = PatternId> {
-  opacity?: number;
-  params?: PatternParamMap[P];
-}
-
 const DEFAULTS = {
   hatch: { color: 'goldenrod', size: 5, lineWidth: 1 },
   crosshatch: { color: '#E03030', size: 6, lineWidth: 0.8 },
@@ -31,36 +26,42 @@ const DEFAULTS = {
   chunks: { color: '#ffffff', bg: '#2e2218', size: 88, density: 0.1, chunkSize: 1.5, seed: 134 },
 } as const;
 
-const cache = new Map<string, CanvasPattern | null>();
+const cache = new Map<string, TextureHandle | null>();
 
 function keyOf(id: PatternId, p: Record<string, unknown>): string {
   return `${id}:${Object.keys(p).sort().map((k) => `${k}=${String(p[k])}`).join(',')}`;
 }
 
-function build(ctx: CanvasRenderingContext2D, id: PatternId, params: Record<string, unknown>): CanvasPattern | null {
+function build(id: PatternId, params: Record<string, unknown>): TextureHandle | null {
   const k = keyOf(id, params);
   const hit = cache.get(k);
   if (hit !== undefined) return hit;
-  let pat: CanvasPattern | null;
+  let pat: TextureHandle | null;
   switch (id) {
-    case 'hatch': pat = hatch(ctx, params as PatternParamMap['hatch'] & { color: string }); break;
-    case 'crosshatch': pat = crosshatch(ctx, params as PatternParamMap['crosshatch'] & { color: string }); break;
-    case 'dots': pat = dots(ctx, params as PatternParamMap['dots'] & { color: string }); break;
-    case 'chunks': pat = chunks(ctx, params as PatternParamMap['chunks'] & { color: string }); break;
+    case 'hatch': pat = hatch(params as PatternParamMap['hatch'] & { color: string }); break;
+    case 'crosshatch': pat = crosshatch(params as PatternParamMap['crosshatch'] & { color: string }); break;
+    case 'dots': pat = dots(params as PatternParamMap['dots'] & { color: string }); break;
+    case 'chunks': pat = chunks(params as PatternParamMap['chunks'] & { color: string }); break;
   }
   cache.set(k, pat);
   return pat;
 }
 
-export function renderPatternOverlay<P extends PatternId>(
-  ctx: CanvasRenderingContext2D,
+export function getPattern<P extends PatternId>(
   id: P,
-  region: Region,
-  opts: PatternOptions<P> = {},
-): void {
-  const merged = { ...DEFAULTS[id], ...(opts.params ?? {}) } as Record<string, unknown>;
-  const pattern = build(ctx, id, merged);
-  if (!pattern) return;
-  const paint: Paint = { fill: 'pattern', pattern, opacity: opts.opacity };
-  renderFilledRegion(ctx, paint, region);
+  params: Partial<PatternParamMap[P]> = {},
+): TextureHandle | null {
+  const merged = { ...DEFAULTS[id], ...params } as Record<string, unknown>;
+  return build(id, merged);
+}
+
+export function paintFor<P extends PatternId>(
+  id: P,
+  params: Partial<PatternParamMap[P]> = {},
+  opacity?: number,
+): Paint {
+  const handle = getPattern(id, params);
+  return handle
+    ? { fill: 'pattern', pattern: handle, opacity }
+    : { fill: 'solid', color: 'transparent' };
 }
