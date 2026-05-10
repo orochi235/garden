@@ -1,0 +1,137 @@
+{
+  "id": "fixture-garden-mixed",
+  "version": 1,
+  "name": "Mixed Garden",
+  "widthFt": 20,
+  "lengthFt": 20,
+  "gridCellSizeFt": 1,
+  "displayUnit": "ft",
+  "groundColor": "#4A7C59",
+  "blueprint": null,
+  "structures": [
+    {
+      "id": "struct-1",
+      "type": "raised-bed",
+      "shape": "rectangle",
+      "x": 2,
+      "y": 10,
+      "width": 4,
+      "length": 8,
+      "rotation": 0,
+      "color": "#8B6914",
+      "label": "raised-bed",
+      "zIndex": 0,
+      "parentId": null,
+      "groupId": null,
+      "snapToGrid": true,
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "layout": {
+        "type": "grid",
+        "cellSizeFt": 0.25
+      },
+      "wallThicknessFt": 0.0833,
+      "clipChildren": true
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-1",
+      "x": 2,
+      "y": 2,
+      "width": 6,
+      "length": 4,
+      "color": "#7FB06944",
+      "label": "Sunny Patch",
+      "zIndex": 0,
+      "parentId": null,
+      "soilType": null,
+      "sunExposure": "full",
+      "layout": {
+        "type": "grid",
+        "cellSizeFt": 0.25
+      },
+      "pattern": null
+    },
+    {
+      "id": "zone-2",
+      "x": 12,
+      "y": 2,
+      "width": 4,
+      "length": 4,
+      "color": "#7FB06944",
+      "label": "Herb Corner",
+      "zIndex": 0,
+      "parentId": null,
+      "soilType": null,
+      "sunExposure": "partial",
+      "layout": {
+        "type": "grid",
+        "cellSizeFt": 0.25
+      },
+      "pattern": null
+    }
+  ],
+  "plantings": [
+    {
+      "id": "planting-1",
+      "parentId": "zone-1",
+      "cultivarId": "tomato",
+      "x": 3,
+      "y": 3,
+      "label": "Tomato",
+      "icon": null
+    },
+    {
+      "id": "planting-2",
+      "parentId": "zone-1",
+      "cultivarId": "tomato",
+      "x": 5,
+      "y": 3,
+      "label": "Tomato",
+      "icon": null
+    },
+    {
+      "id": "planting-3",
+      "parentId": "zone-2",
+      "cultivarId": "basil",
+      "x": 13,
+      "y": 3,
+      "label": "Basil",
+      "icon": null
+    },
+    {
+      "id": "planting-4",
+      "parentId": "zone-2",
+      "cultivarId": "basil",
+      "x": 14,
+      "y": 3,
+      "label": "Basil",
+      "icon": null
+    },
+    {
+      "id": "planting-5",
+      "parentId": "struct-1",
+      "cultivarId": "lettuce",
+      "x": 3,
+      "y": 11,
+      "label": "Lettuce",
+      "icon": null
+    },
+    {
+      "id": "planting-6",
+      "parentId": "struct-1",
+      "cultivarId": "lettuce",
+      "x": 4,
+      "y": 13,
+      "label": "Lettuce",
+      "icon": null
+    }
+  ],
+  "seedStarting": {
+    "trays": [],
+    "seedlings": []
+  },
+  "collection": []
+}
