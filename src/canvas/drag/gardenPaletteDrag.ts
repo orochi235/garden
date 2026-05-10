@@ -1,9 +1,10 @@
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import { getPlantingPosition } from '../../utils/planting';
+import { plantDrawCommands } from '../plantRenderers';
 import type { PaletteEntry } from '../../components/palette/paletteData';
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
+import type { DrawCommand } from '../util/weaselLocal';
 
 /**
  * Phase-2 migrated drag: palette → garden canvas (plantings only).
@@ -113,13 +114,14 @@ export function createGardenPaletteDrag(opts: {
     renderPreview(putative, _view): DrawCommand[] {
       const cultivar = getCultivar(putative.cultivarId);
       const radius = putative.footprintRadiusFt;
-      const bgColor = cultivar?.iconBgColor ?? cultivar?.color ?? putative.color;
-      const strokeColor = cultivar?.color ?? putative.color;
-      const path = circlePolygon(putative.x, putative.y, radius);
-      return [{ kind: 'group', alpha: 0.7, children: [
-        { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
-        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(0.01, radius * 0.06) } },
-      ]}];
+      const color = cultivar?.color ?? putative.color;
+      // Show the actual plant glyph (bg circle + icon image when loaded),
+      // wrapped in alpha for the "ghost" feel.
+      return [{
+        kind: 'group',
+        alpha: 0.7,
+        children: plantDrawCommands(putative.cultivarId, putative.x, putative.y, radius, color, cultivar?.iconBgColor),
+      }];
     },
 
     commit(putative: GardenPalettePutative): void {

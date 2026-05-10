@@ -1,13 +1,7 @@
 import { getSlots, getGridCells, type Layout, type ParentBounds } from '../model/layout';
 import type { Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
-import { getCultivar } from '../model/cultivars';
-import {
-  computeOccupancy,
-  resolveFootprint,
-  cellsTouchingCircle,
-  validCellsForContainer,
-} from '../model/cellOccupancy';
+import { validCellsForContainer } from '../model/cellOccupancy';
 import { worldToLocalForParent } from './plantingPose';
 import { roundToCell } from '@orochi235/weasel';
 
@@ -68,45 +62,24 @@ function placeOnCellGrid(
   parent: { x: number; y: number; width: number; length: number; shape?: string },
   bounds: ParentBounds,
   cellSizeFt: number,
-  existing: Planting[],
+  _existing: Planting[],
   worldX: number,
   worldY: number,
-  newCultivarId: string | undefined,
+  _newCultivarId: string | undefined,
 ): { x: number; y: number } {
+  // Always snap to the nearest valid cell under the cursor — no "walk to
+  // find a free spot" detour. If the resulting position overlaps an existing
+  // plant the conflict overlay will show red; the user decides whether to
+  // commit. This is what "drop where I want" means.
   const validCells = validCellsForContainer(bounds, cellSizeFt);
   if (validCells.length === 0) {
     return worldToLocalForParent(parent, worldX, worldY);
   }
-  // Compute existing occupancy in WORLD coords.
-  const existingFootprints = existing
-    .map((p) => {
-      const local = { cultivarId: p.cultivarId, x: p.x, y: p.y };
-      return resolveFootprint(local, parent.x, parent.y);
-    })
-    .filter((f): f is NonNullable<typeof f> => f !== null);
-  const { occupied } = computeOccupancy({ bounds, cellSizeFt, plantings: existingFootprints });
-
-  // Footprint radius for the new plant.
-  const newCultivar = newCultivarId ? getCultivar(newCultivarId) : undefined;
-  const newR = (newCultivar?.footprintFt ?? 0.5) / 2;
-
-  // Sort cells by distance to drop point so we try the nearest one first.
-  const candidates = [...validCells].sort((a, b) => {
-    const da = (a.x - worldX) ** 2 + (a.y - worldY) ** 2;
-    const db = (b.x - worldX) ** 2 + (b.y - worldY) ** 2;
-    return da - db;
-  });
-
-  for (const cell of candidates) {
-    const wanted = cellsTouchingCircle(cell.x, cell.y, newR, cellSizeFt, validCells);
-    let clear = true;
-    for (const k of wanted) {
-      if (occupied.has(k)) { clear = false; break; }
-    }
-    if (clear) return worldToLocalForParent(parent, cell.x, cell.y);
+  let best = validCells[0];
+  let bestDist = Infinity;
+  for (const cell of validCells) {
+    const d = (cell.x - worldX) ** 2 + (cell.y - worldY) ** 2;
+    if (d < bestDist) { bestDist = d; best = cell; }
   }
-
-  // No valid spot — fall back to the drop position (caller may decide to
-  // reject the placement).
-  return worldToLocalForParent(parent, worldX, worldY);
+  return worldToLocalForParent(parent, best.x, best.y);
 }
