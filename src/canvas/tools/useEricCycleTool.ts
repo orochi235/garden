@@ -3,18 +3,31 @@ import {
   defineTool,
   useClone,
   cloneByAltDrag,
+  PathBuilder,
   type Dims,
   type Tool,
   type RenderLayer,
   type View,
 } from '@orochi235/weasel';
+import { type DrawCommand } from '../util/weaselLocal';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-import { renderPlant } from '../plantRenderers';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
 import type { GardenInsertAdapter } from '../adapters/insert';
 import { expandToGroups } from '../../utils/groups';
+
+function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
+  const k = 0.5522847498;
+  return new PathBuilder()
+    .moveTo(cx, cy - r)
+    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
+    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
+    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
+    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
+    .close()
+    .build();
+}
 
 export interface CycleScratch { cycled: boolean }
 
@@ -74,9 +87,10 @@ export function useEricCycleTool(
       label: 'Cycle-Clone Overlay (eric)',
       space: 'screen',
       alwaysOn: true,
-      draw(_data, view: View, _dims: Dims) {
-        if (cloneOverlay.length === 0) return;
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
+        if (cloneOverlay.length === 0) return [];
         const garden = useGardenStore.getState().garden;
+        const children: DrawCommand[] = [];
         for (const item of cloneOverlay) {
           const planting = garden.plantings.find((p) => p.id === item.id);
           if (!planting) continue;
@@ -86,12 +100,14 @@ export function useEricCycleTool(
           const sx = (item.x - view.x) * view.scale;
           const sy = (item.y - view.y) * view.scale;
           const radiusPx = (footprintFt / 2) * view.scale;
-          ctx.save();
-          ctx.globalAlpha = 0.5;
-          ctx.translate(sx, sy);
-          renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
-          ctx.restore();
+          const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
+          const path = circlePath(sx, sy, radiusPx);
+          children.push(
+            { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
+            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1, radiusPx * 0.06) } },
+          );
         }
+        return [{ kind: 'group', alpha: 0.5, children }];
       },
     }),
     [cloneOverlay],
