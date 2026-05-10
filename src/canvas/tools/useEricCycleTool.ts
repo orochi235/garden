@@ -3,7 +3,6 @@ import {
   defineTool,
   useClone,
   cloneByAltDrag,
-  PathBuilder,
   type Dims,
   type Tool,
   type RenderLayer,
@@ -16,18 +15,7 @@ import { getCultivar } from '../../model/cultivars';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
 import type { GardenInsertAdapter } from '../adapters/insert';
 import { expandToGroups } from '../../utils/groups';
-
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
+import { plantDrawCommands } from '../plantRenderers';
 
 export interface CycleScratch { cycled: boolean }
 
@@ -100,12 +88,9 @@ export function useEricCycleTool(
           const sx = (item.x - view.x) * view.scale;
           const sy = (item.y - view.y) * view.scale;
           const radiusPx = (footprintFt / 2) * view.scale;
-          const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
-          const path = circlePath(sx, sy, radiusPx);
-          children.push(
-            { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
-            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1, radiusPx * 0.06) } },
-          );
+          const color = cultivar.color ?? '#4A7C59';
+          const iconBgColor = cultivar.iconBgColor ?? null;
+          children.push(...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor));
         }
         return [{ kind: 'group', alpha: 0.5, children }];
       },

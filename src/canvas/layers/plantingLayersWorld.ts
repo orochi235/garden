@@ -14,6 +14,7 @@ import { getSpecies } from '../../model/species';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 import { plantingWorldPose } from '../../utils/plantingPose';
+import { plantDrawCommands } from '../plantRenderers';
 
 /**
  * Single source of truth for planting/container-layer metadata. Order = draw
@@ -98,10 +99,6 @@ function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['
 
 /**
  * Render a plant glyph as DrawCommands, translated to (wx, wy).
- * NOTE(concern): renderPlant uses HTMLImageElement + ctx.drawImage internally.
- * Until plantRenderers is ported to return DrawCommands or an ImageBitmap cache
- * is wired, we approximate with the fallback circle glyph only.
- * Image rendering is flagged as DONE_WITH_CONCERNS.
  */
 function plantGlyphAt(
   cultivarId: string,
@@ -111,22 +108,11 @@ function plantGlyphAt(
   showFootprintCircles: boolean,
 ): DrawCommand[] {
   const cultivar = getCultivar(cultivarId);
-  const bgColor = showFootprintCircles
-    ? (cultivar?.iconBgColor ?? cultivar?.color ?? '#4A7C59')
+  const color = cultivar?.color ?? '#4A7C59';
+  const iconBgColor = showFootprintCircles
+    ? (cultivar?.iconBgColor ?? null)
     : 'transparent';
-  const strokeColor = cultivar?.color ?? '#4A7C59';
-  return [
-    {
-      kind: 'path',
-      path: circlePath(wx, wy, radius),
-      fill: { fill: 'solid', color: bgColor },
-    },
-    {
-      kind: 'path',
-      path: circlePath(wx, wy, radius),
-      stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(1, radius * 0.06) },
-    },
-  ];
+  return plantDrawCommands(cultivarId, wx, wy, radius, color, iconBgColor);
 }
 
 export function createPlantingLayers(
@@ -244,8 +230,6 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-icons'],
-      // NOTE(concern): plant image icons use HTMLImageElement/ctx.drawImage.
-      // Until plantRenderers is ported, icons render as fallback circles only.
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();

@@ -9,7 +9,6 @@ import {
   cornerResizeHandles,
   hitCornerHandle,
   selectFromMarquee,
-  PathBuilder,
   type Dims,
   type Tool,
   type RenderLayer,
@@ -25,6 +24,7 @@ import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import { plantingWorldPose } from '../../utils/plantingPose';
+import { plantDrawCommands } from '../plantRenderers';
 import {
   type GardenSceneAdapter,
   type ScenePose,
@@ -144,18 +144,6 @@ function trackPlantingSnap(adapter: GardenSceneAdapter): MoveBehavior<ScenePose>
 // strategy (`getLayout()` on the adapter).
 
 interface CloneOverlayItem { id: string; x: number; y: number }
-
-function circlePath(cx: number, cy: number, r: number): ReturnType<PathBuilder['build']> {
-  const k = 0.5522847498;
-  return new PathBuilder()
-    .moveTo(cx, cy - r)
-    .curveTo(cx + r * k, cy - r, cx + r, cy - r * k, cx + r, cy)
-    .curveTo(cx + r, cy + r * k, cx + r * k, cy + r, cx, cy + r)
-    .curveTo(cx - r * k, cy + r, cx - r, cy + r * k, cx - r, cy)
-    .curveTo(cx - r, cy - r * k, cx - r * k, cy - r, cx, cy - r)
-    .close()
-    .build();
-}
 
 export function useEricSelectTool(
   adapter: GardenSceneAdapter,
@@ -365,12 +353,9 @@ export function useEricSelectTool(
           const sx = (wx - view.x) * view.scale;
           const sy = (wy - view.y) * view.scale;
           const radiusPx = (footprintFt / 2) * view.scale;
-          const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
-          const path = circlePath(sx, sy, radiusPx);
-          children.push(
-            { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
-            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1, radiusPx * 0.06) } },
-          );
+          const color = cultivar.color ?? '#4A7C59';
+          const iconBgColor = cultivar.iconBgColor ?? null;
+          children.push(...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor));
         }
         return [{ kind: 'group', alpha: 0.5, children }];
       },

@@ -14,6 +14,7 @@ import {
 } from '../../model/seedlingWarnings';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 import { useGardenStore } from '../../store/gardenStore';
+import { plantDrawCommands } from '../plantRenderers';
 
 export interface SeedFillPreview {
   trayId: string;
@@ -82,11 +83,8 @@ function collectSownCells(
 }
 
 /**
- * Render a plant glyph as DrawCommands.
- * NOTE(concern): renderPlant uses HTMLImageElement + ctx.drawImage internally.
- * Until plantRenderers is ported to return DrawCommands or an ImageBitmap cache
- * is wired, we approximate with the fallback circle glyph only.
- * Image rendering is flagged as DONE_WITH_CONCERNS.
+ * Render a plant glyph as DrawCommands at local origin (0, 0).
+ * The caller wraps in a translated group to position in world space.
  */
 function plantGlyphCommands(
   cultivarId: string,
@@ -94,21 +92,10 @@ function plantGlyphCommands(
   alpha: number,
 ): DrawCommand[] {
   const cultivar = getCultivar(cultivarId);
-  const bgColor = cultivar?.iconBgColor ?? cultivar?.color ?? '#4A7C59';
-  const strokeColor = cultivar?.color ?? '#4A7C59';
-  // Draw bg circle + fallback stroke circle (matches drawFallback behaviour)
-  const cmds: DrawCommand[] = [
-    {
-      kind: 'path',
-      path: circlePath(0, 0, radius),
-      fill: { fill: 'solid', color: bgColor },
-    },
-    {
-      kind: 'path',
-      path: circlePath(0, 0, radius),
-      stroke: { paint: { fill: 'solid', color: strokeColor }, width: Math.max(1, radius * 0.06) },
-    },
-  ];
+  const color = cultivar?.color ?? '#4A7C59';
+  const iconBgColor = cultivar?.iconBgColor ?? null;
+  // plantDrawCommands centers at (cx, cy) = (0, 0); the group transform positions it.
+  const cmds = plantDrawCommands(cultivarId, 0, 0, radius, color, iconBgColor);
   if (alpha < 1) {
     return [{ kind: 'group', alpha, children: cmds }];
   }
