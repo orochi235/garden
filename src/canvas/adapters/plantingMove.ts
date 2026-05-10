@@ -1,7 +1,9 @@
 import { findSnapContainer } from '../findSnapContainer';
 import { useGardenStore } from '../../store/gardenStore';
 import type { Planting } from '../../model/types';
+import { getPlantableBounds } from '../../model/types';
 import { getPlantingParent, plantingWorldPose, worldToLocalForParent } from '../../utils/plantingPose';
+import { validCellsForContainer } from '../../model/cellOccupancy';
 import type { MoveAdapter, SnapTarget, LayoutStrategy } from '@orochi235/weasel';
 import { plantingLayoutFor } from './plantingLayout';
 
@@ -42,8 +44,30 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
     setPose(id, pose) {
       const p = getPlanting(id);
       if (!p) return;
+      const garden = useGardenStore.getState().garden;
+      const parentObj =
+        garden.structures.find((s) => s.id === p.parentId) ??
+        garden.zones.find((z) => z.id === p.parentId);
+      // Snap the live drag pose to the nearest valid cell when the parent is
+      // cell-grid. This makes the move-ghost jump cell-to-cell during drag
+      // instead of sliding continuously, matching the post-commit position.
+      let snapped = pose;
+      if (parentObj && parentObj.layout?.type === 'cell-grid') {
+        const cellSize = parentObj.layout.cellSizeFt;
+        const bounds = getPlantableBounds(parentObj);
+        const validCells = validCellsForContainer(bounds, cellSize);
+        if (validCells.length > 0) {
+          let best = validCells[0];
+          let bestDist = Infinity;
+          for (const cell of validCells) {
+            const d = (cell.x - pose.x) ** 2 + (cell.y - pose.y) ** 2;
+            if (d < bestDist) { bestDist = d; best = cell; }
+          }
+          snapped = { x: best.x, y: best.y };
+        }
+      }
       const parent = p.parentId ? getParent(p.parentId) : undefined;
-      const local = worldToLocalForParent(parent ?? { x: 0, y: 0 }, pose.x, pose.y);
+      const local = worldToLocalForParent(parent ?? { x: 0, y: 0 }, snapped.x, snapped.y);
       useGardenStore.getState().updatePlanting(id, { x: local.x, y: local.y });
     },
     setParent(id, parentId) {

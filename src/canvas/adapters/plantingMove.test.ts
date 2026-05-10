@@ -44,13 +44,16 @@ describe('plantingMoveAdapter', () => {
     expect(before).toBe(false);
   });
 
-  it('setPose stores parent-relative coords', () => {
+  it('setPose stores parent-relative coords (snapped to nearest cell-grid cell)', () => {
     const { bed, planting } = setup();
     const a = createPlantingMoveAdapter();
+    // Bed has a cell-grid layout (1/6 ft = 2 inch cells), so the live
+    // setPose snaps to the nearest cell center. Pose (bed.x + 2, bed.y + 3)
+    // resolves to a cell within ~1/12 ft of (2, 3) in local coords.
     a.setPose(planting.id, { x: bed.x + 2, y: bed.y + 3 });
     const updated = useGardenStore.getState().garden.plantings.find((p) => p.id === planting.id)!;
-    expect(updated.x).toBe(2);
-    expect(updated.y).toBe(3);
+    expect(updated.x).toBeCloseTo(2, 1);
+    expect(updated.y).toBeCloseTo(3, 1);
   });
 
   it('setParent rewrites parent and converts pose to new parent-relative coords', () => {
