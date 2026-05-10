@@ -23,6 +23,8 @@ import { type DrawCommand } from '../util/weaselLocal';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
+import { getPlantableBounds } from '../../model/types';
+import { validCellsForContainer } from '../../model/cellOccupancy';
 import { plantingWorldPose } from '../../utils/plantingPose';
 import { plantDrawCommands } from '../plantRenderers';
 import {
@@ -209,12 +211,39 @@ export function useEricSelectTool(
       }
       return;
     }
+    // Snap planting ghost poses to the nearest cell when the destination
+    // (or current parent, when no dest) is a cell-grid container. The move
+    // overlay's poses are continuous; we want the ghost to jump cell-to-cell
+    // so what the user sees during drag matches what gets committed on release.
+    const garden = useGardenStore.getState().garden;
+    const snapPose = (id: string, p: { x: number; y: number }): { x: number; y: number } => {
+      const planting = garden.plantings.find((pl) => pl.id === id);
+      if (!planting) return p;
+      const parentId = moveOverlay.destContainerId ?? planting.parentId;
+      const parent =
+        garden.structures.find((s) => s.id === parentId) ??
+        garden.zones.find((z) => z.id === parentId);
+      if (!parent || parent.layout?.type !== 'cell-grid') return p;
+      const cellSize = parent.layout.cellSizeFt;
+      const bounds = getPlantableBounds(parent);
+      const cells = validCellsForContainer(bounds, cellSize);
+      if (cells.length === 0) return p;
+      let best = cells[0];
+      let bestDist = Infinity;
+      for (const cell of cells) {
+        const d = (cell.x - p.x) ** 2 + (cell.y - p.y) ** 2;
+        if (d < bestDist) { bestDist = d; best = cell; }
+      }
+      return { x: best.x, y: best.y };
+    };
     const putative: MovePutative = {
       draggedIds: moveOverlay.draggedIds,
       posesById: moveOverlay.draggedIds
         .map((id) => {
           const p = moveOverlay.poses.get(id);
-          return p ? ([id, { x: p.x, y: p.y }] as [string, { x: number; y: number }]) : null;
+          if (!p) return null;
+          const snapped = snapPose(id, { x: p.x, y: p.y });
+          return [id, snapped] as [string, { x: number; y: number }];
         })
         .filter((e): e is [string, { x: number; y: number }] => e !== null),
       destContainerId: moveOverlay.destContainerId,
