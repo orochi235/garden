@@ -44,3 +44,4 @@ toolbar-*.png
 .cache
 .claude/scheduled_tasks.lock
 tests/visual/diffs/
+test-results/
