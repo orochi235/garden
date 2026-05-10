@@ -123,14 +123,17 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
     pendingLoads.add(dataUri);
     img.src = dataUri;
   } else {
-    // Another load is already in flight; piggyback by re-calling once the
-    // loadCallbacks fire (they will trigger a redraw, and on the next call to
-    // getIconBitmap the existing element will be found in imageCache).
+    // Another load is already in flight (e.g. the palette sidebar is rendering
+    // this icon via getImage). Piggyback: every time ANY icon finishes loading,
+    // check whether OUR image is now in the cache; only unsubscribe once we've
+    // actually kicked off our decode. (Earlier we unsubscribed on the first
+    // callback regardless — if a different icon loaded first, the piggyback
+    // gave up and the image never got decoded into a bitmap.)
     const unsub = onIconLoad(() => {
-      unsub();
-      // Try again — imageCache should now have the element.
       const loaded = imageCache.get(dataUri);
-      if (loaded && pendingBitmaps.has(cultivarId)) {
+      if (!loaded) return;
+      unsub();
+      if (pendingBitmaps.has(cultivarId)) {
         decodeFromImg(loaded);
       }
     });
