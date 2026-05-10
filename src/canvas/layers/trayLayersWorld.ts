@@ -1,79 +1,78 @@
-import type { RenderLayer } from '@orochi235/weasel';
+import {
+  type RenderLayer,
+} from '@orochi235/weasel';
+import { type DrawCommand, viewToMat3, circlePolygon, roundRectPolygon } from '../util/weaselLocal';
+import type { Dims, View } from '@orochi235/weasel';
 import type { Tray, SeedStartingState } from '../../model/seedStarting';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 import { useGardenStore } from '../../store/gardenStore';
-import type { View } from './worldLayerData';
 
 export type GetTrays = () => Tray[];
-
-function withTrayTransform(
-  ctx: CanvasRenderingContext2D,
-  tray: Tray,
-  draw: () => void,
-): void {
-  const ss = useGardenStore.getState().garden.seedStarting;
-  const o = trayWorldOrigin(tray, ss);
-  ctx.save();
-  ctx.translate(o.x, o.y);
-  draw();
-  ctx.restore();
-}
 
 function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
 }
 
-function drawTrayBody(ctx: CanvasRenderingContext2D, tray: Tray, view: View): void {
+/** Column-major 3×3 translation matrix. */
+function translateMat3(tx: number, ty: number): Float32Array {
+  return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
+}
+
+
+function trayBodyCommands(tray: Tray, view: View): DrawCommand[] {
   const w = tray.widthIn;
   const h = tray.heightIn;
   const radius = Math.min(w, h) * 0.04;
-
-  ctx.fillStyle = '#3a3a3a';
-  ctx.beginPath();
-  ctx.roundRect(0, 0, w, h, radius);
-  ctx.fill();
-
-  ctx.strokeStyle = '#1a1a1a';
-  ctx.lineWidth = px(view, 1);
-  ctx.stroke();
+  const path = roundRectPolygon(0, 0, w, h, radius);
+  return [
+    {
+      kind: 'path',
+      path,
+      fill: { fill: 'solid', color: '#3a3a3a' },
+      stroke: { paint: { fill: 'solid', color: '#1a1a1a' }, width: px(view, 1) },
+    },
+  ];
 }
 
-function drawTrayWells(ctx: CanvasRenderingContext2D, tray: Tray, view: View): void {
+function trayWellsCommands(tray: Tray, view: View): DrawCommand[] {
   const p = tray.cellPitchIn;
   const off = trayInteriorOffsetIn(tray);
   const wellRadius = p * 0.4;
-
+  const lw = px(view, 1);
+  const cmds: DrawCommand[] = [];
   for (let r = 0; r < tray.rows; r++) {
     for (let c = 0; c < tray.cols; c++) {
       const cx = off.x + c * p + p / 2;
       const cy = off.y + r * p + p / 2;
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, wellRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-      ctx.lineWidth = px(view, 1);
-      ctx.stroke();
+      cmds.push({
+        kind: 'path',
+        path: circlePolygon(cx, cy, wellRadius),
+        fill: { fill: 'solid', color: 'rgba(0,0,0,0.22)' },
+        stroke: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.45)' }, width: lw },
+      });
     }
   }
+  return cmds;
 }
 
-function drawTrayGrid(ctx: CanvasRenderingContext2D, tray: Tray): void {
+function trayGridCommands(tray: Tray): DrawCommand[] {
   const p = tray.cellPitchIn;
   const off = trayInteriorOffsetIn(tray);
   const dotRadius = p * 0.06;
-
-  ctx.fillStyle = 'rgba(91,164,207,0.5)';
+  const cmds: DrawCommand[] = [];
   for (let r = 0; r < tray.rows; r++) {
     for (let c = 0; c < tray.cols; c++) {
       const cx = off.x + c * p + p / 2;
       const cy = off.y + r * p + p / 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
-      ctx.fill();
+      cmds.push({
+        kind: 'path',
+        path: circlePolygon(cx, cy, dotRadius),
+        fill: { fill: 'solid', color: 'rgba(91,164,207,0.5)' },
+      });
     }
   }
+  return cmds;
 }
 
 const LABEL_FONT_PX = 12;
@@ -108,14 +107,29 @@ export function hitTestTrayLabel(
   return null;
 }
 
-function drawTrayLabel(ctx: CanvasRenderingContext2D, tray: Tray, view: View): void {
+// Flagged: text commands require registerFont() wired at app boot.
+function trayLabelCommands(tray: Tray, view: View): DrawCommand[] {
   const fontSize = px(view, LABEL_FONT_PX);
   const gapY = tray.heightIn + px(view, LABEL_GAP_PX);
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(tray.label, tray.widthIn / 2, gapY);
+  return [
+    {
+      kind: 'text',
+      x: tray.widthIn / 2,
+      y: gapY,
+      text: tray.label,
+      style: {
+        fontSize,
+        align: 'center' as const,
+        fill: { fill: 'solid' as const, color: 'rgba(255,255,255,0.65)' },
+      },
+    },
+  ];
+}
+
+function trayGroupCommand(tray: Tray, children: DrawCommand[]): DrawCommand {
+  const ss = useGardenStore.getState().garden.seedStarting;
+  const o = trayWorldOrigin(tray, ss);
+  return { kind: 'group', transform: translateMat3(o.x, o.y), children };
 }
 
 export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
@@ -124,39 +138,43 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
       id: 'tray-body',
       label: 'Tray Body',
       alwaysOn: true,
-      draw(ctx, _data, view) {
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawTrayBody(ctx, tray, view));
-        }
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
+        const children = getTrays().map((tray) =>
+          trayGroupCommand(tray, trayBodyCommands(tray, view)),
+        );
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       id: 'tray-wells',
       label: 'Tray Wells',
-      draw(ctx, _data, view) {
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawTrayWells(ctx, tray, view));
-        }
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
+        const children = getTrays().map((tray) =>
+          trayGroupCommand(tray, trayWellsCommands(tray, view)),
+        );
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       id: 'tray-grid',
       label: 'Tray Grid',
       defaultVisible: true,
-      draw(ctx, _data, _view) {
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawTrayGrid(ctx, tray));
-        }
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
+        const children = getTrays().map((tray) =>
+          trayGroupCommand(tray, trayGridCommands(tray)),
+        );
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       id: 'tray-labels',
       label: 'Tray Labels',
       alwaysOn: true,
-      draw(ctx, _data, view) {
-        for (const tray of getTrays()) {
-          withTrayTransform(ctx, tray, () => drawTrayLabel(ctx, tray, view));
-        }
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
+        const children = getTrays().map((tray) =>
+          trayGroupCommand(tray, trayLabelCommands(tray, view)),
+        );
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
   ];

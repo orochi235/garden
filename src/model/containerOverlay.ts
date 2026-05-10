@@ -27,7 +27,15 @@ export interface HighlightSlot {
   radiusFt: number;
 }
 
-export type OverlayPrimitive = SlotDot | HighlightSlot;
+export interface GridLine {
+  type: 'grid-line';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export type OverlayPrimitive = SlotDot | HighlightSlot | GridLine;
 
 // --- Container overlay ---
 
@@ -61,9 +69,10 @@ export function computeContainerOverlay(
   bounds: ParentBounds,
   ctx: OverlayContext,
 ): ContainerOverlay {
-  if (!layout || layout.type === 'grid') {
-    // Grid overlay is owned by the weasel grid layer; nothing to add here.
-    return { items: [] };
+  if (!layout) return { items: [] };
+
+  if (layout.type === 'grid') {
+    return { items: computeGridLines(layout.cellSizeFt, bounds) };
   }
 
   const slots = getSlots(layout, bounds);
@@ -73,6 +82,28 @@ export function computeContainerOverlay(
   });
 
   return { items };
+}
+
+function computeGridLines(cellSizeFt: number, bounds: ParentBounds): GridLine[] {
+  if (cellSizeFt <= 0) return [];
+  const cols = Math.floor(bounds.width / cellSizeFt);
+  const rows = Math.floor(bounds.length / cellSizeFt);
+  const offsetX = (bounds.width - cols * cellSizeFt) / 2;
+  const offsetY = (bounds.length - rows * cellSizeFt) / 2;
+  const x0 = bounds.x + offsetX;
+  const y0 = bounds.y + offsetY;
+  const x1 = x0 + cols * cellSizeFt;
+  const y1 = y0 + rows * cellSizeFt;
+  const lines: GridLine[] = [];
+  for (let c = 0; c <= cols; c++) {
+    const x = x0 + c * cellSizeFt;
+    lines.push({ type: 'grid-line', x1: x, y1: y0, x2: x, y2: y1 });
+  }
+  for (let r = 0; r <= rows; r++) {
+    const y = y0 + r * cellSizeFt;
+    lines.push({ type: 'grid-line', x1: x0, y1: y, x2: x1, y2: y });
+  }
+  return lines;
 }
 
 /**

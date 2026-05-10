@@ -216,6 +216,12 @@ export function SeedStartingCanvasNewPrototype() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasZoomRequest]);
 
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // Two rAFs guarantee the renderer has had a chance to paint at least one frame.
+    requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)));
+  }, []);
+
   // --- Tray label rename overlay ---
   const [renaming, setRenaming] = useState<{ trayId: string; value: string } | null>(null);
   const renameTray = useGardenStore((s) => s.renameTray);
@@ -263,7 +269,7 @@ export function SeedStartingCanvasNewPrototype() {
       [moveTool.id]: moveTool,
       [clickZoom.id]: clickZoom,
     },
-    alwaysOn: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
+    ambient: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
   });
 
   // Subscribe so React re-renders when highlight pulses; computeOpacity reads
@@ -274,6 +280,7 @@ export function SeedStartingCanvasNewPrototype() {
     <div
       ref={containerRef}
       data-canvas-container
+      data-canvas-ready={ready ? 'true' : 'false'}
       style={{
         width: '100%',
         height: '100%',

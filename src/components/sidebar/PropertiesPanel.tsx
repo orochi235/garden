@@ -271,7 +271,7 @@ export function PropertiesPanel() {
                 if (t === 'none') { updateObj({ layout: null }); return; }
                 const next: Layout =
                   t === 'single' ? { type: 'single' }
-                  : t === 'grid' ? { type: 'grid', cellSizeFt: 1 }
+                  : t === 'grid' ? { type: 'grid', cellSizeFt: 0.25 }
                   : { type: 'snap-points', points: [] };
                 updateObj({ layout: next });
               }}

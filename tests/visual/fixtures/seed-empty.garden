@@ -1,0 +1,56 @@
+{
+  "id": "fixture-seed-empty",
+  "version": 1,
+  "name": "Seed Starting Empty",
+  "widthFt": 20,
+  "lengthFt": 20,
+  "gridCellSizeFt": 1,
+  "displayUnit": "ft",
+  "groundColor": "#4A7C59",
+  "blueprint": null,
+  "structures": [],
+  "zones": [],
+  "plantings": [],
+  "seedStarting": {
+    "trays": [
+      {
+        "id": "tray-1",
+        "label": "6x4 small",
+        "rows": 4,
+        "cols": 6,
+        "cellSize": "small",
+        "cellPitchIn": 1.1,
+        "widthIn": 7.3,
+        "heightIn": 5.1,
+        "slots": [
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null }
+        ]
+      }
+    ],
+    "seedlings": []
+  },
+  "collection": []
+}

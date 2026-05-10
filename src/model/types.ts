@@ -173,7 +173,7 @@ export function createStructure(opts: {
     layout: opts.type === 'pot' || opts.type === 'felt-planter'
       ? { type: 'single' }
       : opts.type === 'raised-bed'
-      ? { type: 'grid', cellSizeFt: 1 }
+      ? { type: 'grid', cellSizeFt: 0.25 }
       : null,
     wallThicknessFt: DEFAULT_WALL_THICKNESS_FT[opts.type] ?? 0,
     clipChildren: true,
@@ -193,7 +193,7 @@ export function createZone(opts: { x: number; y: number; width: number; length: 
     parentId: null,
     soilType: null,
     sunExposure: null,
-    layout: { type: 'grid', cellSizeFt: 1 },
+    layout: { type: 'grid', cellSizeFt: 0.25 },
     pattern: opts.pattern ?? null,
   };
 }

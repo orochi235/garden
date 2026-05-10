@@ -1,3 +1,5 @@
+import type { DrawCommand } from '../util/weaselLocal';
+
 /**
  * Putative-drag framework — Phase 1.
  *
@@ -45,11 +47,11 @@ export interface Drag<TInput, TPutative> {
   /** Pure: derive the putative result from the input. No side effects. */
   compute(input: TInput): TPutative | null;
   /**
-   * Draw the ghost preview into the canvas context. The context has whatever
-   * world transform the canvas's `RenderLayer` pipeline applies.
-   * Drags that rely on a legacy preview layer can leave this as a no-op.
+   * Emit DrawCommands for the ghost preview. Called by `dragPreviewLayer` inside
+   * a world-space transform group — return world-coord commands. Return `[]` for
+   * drags whose preview is owned by a legacy layer (no-op drags).
    */
-  renderPreview(ctx: CanvasRenderingContext2D, putative: TPutative, view: { x: number; y: number; scale: number }): void;
+  renderPreview(putative: TPutative, view: { x: number; y: number; scale: number }): DrawCommand[];
   /** Apply the putative to persistent state. Called on pointerup. */
   commit(putative: TPutative): void;
   /**

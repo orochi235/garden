@@ -24,7 +24,6 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
     () =>
       defineTool<FillTrayScratch>({
         id: 'seedling-fill',
-        modifier: 'shift',
         cursor: 'crosshair',
         initScratch: () => ({ active: false, trayId: null, cultivarId: null }),
 

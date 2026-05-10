@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { createDragGhost, screenToWorld, roundToCell } from '@orochi235/weasel';
+import { screenToWorld, roundToCell } from '@orochi235/weasel';
+import { createDragGhost } from '../drag/dragGhost';
 import { onIconLoad, renderPlant } from '../plantRenderers';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
@@ -99,7 +100,7 @@ export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): vo
         const radius = Math.max(8, (footprintFt / 2) * iconScale * zoom);
         ghost = createDragGhost({
           sizeCss: radius * 2,
-          paint: (ctx) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
+          paint: (ctx: CanvasRenderingContext2D) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
         });
         unsubIcon = onIconLoad(() => ghost?.repaint());
         return ghost;
@@ -172,7 +173,7 @@ export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): vo
         const sizeCss = Math.max(24, Math.min(80, entry.defaultWidth * cellPx * zoom));
         ghost = createDragGhost({
           sizeCss,
-          paint: (ctx, size) => {
+          paint: (ctx: CanvasRenderingContext2D, size: number) => {
             ctx.fillStyle = entry.color ?? '#888';
             ctx.globalAlpha = 0.7;
             ctx.fillRect(-size / 2, -size / 2, size, size);

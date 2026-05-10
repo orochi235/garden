@@ -49,18 +49,9 @@ describe('moveDrag', () => {
     });
   });
 
-  it('renderPreview is a no-op when the dragged id has no scene node', () => {
+  it('renderPreview returns [] when the dragged id has no scene node', () => {
     const drag = createMoveDrag();
-    const calls: string[] = [];
-    const ctx = new Proxy({}, {
-      get(_t, prop) {
-        calls.push(String(prop));
-        // Return functions for any callable canvas API; objects for state.
-        return () => {};
-      },
-    }) as unknown as CanvasRenderingContext2D;
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       {
         draggedIds: ['nonexistent'],
         posesById: [['nonexistent', { x: 0, y: 0 }]],
@@ -69,9 +60,7 @@ describe('moveDrag', () => {
       },
       { x: 0, y: 0, scale: 50 },
     );
-    // Skips the per-id branch because no planting/structure/zone exists.
-    // No throws is the contract.
-    expect(calls).toEqual([]);
+    expect(cmds).toEqual([]);
   });
 
   it('commit is a no-op (real commit lives in useMove.end)', () => {
@@ -141,30 +130,12 @@ describe('useEricSelectTool — move → dragPreview integration', () => {
     expect((slot?.putative as MovePutative).draggedIds).toEqual([a.id]);
   });
 
-  it('renderPreview draws snap-target outline for accepted destContainer', () => {
+  it('renderPreview emits a snap-target stroke command for accepted destContainer', () => {
     const z = createZone({ x: 0, y: 0, width: 10, length: 10, color: '#7FB069' });
     useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [z] } }));
 
     const drag = createMoveDrag();
-    const calls: { fn: string; args: unknown[] }[] = [];
-    const ctx = {
-      save: () => calls.push({ fn: 'save', args: [] }),
-      restore: () => calls.push({ fn: 'restore', args: [] }),
-      strokeRect: (...args: unknown[]) => calls.push({ fn: 'strokeRect', args }),
-      strokeStyle: '',
-      lineWidth: 0,
-      setLineDash: (...args: unknown[]) => calls.push({ fn: 'setLineDash', args }),
-      beginPath: () => {},
-      ellipse: () => {},
-      stroke: () => {},
-      fillRect: () => {},
-      fillStyle: '',
-      globalAlpha: 1,
-      translate: () => {},
-    } as unknown as CanvasRenderingContext2D;
-
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       {
         draggedIds: [],
         posesById: [],
@@ -173,10 +144,10 @@ describe('useEricSelectTool — move → dragPreview integration', () => {
       },
       { x: 0, y: 0, scale: 50 },
     );
-    // Should have stroked the zone rect.
-    const stroked = calls.find((c) => c.fn === 'strokeRect');
-    expect(stroked).toBeDefined();
-    expect(stroked?.args).toEqual([0, 0, 10, 10]);
+    expect(cmds).toHaveLength(1);
+    expect(cmds[0].kind).toBe('path');
+    const cmd = cmds[0] as { kind: 'path'; stroke?: { paint: { color: string } } };
+    expect(cmd.stroke?.paint.color).toBe('#5BA4CF');
   });
 
   it('multi-select group-drag: putative carries every dragged id', () => {

@@ -1,4 +1,6 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import { type DrawCommand } from '../util/weaselLocal';
+import { rectPath } from '@orochi235/weasel';
 
 /**
  * Phase-2-migrated drag: plot (rectangle) — palette plot tools that draw a
@@ -85,29 +87,23 @@ export function createPlotDrag(): Drag<PlotInput, PlotPutative> {
      * ~1px / 4px-dash outline at typical zooms — matching the kit's legacy
      * screen-space marquee defaults from `useInsertTool`.
      */
-    renderPreview(ctx, putative, view): void {
+    renderPreview(putative, view): DrawCommand[] {
       const { start, current, color } = putative;
       const x = Math.min(start.x, current.x);
       const y = Math.min(start.y, current.y);
       const w = Math.abs(current.x - start.x);
       const h = Math.abs(current.y - start.y);
-      if (w === 0 || h === 0) return;
+      if (w === 0 || h === 0) return [];
 
       const invScale = 1 / Math.max(0.0001, view.scale);
-      ctx.save();
-      // Translucent fill in the entity's color (matches palette swatch).
-      ctx.globalAlpha = 0.25;
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, w, h);
-      ctx.globalAlpha = 1;
-      // Dashed outline in the same color.
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1 * invScale;
       const dash = 4 * invScale;
-      ctx.setLineDash([dash, dash]);
-      ctx.strokeRect(x, y, w, h);
-      ctx.setLineDash([]);
-      ctx.restore();
+      const path = rectPath(x, y, w, h);
+      return [
+        { kind: 'group', alpha: 0.25, children: [
+          { kind: 'path', path, fill: { fill: 'solid', color } },
+        ]},
+        { kind: 'path', path, stroke: { paint: { fill: 'solid', color }, width: invScale, dash: [dash, dash] } },
+      ];
     },
 
     // No-op: the actual commit lives in `useInsert.end()` (called from the

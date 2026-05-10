@@ -1,10 +1,14 @@
+import {
+  type RenderLayer,
+  rectPath,
+} from '@orochi235/weasel';
+import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
+import { paintFor } from '../patterns';
+import type { Dims, View } from '@orochi235/weasel';
 import { FILL_COLORS } from '../../model/types';
 import type { Structure } from '../../model/types';
-import type { RenderLayer } from '@orochi235/weasel';
-import type { GetUi, LayerDescriptor, View } from './worldLayerData';
+import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
-import { renderLabel } from '@orochi235/weasel';
-import { renderPatternOverlay } from '../patterns';
 
 /**
  * Single source of truth for structure-layer metadata. Order here = canonical
@@ -54,108 +58,6 @@ function pxToWorld(view: View, px: number): number {
   return px / Math.max(0.0001, view.scale);
 }
 
-function viewWorldRect(ctx: CanvasRenderingContext2D, view: View): { x: number; y: number; w: number; h: number } {
-  const w = ctx.canvas.width / Math.max(0.0001, view.scale);
-  const h = ctx.canvas.height / Math.max(0.0001, view.scale);
-  return { x: view.x, y: view.y, w, h };
-}
-
-function drawSingleBody(
-  ctx: CanvasRenderingContext2D,
-  s: Structure,
-  view: View,
-): void {
-  const x = s.x;
-  const y = s.y;
-  const w = s.width;
-  const h = s.length;
-
-  ctx.fillStyle = s.color;
-  ctx.strokeStyle = '#333333';
-  ctx.lineWidth = pxToWorld(view, 1);
-
-  if (s.type === 'pot' || s.type === 'felt-planter') {
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    const r = Math.min(w, h) / 2;
-    const rimWidth = Math.min(r, Math.max(pxToWorld(view, 1.5), s.wallThicknessFt));
-    // Soil disc only — walls (rim fill + outer stroke + felt overlay) live in
-    // the `structure-walls` layer so toggling them off reveals just the soil.
-    ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, r - rimWidth, r - rimWidth, 0, 0, Math.PI * 2);
-    ctx.fill();
-    if (s.fill === 'potting-mix') {
-      const innerD = (r - rimWidth) * 2;
-      if (innerD > 4) {
-        renderPatternOverlay(ctx, 'chunks', {
-          x: cx - (r - rimWidth), y: cy - (r - rimWidth), w: innerD, h: innerD, shape: 'circle',
-        }, { params: { bg: FILL_COLORS[s.fill] } });
-      }
-    }
-  } else if (s.type === 'raised-bed') {
-    const wallWidth = Math.min(Math.min(w, h) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
-    // Soil rect only — walls (frame fill + outer/inner strokes) live in the
-    // `structure-walls` layer.
-    ctx.fillStyle = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
-    ctx.fillRect(x + wallWidth, y + wallWidth, w - wallWidth * 2, h - wallWidth * 2);
-    if (s.fill === 'potting-mix') {
-      const iw = w - wallWidth * 2;
-      const ih = h - wallWidth * 2;
-      if (iw > 4 && ih > 4) {
-        renderPatternOverlay(ctx, 'chunks', {
-          x: x + wallWidth, y: y + wallWidth, w: iw, h: ih, shape: 'rectangle',
-        }, { params: { bg: FILL_COLORS[s.fill] } });
-      }
-    }
-  } else if (s.shape === 'circle') {
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
-    ctx.fill();
-    if (!s.surface) ctx.stroke();
-  } else {
-    ctx.fillRect(x, y, w, h);
-    if (!s.surface) ctx.strokeRect(x, y, w, h);
-  }
-}
-
-function drawGroupBody(
-  ctx: CanvasRenderingContext2D,
-  members: Structure[],
-  view: View,
-): void {
-  const compoundPath = new Path2D();
-  for (const s of members) {
-    if (s.shape === 'circle') {
-      const cx = s.x + s.width / 2;
-      const cy = s.y + s.length / 2;
-      compoundPath.ellipse(cx, cy, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
-    } else {
-      compoundPath.rect(s.x, s.y, s.width, s.length);
-    }
-  }
-
-  const color = members[0].color;
-  ctx.fillStyle = color;
-  ctx.fill(compoundPath);
-
-  const allSurfaces = members.every((m) => m.surface);
-
-  if (!allSurfaces) {
-    ctx.save();
-    const inverse = new Path2D();
-    const r = viewWorldRect(ctx, view);
-    inverse.rect(r.x, r.y, r.w, r.h);
-    inverse.addPath(compoundPath);
-    ctx.clip(inverse, 'evenodd');
-    ctx.strokeStyle = '#333333';
-    ctx.lineWidth = pxToWorld(view, 2);
-    ctx.stroke(compoundPath);
-    ctx.restore();
-  }
-}
 
 function getQueue(getStructures: () => Structure[]): { queue: StructureRenderItem[] } {
   const { renderQueue } = buildStructureRenderQueue(getStructures());
@@ -178,10 +80,10 @@ export function createStructureLayers(
       // Walls draw the outer ring/frame for containers (pot/felt-planter/
       // raised-bed). Soil disc/rect lives in `structure-bodies` so toggling
       // walls off reveals just the soil.
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
-        ctx.save();
-        ctx.lineWidth = pxToWorld(view, 1);
+        const lw = pxToWorld(view, 1);
+        const children: DrawCommand[] = [];
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
           for (const s of members) {
@@ -189,63 +91,158 @@ export function createStructureLayers(
               const cx = s.x + s.width / 2;
               const cy = s.y + s.length / 2;
               const r = Math.min(s.width, s.length) / 2;
-              ctx.fillStyle = s.color;
-              ctx.beginPath();
-              ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
-              ctx.fill();
+              children.push({
+                kind: 'path',
+                path: circlePolygon(cx, cy, r),
+                fill: { fill: 'solid', color: s.color },
+                stroke: {
+                  paint: { fill: 'solid', color: s.type === 'pot' ? '#8a3a18' : '#333333' },
+                  width: lw,
+                },
+              });
               if (s.type === 'felt-planter') {
                 const d = r * 2;
                 if (d > 4) {
-                  renderPatternOverlay(ctx, 'chunks', {
-                    x: cx - r, y: cy - r, w: d, h: d, shape: 'circle',
-                  }, { params: { bg: s.color, color: '#1a1a1a', density: 0.35, chunkSize: 1, size: 24, seed: 7 } });
+                  children.push({
+                    kind: 'path',
+                    path: circlePolygon(cx, cy, r),
+                    fill: paintFor('chunks', {
+                      bg: s.color, color: '#1a1a1a', density: 0.35, chunkSize: 1, size: 24, seed: 7,
+                    }),
+                  });
                 }
               }
-              ctx.strokeStyle = s.type === 'pot' ? '#8a3a18' : '#333333';
-              ctx.beginPath();
-              ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI * 2);
-              ctx.stroke();
             } else if (s.type === 'raised-bed') {
-              ctx.fillStyle = s.color;
-              ctx.fillRect(s.x, s.y, s.width, s.length);
-              ctx.strokeStyle = '#333333';
-              ctx.strokeRect(s.x, s.y, s.width, s.length);
+              children.push({
+                kind: 'path',
+                path: rectPath(s.x, s.y, s.width, s.length),
+                fill: { fill: 'solid', color: s.color },
+                stroke: { paint: { fill: 'solid', color: '#333333' }, width: lw },
+              });
             }
           }
         }
-        ctx.restore();
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       ...meta['structure-bodies'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
+        const lw = pxToWorld(view, 1);
+        const children: DrawCommand[] = [];
+
         for (const item of queue) {
-          if (item.type === 'single') drawSingleBody(ctx, item.structure, view);
-          else drawGroupBody(ctx, item.members, view);
+          if (item.type === 'single') {
+            const s = item.structure;
+            const x = s.x, y = s.y, w = s.width, h = s.length;
+
+            if (s.type === 'pot' || s.type === 'felt-planter') {
+              const cx = x + w / 2;
+              const cy = y + h / 2;
+              const r = Math.min(w, h) / 2;
+              const rimWidth = Math.min(r, Math.max(pxToWorld(view, 1.5), s.wallThicknessFt));
+              const innerR = r - rimWidth;
+              const soilColor = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
+              children.push({
+                kind: 'path',
+                path: circlePolygon(cx, cy, innerR),
+                fill: { fill: 'solid', color: soilColor },
+              });
+              if (s.fill === 'potting-mix') {
+                const innerD = innerR * 2;
+                if (innerD > 4) {
+                  children.push({
+                    kind: 'path',
+                    path: circlePolygon(cx, cy, innerR),
+                    fill: paintFor('chunks', { bg: soilColor }),
+                  });
+                }
+              }
+            } else if (s.type === 'raised-bed') {
+              const wallWidth = Math.min(Math.min(w, h) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
+              const soilColor = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
+              children.push({
+                kind: 'path',
+                path: rectPath(x + wallWidth, y + wallWidth, w - wallWidth * 2, h - wallWidth * 2),
+                fill: { fill: 'solid', color: soilColor },
+              });
+              if (s.fill === 'potting-mix') {
+                const iw = w - wallWidth * 2;
+                const ih = h - wallWidth * 2;
+                if (iw > 4 && ih > 4) {
+                  children.push({
+                    kind: 'path',
+                    path: rectPath(x + wallWidth, y + wallWidth, iw, ih),
+                    fill: paintFor('chunks', { bg: soilColor }),
+                  });
+                }
+              }
+            } else if (s.shape === 'circle') {
+              const cx = x + w / 2;
+              const cy = y + h / 2;
+              children.push({
+                kind: 'path',
+                path: ellipsePolygon(cx, cy, w / 2, h / 2),
+                fill: { fill: 'solid', color: s.color },
+                ...(s.surface ? {} : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
+              });
+            } else {
+              children.push({
+                kind: 'path',
+                path: rectPath(x, y, w, h),
+                fill: { fill: 'solid', color: s.color },
+                ...(s.surface ? {} : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
+              });
+            }
+          } else {
+            // Group: compound fill. Stroke is approximated per-member since
+            // DrawCommand has no even-odd compound-clip equivalent here.
+            const color = item.members[0].color;
+            const allSurfaces = item.members.every((m) => m.surface);
+            for (const s of item.members) {
+              const path = s.shape === 'circle'
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                : rectPath(s.x, s.y, s.width, s.length);
+              children.push({
+                kind: 'path',
+                path,
+                fill: { fill: 'solid', color },
+                ...(!allSurfaces ? { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: pxToWorld(view, 2) } } : {}),
+              });
+            }
+          }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       ...meta['structure-surfaces'],
-      draw(ctx, _data, _view) {
+      draw(_data, _view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
+        const children: DrawCommand[] = [];
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
           for (const s of members) {
             if (!s.surface) continue;
-            renderPatternOverlay(ctx, 'hatch', {
-              x: s.x, y: s.y, w: s.width, h: s.length,
-              shape: s.shape === 'circle' ? 'circle' : 'rectangle',
+            const path = s.shape === 'circle'
+              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+              : rectPath(s.x, s.y, s.width, s.length);
+            children.push({
+              kind: 'path',
+              path,
+              fill: paintFor('hatch'),
             });
           }
         }
+        return [{ kind: 'group', transform: viewToMat3(_view), children }];
       },
     },
     {
       ...meta['structure-plantable-area'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
+        const children: DrawCommand[] = [];
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
           for (const s of members) {
@@ -255,65 +252,67 @@ export function createStructureLayers(
               const cy = s.y + s.length / 2;
               const r = Math.min(s.width, s.length) / 2;
               const rimWidth = Math.min(r, Math.max(pxToWorld(view, 1.5), s.wallThicknessFt));
-              const innerD = (r - rimWidth) * 2;
+              const innerR = r - rimWidth;
+              const innerD = innerR * 2;
               if (innerD > 4) {
-                renderPatternOverlay(ctx, 'hatch', {
-                  x: cx - (r - rimWidth), y: cy - (r - rimWidth), w: innerD, h: innerD, shape: 'circle',
-                }, { params: { color: '#00FF00' } });
+                children.push({
+                  kind: 'path',
+                  path: circlePolygon(cx, cy, innerR),
+                  fill: paintFor('hatch', { color: '#00FF00' }),
+                });
               }
             } else {
               const wallWidth = Math.min(Math.min(s.width, s.length) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
               const iw = s.width - wallWidth * 2;
               const ih = s.length - wallWidth * 2;
               if (iw > 4 && ih > 4) {
-                renderPatternOverlay(ctx, 'hatch', {
-                  x: s.x + wallWidth, y: s.y + wallWidth, w: iw, h: ih, shape: 'rectangle',
-                }, { params: { color: '#00FF00' } });
+                children.push({
+                  kind: 'path',
+                  path: rectPath(s.x + wallWidth, s.y + wallWidth, iw, ih),
+                  fill: paintFor('hatch', { color: '#00FF00' }),
+                });
               }
             }
           }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       ...meta['structure-highlights'],
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
         const { getHighlight } = ui;
         const clashIds = ui.dragClashIds ?? [];
         const drawClashes = clashIds.length > 0;
 
+        const children: DrawCommand[] = [];
+
         // Clash highlight: render a red-tinted ring on each structure whose
-        // AABB intersects the dragging set. Shown alongside the gold
-        // selection highlight; clears on drop / cancel.
+        // AABB intersects the dragging set.
         if (drawClashes) {
           const all = getStructures();
           const byId = new Map(all.map((s) => [s.id, s]));
-          ctx.save();
-          ctx.globalAlpha = 0.85;
-          ctx.strokeStyle = '#E0413A';
-          ctx.fillStyle = 'rgba(224, 65, 58, 0.15)';
-          ctx.lineWidth = pxToWorld(view, 2);
-          ctx.setLineDash([]);
+          const clashChildren: DrawCommand[] = [];
           for (const id of clashIds) {
             const s = byId.get(id);
             if (!s) continue;
-            if (s.shape === 'circle') {
-              ctx.beginPath();
-              ctx.ellipse(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.stroke();
-            } else {
-              ctx.fillRect(s.x, s.y, s.width, s.length);
-              ctx.strokeRect(s.x, s.y, s.width, s.length);
-            }
+            const path = s.shape === 'circle'
+              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+              : rectPath(s.x, s.y, s.width, s.length);
+            clashChildren.push({
+              kind: 'path',
+              path,
+              fill: { fill: 'solid', color: 'rgba(224, 65, 58, 0.15)' },
+              stroke: { paint: { fill: 'solid', color: '#E0413A' }, width: pxToWorld(view, 2) },
+            });
           }
-          ctx.restore();
+          if (clashChildren.length > 0) {
+            children.push({ kind: 'group', alpha: 0.85, children: clashChildren });
+          }
         }
 
         const { queue } = getQueue(getStructures);
-        // Skip the save/setup if no structure is currently flashing — keeps
-        // the test that expects no `save()` when nothing's flashing happy.
         let any = false;
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
@@ -322,73 +321,63 @@ export function createStructureLayers(
           }
           if (any) break;
         }
-        if (!any) return;
-
-        ctx.save();
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = pxToWorld(view, 2);
-        ctx.setLineDash([]);
+        if (!any) return children.length > 0
+          ? [{ kind: 'group', transform: viewToMat3(view), children }]
+          : [];
 
         for (const item of queue) {
           if (item.type === 'single') {
             const s = item.structure;
             const op = getHighlight(s.id);
             if (op <= 0) continue;
-            ctx.globalAlpha = op;
-            if (s.shape === 'circle') {
-              ctx.beginPath();
-              ctx.ellipse(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
-              ctx.stroke();
-            } else {
-              ctx.strokeRect(s.x, s.y, s.width, s.length);
-            }
+            const path = s.shape === 'circle'
+              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+              : rectPath(s.x, s.y, s.width, s.length);
+            children.push({
+              kind: 'group',
+              alpha: op,
+              children: [{
+                kind: 'path',
+                path,
+                stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: pxToWorld(view, 2) },
+              }],
+            });
           } else {
-            // Group highlight: take max opacity over members so the compound
-            // outline pulses as a unit when any member flashes.
+            // Group highlight: take max opacity over members.
             let groupOp = 0;
             for (const s of item.members) {
               const o = getHighlight(s.id);
               if (o > groupOp) groupOp = o;
             }
             if (groupOp <= 0) continue;
-            const compound = new Path2D();
-            for (const s of item.members) {
-              if (s.shape === 'circle') {
-                compound.ellipse(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2, 0, 0, Math.PI * 2);
-              } else {
-                compound.rect(s.x, s.y, s.width, s.length);
-              }
-            }
-            ctx.save();
-            ctx.globalAlpha = groupOp;
-            const inverse = new Path2D();
-            const r = viewWorldRect(ctx, view);
-            inverse.rect(r.x, r.y, r.w, r.h);
-            inverse.addPath(compound);
-            ctx.clip(inverse, 'evenodd');
-            ctx.lineWidth = pxToWorld(view, 4);
-            ctx.stroke(compound);
-            ctx.restore();
+            const memberCmds: DrawCommand[] = item.members.map((s) => ({
+              kind: 'path' as const,
+              path: s.shape === 'circle'
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                : rectPath(s.x, s.y, s.width, s.length),
+              stroke: { paint: { fill: 'solid' as const, color: '#FFD700' }, width: pxToWorld(view, 4) },
+            }));
+            children.push({ kind: 'group', alpha: groupOp, children: memberCmds });
           }
         }
-        ctx.restore();
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
     {
       ...meta['structure-labels'],
-      draw(ctx, _data, view) {
+      // Flagged: text commands require registerFont() wired at app boot.
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { labelMode, labelFontSize, debugOverlappingLabels } = getUi();
-        if (labelMode === 'none' || labelMode === 'selection') return;
+        if (labelMode === 'none' || labelMode === 'selection') return [];
         const { queue } = getQueue(getStructures);
 
         const fontPx = labelFontSize / Math.max(0.0001, view.scale);
         const padX = pxToWorld(view, 4);
         const padY = pxToWorld(view, 1);
 
-        ctx.save();
-        ctx.font = `${fontPx}px sans-serif`;
-
         interface Entry { label: string; x: number; y: number; w: number; h: number }
+        // Approximate text width: ~0.6× fontPx per character (no canvas.measureText available).
+        const approxTextWidth = (text: string) => text.length * fontPx * 0.6;
         const entries: Entry[] = [];
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
@@ -396,12 +385,11 @@ export function createStructureLayers(
             if (!s.label) continue;
             const cx = s.x + s.width / 2;
             const ly = s.y + s.length + pxToWorld(view, 4);
-            const tw = ctx.measureText(s.label).width + padX * 2;
+            const tw = approxTextWidth(s.label) + padX * 2;
             const th = fontPx + padY * 2;
             entries.push({ label: s.label, x: cx - tw / 2, y: ly - padY, w: tw, h: th });
           }
         }
-        ctx.restore();
 
         const hidden = new Set<number>();
         for (let i = 0; i < entries.length; i++) {
@@ -416,19 +404,29 @@ export function createStructureLayers(
           }
         }
 
+        const children: DrawCommand[] = [];
         for (let i = 0; i < entries.length; i++) {
           const e = entries[i];
           const isHidden = hidden.has(i);
           if (isHidden && !debugOverlappingLabels) continue;
-          if (isHidden) { ctx.save(); ctx.globalAlpha = 0.4; }
-          renderLabel(ctx, e.label, e.x + e.w / 2, e.y + padY, {
-            fontSize: fontPx,
-            padX: fontPx * (4 / 13),
-            padY: fontPx * (1 / 13),
-            cornerRadius: fontPx * (3 / 13),
-          });
-          if (isHidden) ctx.restore();
+          const cmd: DrawCommand = {
+            kind: 'text',
+            x: e.x + e.w / 2,
+            y: e.y + padY,
+            text: e.label,
+            style: {
+              fontSize: fontPx,
+              align: 'center' as const,
+              fill: { fill: 'solid' as const, color: '#ffffff' },
+            },
+          };
+          if (isHidden) {
+            children.push({ kind: 'group', alpha: 0.4, children: [cmd] });
+          } else {
+            children.push(cmd);
+          }
         }
+        return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },
   ];

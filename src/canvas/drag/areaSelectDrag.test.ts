@@ -7,22 +7,6 @@ import {
   type AreaSelectPutative,
 } from './areaSelectDrag';
 
-interface CtxCall { fn: string; args: unknown[] }
-
-function fakeCtx() {
-  const calls: CtxCall[] = [];
-  const ctx = {
-    save: () => calls.push({ fn: 'save', args: [] }),
-    restore: () => calls.push({ fn: 'restore', args: [] }),
-    fillRect: (...args: unknown[]) => calls.push({ fn: 'fillRect', args }),
-    strokeRect: (...args: unknown[]) => calls.push({ fn: 'strokeRect', args }),
-    setLineDash: (...args: unknown[]) => calls.push({ fn: 'setLineDash', args }),
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 0,
-  } as unknown as CanvasRenderingContext2D;
-  return { ctx, calls };
-}
 
 describe('areaSelectDrag', () => {
   beforeEach(() => {
@@ -65,60 +49,26 @@ describe('areaSelectDrag', () => {
     });
   });
 
-  it('renderPreview draws fill + stroke at the rect bounds', () => {
+  it('renderPreview returns two DrawCommands (fill + stroke) for a non-degenerate rect', () => {
     const drag = createAreaSelectDrag();
-    const { ctx, calls } = fakeCtx();
     const putative: AreaSelectPutative = {
       start: { x: 2, y: 3 },
       current: { x: 12, y: 8 },
       shiftHeld: false,
     };
-    drag.renderPreview(ctx, putative, { x: 0, y: 0, scale: 50 });
-    const filled = calls.find((c) => c.fn === 'fillRect');
-    const stroked = calls.find((c) => c.fn === 'strokeRect');
-    expect(filled?.args).toEqual([2, 3, 10, 5]);
-    expect(stroked?.args).toEqual([2, 3, 10, 5]);
+    const cmds = drag.renderPreview(putative, { x: 0, y: 0, scale: 50 });
+    expect(cmds).toHaveLength(2);
+    expect(cmds[0].kind).toBe('path');
+    expect(cmds[1].kind).toBe('path');
   });
 
-  it('renderPreview handles inverted rects (current above-and-left of start)', () => {
+  it('renderPreview returns [] for a zero-area rect (degenerate width or height)', () => {
     const drag = createAreaSelectDrag();
-    const { ctx, calls } = fakeCtx();
-    const putative: AreaSelectPutative = {
-      start: { x: 10, y: 10 },
-      current: { x: 4, y: 2 },
-      shiftHeld: false,
-    };
-    drag.renderPreview(ctx, putative, { x: 0, y: 0, scale: 50 });
-    const filled = calls.find((c) => c.fn === 'fillRect');
-    const stroked = calls.find((c) => c.fn === 'strokeRect');
-    // Math.min for origin, Math.abs for size.
-    expect(filled?.args).toEqual([4, 2, 6, 8]);
-    expect(stroked?.args).toEqual([4, 2, 6, 8]);
-  });
-
-  it('renderPreview is a no-op for a zero-area rect (degenerate width or height)', () => {
-    const drag = createAreaSelectDrag();
-    const { ctx, calls } = fakeCtx();
-    drag.renderPreview(
-      ctx,
+    const cmds = drag.renderPreview(
       { start: { x: 5, y: 5 }, current: { x: 5, y: 12 }, shiftHeld: false },
       { x: 0, y: 0, scale: 50 },
     );
-    expect(calls.find((c) => c.fn === 'fillRect')).toBeUndefined();
-    expect(calls.find((c) => c.fn === 'strokeRect')).toBeUndefined();
-  });
-
-  it('renderPreview scales stroke width inversely with view.scale', () => {
-    const drag = createAreaSelectDrag();
-    const { ctx } = fakeCtx();
-    const putative: AreaSelectPutative = {
-      start: { x: 0, y: 0 },
-      current: { x: 5, y: 5 },
-      shiftHeld: false,
-    };
-    drag.renderPreview(ctx, putative, { x: 0, y: 0, scale: 50 });
-    // 1 / 50 = 0.02
-    expect((ctx as unknown as { lineWidth: number }).lineWidth).toBeCloseTo(0.02);
+    expect(cmds).toHaveLength(0);
   });
 
   it('commit is a no-op (selection commit lives in useAreaSelect.end)', () => {

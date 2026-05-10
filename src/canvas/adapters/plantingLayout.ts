@@ -19,6 +19,7 @@ import type { Op } from '@orochi235/weasel';
 import { getSlots, getGridCells, type Layout } from '../../model/layout';
 import { getPlantableBounds } from '../../model/types';
 import type { Garden, Structure, Zone } from '../../model/types';
+import { getCultivar } from '../../model/cultivars';
 import type { PlantingPose } from './plantingMove';
 
 type Container = (Structure | Zone) & { layout: Layout | null };
@@ -29,6 +30,15 @@ function findContainer(garden: Garden, id: string): Container | null {
   const z = garden.zones.find((x) => x.id === id);
   if (z) return z as Container;
   return null;
+}
+
+/** True if a circle (cx,cy,r) overlaps an axis-aligned cell whose center is (cellCx,cellCy) with half-width halfCell. */
+function circleIntersectsCell(cx: number, cy: number, r: number, cellCx: number, cellCy: number, halfCell: number): boolean {
+  const nearX = Math.max(cellCx - halfCell, Math.min(cx, cellCx + halfCell));
+  const nearY = Math.max(cellCy - halfCell, Math.min(cy, cellCy + halfCell));
+  const dx = cx - nearX;
+  const dy = cy - nearY;
+  return dx * dx + dy * dy <= r * r;
 }
 
 /** Pick the nearest drop target by Euclidean distance from the pointer. */
@@ -90,19 +100,49 @@ export function plantingLayoutFor(
       if (!c || !c.layout) return [];
 
       const bounds = getPlantableBounds(c);
-      const occupied = new Set(
-        children.filter((ch) => ch.id !== dragged.id).map((ch) => `${ch.pose.x},${ch.pose.y}`),
-      );
 
-      let pts: { x: number; y: number }[];
-      if (c.layout.type === 'grid') {
-        pts = getGridCells(c.layout.cellSizeFt, bounds);
-      } else {
-        pts = getSlots(c.layout, bounds);
+      if (c.layout.type !== 'grid') {
+        const pts = getSlots(c.layout, bounds);
+        const occupied = new Set(
+          children.filter((ch) => ch.id !== dragged.id).map((ch) => `${ch.pose.x},${ch.pose.y}`),
+        );
+        return pts
+          .filter((p) => !occupied.has(`${p.x},${p.y}`))
+          .map((p) => ({ pose: { x: p.x, y: p.y }, origin: { x: p.x, y: p.y } }));
       }
 
-      return pts
-        .filter((p) => !occupied.has(`${p.x},${p.y}`))
+      // Grid mode: footprint-based cell occupancy.
+      // A plant claims every cell whose AABB overlaps its footprint circle.
+      const cells = getGridCells(c.layout.cellSizeFt, bounds);
+      const halfCell = c.layout.cellSizeFt / 2;
+
+      const occupiedKeys = new Set<string>();
+      for (const child of children) {
+        if (child.id === dragged.id) continue;
+        const planting = garden.plantings.find((p) => p.id === child.id);
+        const cultivar = planting ? getCultivar(planting.cultivarId) : null;
+        const r = cultivar ? cultivar.footprintFt / 2 : halfCell;
+        for (const cell of cells) {
+          if (circleIntersectsCell(child.pose.x, child.pose.y, r, cell.x, cell.y, halfCell)) {
+            occupiedKeys.add(`${cell.x},${cell.y}`);
+          }
+        }
+      }
+
+      const dragPlanting = garden.plantings.find((p) => p.id === dragged.id);
+      const dragCultivar = dragPlanting ? getCultivar(dragPlanting.cultivarId) : null;
+      const dragRadius = dragCultivar ? dragCultivar.footprintFt / 2 : halfCell;
+
+      return cells
+        .filter((candidate) => {
+          for (const cell of cells) {
+            if (
+              circleIntersectsCell(candidate.x, candidate.y, dragRadius, cell.x, cell.y, halfCell) &&
+              occupiedKeys.has(`${cell.x},${cell.y}`)
+            ) return false;
+          }
+          return true;
+        })
         .map((p) => ({ pose: { x: p.x, y: p.y }, origin: { x: p.x, y: p.y } }));
     },
 

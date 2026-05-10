@@ -1,7 +1,7 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-import { renderPlant } from '../plantRenderers';
 import { trayInteriorOffsetIn } from '../../model/seedStarting';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 
@@ -94,44 +94,45 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
      * `seedlingLayersWorld.ts` exactly — same alpha (0.6 / 0.35), same dashes,
      * same colors, same radius.
      */
-    renderPreview(ctx, putative, view): void {
+    renderPreview(putative, view): DrawCommand[] {
       const ss = useGardenStore.getState().garden.seedStarting;
       const tray = ss.trays.find((t) => t.id === putative.trayId);
-      if (!tray || putative.cells.length === 0) return;
+      if (!tray || putative.cells.length === 0) return [];
 
       const o = trayWorldOrigin(tray, ss);
       const off = trayInteriorOffsetIn(tray);
       const p = tray.cellPitchIn;
       const radius = (p * 0.85) / 2;
       const invScale = 1 / Math.max(0.0001, view.scale);
+      const alpha = putative.feasible ? 0.6 : 0.35;
 
-      ctx.save();
-      ctx.translate(o.x, o.y);
-      ctx.globalAlpha = putative.feasible ? 0.6 : 0.35;
+      const cellGlyphs: DrawCommand[] = [];
       for (const m of putative.cells) {
         const cultivar = getCultivar(m.cultivarId);
         if (!cultivar) continue;
-        const cx = off.x + m.col * p + p / 2;
-        const cy = off.y + m.row * p + p / 2;
-        ctx.save();
-        ctx.translate(cx, cy);
-        renderPlant(ctx, cultivar.id, radius, cultivar.color);
-        ctx.restore();
+        const cx = o.x + off.x + m.col * p + p / 2;
+        const cy = o.y + off.y + m.row * p + p / 2;
+        const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
+        const path = circlePolygon(cx, cy, radius);
+        cellGlyphs.push(
+          { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
+          { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(invScale, radius * 0.06) } },
+        );
       }
+
+      const cmds: DrawCommand[] = [{ kind: 'group', alpha, children: cellGlyphs }];
+
       if (!putative.feasible) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(220, 60, 60, 0.7)';
-        ctx.lineWidth = 2 * invScale;
+        const infeasibleRings: DrawCommand[] = [];
         for (const m of putative.cells) {
-          const cx = off.x + m.col * p + p / 2;
-          const cy = off.y + m.row * p + p / 2;
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius + 2.5 * invScale, 0, Math.PI * 2);
-          ctx.stroke();
+          const cx = o.x + off.x + m.col * p + p / 2;
+          const cy = o.y + off.y + m.row * p + p / 2;
+          infeasibleRings.push({ kind: 'path', path: circlePolygon(cx, cy, radius + 2.5 * invScale), stroke: { paint: { fill: 'solid', color: 'rgba(220, 60, 60, 0.7)' }, width: 2 * invScale } });
         }
-        ctx.restore();
+        cmds.push(...infeasibleRings);
       }
-      ctx.restore();
+
+      return cmds;
     },
 
     // No-op: the actual seedling state mutation lives in

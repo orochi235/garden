@@ -80,7 +80,14 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
     },
     applyBatch(ops, label) {
       useGardenStore.getState().checkpoint();
-      for (const op of ops) op.apply(adapter);
+      // Apply reparent ops before transform ops on the same element so that
+      // setPose computes local coords relative to the new parent, not the old.
+      const sorted = [...ops].sort((a, b) => {
+        const ar = a.coalesceKey?.startsWith('reparent:') ? 0 : 1;
+        const br = b.coalesceKey?.startsWith('reparent:') ? 0 : 1;
+        return ar - br;
+      });
+      for (const op of sorted) op.apply(adapter);
       void label;
     },
   };

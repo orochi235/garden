@@ -65,6 +65,12 @@ function GardenCanvasNewPrototype() {
   const { width, height } = useCanvasSize(containerRef);
   const garden = useGardenStore((s) => s.garden);
 
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // Two rAFs guarantee the renderer has had a chance to paint at least one frame.
+    requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)));
+  }, []);
+
   // Subscribe so React re-renders when these change. The closures below
   // re-read on every paint, so the actual values flow through that path.
   useUiStore((s) => s.selectedIds);
@@ -386,13 +392,14 @@ function GardenCanvasNewPrototype() {
       [insertTool.id]: insertTool,
       [clickZoom.id]: clickZoom,
     },
-    alwaysOn: [rightDragPan, wheelZoom],
+    ambient: [rightDragPan, wheelZoom],
   });
 
   return (
     <div
       ref={containerRef}
       data-canvas-container
+      data-canvas-ready={ready ? 'true' : 'false'}
       style={{
         width: '100%',
         height: '100%',

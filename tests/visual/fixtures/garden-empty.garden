@@ -1,0 +1,19 @@
+{
+  "id": "fixture-garden-empty",
+  "version": 1,
+  "name": "Empty Garden",
+  "widthFt": 20,
+  "lengthFt": 20,
+  "gridCellSizeFt": 1,
+  "displayUnit": "ft",
+  "groundColor": "#4A7C59",
+  "blueprint": null,
+  "structures": [],
+  "zones": [],
+  "plantings": [],
+  "seedStarting": {
+    "trays": [],
+    "seedlings": []
+  },
+  "collection": []
+}

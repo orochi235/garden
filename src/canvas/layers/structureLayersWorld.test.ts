@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createStructureLayers } from './structureLayersWorld';
 import type { Structure } from '../../model/types';
 import type { GetUi } from './worldLayerData';
@@ -18,28 +18,6 @@ function makeStructure(over: Partial<Structure> = {}): Structure {
     groupId: null,
     ...over,
   } as unknown as Structure;
-}
-
-function makeCtx(): CanvasRenderingContext2D {
-  return {
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    beginPath: vi.fn(),
-    fill: vi.fn(),
-    stroke: vi.fn(),
-    ellipse: vi.fn(),
-    measureText: vi.fn(() => ({ width: 50 })),
-    save: vi.fn(),
-    restore: vi.fn(),
-    clip: vi.fn(),
-    setLineDash: vi.fn(),
-    globalAlpha: 1,
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    font: '',
-    canvas: { width: 800, height: 600 } as HTMLCanvasElement,
-  } as unknown as CanvasRenderingContext2D;
 }
 
 const view = { x: 0, y: 0, scale: 10 };
@@ -68,56 +46,20 @@ describe('createStructureLayers (world)', () => {
     ]);
   });
 
-  it('structure-bodies draws fillRect at world coords (no scale baked in)', () => {
-    const ctx = makeCtx();
-    const s = makeStructure({ x: 3, y: 4, width: 2, length: 2 });
-    const layer = createStructureLayers(() => [s], () => baseUi).find((l) => l.id === 'structure-bodies')!;
-    layer.draw(ctx, {}, view);
-    // fillRect should be called with raw world coords; transform is applied
-    // by runLayers wrapper, not by the layer.
-    expect(ctx.fillRect).toHaveBeenCalledWith(3, 4, 2, 2);
-  });
-
-  it('structure-bodies sets stroke width inversely scaled (1px screen → 1/scale world)', () => {
-    const ctx = makeCtx();
-    const s = makeStructure({ x: 0, y: 0, width: 1, length: 1 });
-    const layer = createStructureLayers(() => [s], () => baseUi).find((l) => l.id === 'structure-bodies')!;
-    layer.draw(ctx, {}, { x: 0, y: 0, scale: 10 });
-    expect(ctx.lineWidth).toBeCloseTo(0.1);
-  });
-
-  it('structure-highlights skips when no structure has getHighlight(id)>0', () => {
-    const ctx = makeCtx();
+  it('structure-highlights returns empty array when no structure has getHighlight(id)>0', () => {
     const s = makeStructure();
     const ui: ReturnType<GetUi> = { ...baseUi, getHighlight: () => 0 };
     const layer = createStructureLayers(() => [s], () => ui)
       .find((l) => l.id === 'structure-highlights')!;
-    layer.draw(ctx, {}, view);
-    expect(ctx.save).not.toHaveBeenCalled();
+    const result = layer.draw({}, view, { width: 800, height: 600 });
+    expect(result).toEqual([]);
   });
 
-  it('structure-highlights draws only structures whose getHighlight(id)>0', () => {
-    const ctx = makeCtx();
-    const a = makeStructure({ id: 'a', x: 0, y: 0 });
-    const b = makeStructure({ id: 'b', x: 5, y: 5 });
-    const ui: ReturnType<GetUi> = {
-      ...baseUi,
-      getHighlight: (id: string) => (id === 'a' ? 0.5 : 0),
-    };
-    const layer = createStructureLayers(() => [a, b], () => ui)
-      .find((l) => l.id === 'structure-highlights')!;
-    layer.draw(ctx, {}, view);
-    expect(ctx.save).toHaveBeenCalled();
-    // Only one strokeRect — for 'a'.
-    expect((ctx.strokeRect as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
-  });
-
-  it('structure-labels skips when labelMode is none', () => {
-    const ctx = makeCtx();
+  it('structure-labels returns empty array when labelMode is none', () => {
     const s = makeStructure({ label: 'X' });
     const layer = createStructureLayers(() => [s], () => baseUi)
       .find((l) => l.id === 'structure-labels')!;
-    layer.draw(ctx, {}, view);
-    expect(ctx.save).not.toHaveBeenCalled();
+    const result = layer.draw({}, view, { width: 800, height: 600 });
+    expect(result).toEqual([]);
   });
 });

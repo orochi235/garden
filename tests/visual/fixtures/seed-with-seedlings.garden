@@ -1,0 +1,105 @@
+{
+  "id": "fixture-seed-with-seedlings",
+  "version": 1,
+  "name": "Seed Starting With Seedlings",
+  "widthFt": 20,
+  "lengthFt": 20,
+  "gridCellSizeFt": 1,
+  "displayUnit": "ft",
+  "groundColor": "#4A7C59",
+  "blueprint": null,
+  "structures": [],
+  "zones": [],
+  "plantings": [],
+  "seedStarting": {
+    "trays": [
+      {
+        "id": "tray-1",
+        "label": "6x4 small",
+        "rows": 4,
+        "cols": 6,
+        "cellSize": "small",
+        "cellPitchIn": 1.1,
+        "widthIn": 7.3,
+        "heightIn": 5.1,
+        "slots": [
+          { "state": "sown", "seedlingId": "seedling-1" },
+          { "state": "sown", "seedlingId": "seedling-2" },
+          { "state": "sown", "seedlingId": "seedling-3" },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "sown", "seedlingId": "seedling-4" },
+          { "state": "sown", "seedlingId": "seedling-5" },
+          { "state": "sown", "seedlingId": "seedling-6" },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null },
+          { "state": "empty", "seedlingId": null }
+        ]
+      }
+    ],
+    "seedlings": [
+      {
+        "id": "seedling-1",
+        "cultivarId": "tomato",
+        "trayId": "tray-1",
+        "row": 0,
+        "col": 0,
+        "labelOverride": null
+      },
+      {
+        "id": "seedling-2",
+        "cultivarId": "tomato",
+        "trayId": "tray-1",
+        "row": 0,
+        "col": 1,
+        "labelOverride": null
+      },
+      {
+        "id": "seedling-3",
+        "cultivarId": "tomato",
+        "trayId": "tray-1",
+        "row": 0,
+        "col": 2,
+        "labelOverride": null
+      },
+      {
+        "id": "seedling-4",
+        "cultivarId": "basil",
+        "trayId": "tray-1",
+        "row": 1,
+        "col": 0,
+        "labelOverride": null
+      },
+      {
+        "id": "seedling-5",
+        "cultivarId": "basil",
+        "trayId": "tray-1",
+        "row": 1,
+        "col": 1,
+        "labelOverride": null
+      },
+      {
+        "id": "seedling-6",
+        "cultivarId": "basil",
+        "trayId": "tray-1",
+        "row": 1,
+        "col": 2,
+        "labelOverride": null
+      }
+    ]
+  },
+  "collection": []
+}

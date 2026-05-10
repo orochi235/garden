@@ -3,16 +3,19 @@ import {
   defineTool,
   useClone,
   cloneByAltDrag,
+  type Dims,
   type Tool,
   type RenderLayer,
+  type View,
 } from '@orochi235/weasel';
+import { type DrawCommand } from '../util/weaselLocal';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-import { renderPlant } from '../plantRenderers';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
 import type { GardenInsertAdapter } from '../adapters/insert';
 import { expandToGroups } from '../../utils/groups';
+import { plantDrawCommands } from '../plantRenderers';
 
 export interface CycleScratch { cycled: boolean }
 
@@ -72,9 +75,10 @@ export function useEricCycleTool(
       label: 'Cycle-Clone Overlay (eric)',
       space: 'screen',
       alwaysOn: true,
-      draw(ctx, _data, view) {
-        if (cloneOverlay.length === 0) return;
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
+        if (cloneOverlay.length === 0) return [];
         const garden = useGardenStore.getState().garden;
+        const children: DrawCommand[] = [];
         for (const item of cloneOverlay) {
           const planting = garden.plantings.find((p) => p.id === item.id);
           if (!planting) continue;
@@ -84,12 +88,11 @@ export function useEricCycleTool(
           const sx = (item.x - view.x) * view.scale;
           const sy = (item.y - view.y) * view.scale;
           const radiusPx = (footprintFt / 2) * view.scale;
-          ctx.save();
-          ctx.globalAlpha = 0.5;
-          ctx.translate(sx, sy);
-          renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
-          ctx.restore();
+          const color = cultivar.color ?? '#4A7C59';
+          const iconBgColor = cultivar.iconBgColor ?? null;
+          children.push(...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor));
         }
+        return [{ kind: 'group', alpha: 0.5, children }];
       },
     }),
     [cloneOverlay],
@@ -99,7 +102,6 @@ export function useEricCycleTool(
     () =>
       defineTool<CycleScratch>({
         id: 'eric-cycle',
-        modifier: 'alt',
         initScratch: () => ({ cycled: false }),
         overlay,
         pointer: {

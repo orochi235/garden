@@ -1,4 +1,5 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
+import type { DrawCommand } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
@@ -81,7 +82,7 @@ export function createSeedFillTrayDrag(opts: {
     // No-op: the legacy `seedling-fill-preview` render layer already draws
     // the putative because we mirror it into `seedFillPreview` via
     // `onPutativeChange`. When other drags migrate they will render here.
-    renderPreview() {},
+    renderPreview(): DrawCommand[] { return []; },
 
     commit(putative: SeedFillPutative): void {
       const gs = useGardenStore.getState();

@@ -9,6 +9,7 @@ import {
   cornerResizeHandles,
   hitCornerHandle,
   selectFromMarquee,
+  type Dims,
   type Tool,
   type RenderLayer,
   type ResizeAnchor,
@@ -16,11 +17,14 @@ import {
   type UseResizeOptions,
   type MoveBehavior,
   type InsertAdapter,
+  type View,
 } from '@orochi235/weasel';
+import { type DrawCommand } from '../util/weaselLocal';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-import { renderPlant } from '../plantRenderers';
+import { plantingWorldPose } from '../../utils/plantingPose';
+import { plantDrawCommands } from '../plantRenderers';
 import {
   type GardenSceneAdapter,
   type ScenePose,
@@ -318,7 +322,7 @@ export function useEricSelectTool(
       id: 'eric-select-overlay',
       label: 'Select Overlay (eric)',
       space: 'screen',
-      draw(ctx, _data, view) {
+      draw(_data, view: View, _dims: Dims): DrawCommand[] {
         // Marquee rectangle is now rendered by the framework's
         // `dragPreviewLayer` via `areaSelectDrag.renderPreview`. See
         // `src/canvas/drag/areaSelectDrag.ts` and the `areaSelect.overlay`
@@ -332,24 +336,28 @@ export function useEricSelectTool(
         // Clone overlay: dashed dim ghosts of the selection at offset positions
         // while alt-drag is in flight. The originals stay rendered in their
         // normal layers, so this just draws the prospective copies.
-        if (cloneOverlay.length > 0) {
-          const garden = useGardenStore.getState().garden;
-          for (const item of cloneOverlay) {
-            const planting = garden.plantings.find((p) => p.id === item.id);
-            if (!planting) continue;
-            const cultivar = getCultivar(planting.cultivarId);
-            if (!cultivar) continue;
-            const footprintFt = cultivar.footprintFt ?? 0.5;
-            const sx = (item.x - view.x) * view.scale;
-            const sy = (item.y - view.y) * view.scale;
-            const radiusPx = (footprintFt / 2) * view.scale;
-            ctx.save();
-            ctx.globalAlpha = 0.5;
-            ctx.translate(sx, sy);
-            renderPlant(ctx, planting.cultivarId, radiusPx, cultivar.color);
-            ctx.restore();
-          }
+        if (cloneOverlay.length === 0) return [];
+        const garden = useGardenStore.getState().garden;
+        const children: DrawCommand[] = [];
+        for (const item of cloneOverlay) {
+          const planting = garden.plantings.find((p) => p.id === item.id);
+          if (!planting) continue;
+          const cultivar = getCultivar(planting.cultivarId);
+          if (!cultivar) continue;
+          const footprintFt = cultivar.footprintFt ?? 0.5;
+          // item.x/y = planting.x/y (local coords) + drag delta.
+          // Recover the delta and apply to the world-space position.
+          const world = plantingWorldPose(garden, planting);
+          const wx = world.x + (item.x - planting.x);
+          const wy = world.y + (item.y - planting.y);
+          const sx = (wx - view.x) * view.scale;
+          const sy = (wy - view.y) * view.scale;
+          const radiusPx = (footprintFt / 2) * view.scale;
+          const color = cultivar.color ?? '#4A7C59';
+          const iconBgColor = cultivar.iconBgColor ?? null;
+          children.push(...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor));
         }
+        return [{ kind: 'group', alpha: 0.5, children }];
       },
     }),
     [cloneOverlay],
