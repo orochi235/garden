@@ -43,3 +43,4 @@ toolbar-*.png
 .claude/worktrees/
 .cache
 .claude/scheduled_tasks.lock
+tests/visual/diffs/
