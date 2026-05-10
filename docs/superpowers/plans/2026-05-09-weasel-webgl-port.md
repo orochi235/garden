@@ -1,5 +1,31 @@
 # Weasel 0.2.0 WebGL Port — Implementation Plan
 
+> ## Morning handoff (2026-05-10)
+>
+> Branch `port/weasel-0.2`, **0 tsc errors**, **665/665 vitest pass**, **4/4 visual baselines pass**.
+>
+> **Done autonomously last night:**
+> - Phases A-F complete (every plan task except 24 + 26)
+> - 4 of 7 fixture scenes hand-authored: `garden-empty`, `garden-mixed`, `seed-empty`, `seed-with-seedlings`. Baselines captured + committed.
+> - Loader extended with `?mode=garden|seed-starting` URL param so the seed fixtures show the right canvas
+> - Vite plugin added to serve `tests/visual/fixtures/*` to the dev server
+>
+> **For your eyes — please review:**
+> 1. Open `tests/visual/baselines/*.png` — do these look like reasonable scenes? They were hand-authored from the schema, so they may be ugly or sparse. Replace any that aren't useful by building a better scene in `npm run dev` and re-exporting via File → Download Garden into `tests/visual/fixtures/<name>.garden`, then `rm tests/visual/baselines/<name>.png && npm run test:visual` to refresh.
+> 2. Smoke-test the `?mode=seed-starting` URL param works as expected.
+> 3. The 3 deferred fixtures (`garden-mixed-selected`, `garden-zoomed-in`, `seed-sown-cells`) need loader extensions to set selection state and view state from the URL or fixture. Skipping for now — your call whether to add them.
+>
+> **Known concerns (visual fidelity, all from Phase C):**
+> - Plant icons render as circles via baked-in clip in the decoded ImageBitmap. Works, but slightly different from the old `ctx.clip()` rendering — first-pass smoke last night confirmed icons display correctly
+> - Markdown labels render as plain `species (variety)` text — no bold/italic. `createMarkdownRenderer` was canvas-ctx based and isn't ported
+> - Container clip lost — plants overhanging container walls won't be clipped (no clip DrawCommand in weasel 0.2.0)
+>
+> **Pre-existing lint noise:** `npm run lint` reports ~398 errors, the bulk pre-existing. The biome.jsonc schema version reports a tooling mismatch (2.4.12 vs 2.4.14) — fixable with `npx biome migrate`. Untouched.
+>
+> **To merge:** when you're satisfied with the baselines, `git checkout main && git merge port/weasel-0.2` (or open a PR). 36 commits on the branch.
+
+---
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Port garden-planner from weasel's old 2D-canvas API to weasel 0.2.0 (WebGL2-only), achieve full feature parity, and add a Playwright + pixelmatch visual-regression rig with committed baselines.
