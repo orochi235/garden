@@ -69,9 +69,23 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
 
   pendingBitmaps.add(cultivarId);
 
-  // Ensure the HTMLImageElement is loaded first, then convert to ImageBitmap.
+  // Ensure the HTMLImageElement is loaded first, then convert to a circle-
+  // clipped ImageBitmap. The clip is baked in at decode time because
+  // weasel's `kind: 'image'` DrawCommand has no clip-path option — the
+  // alternative is square-cornered icons spilling outside the footprint.
   const decodeFromImg = (img: HTMLImageElement) => {
-    createImageBitmap(img).then((bitmap) => {
+    const size = Math.max(img.naturalWidth, img.naturalHeight, 1);
+    const off = new OffscreenCanvas(size, size);
+    const octx = off.getContext('2d');
+    if (!octx) {
+      pendingBitmaps.delete(cultivarId);
+      return;
+    }
+    octx.beginPath();
+    octx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    octx.clip();
+    octx.drawImage(img, 0, 0, size, size);
+    createImageBitmap(off).then((bitmap) => {
       bitmapCache.set(cultivarId, bitmap);
       pendingBitmaps.delete(cultivarId);
       for (const cb of loadCallbacks) cb();
