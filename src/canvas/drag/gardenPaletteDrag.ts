@@ -93,6 +93,7 @@ export function createGardenPaletteDrag(opts: {
         worldX,
         worldY,
         cellSize,
+        input.cultivarId,
       );
       const cultivar = getCultivar(input.cultivarId);
       const footprintFt = cultivar?.footprintFt ?? 0.5;
@@ -100,8 +101,11 @@ export function createGardenPaletteDrag(opts: {
         cultivarId: input.cultivarId,
         color: input.color ?? '#888',
         parentId: parent.id,
-        x: pos.x,
-        y: pos.y,
+        // Putative coords are WORLD-space — that's what `renderPreview` and
+        // the conflict overlay interpret. The commit step converts back to
+        // local before calling `addPlanting`.
+        x: parent.x + pos.x,
+        y: parent.y + pos.y,
         footprintRadiusFt: footprintFt / 2,
       };
     },
@@ -120,10 +124,16 @@ export function createGardenPaletteDrag(opts: {
 
     commit(putative: GardenPalettePutative): void {
       const gs = useGardenStore.getState();
+      const garden = gs.garden;
+      const parent =
+        garden.structures.find((s) => s.id === putative.parentId) ??
+        garden.zones.find((z) => z.id === putative.parentId);
+      if (!parent) return;
+      // putative.{x,y} are WORLD coords; addPlanting expects parent-local.
       gs.addPlanting({
         parentId: putative.parentId,
-        x: putative.x,
-        y: putative.y,
+        x: putative.x - parent.x,
+        y: putative.y - parent.y,
         cultivarId: putative.cultivarId,
       });
     },

@@ -204,7 +204,19 @@ function GardenCanvasNewPrototype() {
       if (u.dragPreview && u.dragPreview.kind === 'garden-palette-plant') {
         const put = u.dragPreview.putative as { parentId?: string; cultivarId?: string; x?: number; y?: number };
         if (put && put.parentId && put.cultivarId && typeof put.x === 'number' && typeof put.y === 'number') {
-          dragPlantingGhost = { parentId: put.parentId, cultivarId: put.cultivarId, x: put.x, y: put.y };
+          // putative.{x,y} are WORLD coords; the conflict overlay's resolveFootprint
+          // expects parent-LOCAL plus parent.x/y as origin, so convert back here.
+          const parent =
+            useGardenStore.getState().garden.structures.find((s) => s.id === put.parentId) ??
+            useGardenStore.getState().garden.zones.find((z) => z.id === put.parentId);
+          if (parent) {
+            dragPlantingGhost = {
+              parentId: put.parentId,
+              cultivarId: put.cultivarId,
+              x: put.x - parent.x,
+              y: put.y - parent.y,
+            };
+          }
         }
       }
       return {
