@@ -100,5 +100,5 @@ describe('createGarden', () => {
 
 it('createStructure defaults layout for raised-bed to grid', () => {
   const s = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
-  expect(s.layout).toEqual({ type: 'grid', cellSizeFt: 1 });
+  expect(s.layout).toEqual({ type: 'grid', cellSizeFt: 0.25 });
 });
