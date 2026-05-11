@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from './PlantsListView.module.css';
@@ -177,7 +177,24 @@ export function PlantsListView() {
   const [stageFilter, setStageFilter] = useState<'all' | 'planting' | 'seedling'>('all');
   const [visibleIds, setVisibleIds] = useState<string[]>(() => readVisibleColumns());
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
+  const colEditorRef = useRef<HTMLDivElement | null>(null);
   const visibleColumns = COLUMNS.filter((c) => visibleIds.includes(c.id));
+
+  useEffect(() => {
+    if (!columnEditorOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!colEditorRef.current?.contains(e.target as Node)) setColumnEditorOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setColumnEditorOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [columnEditorOpen]);
 
   function toggleColumn(id: string) {
     setVisibleIds((prev) => {
@@ -248,8 +265,8 @@ export function PlantsListView() {
             </button>
           ))}
         </div>
-        <div className={styles.colEditor}>
-          <button type="button" onClick={() => setColumnEditorOpen((v) => !v)}>
+        <div ref={colEditorRef} className={styles.colEditor}>
+          <button type="button" aria-expanded={columnEditorOpen} onClick={() => setColumnEditorOpen((v) => !v)}>
             Columns ▾
           </button>
           {columnEditorOpen && (
