@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import styles from './PlantsListView.module.css';
 import { buildPlantRows, type PlantRow } from './plantsViewModel';
@@ -81,12 +81,63 @@ const COLUMNS: ColumnDef[] = [
 
 const DEFAULT_VISIBLE = COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id);
 
+function compareRows(a: PlantRow, b: PlantRow, columnId: string): number {
+  const valueFor = (r: PlantRow): string | number | undefined => {
+    switch (columnId) {
+      case 'name': return r.name;
+      case 'variety': return r.variety ?? '';
+      case 'category': return r.category ?? '';
+      case 'location': return r.location;
+      case 'stage': return r.stage;
+      case 'spacing': return r.spacingFt;
+      case 'height': return r.heightFt;
+      case 'footprint': return r.footprintFt;
+      case 'nextAction': return r.nextAction?.earliest ?? '';
+      case 'rowId': return r.id;
+      case 'cultivarId': return r.cultivarId;
+      case 'speciesId': return r.speciesId;
+      case 'parentId': return r.parentId ?? '';
+      case 'position':
+        return r.x == null || r.y == null ? Number.POSITIVE_INFINITY : r.x * 10000 + r.y;
+      case 'climber': return r.climber ? 1 : 0;
+      case 'iconPath': return r.iconImage ?? '';
+      case 'allActions': return r.allActions.length;
+      default: return r.name;
+    }
+  };
+  const av = valueFor(a);
+  const bv = valueFor(b);
+  if (av === undefined && bv === undefined) return 0;
+  if (av === undefined) return 1;
+  if (bv === undefined) return -1;
+  if (typeof av === 'number' && typeof bv === 'number') return av - bv;
+  return String(av).localeCompare(String(bv));
+}
+
 export function PlantsListView() {
   const garden = useGardenStore((s) => s.garden);
 
   const rows: PlantRow[] = useMemo(() => buildPlantRows(garden, { actions: [] }), [garden]);
 
+  const [sortColumn, setSortColumn] = useState<string>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
   const visibleColumns = COLUMNS.filter((c) => DEFAULT_VISIBLE.includes(c.id));
+
+  const sortedRows = useMemo(() => {
+    const arr = [...rows];
+    arr.sort((a, b) => compareRows(a, b, sortColumn));
+    return sortDir === 'asc' ? arr : arr.reverse();
+  }, [rows, sortColumn, sortDir]);
+
+  function onHeaderClick(colId: string) {
+    if (colId === sortColumn) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(colId);
+      setSortDir('asc');
+    }
+  }
 
   if (rows.length === 0) {
     return <div className={styles.empty}>No plants in this garden.</div>;
@@ -99,19 +150,19 @@ export function PlantsListView() {
           <thead>
             <tr>
               {visibleColumns.map((col) => (
-                <th key={col.id}>{col.label}</th>
+                <th key={col.id} onClick={() => onHeaderClick(col.id)}>
+                  {col.label}{sortColumn === col.id ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {sortedRows.map((row) => (
               <tr key={row.id} aria-label={row.name}>
                 {visibleColumns.map((col) => (
                   <td
                     key={col.id}
-                    className={
-                      col.numeric ? styles.numeric : col.id === 'icon' ? styles.iconCell : undefined
-                    }
+                    className={col.numeric ? styles.numeric : (col.id === 'icon' ? styles.iconCell : undefined)}
                   >
                     {col.render(row)}
                   </td>

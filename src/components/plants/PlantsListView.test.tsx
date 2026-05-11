@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { getAllCultivars } from '../../model/cultivars';
 import { createPlanting, createStructure } from '../../model/types';
@@ -37,5 +38,39 @@ describe('PlantsListView', () => {
     useUiStore.getState().reset();
     render(<PlantsListView />);
     expect(screen.getByText(/no plants in this garden/i)).toBeDefined();
+  });
+
+  it('sorts rows by Location when its header is clicked, toggling direction', async () => {
+    useGardenStore.getState().reset();
+    useUiStore.getState().reset();
+    const garden = useGardenStore.getState().garden;
+    const aBed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    aBed.label = 'Aaa Bed';
+    const zBed = createStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, length: 4 });
+    zBed.label = 'Zzz Bed';
+    const cv = getAllCultivars()[0];
+    // Insert Zzz first so insertion order does NOT match asc sort.
+    const pZ = createPlanting({ parentId: zBed.id, x: 0, y: 0, cultivarId: cv.id });
+    const pA = createPlanting({ parentId: aBed.id, x: 0, y: 0, cultivarId: cv.id });
+    useGardenStore.setState({
+      garden: { ...garden, structures: [aBed, zBed], plantings: [pZ, pA] },
+    });
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+
+    const locations = () =>
+      screen.getAllByRole('row').slice(1).map((tr) => {
+        const cells = within(tr).getAllByRole('cell');
+        // Locate the Location cell by index: Icon(0) Name(1) Variety(2) Category(3) Location(4) …
+        return cells[4].textContent;
+      });
+
+    // Insertion order initially: Zzz Bed, Aaa Bed (no sort applied yet — default sort is by name, ties)
+    // After first click on Location: asc — Aaa Bed first.
+    await user.click(screen.getByRole('columnheader', { name: /location/i }));
+    expect(locations()).toEqual(['Aaa Bed', 'Zzz Bed']);
+    // Second click: desc.
+    await user.click(screen.getByRole('columnheader', { name: /location/i }));
+    expect(locations()).toEqual(['Zzz Bed', 'Aaa Bed']);
   });
 });
