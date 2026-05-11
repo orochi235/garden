@@ -3,10 +3,10 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
 import { downloadGarden, openGardenFile } from '../utils/file';
+import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { CollectionEditor } from './collection/CollectionEditor';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { ModeOnly } from './ModeOnly';
-import { ModeSwitcher } from './ModeSwitcher';
 import { TraySwitcher } from './TraySwitcher';
 
 export function MenuBar() {
@@ -18,6 +18,13 @@ export function MenuBar() {
   const setCollectionEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
   const setScheduleOpen = useUiStore((s) => s.setScheduleOpen);
   const setPlantsModalOpen = useUiStore((s) => s.setPlantsModalOpen);
+  const appMode = useUiStore((s) => s.appMode);
+  const setAppMode = useUiStore((s) => s.setAppMode);
+
+  function toggleSeedStarting() {
+    if (appMode === 'seed-starting') setAppMode('garden');
+    else enterSeedStarting();
+  }
 
   async function handleOpen() {
     try {
@@ -52,7 +59,6 @@ export function MenuBar() {
   return (
     <div className={styles.menuBar}>
       <div className={styles.title}>Garden Planner</div>
-      <ModeSwitcher />
       <ModeOnly mode="seed-starting">
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       </ModeOnly>
@@ -69,7 +75,15 @@ export function MenuBar() {
         <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
       </div>
       <div className={styles.menus}>
-        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection" className={styles.iconButton}>🪴</button>
+        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection" className={styles.iconButton}>📦</button>
+        <button
+          type="button"
+          onClick={toggleSeedStarting}
+          aria-label="Seed starting"
+          aria-pressed={appMode === 'seed-starting'}
+          title="Seed starting"
+          className={`${styles.iconButton} ${appMode === 'seed-starting' ? styles.iconButtonActive : ''}`}
+        >🌱</button>
         <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
         <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="List" title="List" className={styles.iconButton}>🔍</button>
         <button

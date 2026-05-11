@@ -83,6 +83,10 @@
   line-height: 1;
   padding: 2px 6px !important;
 }
+.iconButtonActive {
+  background: var(--theme-list-hover) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
 
 .menus button:hover {
   background: rgba(0, 0, 0, 0.1);
