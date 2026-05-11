@@ -3,6 +3,7 @@ import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
 import { rectPath } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
+import { plantDrawCommands } from '../plantRenderers';
 
 /**
  * Phase-2-migrated drag: structure / zone / planting move (single + multi-select).
@@ -122,14 +123,15 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
         if (planting) {
           const cultivar = getCultivar(planting.cultivarId);
           if (!cultivar) continue;
-          const footprintFt = cultivar.footprintFt ?? 0.5;
-          const radius = footprintFt / 2;
-          const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
-          const path = ellipsePolygon(pose.x, pose.y, radius, radius);
-          cmds.push({ kind: 'group', alpha: 0.65, children: [
-            { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
-            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' }, width: Math.max(1 / view.scale, radius * 0.06) } },
-          ]});
+          const radius = (cultivar.footprintFt ?? 0.5) / 2;
+          const color = cultivar.color ?? '#4A7C59';
+          // Use the same draw path as committed plantings (bg circle + icon
+          // image when loaded) so the move ghost shows the actual plant.
+          cmds.push({
+            kind: 'group',
+            alpha: 0.65,
+            children: plantDrawCommands(planting.cultivarId, pose.x, pose.y, radius, color, cultivar.iconBgColor),
+          });
           continue;
         }
 
