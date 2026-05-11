@@ -43,7 +43,7 @@ describe('PlantingLeafRow arming', () => {
     useUiStore.getState().reset();
   });
 
-  it('does not arm when not in seed-starting mode', () => {
+  it('does not arm when not in nursery mode', () => {
     useUiStore.getState().setAppMode('garden');
     const { container } = render(
       <PlantingLeafRow entry={entry} onDragBegin={() => {}} />,
@@ -52,7 +52,7 @@ describe('PlantingLeafRow arming', () => {
     expect(useUiStore.getState().armedCultivarId).toBeNull();
   });
 
-  it('arms on click in seed-starting mode', () => {
+  it('arms on click in nursery mode', () => {
     useUiStore.getState().setAppMode('nursery');
     const { container } = render(
       <PlantingLeafRow entry={entry} onDragBegin={() => {}} />,

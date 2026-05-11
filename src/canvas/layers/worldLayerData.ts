@@ -18,7 +18,7 @@ export interface EricSceneUi {
   /** Per-id selection-flash highlight opacity in `[0, 1]`. Returns `0` when
    *  the id is not currently flashing/hovered. Layers iterate their entities
    *  and call this for each id rather than reading a single aggregated number.
-   *  Mirrors the seed-starting layers' `getHighlight` callback shape. */
+   *  Mirrors the nursery layers' `getHighlight` callback shape. */
   getHighlight: (id: string) => number;
   debugOverlappingLabels: boolean;
   /**

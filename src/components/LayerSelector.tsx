@@ -250,7 +250,7 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number, layers: La
     <defs>${defs}</defs>${content}</svg>`;
 }
 
-const SEED_STARTING_LAYER_IDS: LayerId[] = ['plantings', 'zones'];
+const NURSERY_LAYER_IDS: LayerId[] = ['plantings', 'zones'];
 
 export function LayerSelector() {
   const activeLayer = useUiStore((s) => s.activeLayer);
@@ -264,7 +264,7 @@ export function LayerSelector() {
   const layers = useMemo(
     () =>
       appMode === 'nursery'
-        ? ALL_LAYERS.filter((l) => SEED_STARTING_LAYER_IDS.includes(l.id))
+        ? ALL_LAYERS.filter((l) => NURSERY_LAYER_IDS.includes(l.id))
         : ALL_LAYERS,
     [appMode],
   );

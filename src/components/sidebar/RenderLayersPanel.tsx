@@ -6,7 +6,7 @@ import { LayerSection } from './LayerSection';
 /**
  * Lists every render layer the canvas is currently drawing, in draw order.
  *
- * The canvas (`CanvasNewPrototype` / `SeedStartingCanvasNewPrototype`) calls
+ * The canvas (`CanvasNewPrototype` / `NurseryCanvas`) calls
  * `setRegisteredLayers(mode, layers)` with whatever it passes to weasel, so
  * this panel mirrors weasel's actual render stack — no hardcoded list to
  * keep in sync.

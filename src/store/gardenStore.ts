@@ -459,17 +459,17 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       commitPatch({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
     },
 
-    // --- Seed Starting ---
+    // --- Nursery ---
 
     addTray: (tray) => {
       const { nursery } = get().garden;
       commitPatch({
         nursery: { ...nursery, trays: [...nursery.trays, tray] },
       });
-      useUiStore.getState().bumpSeedStartingViewResetTick();
+      useUiStore.getState().bumpNurseryViewResetTick();
     },
 
-    /** Add a tray without creating an undo entry — used when bootstrapping seed-starting mode. */
+    /** Add a tray without creating an undo entry — used when bootstrapping nursery mode. */
     addTraySilent: (tray) => {
       const { nursery } = get().garden;
       patch({ nursery: { ...nursery, trays: [...nursery.trays, tray] } });

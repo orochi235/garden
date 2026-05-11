@@ -13,11 +13,11 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import {
-  createSeedStartingSceneAdapter,
+  createNurserySceneAdapter,
   trayWorldOrigin,
   type SeedNode,
   type ScenePose,
-} from './adapters/seedStartingScene';
+} from './adapters/nurseryScene';
 import { createTrayLayers } from './layers/trayLayersWorld';
 import { createSeedlingLayers, type SeedlingLayerUi } from './layers/seedlingLayersWorld';
 import { createSystemLayers } from './layers/systemLayersWorld';
@@ -42,7 +42,7 @@ const SEED_MIN_ZOOM = 5;
 const SEED_MAX_ZOOM = 100;
 const DEFAULT_SEED_ZOOM = 30;
 
-export function SeedStartingCanvasNewPrototype() {
+export function NurseryCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
   const garden = useGardenStore((s) => s.garden);
@@ -80,7 +80,7 @@ export function SeedStartingCanvasNewPrototype() {
   useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
 
   // Adapter is stateless wrt mount — recreate is fine.
-  const adapter = useMemo(() => createSeedStartingSceneAdapter(), []);
+  const adapter = useMemo(() => createNurserySceneAdapter(), []);
 
   const layers = useMemo(() => {
     const getTrays = () => {
@@ -137,7 +137,7 @@ export function SeedStartingCanvasNewPrototype() {
 
   // View state lives locally — the canvas owns its own viewport. Outside actors
   // (palette drag, reset action) talk to us via `palettePointerPayload` and
-  // `seedStartingViewResetTick` in `useUiStore` rather than mirrored fields.
+  // `nurseryViewResetTick` in `useUiStore` rather than mirrored fields.
   const [view, setView] = useState<View>({ x: 0, y: 0, scale: DEFAULT_SEED_ZOOM });
   // Mirror to a ref so document-level pointer listeners (palette drop tool)
   // can read the latest view without re-attaching listeners every frame.
@@ -156,7 +156,7 @@ export function SeedStartingCanvasNewPrototype() {
   // Fit the current tray on first useful layout, on tray change, and on
   // explicit reset requests. Doesn't run while the user is mid-drag because
   // setView is the only mutator and reset only fires through this hook.
-  const resetTick = useUiStore((s) => s.seedStartingViewResetTick);
+  const resetTick = useUiStore((s) => s.nurseryViewResetTick);
   const fitViewToTray = (containerW: number, containerH: number) => {
     const ss = useGardenStore.getState().garden.nursery;
     const tray = ss.trays.find(

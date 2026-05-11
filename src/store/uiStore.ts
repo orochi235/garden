@@ -87,15 +87,15 @@ interface UiStore {
   /**
    * Transient one-shot request slot for outside-the-canvas writes to the
    * garden view. The canvas's effect picks it up, applies the change to its
-   * local view state, and clears the slot. Mirrors the seed-starting
-   * `seedStartingViewResetTick` pattern but with multiple request kinds in
+   * local view state, and clears the slot. Mirrors the nursery
+   * `nurseryViewResetTick` pattern but with multiple request kinds in
    * one slot. Setters: `setGardenViewRequest`.
    */
   gardenViewRequest: GardenViewRequest | null;
   /**
    * Current zoom as a display percentage — written by whichever canvas is
    * active. Each canvas knows its own "100%" baseline (garden: 64 px/ft,
-   * seed-starting: 30 px/in) and normalises before writing. StatusBar reads
+   * nursery: 30 px/in) and normalises before writing. StatusBar reads
    * this without needing to know which mode is active.
    */
   canvasZoomPct: number;
@@ -129,20 +129,20 @@ interface UiStore {
   appMode: AppMode;
   currentTrayId: string | null;
   /** Transient slot: the palette writes a payload here when the user starts a
-   *  drag from the seed palette. The seed-starting canvas's `usePaletteDropTool`
+   *  drag from the seed palette. The nursery canvas's `usePaletteDropTool`
    *  watches this slot, takes ownership of the gesture (its own document
    *  pointer listeners + ghost), and clears the slot on commit/cancel.
    *  This replaces the previous `seedStartingZoom`/`Pan` mirror — coordinate
    *  math lives inside the canvas now. */
   palettePointerPayload: { entry: PaletteEntry; pointerEvent: PointerEvent } | null;
-  /** Bumped by `resetCurrentCanvasView()` when the seed-starting canvas should
+  /** Bumped by `resetCurrentCanvasView()` when the nursery canvas should
    *  re-fit its local view to the current tray. The canvas owns its view in
    *  React state; outside actors signal "please refit" by incrementing this
    *  counter rather than poking view fields directly. */
-  seedStartingViewResetTick: number;
+  nurseryViewResetTick: number;
   /** Cultivar being dragged from the seed palette; null when no drag in progress. */
   seedDragCultivarId: string | null;
-  /** Cultivar armed for click-to-sow in seed-starting mode. Toggled by clicking
+  /** Cultivar armed for click-to-sow in nursery mode. Toggled by clicking
    *  a palette planting entry; cleared by clicking it again, by Escape, or by
    *  right-click. Independent of `seedDragCultivarId` (which is set only during
    *  active palette drags). */
@@ -193,7 +193,7 @@ interface UiStore {
   setAppMode: (mode: AppMode) => void;
   setCurrentTrayId: (id: string | null) => void;
   setPalettePointerPayload: (payload: UiStore['palettePointerPayload']) => void;
-  bumpSeedStartingViewResetTick: () => void;
+  bumpNurseryViewResetTick: () => void;
   setSeedDragCultivarId: (id: string | null) => void;
   setArmedCultivarId: (id: string | null) => void;
   setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
@@ -290,7 +290,7 @@ function defaultState() {
     appMode: readInitialAppMode(),
     currentTrayId: null as string | null,
     palettePointerPayload: null as UiStore['palettePointerPayload'],
-    seedStartingViewResetTick: 0,
+    nurseryViewResetTick: 0,
     seedDragCultivarId: null as string | null,
     armedCultivarId: null as string | null,
     seedFillPreview: null as UiStore['seedFillPreview'],
@@ -364,7 +364,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
   setPalettePointerPayload: (payload) => set({ palettePointerPayload: payload }),
-  bumpSeedStartingViewResetTick: () => set((s) => ({ seedStartingViewResetTick: s.seedStartingViewResetTick + 1 })),
+  bumpNurseryViewResetTick: () => set((s) => ({ nurseryViewResetTick: s.nurseryViewResetTick + 1 })),
   setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
   setArmedCultivarId: (id) => set({ armedCultivarId: id }),
   setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),

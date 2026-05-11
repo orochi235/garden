@@ -3,11 +3,11 @@ import type { LayerId } from '../../model/types';
 import { useUiStore } from '../../store/uiStore';
 
 const ALL_LAYERS: LayerId[] = ['ground', 'blueprint', 'structures', 'zones', 'plantings'];
-const SEED_STARTING_LAYERS: LayerId[] = ['zones', 'plantings'];
+const NURSERY_LAYERS: LayerId[] = ['zones', 'plantings'];
 
 function cycleLayer(dir: 1 | -1): void {
   const { activeLayer, layerVisibility, appMode } = useUiStore.getState();
-  const layers = appMode === 'nursery' ? SEED_STARTING_LAYERS : ALL_LAYERS;
+  const layers = appMode === 'nursery' ? NURSERY_LAYERS : ALL_LAYERS;
   const idx = layers.indexOf(activeLayer);
   for (let step = 1; step < layers.length; step++) {
     const next = (idx + dir * step + layers.length) % layers.length;

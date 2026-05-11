@@ -3,7 +3,7 @@ import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import { trayInteriorOffsetIn } from '../../model/nursery';
-import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 
 /**
  * Phase-2-migrated drag: seed-mode multi-seedling move ghost — the resolved

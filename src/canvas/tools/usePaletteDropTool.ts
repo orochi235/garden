@@ -19,7 +19,7 @@ interface Options {
 }
 
 /**
- * Palette → seed-starting canvas drop tool.
+ * Palette → nursery canvas drop tool.
  *
  * The kit's `Tool` primitive only sees pointer events the canvas dispatcher
  * gets, but palette drags begin on the palette item — so the dispatcher never

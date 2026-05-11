@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  createSeedStartingSceneAdapter,
-  seedStartingWorldBounds,
+  createNurserySceneAdapter,
+  nurseryWorldBounds,
   TRAY_GUTTER_IN,
   TRAYS_PER_COLUMN,
   trayWorldOrigin,
-} from './seedStartingScene';
+} from './nurseryScene';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
@@ -15,7 +15,7 @@ function makeTray() {
   return createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
 }
 
-describe('seedStartingSceneAdapter', () => {
+describe('nurseryScene', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
@@ -36,7 +36,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('getObjects returns all kinds with discriminators', () => {
     const { tray } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     const objs = a.getNodes();
     expect(objs.filter((o) => o.kind === 'tray').map((o) => o.id)).toEqual([tray.id]);
     expect(objs.filter((o) => o.kind === 'seedling')).toHaveLength(2);
@@ -44,7 +44,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('getPose returns raw origin for tray and world-composed for seedling', () => {
     const { tray, sA } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     expect(a.getPose(tray.id)).toEqual({ x: 0, y: 0 });
     const off = trayInteriorOffsetIn(tray);
     expect(a.getPose(sA.id)).toEqual({
@@ -55,20 +55,20 @@ describe('seedStartingSceneAdapter', () => {
 
   it('getParent: seedling → tray id, tray → null', () => {
     const { tray, sA } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     expect(a.getParent!(sA.id)).toBe(tray.id);
     expect(a.getParent!(tray.id)).toBeNull();
   });
 
   it('getChildren returns seedling ids in that tray', () => {
     const { tray, sA, sB } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     expect(a.getChildren(tray.id).sort()).toEqual([sA.id, sB.id].sort());
   });
 
   it('setPose snaps seedling to nearest cell on the tray grid', () => {
     const { tray, sA } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     // Aim for cell (0, 1) — empty.
     const off = trayInteriorOffsetIn(tray);
     const target = {
@@ -85,7 +85,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('findSnapTarget returns the nearest empty cell of nearest tray', () => {
     const { tray, sA } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     const off = trayInteriorOffsetIn(tray);
     // Drop near cell (1, 1) — empty.
     const t = a.findSnapTarget!(sA.id, off.x + 1.5 * tray.cellPitchIn, off.y + 1.5 * tray.cellPitchIn);
@@ -100,7 +100,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('findSnapTarget returns null for trays', () => {
     const { tray } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     const fn = a.findSnapTarget;
     expect(fn).toBeDefined();
     expect(fn!(tray.id, 1, 1)).toBeNull();
@@ -108,7 +108,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('hitTest cascades seedling above tray when overlapping', () => {
     const { tray, sA } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     const off = trayInteriorOffsetIn(tray);
     const cx = off.x + 0.5 * tray.cellPitchIn;
     const cy = off.y + 0.5 * tray.cellPitchIn;
@@ -122,7 +122,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('hitTest returns tray when hitting an empty cell area', () => {
     const { tray } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     // Inside tray bounds but outside the cell grid (in the padding area).
     const top = a.hitTest(0.05, 0.05);
     expect(top?.kind).toBe('tray');
@@ -131,7 +131,7 @@ describe('seedStartingSceneAdapter', () => {
 
   it('applyBatch calls checkpoint once and applies each op', () => {
     setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     const checkpoint = vi.spyOn(useGardenStore.getState(), 'checkpoint');
     const op1: Op = { apply: vi.fn(), invert: vi.fn() };
     const op2: Op = { apply: vi.fn(), invert: vi.fn() };
@@ -141,9 +141,9 @@ describe('seedStartingSceneAdapter', () => {
     expect(op2.apply).toHaveBeenCalledWith(a);
   });
 
-  describe('trayWorldOrigin / seedStartingWorldBounds (multi-tray auto-flow)', () => {
+  describe('trayWorldOrigin / nurseryWorldBounds (multi-tray auto-flow)', () => {
     function ssWithTrays(trays: { rows: number; cols: number; label: string }[]) {
-      // Reset store and add each tray; return the live SeedStarting state.
+      // Reset store and add each tray; return the live nursery state.
       useGardenStore.getState().reset();
       useGardenStore.getState().loadGarden(blankGarden());
       for (const t of trays) {
@@ -157,7 +157,7 @@ describe('seedStartingSceneAdapter', () => {
     it('n=1: single tray sits at (0, 0); bounds equal tray dims', () => {
       const ss = ssWithTrays([{ rows: 2, cols: 3, label: 'a' }]);
       expect(trayWorldOrigin(ss.trays[0], ss)).toEqual({ x: 0, y: 0 });
-      expect(seedStartingWorldBounds(ss)).toEqual({
+      expect(nurseryWorldBounds(ss)).toEqual({
         width: ss.trays[0].widthIn,
         height: ss.trays[0].heightIn,
       });
@@ -171,7 +171,7 @@ describe('seedStartingSceneAdapter', () => {
       const [t0, t1] = ss.trays;
       expect(trayWorldOrigin(t0, ss)).toEqual({ x: 0, y: 0 });
       expect(trayWorldOrigin(t1, ss)).toEqual({ x: 0, y: t0.heightIn + TRAY_GUTTER_IN });
-      expect(seedStartingWorldBounds(ss)).toEqual({
+      expect(nurseryWorldBounds(ss)).toEqual({
         width: Math.max(t0.widthIn, t1.widthIn),
         height: t0.heightIn + TRAY_GUTTER_IN + t1.heightIn,
       });
@@ -190,7 +190,7 @@ describe('seedStartingSceneAdapter', () => {
         x: 0,
         y: t0.heightIn + t1.heightIn + 2 * TRAY_GUTTER_IN,
       });
-      expect(seedStartingWorldBounds(ss)).toEqual({
+      expect(nurseryWorldBounds(ss)).toEqual({
         width: Math.max(t0.widthIn, t1.widthIn, t2.widthIn),
         height: t0.heightIn + t1.heightIn + t2.heightIn + 2 * TRAY_GUTTER_IN,
       });
@@ -209,7 +209,7 @@ describe('seedStartingSceneAdapter', () => {
         x: col0Width + TRAY_GUTTER_IN,
         y: 0,
       });
-      expect(seedStartingWorldBounds(ss)).toEqual({
+      expect(nurseryWorldBounds(ss)).toEqual({
         width: col0Width + TRAY_GUTTER_IN + t3.widthIn,
         height: t0.heightIn + t1.heightIn + t2.heightIn + 2 * TRAY_GUTTER_IN,
       });
@@ -221,13 +221,13 @@ describe('seedStartingSceneAdapter', () => {
 
     it('zero trays: bounds are (0, 0)', () => {
       const ss = ssWithTrays([]);
-      expect(seedStartingWorldBounds(ss)).toEqual({ width: 0, height: 0 });
+      expect(nurseryWorldBounds(ss)).toEqual({ width: 0, height: 0 });
     });
   });
 
   it('selection bridges to useUiStore', () => {
     const { sA } = setup();
-    const a = createSeedStartingSceneAdapter();
+    const a = createNurserySceneAdapter();
     a.setSelection([sA.id]);
     expect(a.getSelection()).toEqual([sA.id]);
     expect(useUiStore.getState().selectedIds).toEqual([sA.id]);

@@ -39,14 +39,14 @@ import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
 import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
 import { createPlotDrag, PLOT_DRAG_KIND, type PlotPutative } from './drag/plotDrag';
 import { createAreaSelectDrag, AREA_SELECT_DRAG_KIND } from './drag/areaSelectDrag';
-import { SeedStartingCanvasNewPrototype } from './SeedStartingCanvasNewPrototype';
+import { NurseryCanvas } from './NurseryCanvas';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
-  if (appMode === 'nursery') return <SeedStartingCanvasNewPrototype />;
+  if (appMode === 'nursery') return <NurseryCanvas />;
   return <GardenCanvasNewPrototype />;
 }
 
@@ -390,7 +390,7 @@ function GardenCanvasNewPrototype() {
     ],
   });
   // Palette → garden drop tool (non-claiming pseudo-tool). Mirrors the
-  // seed-starting `usePaletteDropTool`: subscribes to `palettePointerPayload`,
+  // nursery `usePaletteDropTool`: subscribes to `palettePointerPayload`,
   // owns ghost + threshold drag + commit. Reads our local `viewRef` to do
   // screen→world math (the canvas owns its viewport state).
   useGardenPaletteDropTool({ containerRef, viewRef });

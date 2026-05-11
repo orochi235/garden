@@ -1,6 +1,6 @@
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/ModeSwitcher.module.css';
-import { enterSeedStarting } from '../utils/enterSeedStarting';
+import { enterNursery } from '../utils/enterNursery';
 
 export function ModeSwitcher() {
   const appMode = useUiStore((s) => s.appMode);
@@ -21,10 +21,10 @@ export function ModeSwitcher() {
         type="button"
         aria-pressed={appMode === 'nursery'}
         className={`${styles.tab} ${appMode === 'nursery' ? styles.active : ''}`}
-        data-label="Seed Starting"
-        onClick={enterSeedStarting}
+        data-label="Nursery"
+        onClick={enterNursery}
       >
-        <span>Seed Starting</span>
+        <span>Nursery</span>
       </button>
     </div>
   );

@@ -3,7 +3,7 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
 import { downloadGarden, openGardenFile } from '../utils/file';
-import { enterSeedStarting } from '../utils/enterSeedStarting';
+import { enterNursery } from '../utils/enterNursery';
 import { CollectionEditor } from './collection/CollectionEditor';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { ModeOnly } from './ModeOnly';
@@ -39,9 +39,9 @@ export function MenuBar() {
   const appMode = useUiStore((s) => s.appMode);
   const setAppMode = useUiStore((s) => s.setAppMode);
 
-  function toggleSeedStarting() {
+  function toggleNursery() {
     if (appMode === 'nursery') setAppMode('garden');
-    else enterSeedStarting();
+    else enterNursery();
   }
 
   async function handleOpen() {
@@ -80,10 +80,10 @@ export function MenuBar() {
       <div className={styles.menus}>
         <button
           type="button"
-          onClick={toggleSeedStarting}
-          aria-label="Seed starting mode"
+          onClick={toggleNursery}
+          aria-label="Nursery mode"
           aria-pressed={appMode === 'nursery'}
-          title="Seed starting mode"
+          title="Nursery mode"
           className={`${styles.iconButton} ${appMode === 'nursery' ? styles.iconButtonActive : ''}`}
         >🌱</button>
         <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Cultivar collection" title="Cultivar collection" className={styles.iconButton}>📦</button>

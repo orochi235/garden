@@ -265,7 +265,7 @@ describe('setCollection', () => {
 
 import { instantiatePreset } from '../model/trayCatalog';
 
-describe('seed-starting actions', () => {
+describe('nursery actions', () => {
   beforeEach(() => useGardenStore.getState().reset());
 
   it('addTray appends a tray and sets currentTrayId', () => {

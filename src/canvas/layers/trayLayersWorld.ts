@@ -5,7 +5,7 @@ import { type DrawCommand, viewToMat3, circlePolygon, roundRectPolygon } from '.
 import type { Dims, View } from '@orochi235/weasel';
 import type { Tray, NurseryState } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
-import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { useGardenStore } from '../../store/gardenStore';
 
 export type GetTrays = () => Tray[];

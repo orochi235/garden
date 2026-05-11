@@ -2,14 +2,14 @@ import { useMemo } from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { hitTestCellInches } from '../seedStartingHitTest';
-import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { hitTestCellInches } from '../nurseryHitTest';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 
 export interface SowScratch { handled: boolean }
 
 /** Click an empty tray cell to sow with the currently dragging cultivar
  *  (`useUiStore.seedDragCultivarId`) or, as a fallback, the currently armed
- *  cultivar (`useUiStore.armedCultivarId`). Used by the seed-starting Canvas
+ *  cultivar (`useUiStore.armedCultivarId`). Used by the nursery canvas
  *  as a fallback for click-to-sow; the palette-drag-to-sow flow continues to
  *  go through App.tsx's DOM listener. The tool only claims when a cultivar
  *  is currently set so other tools (move, select) take precedence on

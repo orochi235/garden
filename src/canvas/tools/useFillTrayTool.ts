@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { hitTestCellInches } from '../seedStartingHitTest';
-import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { hitTestCellInches } from '../nurseryHitTest';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import {
   getTrayDropTargets,
   hitTrayDropTarget,
@@ -17,7 +17,7 @@ export interface FillTrayScratch {
 
 /** Shift-drag inside a tray to paint cells with the current dragging cultivar
  *  (`useUiStore.seedDragCultivarId`). Updates `seedFillPreview` while dragging
- *  so the seed-starting fill-preview layer renders the ghost; commits on
+ *  so the nursery fill-preview layer renders the ghost; commits on
  *  drag.onEnd via the appropriate fill action. */
 export function useFillTrayTool(): Tool<FillTrayScratch> {
   return useMemo(

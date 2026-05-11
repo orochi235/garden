@@ -74,7 +74,7 @@ function buildSeedablePaletteEntries(
   return entries;
 }
 
-export function SeedStartingPalette({ onDragBegin }: Props) {
+export function NurseryPalette({ onDragBegin }: Props) {
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
   const addTray = useGardenStore((s) => s.addTray);

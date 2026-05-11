@@ -42,20 +42,20 @@ describe('resetViewAction', () => {
     expect(shortcut).toEqual({ key: '0', meta: true });
   });
 
-  it('bumps the seed-starting reset tick in seed-starting mode', () => {
+  it('bumps the nursery reset tick in nursery mode', () => {
     const tray = createTray({ rows: 6, cols: 4, cellSize: 'medium', label: 't1' });
     useGardenStore.getState().addTraySilent(tray);
     const ui = useUiStore.getState();
     ui.setAppMode('nursery');
     ui.setCurrentTrayId(tray.id);
-    const before = useUiStore.getState().seedStartingViewResetTick;
+    const before = useUiStore.getState().nurseryViewResetTick;
 
     resetViewAction.execute(ctx);
 
     const after = useUiStore.getState();
     // Canvas owns its view locally now; reset is a "please refit" signal.
-    expect(after.seedStartingViewResetTick).toBe(before + 1);
-    // Garden mirror untouched in seed-starting mode; no request enqueued.
+    expect(after.nurseryViewResetTick).toBe(before + 1);
+    // Garden mirror untouched in nursery mode; no request enqueued.
     expect(after.gardenZoom).toBe(1);
     expect(after.gardenPanX).toBe(0);
     expect(after.gardenPanY).toBe(0);

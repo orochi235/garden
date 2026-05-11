@@ -24,8 +24,8 @@ function bboxesGarden(g: Garden): Bbox[] {
   return out;
 }
 
-function bboxesSeedStarting(g: Garden): Bbox[] {
-  // Tray world origin is (0,0) (see seedStartingScene adapter).
+function bboxesNursery(g: Garden): Bbox[] {
+  // Tray world origin is (0,0) (see nurseryScene adapter).
   const trays = g.nursery.trays;
   const out: Bbox[] = [];
   for (const t of trays) {
@@ -53,7 +53,7 @@ function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
     alwaysOn: true,
     draw(_data, view: View, _dims: Dims): DrawCommand[] {
       const g = getGarden();
-      const items = mode === 'garden' ? bboxesGarden(g) : bboxesSeedStarting(g);
+      const items = mode === 'garden' ? bboxesGarden(g) : bboxesNursery(g);
       const lw = 1 / Math.max(0.0001, view.scale);
       const stroke = { paint: { fill: 'solid' as const, color: '#ff0040' }, width: lw };
       const children: DrawCommand[] = items.map((b) => ({

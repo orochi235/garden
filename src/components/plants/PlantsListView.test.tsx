@@ -169,7 +169,7 @@ describe('PlantsListView', () => {
     expect(screen.queryByRole('columnheader', { name: /variety/i })).toBeNull();
   });
 
-  it('seedling row click switches to seed-starting mode and selects the tray', async () => {
+  it('seedling row click switches to nursery mode and selects the tray', async () => {
     useGardenStore.getState().reset();
     useUiStore.getState().reset();
     const garden = useGardenStore.getState().garden;

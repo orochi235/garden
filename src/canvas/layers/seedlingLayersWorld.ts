@@ -11,7 +11,7 @@ import {
   hasSeedlingWarnings,
   SEEDLING_WARNING_COLOR,
 } from '../../model/seedlingWarnings';
-import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { useGardenStore } from '../../store/gardenStore';
 import { plantDrawCommands } from '../plantRenderers';
 

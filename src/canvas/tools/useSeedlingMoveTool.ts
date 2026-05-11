@@ -6,7 +6,7 @@ import { useUiStore } from '../../store/uiStore';
 import {
   hitTestCellAcrossTrays,
   hitTestCellInches,
-} from '../seedStartingHitTest';
+} from '../nurseryHitTest';
 import { DRAG_SPREAD_GUTTER_RATIO } from '../layouts/trayDropTargets';
 import {
   getTrayDropTargets,
@@ -15,7 +15,7 @@ import {
 } from '../layouts/trayDropTargets';
 import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/nursery';
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
-import { trayWorldOrigin, type SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
+import { trayWorldOrigin, type NurserySceneAdapter } from '../adapters/nurseryScene';
 import {
   SEEDLING_MOVE_DRAG_KIND,
   type SeedlingMovePutative,
@@ -121,7 +121,7 @@ function markerCommands(
   }];
 }
 
-export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<SeedlingMoveScratch> {
+export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<SeedlingMoveScratch> {
   // Stable mutable mirror so the overlay's draw closure (defined once) sees
   // current scratch values across renders without re-creating the layer.
   const scratchRef = useRef<SeedlingMoveScratch>(initScratch());

@@ -116,7 +116,7 @@ describe('usePaletteDropTool', () => {
     expect(useUiStore.getState().seedFillPreview).toBeNull();
   });
 
-  it('does not read the seed-starting view from uiStore (regression: no zoom/pan fields)', () => {
+  it('does not read the nursery view from uiStore (regression: no zoom/pan fields)', () => {
     // Ensure uiStore no longer exports the deleted view fields. If they ever
     // come back, this test breaks loudly.
     const ui = useUiStore.getState() as unknown as Record<string, unknown>;

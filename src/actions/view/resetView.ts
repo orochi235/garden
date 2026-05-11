@@ -5,21 +5,21 @@ import { useUiStore } from '@/store/uiStore';
 /**
  * Fit-to-content reset for whichever canvas the current `appMode` shows.
  * Both modes own their view in local React state. Garden mode posts a
- * `gardenViewRequest({kind:'reset'})`; seed-starting bumps
- * `seedStartingViewResetTick`. The canvases listen and refit themselves.
+ * `gardenViewRequest({kind:'reset'})`; nursery bumps
+ * `nurseryViewResetTick`. The canvases listen and refit themselves.
  */
 export function resetCurrentCanvasView(): void {
   const ui = useUiStore.getState();
   if (ui.appMode === 'nursery') {
-    ui.bumpSeedStartingViewResetTick();
+    ui.bumpNurseryViewResetTick();
     return;
   }
   ui.setGardenViewRequest({ kind: 'reset' });
 }
 
 /**
- * Switch to a tray and signal the seed-starting canvas to refit. The canvas
- * owns its view locally and listens to `seedStartingViewResetTick` + the
+ * Switch to a tray and signal the nursery canvas to refit. The canvas
+ * owns its view locally and listens to `nurseryViewResetTick` + the
  * current tray id; bumping the tick after switching trays is enough to fit
  * the chosen tray.
  */
@@ -28,7 +28,7 @@ export function zoomToTray(trayId: string): void {
   const ss = useGardenStore.getState().garden.nursery;
   if (!ss.trays.find((t) => t.id === trayId)) return;
   ui.setCurrentTrayId(trayId);
-  ui.bumpSeedStartingViewResetTick();
+  ui.bumpNurseryViewResetTick();
 }
 
 export const resetViewAction: ActionDescriptor = {

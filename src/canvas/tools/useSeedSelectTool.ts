@@ -3,14 +3,14 @@ import type React from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { findSeedlingsInRect, hitTestCellInches } from '../seedStartingHitTest';
-import { trayWorldOrigin, type SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
+import { findSeedlingsInRect, hitTestCellInches } from '../nurseryHitTest';
+import { trayWorldOrigin, type NurserySceneAdapter } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 import { hitTestTrayLabel } from '../layers/trayLayersWorld';
 import type { View } from '../layers/worldLayerData';
 
 /**
- * Dedicated marquee/area-select tool for the seed-starting view.
+ * Dedicated marquee/area-select tool for the nursery view.
  *
  * Cooperates with `useSeedlingMoveTool` via claim ordering: this tool runs in
  * the `alwaysOn` slot AFTER the active move tool. When the move tool's
@@ -75,7 +75,7 @@ export interface SeedSelectOptions {
 }
 
 export function useSeedSelectTool(
-  adapter: SeedStartingSceneAdapter,
+  adapter: NurserySceneAdapter,
   options: SeedSelectOptions = {},
 ): Tool<SeedSelectScratch> {
   void adapter;

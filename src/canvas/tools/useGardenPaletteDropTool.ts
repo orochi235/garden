@@ -40,7 +40,7 @@ interface Options {
  *
  * The garden canvas owns its viewport state in local React state. The hook
  * receives a `viewRef` from the canvas and uses it for screen→world math —
- * matching the seed-starting `usePaletteDropTool` pattern.
+ * matching the nursery `usePaletteDropTool` pattern.
  */
 export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): void {
   const entryRef = useRef<PaletteEntry | null>(null);
@@ -58,7 +58,7 @@ export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): vo
       const next = state.palettePointerPayload;
       const before = prev.palettePointerPayload;
       if (next === before) return;
-      // Only run while in garden mode — seed-starting mode has its own tool.
+      // Only run while in garden mode — nursery mode has its own tool.
       if (useUiStore.getState().appMode !== 'garden') return;
       if (stopGesture) {
         stopGesture();

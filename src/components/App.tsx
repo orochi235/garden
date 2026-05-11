@@ -7,7 +7,7 @@ import { useActiveTheme } from '../hooks/useActiveTheme';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
-import { enterSeedStarting } from '../utils/enterSeedStarting';
+import { enterNursery } from '../utils/enterNursery';
 import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/file';
 import type { Cultivar } from '../model/cultivars';
 import { WelcomeModal } from './WelcomeModal';
@@ -16,7 +16,7 @@ import { PlantsModal } from './plants/PlantsModal';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
-import { SeedStartingPalette } from './palette/SeedStartingPalette';
+import { NurseryPalette } from './palette/NurseryPalette';
 import { StatusBar } from './StatusBar';
 import { Sidebar } from './sidebar/Sidebar';
 import { ViewToolbar } from './ViewToolbar';
@@ -88,7 +88,7 @@ export function App() {
     }
   }, [appMode]);
 
-  // Esc exits seed-starting mode (when no modal is currently catching it).
+  // Esc exits nursery mode (when no modal is currently catching it).
   useEffect(() => {
     if (appMode !== 'nursery') return;
     function onKey(e: KeyboardEvent) {
@@ -106,7 +106,7 @@ export function App() {
     if (!fixtureReady) return;
     if (fixtureLoadedRef.current) {
       // Still wire up mode param and collection for fixture runs.
-      if (INITIAL_MODE_PARAM === 'nursery') enterSeedStarting();
+      if (INITIAL_MODE_PARAM === 'nursery') enterNursery();
       return;
     }
 
@@ -126,7 +126,7 @@ export function App() {
           .catch(() => {});
 
     seedPromise.finally(() => {
-      if (INITIAL_MODE_PARAM === 'nursery') enterSeedStarting();
+      if (INITIAL_MODE_PARAM === 'nursery') enterNursery();
       const persisted = loadPersistedCollection<Cultivar[]>();
       if (persisted && persisted.length > 0) {
         setCollection(persisted);
@@ -260,7 +260,7 @@ export function App() {
       </div>
       <div className={styles.palette}>
         {appMode === 'nursery' ? (
-          <SeedStartingPalette onDragBegin={handleSeedDragBegin} />
+          <NurseryPalette onDragBegin={handleSeedDragBegin} />
         ) : (
           <ObjectPalette onDragBegin={handlePaletteDragBegin} />
         )}

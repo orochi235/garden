@@ -2,8 +2,8 @@ import { instantiatePreset } from '../model/trayCatalog';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 
-/** Switch into seed-starting mode, picking or creating a tray if none is selected. */
-export function enterSeedStarting() {
+/** Switch into nursery mode, picking or creating a tray if none is selected. */
+export function enterNursery() {
   const ui = useUiStore.getState();
   const garden = useGardenStore.getState().garden;
   const hasCurrent =

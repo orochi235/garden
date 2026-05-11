@@ -5,8 +5,8 @@ import {
   findSeedlingsInRect,
   hitTestCellAcrossTrays,
   hitTestCellInches,
-} from './seedStartingHitTest';
-import { trayWorldOrigin } from './adapters/seedStartingScene';
+} from './nurseryHitTest';
+import { trayWorldOrigin } from './adapters/nurseryScene';
 import type { Seedling, NurseryState } from '../model/nursery';
 
 const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
@@ -79,7 +79,7 @@ describe('findSeedlingsInRect', () => {
 
 describe('world-coord conversion', () => {
   // Two trays. Second tray's world origin is non-zero (auto-flow column-major
-  // layout in `seedStartingScene`). All hit-tests must use the world-aware
+  // layout in `nurseryScene`). All hit-tests must use the world-aware
   // helpers (caller subtracts origin → tray-local) to land on the correct cell.
   const t1 = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 'a' });
   const t2 = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 'b' });

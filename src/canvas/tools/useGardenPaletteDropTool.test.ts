@@ -111,7 +111,7 @@ describe('useGardenPaletteDropTool', () => {
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);
   });
 
-  it('does not run when appMode is seed-starting (defers to seed tool)', () => {
+  it('does not run when appMode is nursery (defers to seed tool)', () => {
     setupHook(container);
     useUiStore.getState().setAppMode('nursery');
     const pe = new Event('pointerdown') as PointerEvent;

@@ -11,7 +11,7 @@ export interface CellHit {
  * top-left of its outer bounds; the cell grid is inset by `trayInteriorOffsetIn`.
  *
  * To hit-test from world-space coordinates, subtract the tray's world origin
- * (see `trayWorldOrigin(tray, ss)` in `adapters/seedStartingScene.ts`) before
+ * (see `trayWorldOrigin(tray, ss)` in `adapters/nurseryScene.ts`) before
  * calling this function — i.e. `hitTestCellInches(tray, worldX - o.x, worldY - o.y)`.
  *
  * This module is view-transform-free: no `zoom`/`panX`/`panY` references.
@@ -57,7 +57,7 @@ export interface WorldRect { x: number; y: number; width: number; height: number
  * `getOrigin` is required (no single-tray fallback) — multi-tray hit-testing
  * only makes sense when callers know how to translate tray-local coords to
  * world space. Pass `(tray) => trayWorldOrigin(tray, ss)` from
- * `adapters/seedStartingScene.ts`.
+ * `adapters/nurseryScene.ts`.
  */
 export function hitTestCellAcrossTrays(
   trays: Tray[],

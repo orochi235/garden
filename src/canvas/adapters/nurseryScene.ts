@@ -3,7 +3,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { Seedling, NurseryState, Tray } from '../../model/nursery';
 import { getCell } from '../../model/nursery';
-import { cellCenterInches, hitTestCellInches } from '../seedStartingHitTest';
+import { cellCenterInches, hitTestCellInches } from '../nurseryHitTest';
 
 export interface ScenePose { x: number; y: number }
 
@@ -11,7 +11,7 @@ export interface TrayNode { kind: 'tray'; id: string; data: Tray }
 export interface SeedlingNode { kind: 'seedling'; id: string; data: Seedling }
 export type SeedNode = TrayNode | SeedlingNode;
 
-export type SeedStartingSceneAdapter = MoveAdapter<SeedNode, ScenePose> & {
+export type NurserySceneAdapter = MoveAdapter<SeedNode, ScenePose> & {
   hitTest(worldX: number, worldY: number): SeedNode | null;
   hitAll(worldX: number, worldY: number): SeedNode[];
   getChildren(parentId: string): string[];
@@ -19,7 +19,7 @@ export type SeedStartingSceneAdapter = MoveAdapter<SeedNode, ScenePose> & {
   setSelection(ids: string[]): void;
 };
 
-/** Gap between trays (both axes) in the auto-flow seed-starting world layout. */
+/** Gap between trays (both axes) in the auto-flow nursery world layout. */
 export const TRAY_GUTTER_IN = 2;
 /** Number of trays per column before wrapping to a new column. */
 export const TRAYS_PER_COLUMN = 3;
@@ -53,7 +53,7 @@ export function trayWorldOrigin(tray: Tray, ss: NurseryState): { x: number; y: n
 }
 
 /** Total bounds spanned by all trays under the column-major auto-flow. */
-export function seedStartingWorldBounds(ss: NurseryState): { width: number; height: number } {
+export function nurseryWorldBounds(ss: NurseryState): { width: number; height: number } {
   if (ss.trays.length === 0) return { width: 0, height: 0 };
   const cols = Math.ceil(ss.trays.length / TRAYS_PER_COLUMN);
   let width = 0;
@@ -131,8 +131,8 @@ function findEmptyCellNearest(
   return best ? { row: best.row, col: best.col } : null;
 }
 
-export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
-  const adapter: SeedStartingSceneAdapter = {
+export function createNurserySceneAdapter(): NurserySceneAdapter {
+  const adapter: NurserySceneAdapter = {
     getNode(id) {
       return findNode(id);
     },
@@ -141,7 +141,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
     },
     getPose(id) {
       const node = findNode(id);
-      if (!node) throw new Error(`seed-starting scene node not found: ${id}`);
+      if (!node) throw new Error(`nursery scene node not found: ${id}`);
       const ss = useGardenStore.getState().garden.nursery;
       switch (node.kind) {
         case 'tray':
@@ -206,7 +206,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
             store.moveSeedling(s.trayId, s.row, s.col, target.row, target.col);
           } else {
             // Cross-tray move: route through the batched action so it's a
-            // single undo step. Note: the seed-starting flow does not
+            // single undo step. Note: the nursery flow does not
             // currently invoke setPose for cross-tray moves —
             // `useSeedlingMoveTool` calls the store action directly. This
             // branch keeps the adapter consistent if a future kit-driven
@@ -230,7 +230,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
       // `gardenStore.moveSeedlingsAcrossTrays`, called directly by
       // `useSeedlingMoveTool.drag.onEnd` when a single-seedling drag commits
       // on a cell of a tray different from the source. The kit Tool gesture
-      // engine never invokes this entrypoint for the seed-starting flow.
+      // engine never invokes this entrypoint for the nursery flow.
     },
     findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
       const node = findNode(draggedId);

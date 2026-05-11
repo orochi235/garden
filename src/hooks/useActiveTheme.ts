@@ -31,7 +31,7 @@ export function useActiveTheme(): CycleState {
   const isCycling = themeOverride === 'cycle' || themeOverride === 'slow-cycle';
   const interval = themeOverride === 'slow-cycle' ? SLOW_CYCLE_INTERVAL : CYCLE_INTERVAL;
 
-  // Re-render every minute while in seed-starting mode so the basement theme
+  // Re-render every minute while in nursery mode so the basement theme
   // can switch between day/night variants at the 21:00 / 05:00 boundary.
   const [, setClockTick] = useState(0);
   useEffect(() => {

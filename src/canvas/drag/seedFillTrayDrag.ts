@@ -6,11 +6,11 @@ import {
   getTrayDropTargets,
   hitTrayDropTarget,
 } from '../layouts/trayDropTargets';
-import { trayWorldOrigin } from '../adapters/seedStartingScene';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import type { Tray } from '../../model/nursery';
 
 /**
- * Phase-1-migrated drag: palette → seed-starting tray (sow cell / fill row /
+ * Phase-1-migrated drag: palette → nursery tray (sow cell / fill row /
  * fill column / fill tray).
  *
  * The "input" is the world coords of the cursor + modifier state + the active

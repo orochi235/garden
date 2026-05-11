@@ -182,14 +182,14 @@ describe('uiStore', () => {
     });
   });
 
-  describe('seed-starting view signals', () => {
-    it('seedStartingViewResetTick starts at 0 and bumps', () => {
+  describe('nursery view signals', () => {
+    it('nurseryViewResetTick starts at 0 and bumps', () => {
       useUiStore.getState().reset();
-      expect(useUiStore.getState().seedStartingViewResetTick).toBe(0);
-      useUiStore.getState().bumpSeedStartingViewResetTick();
-      expect(useUiStore.getState().seedStartingViewResetTick).toBe(1);
-      useUiStore.getState().bumpSeedStartingViewResetTick();
-      expect(useUiStore.getState().seedStartingViewResetTick).toBe(2);
+      expect(useUiStore.getState().nurseryViewResetTick).toBe(0);
+      useUiStore.getState().bumpNurseryViewResetTick();
+      expect(useUiStore.getState().nurseryViewResetTick).toBe(1);
+      useUiStore.getState().bumpNurseryViewResetTick();
+      expect(useUiStore.getState().nurseryViewResetTick).toBe(2);
     });
 
     it('palettePointerPayload defaults to null and can be set/cleared', () => {
@@ -206,11 +206,11 @@ describe('uiStore', () => {
       expect(useUiStore.getState().seedFillPreview).toBeNull();
     });
 
-    it('seed-starting state resets', () => {
-      useUiStore.getState().bumpSeedStartingViewResetTick();
+    it('nursery state resets', () => {
+      useUiStore.getState().bumpNurseryViewResetTick();
       useUiStore.getState().setSeedFillPreview({ trayId: 't', cultivarId: 'c', scope: 'all' });
       useUiStore.getState().reset();
-      expect(useUiStore.getState().seedStartingViewResetTick).toBe(0);
+      expect(useUiStore.getState().nurseryViewResetTick).toBe(0);
       expect(useUiStore.getState().seedFillPreview).toBeNull();
     });
   });

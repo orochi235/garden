@@ -5,7 +5,7 @@ import { useSeedSelectTool, type SeedSelectScratch } from './useSeedSelectTool';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
-import { createSeedStartingSceneAdapter } from '../adapters/seedStartingScene';
+import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
 
 function makeCtx(
@@ -36,7 +36,7 @@ function pointer(): PointerEvent {
 }
 
 function renderTool() {
-  const adapter = createSeedStartingSceneAdapter();
+  const adapter = createNurserySceneAdapter();
   return renderHook(() => useSeedSelectTool(adapter));
 }
 
