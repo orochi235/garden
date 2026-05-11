@@ -477,15 +477,13 @@ export function createPlantingLayers(
       //      that spills past the outer edge onto the ground)
       // Plus an inner-rim stroke marking the soil/wall boundary.
       //
-      // Rect walls: 4 strips (top/bottom/left/right) for inner; same shape
-      // expanded outward for outer buffer. Circular walls: annulus polygons.
+      // Rect walls: 4 strips (top/bottom/left/right) for inner. Circular
+      // walls: annulus polygon. Outer buffer was removed — drew a visible
+      // ground-colored frame around every container; will revisit when
+      // weasel exposes a real clip API.
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const structures = getStructures();
-        const groundColor = useGardenStore.getState().garden.groundColor;
         const children: DrawCommand[] = [];
-        // Outer buffer just needs to cover the largest plant overhang.
-        // 1ft (largest spacing/2 in builtins) is enough for current cultivars.
-        const OUTER_BUFFER_FT = 1;
         for (const s of structures) {
           if (!s.container || (s.wallThicknessFt ?? 0) <= 0) continue;
           const strokeColor = s.type === 'pot' ? '#8a3a18' : '#333333';
@@ -517,21 +515,16 @@ export function createPlantingLayers(
             const innerW = s.width - wallWidth * 2;
             const innerH = s.length - wallWidth * 2;
             if (innerW > 0 && innerH > 0 && s.clipChildren !== false) {
-              // Inner wall: 4 rectangular strips filled with container color
+              // Inner wall: 4 rectangular strips filled with container color.
+              // No outer buffer here either — drew a visible 1ft ground-colored
+              // frame around every bed. Plants at the inner edge can overhang
+              // slightly past the outer wall onto the ground; we accept that
+              // until weasel exposes a real clip API.
               children.push(
                 { kind: 'path', path: rectPath(s.x, s.y, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
                 { kind: 'path', path: rectPath(s.x, s.y + s.length - wallWidth, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
                 { kind: 'path', path: rectPath(s.x, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
                 { kind: 'path', path: rectPath(s.x + s.width - wallWidth, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
-              );
-              // Outer buffer: 4 ground-colored strips just outside the bed.
-              // Width = OUTER_BUFFER_FT, extending outward from the outer edge.
-              const b = OUTER_BUFFER_FT;
-              children.push(
-                { kind: 'path', path: rectPath(s.x - b, s.y - b, s.width + 2 * b, b), fill: { fill: 'solid', color: groundColor } },
-                { kind: 'path', path: rectPath(s.x - b, s.y + s.length, s.width + 2 * b, b), fill: { fill: 'solid', color: groundColor } },
-                { kind: 'path', path: rectPath(s.x - b, s.y, b, s.length), fill: { fill: 'solid', color: groundColor } },
-                { kind: 'path', path: rectPath(s.x + s.width, s.y, b, s.length), fill: { fill: 'solid', color: groundColor } },
               );
             }
             if (innerW > 0 && innerH > 0) {
