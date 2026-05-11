@@ -49,6 +49,20 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
     };
   }, [open]);
 
+  // Auto-dismiss the schedule popover after 10s; Esc also closes it.
+  useEffect(() => {
+    if (!scheduleOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setScheduleOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    const timer = window.setTimeout(() => setScheduleOpen(false), 10_000);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.clearTimeout(timer);
+    };
+  }, [scheduleOpen]);
+
   function handleNewFromPreset(presetId: string) {
     const tray = instantiatePreset(presetId);
     if (!tray) return;
@@ -79,6 +93,12 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
       )}
       {scheduleOpen && tray && (
         <div className={styles.schedulePopover}>
+          <button
+            type="button"
+            className={styles.scheduleClose}
+            onClick={() => setScheduleOpen(false)}
+            aria-label="Close"
+          >×</button>
           <ScheduleView plants={trayPlants} />
         </div>
       )}
