@@ -1,0 +1,32 @@
+.root { display: flex; flex-direction: column; min-height: 0; }
+.toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+}
+.search { flex: 1; padding: 4px 8px; font-size: 13px; }
+.chips { display: flex; gap: 4px; }
+.chip {
+  padding: 2px 8px; border: 1px solid #ccc; background: #fff;
+  border-radius: 12px; font-size: 12px; cursor: pointer;
+}
+.chipActive { background: #333; color: #fff; border-color: #333; }
+.tableWrap { overflow: auto; max-height: 70vh; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th, .table td {
+  text-align: left; padding: 4px 8px; border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+.table th { cursor: pointer; user-select: none; background: #fafafa; position: sticky; top: 0; }
+.rowActive { background: #fff4c2; }
+.empty { padding: 24px; text-align: center; color: #888; }
+.iconCell { width: 24px; }
+.iconCell img { width: 18px; height: 18px; object-fit: contain; display: block; }
+.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.colEditor { position: relative; }
+.colEditorPopover {
+  position: absolute; right: 0; top: 100%; margin-top: 4px;
+  background: #fff; border: 1px solid #ccc; border-radius: 4px;
+  padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 10;
+  min-width: 180px;
+}
+.colEditorPopover label { display: flex; gap: 6px; padding: 2px 0; font-size: 12px; cursor: pointer; }
