@@ -23,6 +23,7 @@ export function MenuBar() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const collectionEditorOpen = useUiStore((s) => s.collectionEditorOpen);
   const setCollectionEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
+  const setScheduleOpen = useUiStore((s) => s.setScheduleOpen);
 
   async function handleOpen() {
     try {
@@ -94,6 +95,7 @@ export function MenuBar() {
         <span onClick={handleNew}>New</span>
         <span onClick={handleOpen}>Open</span>
         <span onClick={() => setCollectionEditorOpen(true)}>Collection…</span>
+        <span onClick={() => setScheduleOpen(true)}>Schedule…</span>
         <span
           onClick={handleSave}
           className={styles.saveButton}

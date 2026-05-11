@@ -11,6 +11,7 @@ import { enterSeedStarting } from '../utils/enterSeedStarting';
 import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/file';
 import type { Cultivar } from '../model/cultivars';
 import { WelcomeModal } from './WelcomeModal';
+import { ScheduleModal } from './schedule/ScheduleModal';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
@@ -267,6 +268,7 @@ export function App() {
         <StatusBar />
       </div>
       {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
+      {useUiStore((s) => s.scheduleOpen) && <ScheduleModal />}
     </div>
   );
 }
