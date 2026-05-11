@@ -57,3 +57,33 @@ export interface Schedule {
   actions: ResolvedAction[];           // sorted by earliest, then by plantId
   warnings: string[];
 }
+
+/**
+ * Add a signed offset to an ISO date. Calendar-aware: months use real
+ * month boundaries (clamped to last valid day on overflow), days/weeks
+ * are simple day arithmetic.
+ */
+export function addOffset(isoDate: string, offset: Offset): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (offset.unit === 'days') {
+    const dt = new Date(Date.UTC(y, m - 1, d + offset.amount));
+    return formatISO(dt);
+  }
+  if (offset.unit === 'weeks') {
+    const dt = new Date(Date.UTC(y, m - 1, d + offset.amount * 7));
+    return formatISO(dt);
+  }
+  // months: target month/year, clamp day to last valid day of that month
+  const totalMonths = (y * 12 + (m - 1)) + offset.amount;
+  const newY = Math.floor(totalMonths / 12);
+  const newM = totalMonths - newY * 12;                // 0..11
+  const lastDay = new Date(Date.UTC(newY, newM + 1, 0)).getUTCDate();
+  const newD = Math.min(d, lastDay);
+  return `${pad4(newY)}-${pad2(newM + 1)}-${pad2(newD)}`;
+}
+
+function formatISO(dt: Date): string {
+  return `${pad4(dt.getUTCFullYear())}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
+}
+function pad2(n: number): string { return n < 10 ? `0${n}` : `${n}`; }
+function pad4(n: number): string { return n.toString().padStart(4, '0'); }
