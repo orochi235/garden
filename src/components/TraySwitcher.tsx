@@ -68,9 +68,20 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
         Tray: {current?.label ?? '(none)'} <span aria-hidden>▾</span>
       </button>
       {tray && (
-        <button type="button" onClick={() => setScheduleOpen((v) => !v)}>Schedule</button>
+        <button
+          type="button"
+          className={styles.trigger}
+          onClick={() => setScheduleOpen((v) => !v)}
+          aria-expanded={scheduleOpen}
+        >
+          Schedule
+        </button>
       )}
-      {scheduleOpen && tray && <ScheduleView plants={trayPlants} />}
+      {scheduleOpen && tray && (
+        <div className={styles.schedulePopover}>
+          <ScheduleView plants={trayPlants} />
+        </div>
+      )}
       {open && (
         <div className={styles.menu} role="menu">
           {trays.length > 0 && (
