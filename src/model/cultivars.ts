@@ -86,3 +86,7 @@ export function getCultivar(id: string): Cultivar | undefined {
 export function getAllCultivars(): Cultivar[] {
   return cultivars;
 }
+
+// Re-export scheduling types so any future per-cultivar `seedStarting.actions`
+// override has consistent typing.
+export type { Constraint, Anchor, Offset, Unit, ActionDef } from './scheduler';
