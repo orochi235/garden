@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
 import styles from './PlantsListView.module.css';
 import { buildPlantRows, type PlantRow } from './plantsViewModel';
 
@@ -116,6 +117,8 @@ function compareRows(a: PlantRow, b: PlantRow, columnId: string): number {
 
 export function PlantsListView() {
   const garden = useGardenStore((s) => s.garden);
+  const selectedIds = useUiStore((s) => s.selectedIds);
+  const setSelection = useUiStore((s) => s.setSelection);
 
   const rows: PlantRow[] = useMemo(() => buildPlantRows(garden, { actions: [] }), [garden]);
 
@@ -193,7 +196,12 @@ export function PlantsListView() {
           </thead>
           <tbody>
             {sortedRows.map((row) => (
-              <tr key={row.id} aria-label={row.name}>
+              <tr
+                key={row.id}
+                aria-label={row.name}
+                className={selectedIds.includes(row.id) ? styles.rowActive : undefined}
+                onClick={() => setSelection([row.id])}
+              >
                 {visibleColumns.map((col) => (
                   <td
                     key={col.id}

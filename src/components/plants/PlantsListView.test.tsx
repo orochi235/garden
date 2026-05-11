@@ -129,4 +129,15 @@ describe('PlantsListView', () => {
     await user.click(screen.getByRole('button', { name: /^all$/i }));
     expect(screen.getAllByRole('row')).toHaveLength(3);
   });
+
+  it('row click selects on canvas and does not close the modal', async () => {
+    const { planting } = seedGarden();
+    useUiStore.getState().setPlantsModalOpen(true);
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+    const row = screen.getByRole('row', { name: new RegExp(planting.label, 'i') });
+    await user.click(row);
+    expect(useUiStore.getState().selectedIds).toEqual([planting.id]);
+    expect(useUiStore.getState().plantsModalOpen).toBe(true);
+  });
 });
