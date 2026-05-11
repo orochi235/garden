@@ -9,7 +9,6 @@ import {
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
 import { computeOccupancy, resolveFootprint } from '../../model/cellOccupancy';
-import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
