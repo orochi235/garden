@@ -9,6 +9,7 @@ import {
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
 import { computeOccupancy, resolveFootprint } from '../../model/cellOccupancy';
+import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
@@ -468,16 +469,23 @@ export function createPlantingLayers(
 
     {
       ...meta['container-walls'],
-      // For containers with `clipChildren`, draw the wall AREA (not just the
-      // inner rim stroke) on top of plantings so any icon overhang gets visually
-      // clipped to the inner soil. The wall area is filled with the container's
-      // color; an inner-rim stroke marks the soil/wall boundary on top.
+      // For containers with `clipChildren`, draw two masking layers on top of
+      // plantings:
+      //   1. INNER wall area, filled with the container's color (covers icon
+      //      overhang into the wall area between inner soil and outer edge)
+      //   2. OUTER buffer, filled with the GROUND color (covers icon overhang
+      //      that spills past the outer edge onto the ground)
+      // Plus an inner-rim stroke marking the soil/wall boundary.
       //
-      // Rect walls: 4 strips (top/bottom/left/right). Circular walls: an
-      // annulus polygon (outer ring vertices + inner ring vertices in reverse).
+      // Rect walls: 4 strips (top/bottom/left/right) for inner; same shape
+      // expanded outward for outer buffer. Circular walls: annulus polygons.
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const structures = getStructures();
+        const groundColor = useGardenStore.getState().garden.groundColor;
         const children: DrawCommand[] = [];
+        // Outer buffer just needs to cover the largest plant overhang.
+        // 1ft (largest spacing/2 in builtins) is enough for current cultivars.
+        const OUTER_BUFFER_FT = 1;
         for (const s of structures) {
           if (!s.container || (s.wallThicknessFt ?? 0) <= 0) continue;
           const strokeColor = s.type === 'pot' ? '#8a3a18' : '#333333';
@@ -489,7 +497,10 @@ export function createPlantingLayers(
             const rOuter = Math.min(s.width, s.length) / 2;
             const rInner = rOuter - wallWidth;
             if (rInner > 0 && s.clipChildren !== false) {
+              // Inner wall fill (container color)
               children.push(...annulusFill(cx, cy, rInner, rOuter, s.color));
+              // Outer buffer (ground color) — annulus from outer to outer+buffer
+              children.push(...annulusFill(cx, cy, rOuter, rOuter + OUTER_BUFFER_FT, groundColor));
             }
             if (rInner > 0) {
               children.push({
@@ -504,12 +515,21 @@ export function createPlantingLayers(
             const innerW = s.width - wallWidth * 2;
             const innerH = s.length - wallWidth * 2;
             if (innerW > 0 && innerH > 0 && s.clipChildren !== false) {
-              // Four rectangular wall strips, filled with the container color.
+              // Inner wall: 4 rectangular strips filled with container color
               children.push(
                 { kind: 'path', path: rectPath(s.x, s.y, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
                 { kind: 'path', path: rectPath(s.x, s.y + s.length - wallWidth, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
                 { kind: 'path', path: rectPath(s.x, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
                 { kind: 'path', path: rectPath(s.x + s.width - wallWidth, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
+              );
+              // Outer buffer: 4 ground-colored strips just outside the bed.
+              // Width = OUTER_BUFFER_FT, extending outward from the outer edge.
+              const b = OUTER_BUFFER_FT;
+              children.push(
+                { kind: 'path', path: rectPath(s.x - b, s.y - b, s.width + 2 * b, b), fill: { fill: 'solid', color: groundColor } },
+                { kind: 'path', path: rectPath(s.x - b, s.y + s.length, s.width + 2 * b, b), fill: { fill: 'solid', color: groundColor } },
+                { kind: 'path', path: rectPath(s.x - b, s.y, b, s.length), fill: { fill: 'solid', color: groundColor } },
+                { kind: 'path', path: rectPath(s.x + s.width, s.y, b, s.length), fill: { fill: 'solid', color: groundColor } },
               );
             }
             if (innerW > 0 && innerH > 0) {
