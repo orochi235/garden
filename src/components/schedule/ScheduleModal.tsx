@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
@@ -8,6 +9,15 @@ import styles from './ScheduleModal.module.css';
 export function ScheduleModal() {
   const setOpen = useUiStore((s) => s.setScheduleOpen);
   const garden = useGardenStore((s) => s.garden);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setOpen]);
+
   const plants = [
     ...garden.plantings.map((p) => ({ id: p.id, cultivarId: p.cultivarId, label: p.label })),
     ...garden.seedStarting.seedlings.map((s) => ({ id: s.id, cultivarId: s.cultivarId })),
