@@ -60,17 +60,17 @@ export function MenuBar() {
     <div className={styles.menuBar}>
       <div className={styles.title}>Garden Planner</div>
       <div className={styles.menus}>
-        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection" className={styles.iconButton}>📦</button>
         <button
           type="button"
           onClick={toggleSeedStarting}
-          aria-label="Seed starting"
+          aria-label="Seed starting mode"
           aria-pressed={appMode === 'seed-starting'}
-          title="Seed starting"
+          title="Seed starting mode"
           className={`${styles.iconButton} ${appMode === 'seed-starting' ? styles.iconButtonActive : ''}`}
         >🌱</button>
+        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Cultivar collection" title="Cultivar collection" className={styles.iconButton}>📦</button>
         <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
-        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="List" title="List" className={styles.iconButton}>🔍</button>
+        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="Plant list" title="Plant list" className={styles.iconButton}>🔍</button>
       </div>
       <ModeOnly mode="seed-starting">
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
