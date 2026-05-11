@@ -37,6 +37,7 @@ export function App() {
   const loadGarden = useGardenStore((s) => s.loadGarden);
   const setCollection = useGardenStore((s) => s.setCollection);
   const appMode = useUiStore((s) => s.appMode);
+  const scheduleOpen = useUiStore((s) => s.scheduleOpen);
   const [showWelcome, setShowWelcome] = useState(false);
   const { theme, prevTheme, layerFlip, transitionDuration } = useActiveTheme();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
@@ -268,7 +269,7 @@ export function App() {
         <StatusBar />
       </div>
       {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
-      {useUiStore((s) => s.scheduleOpen) && <ScheduleModal />}
+      {scheduleOpen && <ScheduleModal />}
     </div>
   );
 }
