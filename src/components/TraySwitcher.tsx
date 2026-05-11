@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import { TRAY_CATALOG, instantiatePreset } from '../model/trayCatalog';
@@ -18,10 +18,17 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
   const [open, setOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const tray = trays.find((t) => t.id === currentTrayId);
-  const traySeedlings = useGardenStore((s) =>
-    tray ? s.garden.seedStarting.seedlings.filter((sd) => sd.trayId === tray.id) : []
-  );
-  const trayPlants = traySeedlings.map((sd) => ({ id: sd.id, cultivarId: sd.cultivarId }));
+  // Subscribe to the seedlings array reference (stable across unrelated
+  // updates), then derive the per-tray slice + plants list with useMemo so
+  // the array identity doesn't churn on every render — `useSyncExternalStore`
+  // would otherwise loop "result of getSnapshot should be cached".
+  const allSeedlings = useGardenStore((s) => s.garden.seedStarting.seedlings);
+  const trayPlants = useMemo(() => {
+    if (!tray) return [];
+    return allSeedlings
+      .filter((sd) => sd.trayId === tray.id)
+      .map((sd) => ({ id: sd.id, cultivarId: sd.cultivarId }));
+  }, [allSeedlings, tray]);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const current = trays.find((t) => t.id === currentTrayId);

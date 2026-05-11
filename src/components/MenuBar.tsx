@@ -2,14 +2,7 @@ import { useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
-import { deserializeGarden, downloadGarden, openGardenFile } from '../utils/file';
-
-const FIXTURES = [
-  { label: 'Marinara', path: 'marinara.garden' },
-  { label: '8 Tomatoes', path: 'eight-tomatoes.garden' },
-  { label: 'Salsa', path: 'salsa.garden' },
-  { label: 'Trellis', path: 'trellis-bed.garden' },
-];
+import { downloadGarden, openGardenFile } from '../utils/file';
 import { CollectionEditor } from './collection/CollectionEditor';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { ModeOnly } from './ModeOnly';
@@ -64,25 +57,8 @@ export function MenuBar() {
       </ModeOnly>
       {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}
       {collectionEditorOpen && <CollectionEditor />}
-      <div className={styles.devNav}>
-        <span className={styles.devLabel}>fixtures</span>
-        {FIXTURES.map((f) => (
-          <span
-            key={f.path}
-            style={{ cursor: 'pointer' }}
-            onClick={async () => {
-              try {
-                const text = await fetch(f.path).then((r) => r.text());
-                loadGarden(deserializeGarden(text));
-              } catch (e) {
-                console.error('failed to load fixture', f.path, e);
-              }
-            }}
-          >
-            {f.label}
-          </span>
-        ))}
-      </div>
+      {/* Dev fixtures menu hidden — top bar was too crowded. Reachable
+          via the URL `?fixture=<name>` until we move it into the dev menu. */}
       <div className={styles.spacer} />
       <div className={styles.devNav}>
         <span className={styles.devLabel}>dev</span>
