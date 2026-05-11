@@ -4,6 +4,9 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from './PlantsListView.module.css';
 import { buildPlantRows, type PlantRow } from './plantsViewModel';
+import { buildSchedule, type Schedule } from '../../model/scheduler';
+import { defaultActionsForCultivar } from '../../model/defaultActions';
+import { getCultivar } from '../../model/cultivars';
 
 interface ColumnDef {
   id: string;
@@ -137,7 +140,37 @@ export function PlantsListView() {
   const selectedIds = useUiStore((s) => s.selectedIds);
   const setSelection = useUiStore((s) => s.setSelection);
 
-  const rows: PlantRow[] = useMemo(() => buildPlantRows(garden, { actions: [] }), [garden]);
+  const almanacLastFrost = useUiStore((s) => s.almanacFilters?.lastFrostDate ?? null);
+
+  const schedule: Schedule = useMemo(() => {
+    const plants = [
+      ...garden.plantings.map((p) => ({ id: p.id, cultivarId: p.cultivarId, label: p.label })),
+      ...garden.seedStarting.seedlings.map((s) => ({
+        id: s.id, cultivarId: s.cultivarId, label: undefined as string | undefined,
+      })),
+    ]
+      .map((p) => {
+        const cv = getCultivar(p.cultivarId);
+        if (!cv) return null;
+        return {
+          id: p.id,
+          cultivarId: p.cultivarId,
+          label: p.label ?? cv.name,
+          actions: defaultActionsForCultivar(cv),
+        };
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+    return buildSchedule({
+      plants,
+      targetTransplantDate: almanacLastFrost ?? new Date().toISOString().slice(0, 10),
+      lastFrostDate: almanacLastFrost ?? undefined,
+    });
+  }, [garden, almanacLastFrost]);
+
+  const rows: PlantRow[] = useMemo(
+    () => buildPlantRows(garden, schedule),
+    [garden, schedule],
+  );
 
   const [sortColumn, setSortColumn] = useState<string>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
