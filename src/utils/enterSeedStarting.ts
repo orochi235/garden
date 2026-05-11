@@ -22,5 +22,5 @@ export function enterSeedStarting() {
   if (ui.activeLayer !== 'plantings' && ui.activeLayer !== 'zones') {
     ui.setActiveLayer('plantings');
   }
-  ui.setAppMode('seed-starting');
+  ui.setAppMode('nursery');
 }

@@ -46,7 +46,7 @@ describe('resetViewAction', () => {
     const tray = createTray({ rows: 6, cols: 4, cellSize: 'medium', label: 't1' });
     useGardenStore.getState().addTraySilent(tray);
     const ui = useUiStore.getState();
-    ui.setAppMode('seed-starting');
+    ui.setAppMode('nursery');
     ui.setCurrentTrayId(tray.id);
     const before = useUiStore.getState().seedStartingViewResetTick;
 

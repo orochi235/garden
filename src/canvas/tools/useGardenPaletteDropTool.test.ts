@@ -113,7 +113,7 @@ describe('useGardenPaletteDropTool', () => {
 
   it('does not run when appMode is seed-starting (defers to seed tool)', () => {
     setupHook(container);
-    useUiStore.getState().setAppMode('seed-starting');
+    useUiStore.getState().setAppMode('nursery');
     const pe = new Event('pointerdown') as PointerEvent;
     Object.assign(pe, { clientX: 100, clientY: 100, pointerId: 1, shiftKey: false });
     useUiStore.getState().setPalettePointerPayload({ entry: structureEntry, pointerEvent: pe });

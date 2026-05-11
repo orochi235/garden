@@ -46,7 +46,7 @@ import { setRegisteredLayers } from './layers/renderLayerRegistry';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
-  if (appMode === 'seed-starting') return <SeedStartingCanvasNewPrototype />;
+  if (appMode === 'nursery') return <SeedStartingCanvasNewPrototype />;
   return <GardenCanvasNewPrototype />;
 }
 

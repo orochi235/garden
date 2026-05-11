@@ -53,7 +53,7 @@ describe('PlantingLeafRow arming', () => {
   });
 
   it('arms on click in seed-starting mode', () => {
-    useUiStore.getState().setAppMode('seed-starting');
+    useUiStore.getState().setAppMode('nursery');
     const { container } = render(
       <PlantingLeafRow entry={entry} onDragBegin={() => {}} />,
     );
@@ -62,7 +62,7 @@ describe('PlantingLeafRow arming', () => {
   });
 
   it('disarms when clicking the same armed entry again', () => {
-    useUiStore.getState().setAppMode('seed-starting');
+    useUiStore.getState().setAppMode('nursery');
     useUiStore.getState().setArmedCultivarId('tomato');
     const { container } = render(
       <PlantingLeafRow entry={entry} onDragBegin={() => {}} />,
@@ -72,7 +72,7 @@ describe('PlantingLeafRow arming', () => {
   });
 
   it('switches arm to different cultivar', () => {
-    useUiStore.getState().setAppMode('seed-starting');
+    useUiStore.getState().setAppMode('nursery');
     useUiStore.getState().setArmedCultivarId('basil');
     const { container } = render(
       <PlantingLeafRow entry={entry} onDragBegin={() => {}} />,

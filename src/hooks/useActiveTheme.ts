@@ -35,7 +35,7 @@ export function useActiveTheme(): CycleState {
   // can switch between day/night variants at the 21:00 / 05:00 boundary.
   const [, setClockTick] = useState(0);
   useEffect(() => {
-    if (appMode !== 'seed-starting') return;
+    if (appMode !== 'nursery') return;
     const id = setInterval(() => setClockTick((n) => n + 1), 60_000);
     return () => clearInterval(id);
   }, [appMode]);
@@ -55,7 +55,7 @@ export function useActiveTheme(): CycleState {
   }, [themeOverride, isCycling, interval]);
 
   let theme: TimeTheme;
-  if (appMode === 'seed-starting') {
+  if (appMode === 'nursery') {
     const hour = new Date().getHours();
     const afterDark = hour >= 21 || hour < 5;
     theme = getTheme(afterDark ? 'cellar' : 'basement');

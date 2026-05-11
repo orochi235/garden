@@ -21,11 +21,11 @@ export interface RegisteredLayer {
   alwaysOn?: boolean;
 }
 
-export type RegistryMode = 'garden' | 'seed-starting';
+export type RegistryMode = 'garden' | 'nursery';
 
 const registries: Record<RegistryMode, RegisteredLayer[]> = {
   garden: [],
-  'seed-starting': [],
+  'nursery': [],
 };
 
 const listeners = new Set<() => void>();

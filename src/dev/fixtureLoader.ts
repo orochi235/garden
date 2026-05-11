@@ -13,7 +13,9 @@ import { deserializeGarden } from '../utils/file';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore, type AppMode } from '../store/uiStore';
 
-const VALID_MODES: ReadonlySet<AppMode> = new Set(['garden', 'seed-starting']);
+const VALID_MODES: ReadonlySet<AppMode> = new Set(['garden', 'nursery']);
+// Legacy URL value (pre-rename) — coerced to `nursery` if present.
+const LEGACY_NURSERY_MODE = 'seed-starting';
 
 export async function loadFixtureFromUrl(
   url: URL = new URL(window.location.href),
@@ -34,7 +36,8 @@ export async function loadFixtureFromUrl(
   const garden = deserializeGarden(json);
   useGardenStore.setState({ garden });
 
-  const mode = url.searchParams.get('mode');
+  const rawMode = url.searchParams.get('mode');
+  const mode = rawMode === LEGACY_NURSERY_MODE ? 'nursery' : rawMode;
   if (mode && VALID_MODES.has(mode as AppMode)) {
     useUiStore.getState().setAppMode(mode as AppMode);
   }

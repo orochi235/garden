@@ -35,7 +35,7 @@ export type GardenViewRequest =
   | { kind: 'set-zoom'; value: number }
   | { kind: 'set-pan'; x: number; y: number };
 export type LabelMode = 'all' | 'active-layer' | 'selection';
-export type AppMode = 'garden' | 'seed-starting';
+export type AppMode = 'garden' | 'nursery';
 
 export interface ResizeOverlayUi {
   id: string;
@@ -247,7 +247,10 @@ function readCollectionParam(): boolean {
 function readInitialAppMode(): AppMode {
   if (typeof window === 'undefined') return 'garden';
   const mode = new URLSearchParams(window.location.search).get('mode');
-  return mode === 'seed-starting' ? 'seed-starting' : 'garden';
+  // Accept both the new `nursery` value and the legacy `seed-starting`
+  // value for backward compatibility with old bookmarks / links.
+  if (mode === 'nursery' || mode === 'seed-starting') return 'nursery';
+  return 'garden';
 }
 
 function defaultState() {

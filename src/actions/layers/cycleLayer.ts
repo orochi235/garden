@@ -7,7 +7,7 @@ const SEED_STARTING_LAYERS: LayerId[] = ['zones', 'plantings'];
 
 function cycleLayer(dir: 1 | -1): void {
   const { activeLayer, layerVisibility, appMode } = useUiStore.getState();
-  const layers = appMode === 'seed-starting' ? SEED_STARTING_LAYERS : ALL_LAYERS;
+  const layers = appMode === 'nursery' ? SEED_STARTING_LAYERS : ALL_LAYERS;
   const idx = layers.indexOf(activeLayer);
   for (let step = 1; step < layers.length; step++) {
     const next = (idx + dir * step + layers.length) % layers.length;

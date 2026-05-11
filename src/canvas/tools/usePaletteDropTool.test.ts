@@ -91,7 +91,7 @@ describe('usePaletteDropTool', () => {
     const tray = createTray({ rows: 4, cols: 4, cellSize: 'medium', label: 't' });
     useGardenStore.getState().addTraySilent(tray);
     useUiStore.getState().setCurrentTrayId(tray.id);
-    useUiStore.getState().setAppMode('seed-starting');
+    useUiStore.getState().setAppMode('nursery');
 
     // Local view: pan tray top-left to canvas (0, 0), 50 px/inch.
     const view: View = { x: 0, y: 0, scale: 50 };
@@ -131,7 +131,7 @@ describe('usePaletteDropTool', () => {
     const tray = createTray({ rows: 3, cols: 3, cellSize: 'medium', label: 't' });
     useGardenStore.getState().addTraySilent(tray);
     useUiStore.getState().setCurrentTrayId(tray.id);
-    useUiStore.getState().setAppMode('seed-starting');
+    useUiStore.getState().setAppMode('nursery');
 
     // Position the view so that the tray's grid origin (interior offset) maps
     // to canvas (50, 50) at scale=50. Pick clientX/Y such that

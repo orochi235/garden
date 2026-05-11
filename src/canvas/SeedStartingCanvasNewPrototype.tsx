@@ -117,14 +117,14 @@ export function SeedStartingCanvasNewPrototype() {
       createDragPreviewLayer(dragPreviewRegistry as never),
       ...createSystemLayers(),
     ];
-    const debugLayers = createDebugLayers('seed-starting', () => useGardenStore.getState().garden);
+    const debugLayers = createDebugLayers('nursery', () => useGardenStore.getState().garden);
     if (isDebugEnabled('handles')) {
       debugLayers.push(createAllHandlesLayer({
         getTrays,
         getSeedlings,
       }));
     }
-    setRegisteredLayers('seed-starting', [...baseList, ...debugLayers]);
+    setRegisteredLayers('nursery', [...baseList, ...debugLayers]);
     const list = [
       ...wrapLayersWithVisibility(baseList, () => useUiStore.getState().renderLayerVisibility),
       ...debugLayers,

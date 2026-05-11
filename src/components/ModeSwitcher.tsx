@@ -19,8 +19,8 @@ export function ModeSwitcher() {
       </button>
       <button
         type="button"
-        aria-pressed={appMode === 'seed-starting'}
-        className={`${styles.tab} ${appMode === 'seed-starting' ? styles.active : ''}`}
+        aria-pressed={appMode === 'nursery'}
+        className={`${styles.tab} ${appMode === 'nursery' ? styles.active : ''}`}
         data-label="Seed Starting"
         onClick={enterSeedStarting}
       >

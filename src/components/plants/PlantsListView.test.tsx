@@ -192,7 +192,7 @@ describe('PlantsListView', () => {
     render(<PlantsListView />);
     const row = screen.getByRole('row', { name: new RegExp(cv.name, 'i') });
     await user.click(row);
-    expect(useUiStore.getState().appMode).toBe('seed-starting');
+    expect(useUiStore.getState().appMode).toBe('nursery');
     expect(useUiStore.getState().currentTrayId).toBe('tray1');
     expect(useUiStore.getState().selectedIds).toEqual(['seed1']);
   });

@@ -66,7 +66,7 @@ export function App() {
 
   useEffect(() => {
     if (prevAppMode.current === appMode) return;
-    if (appMode === 'seed-starting') {
+    if (appMode === 'nursery') {
       if (rightWidth > 0) savedRightWidth.current = rightWidth;
       setRightWidth(0);
     } else {
@@ -77,8 +77,8 @@ export function App() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (appMode === 'seed-starting') {
-      url.searchParams.set('mode', 'seed-starting');
+    if (appMode === 'nursery') {
+      url.searchParams.set('mode', 'nursery');
     } else {
       url.searchParams.delete('mode');
     }
@@ -90,7 +90,7 @@ export function App() {
 
   // Esc exits seed-starting mode (when no modal is currently catching it).
   useEffect(() => {
-    if (appMode !== 'seed-starting') return;
+    if (appMode !== 'nursery') return;
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return;
       if (scheduleOpen || plantsModalOpen || collectionEditorOpen) return;
@@ -106,7 +106,7 @@ export function App() {
     if (!fixtureReady) return;
     if (fixtureLoadedRef.current) {
       // Still wire up mode param and collection for fixture runs.
-      if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
+      if (INITIAL_MODE_PARAM === 'nursery') enterSeedStarting();
       return;
     }
 
@@ -126,7 +126,7 @@ export function App() {
           .catch(() => {});
 
     seedPromise.finally(() => {
-      if (INITIAL_MODE_PARAM === 'seed-starting') enterSeedStarting();
+      if (INITIAL_MODE_PARAM === 'nursery') enterSeedStarting();
       const persisted = loadPersistedCollection<Cultivar[]>();
       if (persisted && persisted.length > 0) {
         setCollection(persisted);
@@ -259,7 +259,7 @@ export function App() {
         <MenuBar />
       </div>
       <div className={styles.palette}>
-        {appMode === 'seed-starting' ? (
+        {appMode === 'nursery' ? (
           <SeedStartingPalette onDragBegin={handleSeedDragBegin} />
         ) : (
           <ObjectPalette onDragBegin={handlePaletteDragBegin} />

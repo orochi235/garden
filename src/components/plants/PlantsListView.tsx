@@ -233,7 +233,7 @@ export function PlantsListView() {
 
   function handleRowClick(row: PlantRow) {
     if (row.kind === 'seedling' && row.parentId) {
-      setAppMode('seed-starting');
+      setAppMode('nursery');
       setCurrentTrayId(row.parentId);
     }
     setSelection([row.id]);

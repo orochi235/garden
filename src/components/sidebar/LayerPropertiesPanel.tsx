@@ -30,7 +30,7 @@ export function LayerPropertiesPanel() {
   const setRenderLayerVisible = useUiStore((s) => s.setRenderLayerVisible);
   const appMode = useUiStore((s) => s.appMode);
 
-  if (appMode === 'seed-starting') {
+  if (appMode === 'nursery') {
     return (
       <div className={styles.panel}>
         <AlmanacPanel />

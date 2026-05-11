@@ -10,7 +10,7 @@ import { useUiStore } from '@/store/uiStore';
  */
 export function resetCurrentCanvasView(): void {
   const ui = useUiStore.getState();
-  if (ui.appMode === 'seed-starting') {
+  if (ui.appMode === 'nursery') {
     ui.bumpSeedStartingViewResetTick();
     return;
   }

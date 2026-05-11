@@ -263,7 +263,7 @@ export function LayerSelector() {
 
   const layers = useMemo(
     () =>
-      appMode === 'seed-starting'
+      appMode === 'nursery'
         ? ALL_LAYERS.filter((l) => SEED_STARTING_LAYER_IDS.includes(l.id))
         : ALL_LAYERS,
     [appMode],

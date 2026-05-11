@@ -40,7 +40,7 @@ export function MenuBar() {
   const setAppMode = useUiStore((s) => s.setAppMode);
 
   function toggleSeedStarting() {
-    if (appMode === 'seed-starting') setAppMode('garden');
+    if (appMode === 'nursery') setAppMode('garden');
     else enterSeedStarting();
   }
 
@@ -82,16 +82,16 @@ export function MenuBar() {
           type="button"
           onClick={toggleSeedStarting}
           aria-label="Seed starting mode"
-          aria-pressed={appMode === 'seed-starting'}
+          aria-pressed={appMode === 'nursery'}
           title="Seed starting mode"
-          className={`${styles.iconButton} ${appMode === 'seed-starting' ? styles.iconButtonActive : ''}`}
+          className={`${styles.iconButton} ${appMode === 'nursery' ? styles.iconButtonActive : ''}`}
         >🌱</button>
         <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Cultivar collection" title="Cultivar collection" className={styles.iconButton}>📦</button>
         <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
         <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="Plant list" title="Plant list" className={styles.iconButton}>🔍</button>
       </div>
       <div className={styles.spacer} />
-      <ModeOnly mode="seed-starting">
+      <ModeOnly mode="nursery">
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       </ModeOnly>
       {builderOpen && <CustomTrayBuilder onClose={() => setBuilderOpen(false)} />}

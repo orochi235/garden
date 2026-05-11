@@ -9,7 +9,7 @@ import type { Garden } from '../../model/types';
 import { trayInteriorOffsetIn } from '../../model/nursery';
 import { isDebugEnabled } from '../debug';
 
-type Mode = 'garden' | 'seed-starting';
+type Mode = 'garden' | 'nursery';
 
 interface Bbox { x: number; y: number; w: number; h: number; label?: string }
 

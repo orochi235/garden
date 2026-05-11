@@ -170,8 +170,8 @@ describe('uiStore', () => {
     it('defaults to garden and can switch', () => {
       useUiStore.getState().reset();
       expect(useUiStore.getState().appMode).toBe('garden');
-      useUiStore.getState().setAppMode('seed-starting');
-      expect(useUiStore.getState().appMode).toBe('seed-starting');
+      useUiStore.getState().setAppMode('nursery');
+      expect(useUiStore.getState().appMode).toBe('nursery');
     });
 
     it('currentTrayId starts null and can be set', () => {

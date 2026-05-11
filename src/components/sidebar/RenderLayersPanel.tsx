@@ -20,7 +20,7 @@ export function RenderLayersPanel() {
   const visibility = useUiStore((s) => s.renderLayerVisibility);
   const setVisible = useUiStore((s) => s.setRenderLayerVisible);
   const appMode = useUiStore((s) => s.appMode);
-  const mode: RegistryMode = appMode === 'seed-starting' ? 'seed-starting' : 'garden';
+  const mode: RegistryMode = appMode === 'nursery' ? 'nursery' : 'garden';
   const layers = useRegisteredLayers(mode);
 
   return (

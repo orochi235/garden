@@ -7,12 +7,12 @@ import pixelmatch from 'pixelmatch';
 // Deferred — require selection/view-state serializer extensions:
 // - 'garden-mixed-selected'
 // - 'garden-zoomed-in'
-interface Fixture { name: string; mode?: 'garden' | 'seed-starting'; }
+interface Fixture { name: string; mode?: 'garden' | 'nursery'; }
 const FIXTURES: Fixture[] = [
   { name: 'garden-empty' },
   { name: 'garden-mixed' },
-  { name: 'seed-empty', mode: 'seed-starting' },
-  { name: 'seed-with-seedlings', mode: 'seed-starting' },
+  { name: 'seed-empty', mode: 'nursery' },
+  { name: 'seed-with-seedlings', mode: 'nursery' },
 ];
 
 const BASELINE_DIR = path.join(import.meta.dirname, 'baselines');
