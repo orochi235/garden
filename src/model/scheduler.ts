@@ -107,6 +107,17 @@ export function resolveAnchor(anchor: Anchor, ctx: AnchorContext): string | null
   }
 }
 
+/**
+ * Resolve a Constraint to a single ISO date. Returns null when the
+ * constraint's anchor cannot be resolved (caller drops the action).
+ */
+export function resolveConstraint(c: Constraint, ctx: AnchorContext): string | null {
+  const anchorDate = resolveAnchor(c.anchor, ctx);
+  if (anchorDate === null) return null;
+  if (!c.offset) return anchorDate;
+  return addOffset(anchorDate, c.offset);
+}
+
 function formatISO(dt: Date): string {
   return `${pad4(dt.getUTCFullYear())}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
 }

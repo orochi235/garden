@@ -74,3 +74,41 @@ describe('resolveAnchor', () => {
     expect(resolveAnchor({ kind: 'action', actionId: 'sow' }, empty)).toBeNull();
   });
 });
+
+import { resolveConstraint } from './scheduler';
+
+describe('resolveConstraint', () => {
+  const ctx = {
+    targetTransplantDate: '2026-05-15',
+    lastFrostDate: '2026-04-30',
+    actionDates: new Map<string, string>(),
+  };
+
+  it('exact constraint with no offset returns the anchor date', () => {
+    expect(resolveConstraint({ kind: 'exact', anchor: { kind: 'target-transplant' } }, ctx))
+      .toBe('2026-05-15');
+  });
+
+  it('lower with negative offset (4 weeks before last-frost)', () => {
+    expect(resolveConstraint({
+      kind: 'lower',
+      anchor: { kind: 'last-frost' },
+      offset: { amount: -4, unit: 'weeks' },
+    }, ctx)).toBe('2026-04-02');
+  });
+
+  it('upper with negative day offset', () => {
+    expect(resolveConstraint({
+      kind: 'upper',
+      anchor: { kind: 'target-transplant' },
+      offset: { amount: -7, unit: 'days' },
+    }, ctx)).toBe('2026-05-08');
+  });
+
+  it('returns null when anchor cannot be resolved', () => {
+    const ctxNoFirstFrost = { targetTransplantDate: '2026-05-15', actionDates: new Map<string, string>() };
+    expect(resolveConstraint({
+      kind: 'exact', anchor: { kind: 'first-frost' },
+    }, ctxNoFirstFrost)).toBeNull();
+  });
+});
