@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
@@ -14,6 +14,24 @@ export function MenuBar() {
   const loadGarden = useGardenStore((s) => s.loadGarden);
   const reset = useGardenStore((s) => s.reset);
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
+  const devRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!devOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!devRef.current?.contains(e.target as Node)) setDevOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDevOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [devOpen]);
   const collectionEditorOpen = useUiStore((s) => s.collectionEditorOpen);
   const setCollectionEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
   const setScheduleOpen = useUiStore((s) => s.setScheduleOpen);
@@ -72,6 +90,7 @@ export function MenuBar() {
         <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
         <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="Plant list" title="Plant list" className={styles.iconButton}>🔍</button>
       </div>
+      <div className={styles.spacer} />
       <ModeOnly mode="seed-starting">
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       </ModeOnly>
@@ -80,12 +99,24 @@ export function MenuBar() {
       {/* Dev fixtures menu hidden — top bar was too crowded. Reachable
           via the URL `?fixture=<name>` until we move it into the dev menu. */}
       <div className={styles.spacer} />
-      <div className={styles.devNav}>
-        <span className={styles.devLabel}>dev</span>
-        <a href="docs/patterns.html" target="_blank" rel="noreferrer">Patterns</a>
-        <a href="docs/cultivars.html" target="_blank" rel="noreferrer">Flora</a>
-        <a href="docs/themes.html" target="_blank" rel="noreferrer">Themes</a>
-        <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
+      <div ref={devRef} className={styles.devDropdown}>
+        <button
+          type="button"
+          className={styles.devTrigger}
+          aria-haspopup="menu"
+          aria-expanded={devOpen}
+          onClick={() => setDevOpen((v) => !v)}
+        >
+          <span className={styles.devLabel}>dev</span> <span aria-hidden>▾</span>
+        </button>
+        {devOpen && (
+          <div className={styles.devMenu} role="menu">
+            <a href="docs/patterns.html" target="_blank" rel="noreferrer" role="menuitem">Patterns</a>
+            <a href="docs/cultivars.html" target="_blank" rel="noreferrer" role="menuitem">Flora</a>
+            <a href="docs/themes.html" target="_blank" rel="noreferrer" role="menuitem">Themes</a>
+            <a href="drag-lab.html" target="_blank" rel="noreferrer" role="menuitem">Layouts</a>
+          </div>
+        )}
       </div>
       <div className={styles.menus}>
         <button type="button" onClick={handleNew} className={styles.actionButton}>New</button>
