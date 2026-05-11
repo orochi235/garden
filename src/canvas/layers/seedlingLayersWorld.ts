@@ -1,5 +1,6 @@
 import {
   type RenderLayer,
+  textCommand,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
@@ -7,7 +8,6 @@ import type { Seedling, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
 import { getCultivar } from '../../model/cultivars';
 import {
-  cultivarHasTrayWarning,
   hasSeedlingWarnings,
   SEEDLING_WARNING_COLOR,
 } from '../../model/seedlingWarnings';
@@ -15,21 +15,10 @@ import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { useGardenStore } from '../../store/gardenStore';
 import { plantDrawCommands } from '../plantRenderers';
 
-export interface SeedFillPreview {
-  trayId: string;
-  cultivarId: string;
-  scope: 'all' | 'row' | 'col' | 'cell';
-  index?: number;
-  row?: number;
-  col?: number;
-  replace?: boolean;
-}
-
 export interface SeedlingLayerUi {
   showWarnings: boolean;
   selectedIds: string[];
   hiddenSeedlingIds: string[];
-  fillPreview: SeedFillPreview | null;
 }
 
 export type GetSeedlings = () => Seedling[];
@@ -167,62 +156,13 @@ function seedlingLabelCommandsForTray(
     const cy = off.y + row * p + p / 2;
     const label = seedling.labelOverride ?? cultivar.name.slice(0, 4);
     // Flagged: text commands require registerFont() wired at app boot.
-    cmds.push({
-      kind: 'text',
-      x: cx,
-      y: cy,
-      text: label,
-      style: {
-        fontSize: fontPx,
-        align: 'center' as const,
-        fill: { fill: 'solid' as const, color: '#ffffff' },
-      },
-    });
+    cmds.push(textCommand(cx, cy, label, {
+      fontSize: fontPx,
+      align: 'center',
+      fill: { fill: 'solid', color: '#ffffff' },
+    }));
   }
   return cmds;
-}
-
-function fillPreviewCommandsForTray(
-  tray: Tray,
-  preview: SeedFillPreview,
-  showWarnings: boolean,
-  view: View,
-): DrawCommand[] {
-  if (preview.trayId !== tray.id) return [];
-  const cultivar = getCultivar(preview.cultivarId);
-  if (!cultivar) return [];
-  const p = tray.cellPitchIn;
-  const off = trayInteriorOffsetIn(tray);
-  const radius = (p * 0.85) / 2;
-  const scope = preview.scope;
-  const idx = preview.index ?? 0;
-  const cellR = preview.row ?? 0;
-  const cellC = preview.col ?? 0;
-  const previewWarn = showWarnings && cultivarHasTrayWarning(cultivar.id, tray);
-
-  const innerCmds: DrawCommand[] = [];
-  for (let r = 0; r < tray.rows; r++) {
-    for (let c = 0; c < tray.cols; c++) {
-      if (scope === 'row' && r !== idx) continue;
-      if (scope === 'col' && c !== idx) continue;
-      if (scope === 'cell' && (r !== cellR || c !== cellC)) continue;
-      const slot = tray.slots[r * tray.cols + c];
-      if (slot.state === 'sown' && !preview.replace) continue;
-      const cx = off.x + c * p + p / 2;
-      const cy = off.y + r * p + p / 2;
-      const glyphChildren = plantGlyphCommands(cultivar.id, radius, 1);
-      innerCmds.push({
-        kind: 'group',
-        transform: translateMat3(cx, cy),
-        children: glyphChildren,
-      });
-      if (previewWarn) {
-        innerCmds.push(warningRingCommand(cx, cy, radius, view));
-      }
-    }
-  }
-  if (innerCmds.length === 0) return [];
-  return [{ kind: 'group', alpha: 0.4, children: innerCmds }];
 }
 
 function trayWorldTranslate(tray: Tray): Float32Array {
@@ -265,25 +205,6 @@ export function createSeedlingLayers(
           transform: trayWorldTranslate(tray),
           children: seedlingLabelCommandsForTray(tray, seedlings, ui, view),
         }));
-        return [{ kind: 'group', transform: viewToMat3(view), children: trayChildren }];
-      },
-    },
-    {
-      id: 'seedling-fill-preview',
-      label: 'Seedling Fill Preview',
-      alwaysOn: true,
-      draw(_data, view: View, _dims: Dims): DrawCommand[] {
-        const ui = getUi();
-        if (!ui.fillPreview) return [];
-        const trayChildren: DrawCommand[] = getTrays().flatMap((tray) => {
-          const cmds = fillPreviewCommandsForTray(tray, ui.fillPreview!, ui.showWarnings, view);
-          if (cmds.length === 0) return [];
-          return [{
-            kind: 'group' as const,
-            transform: trayWorldTranslate(tray),
-            children: cmds,
-          }];
-        });
         return [{ kind: 'group', transform: viewToMat3(view), children: trayChildren }];
       },
     },

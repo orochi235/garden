@@ -113,7 +113,7 @@ describe('usePaletteDropTool', () => {
     // non-target zone (no-op). Either way the gesture must clean up cleanly.
     expect(useUiStore.getState().palettePointerPayload).toBeNull();
     expect(useUiStore.getState().seedDragCultivarId).toBeNull();
-    expect(useUiStore.getState().seedFillPreview).toBeNull();
+    expect(useUiStore.getState().dragPreview).toBeNull();
   });
 
   it('does not read the nursery view from uiStore (regression: no zoom/pan fields)', () => {

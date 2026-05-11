@@ -34,8 +34,7 @@ interface Options {
  */
 export function usePaletteDropTool({ containerRef, viewRef }: Options): void {
   // The drag definition reads the cultivar id from a ref the hook owns; the
-  // controller drives read/compute/commit and writes `dragPreview` (and via
-  // `onPutativeChange`, the legacy `seedFillPreview` slot too).
+  // controller drives read/compute/commit and writes `dragPreview`.
   const cultivarRef = useRef<string | null>(null);
 
   const drag = useMemo(
@@ -124,11 +123,6 @@ export function usePaletteDropTool({ containerRef, viewRef }: Options): void {
             cultivarRef.current = null;
             useUiStore.getState().setSeedDragCultivarId(null);
             useUiStore.getState().setPalettePointerPayload(null);
-            // Belt-and-suspenders: the drag's onPutativeChange already clears
-            // seedFillPreview when the controller writes null, but if
-            // teardown fires for any other reason make sure the legacy slot
-            // is empty.
-            useUiStore.getState().setSeedFillPreview(null);
           },
         },
       );

@@ -70,7 +70,6 @@ export function NurseryCanvas() {
 
   useUiStore((s) => s.selectedIds);
   useUiStore((s) => s.hiddenSeedlingIds);
-  useUiStore((s) => s.seedFillPreview);
   useUiStore((s) => s.dragPreview);
   useUiStore((s) => s.showSeedlingWarnings);
   useUiStore((s) => s.renderLayerVisibility);
@@ -95,16 +94,14 @@ export function NurseryCanvas() {
         showWarnings: u.showSeedlingWarnings,
         selectedIds: u.selectedIds,
         hiddenSeedlingIds: u.hiddenSeedlingIds,
-        fillPreview: u.seedFillPreview,
       };
     };
 
     const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
 
-    // Putative-drag preview layer — Phase 1 dispatches to the seed-fill-tray
-    // drag (whose renderPreview is a no-op since the legacy
-    // `seedling-fill-preview` layer keeps drawing via mirrored
-    // `seedFillPreview`). Phase 2+ migrations will plug in here.
+    // Putative-drag preview layer — dispatches to every migrated drag via
+    // the registry. The seed-fill-tray drag owns its own rendering as of
+    // the 2026-05-11 close-out; no legacy fill-preview layer remains.
     const dragPreviewRegistry = {
       [createSeedFillTrayDrag({ getCultivarId: () => null }).kind]:
         createSeedFillTrayDrag({ getCultivarId: () => null }),

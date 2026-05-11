@@ -197,21 +197,22 @@ describe('uiStore', () => {
       expect(useUiStore.getState().palettePointerPayload).toBeNull();
     });
 
-    it('seedFillPreview defaults to null and can be set/cleared', () => {
+    it('dragPreview defaults to null and can be set/cleared', () => {
       useUiStore.getState().reset();
-      expect(useUiStore.getState().seedFillPreview).toBeNull();
-      useUiStore.getState().setSeedFillPreview({ trayId: 't1', cultivarId: 'tomato', scope: 'all' });
-      expect(useUiStore.getState().seedFillPreview).toEqual({ trayId: 't1', cultivarId: 'tomato', scope: 'all' });
-      useUiStore.getState().setSeedFillPreview(null);
-      expect(useUiStore.getState().seedFillPreview).toBeNull();
+      expect(useUiStore.getState().dragPreview).toBeNull();
+      const slot = { kind: 'seed-fill-tray', putative: { trayId: 't1', cultivarId: 'tomato', scope: 'all' as const } };
+      useUiStore.getState().setDragPreview(slot);
+      expect(useUiStore.getState().dragPreview).toEqual(slot);
+      useUiStore.getState().setDragPreview(null);
+      expect(useUiStore.getState().dragPreview).toBeNull();
     });
 
     it('nursery state resets', () => {
       useUiStore.getState().bumpNurseryViewResetTick();
-      useUiStore.getState().setSeedFillPreview({ trayId: 't', cultivarId: 'c', scope: 'all' });
+      useUiStore.getState().setDragPreview({ kind: 'seed-fill-tray', putative: { trayId: 't', cultivarId: 'c', scope: 'all' as const } });
       useUiStore.getState().reset();
       expect(useUiStore.getState().nurseryViewResetTick).toBe(0);
-      expect(useUiStore.getState().seedFillPreview).toBeNull();
+      expect(useUiStore.getState().dragPreview).toBeNull();
     });
   });
 

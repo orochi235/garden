@@ -21,7 +21,6 @@ describe('seedFillTrayDrag', () => {
   });
   afterEach(() => {
     useUiStore.getState().setDragPreview(null);
-    useUiStore.getState().setSeedFillPreview(null);
   });
 
   it('exposes the expected kind', () => {
@@ -64,19 +63,6 @@ describe('seedFillTrayDrag', () => {
     }
   });
 
-  it('onPutativeChange mirrors into seedFillPreview for legacy layer', () => {
-    const tray = createTray({ rows: 3, cols: 3, cellSize: 'medium', label: 't' });
-    useGardenStore.getState().addTraySilent(tray);
-
-    const drag = createSeedFillTrayDrag({ getCultivarId: () => 'tomato' });
-    // Synthesize a putative manually so we don't depend on hit math.
-    const putative = { trayId: tray.id, cultivarId: 'tomato', scope: 'all' as const, replace: false };
-    drag.onPutativeChange?.(putative);
-    expect(useUiStore.getState().seedFillPreview).toEqual(putative);
-    drag.onPutativeChange?.(null);
-    expect(useUiStore.getState().seedFillPreview).toBeNull();
-  });
-
   it('shift modifier flips replace flag in compute', () => {
     const tray = createTray({ rows: 3, cols: 3, cellSize: 'medium', label: 't' });
     useGardenStore.getState().addTraySilent(tray);
@@ -91,9 +77,24 @@ describe('seedFillTrayDrag', () => {
     }
   });
 
-  it('renderPreview returns [] (legacy layer renders during Phase 1)', () => {
+  it('renderPreview returns commands for a tray-scoped putative', () => {
+    const tray = createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 't' });
+    useGardenStore.getState().addTraySilent(tray);
+
     const drag = createSeedFillTrayDrag({ getCultivarId: () => 'tomato' });
-    const cmds = drag.renderPreview({ trayId: 't', cultivarId: 'tomato', scope: 'all', replace: false }, { x: 0, y: 0, scale: 1 });
+    const cmds = drag.renderPreview(
+      { trayId: tray.id, cultivarId: 'tomato', scope: 'all', replace: false },
+      { x: 0, y: 0, scale: 1 },
+    );
+    expect(cmds.length).toBeGreaterThan(0);
+  });
+
+  it('renderPreview returns [] for an unknown tray', () => {
+    const drag = createSeedFillTrayDrag({ getCultivarId: () => 'tomato' });
+    const cmds = drag.renderPreview(
+      { trayId: 'no-such-tray', cultivarId: 'tomato', scope: 'all', replace: false },
+      { x: 0, y: 0, scale: 1 },
+    );
     expect(cmds).toEqual([]);
   });
 });

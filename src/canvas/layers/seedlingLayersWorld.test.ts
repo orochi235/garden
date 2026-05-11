@@ -8,18 +8,16 @@ const baseUi: SeedlingLayerUi = {
   showWarnings: true,
   selectedIds: [],
   hiddenSeedlingIds: [],
-  fillPreview: null,
 };
 
 const dims = { width: 800, height: 600 };
 
 describe('createSeedlingLayers (world)', () => {
-  it('returns 3 layers in canonical order', () => {
+  it('returns 2 layers in canonical order', () => {
     const layers = createSeedlingLayers(() => [], () => [], () => baseUi);
     expect(layers.map((l) => l.id)).toEqual([
       'seedlings',
       'seedling-labels',
-      'seedling-fill-preview',
     ]);
   });
 

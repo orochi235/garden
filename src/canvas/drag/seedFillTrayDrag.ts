@@ -1,5 +1,5 @@
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import type { DrawCommand } from '../util/weaselLocal';
+import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
@@ -7,24 +7,20 @@ import {
   hitTrayDropTarget,
 } from '../layouts/trayDropTargets';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
-import type { Tray } from '../../model/nursery';
+import { trayInteriorOffsetIn, type Tray } from '../../model/nursery';
+import { getCultivar } from '../../model/cultivars';
+import {
+  cultivarHasTrayWarning,
+  SEEDLING_WARNING_COLOR,
+} from '../../model/seedlingWarnings';
+import { plantDrawCommands } from '../plantRenderers';
 
 /**
- * Phase-1-migrated drag: palette → nursery tray (sow cell / fill row /
- * fill column / fill tray).
+ * Palette → nursery tray drag (sow cell / fill row / fill column / fill tray).
  *
- * The "input" is the world coords of the cursor + modifier state + the active
- * cultivar id. The "putative" is the same shape as the legacy
- * `uiStore.seedFillPreview`, so the existing `seedling-fill-preview` render
- * layer keeps drawing it for free during the coexistence window.
- *
- * `renderPreview` is intentionally a no-op: the canonical render path is the
- * legacy fill-preview layer. The new generic preview layer dispatches here
- * but draws nothing — once the rest of the drags migrate (palette → garden,
- * move, resize, plot, area-select), each will own its own rendering.
- *
- * `onPutativeChange` mirrors the putative into `seedFillPreview` so existing
- * consumers (the layer + any tests / debug overlays) keep working unchanged.
+ * Owns its own preview rendering via `renderPreview` — the framework's
+ * `dragPreviewLayer` calls into it inside a `viewToMat3(view)` group, so the
+ * commands returned here are in world coords.
  */
 export type SeedFillInput = {
   cultivarId: string;
@@ -32,9 +28,11 @@ export type SeedFillInput = {
   shift: boolean;
 };
 
-export type SeedFillPutative = NonNullable<
-  ReturnType<typeof useUiStore.getState>['seedFillPreview']
->;
+export type SeedFillPutative =
+  | { trayId: string; cultivarId: string; scope: 'all'; replace?: boolean }
+  | { trayId: string; cultivarId: string; scope: 'row'; index: number; replace?: boolean }
+  | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
+  | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean };
 
 export const SEED_FILL_TRAY_DRAG_KIND = 'seed-fill-tray';
 
@@ -72,17 +70,32 @@ export function createSeedFillTrayDrag(opts: {
       if (m.kind === 'col') {
         return { ...base, scope: 'col', index: m.col };
       }
-      // Cell hit: respect the same "skip occupied unless shift" rule the
-      // legacy ad-hoc tool used.
       const slot = tray.slots[m.row * tray.cols + m.col];
       if (slot.state === 'sown' && !replace) return null;
       return { ...base, scope: 'cell', row: m.row, col: m.col };
     },
 
-    // No-op: the legacy `seedling-fill-preview` render layer already draws
-    // the putative because we mirror it into `seedFillPreview` via
-    // `onPutativeChange`. When other drags migrate they will render here.
-    renderPreview(): DrawCommand[] { return []; },
+    renderPreview(
+      putative: SeedFillPutative,
+      view: { x: number; y: number; scale: number },
+    ): DrawCommand[] {
+      const ss = useGardenStore.getState().garden.nursery;
+      const tray = ss.trays.find((t) => t.id === putative.trayId);
+      if (!tray) return [];
+      const cultivar = getCultivar(putative.cultivarId);
+      if (!cultivar) return [];
+      const showWarnings = useUiStore.getState().showSeedlingWarnings;
+      const cells = fillPreviewCellCommands(tray, putative, showWarnings, view);
+      if (cells.length === 0) return [];
+      const o = trayWorldOrigin(tray, ss);
+      return [
+        {
+          kind: 'group',
+          transform: translateMat3(o.x, o.y),
+          children: [{ kind: 'group', alpha: 0.4, children: cells }],
+        },
+      ];
+    },
 
     commit(putative: SeedFillPutative): void {
       const gs = useGardenStore.getState();
@@ -100,12 +113,6 @@ export function createSeedFillTrayDrag(opts: {
         return;
       }
       gs.sowCell(putative.trayId, putative.row, putative.col, putative.cultivarId, { replace });
-    },
-
-    // Keep the legacy slot in sync so the existing render layer + tests keep
-    // working during the coexistence window.
-    onPutativeChange(putative): void {
-      useUiStore.getState().setSeedFillPreview(putative);
     },
   };
 }
@@ -148,4 +155,53 @@ function worldToTrayLocal(
   const ss = useGardenStore.getState().garden.nursery;
   const o = trayWorldOrigin(tray, ss);
   return { x: world.x - o.x, y: world.y - o.y };
+}
+
+function fillPreviewCellCommands(
+  tray: Tray,
+  preview: SeedFillPutative,
+  showWarnings: boolean,
+  view: { x: number; y: number; scale: number },
+): DrawCommand[] {
+  const p = tray.cellPitchIn;
+  const off = trayInteriorOffsetIn(tray);
+  const radius = (p * 0.85) / 2;
+  const previewWarn = showWarnings && cultivarHasTrayWarning(preview.cultivarId, tray);
+
+  const cmds: DrawCommand[] = [];
+  for (let r = 0; r < tray.rows; r++) {
+    for (let c = 0; c < tray.cols; c++) {
+      if (preview.scope === 'row' && r !== preview.index) continue;
+      if (preview.scope === 'col' && c !== preview.index) continue;
+      if (preview.scope === 'cell' && (r !== preview.row || c !== preview.col)) continue;
+      const slot = tray.slots[r * tray.cols + c];
+      if (slot.state === 'sown' && !preview.replace) continue;
+      const cx = off.x + c * p + p / 2;
+      const cy = off.y + r * p + p / 2;
+      const cultivar = getCultivar(preview.cultivarId);
+      const color = cultivar?.color ?? '#4A7C59';
+      const iconBgColor = cultivar?.iconBgColor ?? null;
+      const glyph = plantDrawCommands(preview.cultivarId, 0, 0, radius, color, iconBgColor);
+      cmds.push({
+        kind: 'group',
+        transform: translateMat3(cx, cy),
+        children: glyph,
+      });
+      if (previewWarn) {
+        const strokePx = 1.5 / Math.max(0.0001, view.scale);
+        const padPx = 2 / Math.max(0.0001, view.scale);
+        cmds.push({
+          kind: 'path',
+          path: circlePolygon(cx, cy, radius + padPx),
+          stroke: { paint: { fill: 'solid', color: SEEDLING_WARNING_COLOR }, width: strokePx },
+        });
+      }
+    }
+  }
+  return cmds;
+}
+
+/** Column-major 3×3 translation matrix. */
+function translateMat3(tx: number, ty: number): Float32Array {
+  return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
 }

@@ -8,24 +8,29 @@ import {
   getTrayDropTargets,
   hitTrayDropTarget,
 } from '../layouts/trayDropTargets';
+import {
+  SEED_FILL_TRAY_DRAG_KIND,
+  type SeedFillPutative,
+} from '../drag/seedFillTrayDrag';
 
 export interface FillTrayScratch {
   active: boolean;
   trayId: string | null;
   cultivarId: string | null;
+  putative: SeedFillPutative | null;
 }
 
 /** Shift-drag inside a tray to paint cells with the current dragging cultivar
- *  (`useUiStore.seedDragCultivarId`). Updates `seedFillPreview` while dragging
- *  so the nursery fill-preview layer renders the ghost; commits on
- *  drag.onEnd via the appropriate fill action. */
+ *  (`useUiStore.seedDragCultivarId`). Publishes the live putative to
+ *  `uiStore.dragPreview` under `SEED_FILL_TRAY_DRAG_KIND` so the framework's
+ *  `dragPreviewLayer` renders the ghost; commits on `drag.onEnd`. */
 export function useFillTrayTool(): Tool<FillTrayScratch> {
   return useMemo(
     () =>
       defineTool<FillTrayScratch>({
         id: 'seedling-fill',
         cursor: 'crosshair',
-        initScratch: () => ({ active: false, trayId: null, cultivarId: null }),
+        initScratch: () => ({ active: false, trayId: null, cultivarId: null, putative: null }),
 
         pointer: {
           onDown: (e, ctx) => {
@@ -55,50 +60,54 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
             );
             if (!tray) return 'claim';
             const hit = hitTrayDropTarget(getTrayDropTargets(tray), { x: ctx.worldX, y: ctx.worldY });
-            const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId, replace: true };
             if (!hit) {
-              useUiStore.getState().setSeedFillPreview(null);
+              ctx.scratch.putative = null;
+              useUiStore.getState().setDragPreview(null);
               return 'claim';
             }
             const m = hit.meta;
-            useUiStore.getState().setSeedFillPreview(
+            const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId, replace: true };
+            const putative: SeedFillPutative =
               m.kind === 'all'
                 ? { ...base, scope: 'all' }
                 : m.kind === 'row'
                   ? { ...base, scope: 'row', index: m.row }
                   : m.kind === 'col'
                     ? { ...base, scope: 'col', index: m.col }
-                    : { ...base, scope: 'cell', row: m.row, col: m.col },
-            );
+                    : { ...base, scope: 'cell', row: m.row, col: m.col };
+            ctx.scratch.putative = putative;
+            useUiStore.getState().setDragPreview({ kind: SEED_FILL_TRAY_DRAG_KIND, putative });
             return 'claim';
           },
           onEnd: (_e, ctx) => {
             if (!ctx.scratch.active) return 'pass';
-            const preview = useUiStore.getState().seedFillPreview;
-            useUiStore.getState().setSeedFillPreview(null);
+            const putative = ctx.scratch.putative;
+            useUiStore.getState().setDragPreview(null);
             ctx.scratch.active = false;
-            if (!preview) return 'claim';
+            ctx.scratch.putative = null;
+            if (!putative) return 'claim';
             const gs = useGardenStore.getState();
-            const replace = preview.replace ?? true;
-            switch (preview.scope) {
+            const replace = putative.replace ?? true;
+            switch (putative.scope) {
               case 'all':
-                gs.fillTray(preview.trayId, preview.cultivarId, { replace });
+                gs.fillTray(putative.trayId, putative.cultivarId, { replace });
                 break;
               case 'row':
-                gs.fillRow(preview.trayId, preview.index, preview.cultivarId, { replace });
+                gs.fillRow(putative.trayId, putative.index, putative.cultivarId, { replace });
                 break;
               case 'col':
-                gs.fillColumn(preview.trayId, preview.index, preview.cultivarId, { replace });
+                gs.fillColumn(putative.trayId, putative.index, putative.cultivarId, { replace });
                 break;
               case 'cell':
-                gs.sowCell(preview.trayId, preview.row, preview.col, preview.cultivarId, { replace });
+                gs.sowCell(putative.trayId, putative.row, putative.col, putative.cultivarId, { replace });
                 break;
             }
             return 'claim';
           },
           onCancel: (ctx) => {
-            useUiStore.getState().setSeedFillPreview(null);
+            useUiStore.getState().setDragPreview(null);
             ctx.scratch.active = false;
+            ctx.scratch.putative = null;
           },
         },
       }),

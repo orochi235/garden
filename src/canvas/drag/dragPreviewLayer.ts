@@ -6,13 +6,9 @@ import type { Drag } from './putativeDrag';
 /**
  * Generic render layer for the putative-drag framework. Reads the active
  * `dragPreview` from `uiStore` and dispatches to the matching drag's
- * `renderPreview`.
- *
- * In Phase 1 only the seed-fill-tray drag is migrated, and its `renderPreview`
- * is a no-op (the legacy `seedling-fill-preview` layer keeps rendering via
- * the mirrored `seedFillPreview` slot). This layer is wired in regardless so
- * Phase 2+ migrations can plug in by simply registering their `Drag` in the
- * registry — no canvas wiring changes needed.
+ * `renderPreview`. Every migrated drag (palette → garden / nursery, move,
+ * resize, plot, area-select, seedling-move) plugs in via the registry; no
+ * legacy preview layers remain.
  */
 export function createDragPreviewLayer(
   registry: Record<string, Drag<unknown, unknown>>,

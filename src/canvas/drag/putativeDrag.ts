@@ -12,12 +12,10 @@ import type { DrawCommand } from '../util/weaselLocal';
  * `commit` is allowed to mutate persistent state.
  *
  * `renderPreview` is invoked by `dragPreviewLayer`. It receives the world-coord
- * canvas context. Drags whose preview is rendered by an existing legacy layer
- * (e.g. seed-fill-tray, which is drawn by `seedling-fill-preview`) may leave
- * `renderPreview` as a no-op while the migration is still in progress.
+ * canvas context and returns world-coord DrawCommands.
  *
  * See `docs/TODO.md` "Repeatable putative-drag framework" for the migration
- * plan and Phase 2 follow-ups (palette → garden, move, resize, plot, area-select).
+ * history.
  */
 export interface DragModifiers {
   shift: boolean;
@@ -48,18 +46,16 @@ export interface Drag<TInput, TPutative> {
   compute(input: TInput): TPutative | null;
   /**
    * Emit DrawCommands for the ghost preview. Called by `dragPreviewLayer` inside
-   * a world-space transform group — return world-coord commands. Return `[]` for
-   * drags whose preview is owned by a legacy layer (no-op drags).
+   * a world-space transform group — return world-coord commands.
    */
   renderPreview(putative: TPutative, view: { x: number; y: number; scale: number }): DrawCommand[];
   /** Apply the putative to persistent state. Called on pointerup. */
   commit(putative: TPutative): void;
   /**
    * Optional side-effect hook fired whenever the controller writes a new
-   * putative to the slot. Drags that need to keep legacy slots in sync (e.g.
-   * mirroring into `seedFillPreview` so the legacy fill-preview layer keeps
-   * rendering during Phase 1 coexistence) can implement it. Must remain free
-   * of persistent-state mutations — preview slots only.
+   * putative to the slot. No current drag needs this, but it remains in the
+   * interface as an escape hatch for drags that need to coordinate with
+   * non-rendering side state. Must remain free of persistent-state mutations.
    */
   onPutativeChange?(putative: TPutative | null): void;
 }

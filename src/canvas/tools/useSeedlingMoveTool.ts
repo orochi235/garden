@@ -20,6 +20,10 @@ import {
   SEEDLING_MOVE_DRAG_KIND,
   type SeedlingMovePutative,
 } from '../drag/seedlingMoveDrag';
+import {
+  SEED_FILL_TRAY_DRAG_KIND,
+  type SeedFillPutative,
+} from '../drag/seedFillTrayDrag';
 
 /**
  * Publish a seedling-move ghost putative into the framework's shared
@@ -38,6 +42,26 @@ function setMoveGhost(p: SeedlingMovePutative | null): void {
   if (p) {
     ui.setDragPreview({ kind: SEEDLING_MOVE_DRAG_KIND, putative: p });
   } else if (ui.dragPreview && ui.dragPreview.kind === SEEDLING_MOVE_DRAG_KIND) {
+    ui.setDragPreview(null);
+  }
+}
+
+/**
+ * Publish a seed-fill putative for the row/col/all gutter affordance shown
+ * when the user drags an existing seedling over a tray gutter. Mirrors the
+ * legacy `setSeedFillPreview` writes that drove the now-deleted
+ * `seedling-fill-preview` layer.
+ *
+ * Like `setMoveGhost`, only clears the slot if it currently holds our kind —
+ * the move tool alternates between writing a fill-ghost and a move-ghost as
+ * the pointer moves, and we don't want a fill-clear to stomp a move-ghost
+ * the next branch just wrote (or vice versa).
+ */
+function setFillGhost(p: SeedFillPutative | null): void {
+  const ui = useUiStore.getState();
+  if (p) {
+    ui.setDragPreview({ kind: SEED_FILL_TRAY_DRAG_KIND, putative: p });
+  } else if (ui.dragPreview && ui.dragPreview.kind === SEED_FILL_TRAY_DRAG_KIND) {
     ui.setDragPreview(null);
   }
 }
@@ -157,10 +181,15 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             else if (s.affordance.kind === 'col') affIndex = s.affordance.col;
           }
         } else {
-          // Palette drag: prefer the tray referenced by the live fill preview;
-          // fall back to the active tray.
-          trayId = ui.seedFillPreview?.trayId ?? ui.currentTrayId;
-          const fp = ui.seedFillPreview;
+          // Palette drag: prefer the tray referenced by the live fill putative
+          // (`seedFillTrayDrag` publishes here during a palette drag); fall
+          // back to the active tray.
+          const dp = ui.dragPreview;
+          const fp =
+            dp && dp.kind === SEED_FILL_TRAY_DRAG_KIND
+              ? (dp.putative as SeedFillPutative)
+              : null;
+          trayId = fp?.trayId ?? ui.currentTrayId;
           if (fp && (fp.scope === 'all' || fp.scope === 'row' || fp.scope === 'col')) {
             affKind = fp.scope;
             if (fp.scope === 'row' || fp.scope === 'col') affIndex = fp.index;
@@ -300,7 +329,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               ctx.scratch.affordance = aff;
               if (aff) {
                 const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId!, replace: true };
-                useUiStore.getState().setSeedFillPreview(
+                setFillGhost(
                   aff.kind === 'all'
                     ? { ...base, scope: 'all' }
                     : aff.kind === 'row'
@@ -327,7 +356,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               : (crossHit && crossHit.trayId === tray.id ? { row: crossHit.row, col: crossHit.col } : null);
             // Cross-tray drop: target is a different tray. Render a single-cell
             // ghost on the destination via setMoveGhost (feasibility = dest
-            // cell empty). Don't set the (intra-tray) seedFillPreview.
+            // cell empty). Don't set the (intra-tray) fill ghost.
             if (!ctx.scratch.isGroup && crossHit && crossHit.trayId !== tray.id) {
               const destTray = ss.trays.find((t) => t.id === crossHit.trayId);
               if (destTray) {
@@ -343,13 +372,13 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
                     bumped: false,
                   }],
                 });
-                useUiStore.getState().setSeedFillPreview(null);
+                setFillGhost(null);
                 scratchRef.current = ctx.scratch;
                 return 'claim';
               }
             }
             if (!cell) {
-              useUiStore.getState().setSeedFillPreview(null);
+              setFillGhost(null);
               setMoveGhost(null);
               scratchRef.current = ctx.scratch;
               return 'claim';
@@ -381,9 +410,9 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
                   bumped: m.bumped,
                 })),
               });
-              useUiStore.getState().setSeedFillPreview(null);
+              setFillGhost(null);
             } else if (cell.row !== ctx.scratch.anchorFromRow || cell.col !== ctx.scratch.anchorFromCol) {
-              useUiStore.getState().setSeedFillPreview({
+              setFillGhost({
                 trayId: tray.id,
                 cultivarId: ctx.scratch.cultivarId!,
                 scope: 'cell',
@@ -393,7 +422,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               });
               setMoveGhost(null);
             } else {
-              useUiStore.getState().setSeedFillPreview(null);
+              setFillGhost(null);
               setMoveGhost(null);
             }
             scratchRef.current = ctx.scratch;
@@ -405,7 +434,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             const ss = useGardenStore.getState().garden.nursery;
             const tray = ss.trays.find((t) => t.id === trayId);
             const cleanup = () => {
-              useUiStore.getState().setSeedFillPreview(null);
+              setFillGhost(null);
               setMoveGhost(null);
               useUiStore.getState().setHiddenSeedlingIds([]);
               ctx.scratch.active = false;
@@ -518,7 +547,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             return 'claim';
           },
           onCancel: (ctx) => {
-            useUiStore.getState().setSeedFillPreview(null);
+            setFillGhost(null);
             setMoveGhost(null);
             useUiStore.getState().setHiddenSeedlingIds([]);
             ctx.scratch.active = false;

@@ -147,20 +147,12 @@ interface UiStore {
    *  right-click. Independent of `seedDragCultivarId` (which is set only during
    *  active palette drags). */
   armedCultivarId: string | null;
-  /** Transient ghost preview shown while dragging a cultivar over a fill target. */
-  seedFillPreview:
-    | { trayId: string; cultivarId: string; scope: 'all'; replace?: boolean }
-    | { trayId: string; cultivarId: string; scope: 'row'; index: number; replace?: boolean }
-    | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
-    | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean }
-    | null;
   /**
    * Generic putative-drag preview slot for the framework defined in
-   * `src/canvas/drag/putativeDrag.ts`. Coexists with the legacy
-   * `seedFillPreview` slot (the seed-fill-tray drag mirrors its putative
-   * here for the legacy fill-preview layer's continued use). The
-   * multi-seedling move ghost was migrated 2026-05-05; its dedicated slot
-   * is gone. See `docs/TODO.md` "Repeatable putative-drag framework".
+   * `src/canvas/drag/putativeDrag.ts`. Single canonical preview surface for
+   * every migrated drag (palette → garden / nursery, move, resize, plot,
+   * area-select, seedling-move). See `docs/TODO.md` "Repeatable
+   * putative-drag framework".
    */
   dragPreview: ActiveDragPreview | null;
   /** Seedlings hidden from normal rendering while a drag is in progress. */
@@ -196,7 +188,6 @@ interface UiStore {
   bumpNurseryViewResetTick: () => void;
   setSeedDragCultivarId: (id: string | null) => void;
   setArmedCultivarId: (id: string | null) => void;
-  setSeedFillPreview: (preview: UiStore['seedFillPreview']) => void;
   setDragPreview: (preview: ActiveDragPreview | null) => void;
   setHiddenSeedlingIds: (ids: string[]) => void;
   setAlmanacFilters: (filters: Partial<AlmanacFilters>) => void;
@@ -293,7 +284,6 @@ function defaultState() {
     nurseryViewResetTick: 0,
     seedDragCultivarId: null as string | null,
     armedCultivarId: null as string | null,
-    seedFillPreview: null as UiStore['seedFillPreview'],
     dragPreview: null as ActiveDragPreview | null,
     hiddenSeedlingIds: [] as string[],
     showSeedlingWarnings: true,
@@ -367,7 +357,6 @@ export const useUiStore = create<UiStore>((set) => ({
   bumpNurseryViewResetTick: () => set((s) => ({ nurseryViewResetTick: s.nurseryViewResetTick + 1 })),
   setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
   setArmedCultivarId: (id) => set({ armedCultivarId: id }),
-  setSeedFillPreview: (preview) => set({ seedFillPreview: preview }),
   setDragPreview: (preview) => set({ dragPreview: preview }),
   setHiddenSeedlingIds: (ids) => set({ hiddenSeedlingIds: ids }),
   setAlmanacFilters: (patch) =>
