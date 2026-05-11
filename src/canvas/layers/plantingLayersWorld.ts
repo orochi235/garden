@@ -449,6 +449,18 @@ export function createPlantingLayers(
             const overlaps = labelOccluders.some((r) => rectsOverlap(label.rect, r));
             if (overlaps) continue;
           }
+          const padY = px(view, 2);
+          const padX = px(view, 4);
+          children.push({
+            kind: 'path',
+            path: rectPath(
+              label.rect.x - padX,
+              label.rect.y - padY,
+              label.rect.w + padX * 2,
+              label.rect.h + padY * 2,
+            ),
+            fill: { fill: 'solid', color: 'rgba(0, 0, 0, 0.6)' },
+          });
           children.push({
             kind: 'text',
             x: label.rect.x + label.rect.w / 2,
