@@ -82,6 +82,31 @@ export function addOffset(isoDate: string, offset: Offset): string {
   return `${pad4(newY)}-${pad2(newM + 1)}-${pad2(newD)}`;
 }
 
+export interface AnchorContext {
+  targetTransplantDate: string;
+  lastFrostDate?: string;
+  firstFrostDate?: string;
+  today?: string;
+  actionDates: Map<string, string>;     // actionId → already-resolved earliest date
+}
+
+/**
+ * Resolve an Anchor against the supplied context. Returns null when the
+ * anchor refers to data that wasn't provided (e.g. last-frost when the
+ * caller didn't supply one). Caller decides how to handle: skip the
+ * action and emit a warning.
+ */
+export function resolveAnchor(anchor: Anchor, ctx: AnchorContext): string | null {
+  switch (anchor.kind) {
+    case 'target-transplant': return ctx.targetTransplantDate;
+    case 'last-frost':        return ctx.lastFrostDate ?? null;
+    case 'first-frost':       return ctx.firstFrostDate ?? null;
+    case 'absolute':          return anchor.date;
+    case 'today':             return ctx.today ?? null;
+    case 'action':            return ctx.actionDates.get(anchor.actionId) ?? null;
+  }
+}
+
 function formatISO(dt: Date): string {
   return `${pad4(dt.getUTCFullYear())}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
 }

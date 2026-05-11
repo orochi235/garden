@@ -38,3 +38,39 @@ describe('addOffset', () => {
     expect(addOffset('2026-03-31', { amount: -1, unit: 'months' })).toBe('2026-02-28'); // clamp
   });
 });
+
+import { resolveAnchor } from './scheduler';
+
+describe('resolveAnchor', () => {
+  const ctx = {
+    targetTransplantDate: '2026-05-15',
+    lastFrostDate: '2026-04-30',
+    firstFrostDate: '2026-10-15',
+    today: '2026-03-01',
+    actionDates: new Map<string, string>([['sow', '2026-03-08']]),
+  };
+
+  it('resolves target-transplant', () => {
+    expect(resolveAnchor({ kind: 'target-transplant' }, ctx)).toBe('2026-05-15');
+  });
+  it('resolves last-frost', () => {
+    expect(resolveAnchor({ kind: 'last-frost' }, ctx)).toBe('2026-04-30');
+  });
+  it('resolves first-frost', () => {
+    expect(resolveAnchor({ kind: 'first-frost' }, ctx)).toBe('2026-10-15');
+  });
+  it('resolves absolute', () => {
+    expect(resolveAnchor({ kind: 'absolute', date: '2026-07-04' }, ctx)).toBe('2026-07-04');
+  });
+  it('resolves today', () => {
+    expect(resolveAnchor({ kind: 'today' }, ctx)).toBe('2026-03-01');
+  });
+  it('resolves action ref', () => {
+    expect(resolveAnchor({ kind: 'action', actionId: 'sow' }, ctx)).toBe('2026-03-08');
+  });
+  it('returns null for missing data', () => {
+    const empty = { targetTransplantDate: '2026-05-15', actionDates: new Map<string, string>() };
+    expect(resolveAnchor({ kind: 'last-frost' }, empty)).toBeNull();
+    expect(resolveAnchor({ kind: 'action', actionId: 'sow' }, empty)).toBeNull();
+  });
+});
