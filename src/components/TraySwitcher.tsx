@@ -4,6 +4,7 @@ import { useUiStore } from '../store/uiStore';
 import { TRAY_CATALOG, instantiatePreset } from '../model/trayCatalog';
 import { zoomToTray } from '../actions/view/resetView';
 import styles from '../styles/TraySwitcher.module.css';
+import { ScheduleView } from './schedule/ScheduleView';
 
 interface Props {
   onOpenCustomBuilder: () => void;
@@ -15,6 +16,12 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
   const currentTrayId = useUiStore((s) => s.currentTrayId);
   const setCurrentTrayId = useUiStore((s) => s.setCurrentTrayId);
   const [open, setOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const tray = trays.find((t) => t.id === currentTrayId);
+  const traySeedlings = useGardenStore((s) =>
+    tray ? s.garden.seedStarting.seedlings.filter((sd) => sd.trayId === tray.id) : []
+  );
+  const trayPlants = traySeedlings.map((sd) => ({ id: sd.id, cultivarId: sd.cultivarId }));
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const current = trays.find((t) => t.id === currentTrayId);
@@ -53,6 +60,10 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
       >
         Tray: {current?.label ?? '(none)'} <span aria-hidden>▾</span>
       </button>
+      {tray && (
+        <button type="button" onClick={() => setScheduleOpen((v) => !v)}>Schedule</button>
+      )}
+      {scheduleOpen && tray && <ScheduleView plants={trayPlants} />}
       {open && (
         <div className={styles.menu} role="menu">
           {trays.length > 0 && (
