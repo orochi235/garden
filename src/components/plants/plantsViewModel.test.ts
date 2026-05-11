@@ -102,4 +102,45 @@ describe('buildPlantRows', () => {
     const rows = buildPlantRows(garden, { actions: [] });
     expect(rows[0].location).toBe('—');
   });
+
+  it('populates nextAction (first by earliest) and allActions for a plant from the schedule', () => {
+    const { garden, planting } = gardenWithOnePlanting();
+    const schedule = {
+      actions: [
+        {
+          plantId: planting.id,
+          cultivarId: planting.cultivarId,
+          actionId: 'sow',
+          label: 'Sow',
+          earliest: '2026-03-15',
+          latest: '2026-03-15',
+          conflicts: [],
+        },
+        {
+          plantId: planting.id,
+          cultivarId: planting.cultivarId,
+          actionId: 'transplant',
+          label: 'Transplant',
+          earliest: '2026-05-01',
+          latest: '2026-05-15',
+          conflicts: [],
+        },
+        {
+          plantId: 'unrelated',
+          cultivarId: 'x',
+          actionId: 'noise',
+          label: 'Noise',
+          earliest: '2026-02-01',
+          latest: '2026-02-01',
+          conflicts: [],
+        },
+      ],
+    };
+    const rows = buildPlantRows(garden, schedule);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].nextAction).toEqual({ name: 'Sow', earliest: '2026-03-15' });
+    expect(rows[0].allActions).toHaveLength(2);
+    expect(rows[0].allActions[0].label).toBe('Sow');
+    expect(rows[0].allActions[1].label).toBe('Transplant');
+  });
 });
