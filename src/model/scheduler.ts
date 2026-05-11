@@ -118,6 +118,164 @@ export function resolveConstraint(c: Constraint, ctx: AnchorContext): string | n
   return addOffset(anchorDate, c.offset);
 }
 
+/**
+ * Compute a schedule for a list of plants.
+ *
+ * Resolution order:
+ *   1. For each plant, topologically sort its actions over `action`-anchor refs.
+ *   2. For each action in order: resolve every constraint, intersect bounds.
+ *   3. Sort the flat output by (earliest, plantId).
+ *
+ * Cycles and missing anchor data drop the affected actions and append a warning.
+ */
+export function buildSchedule(inputs: ScheduleInputs): Schedule {
+  const today = inputs.today ?? formatToday();
+  const out: ResolvedAction[] = [];
+  const warnings: string[] = [];
+
+  for (const plant of inputs.plants) {
+    const sorted = topoSortActions(plant.actions);
+    if (sorted.cycles.length > 0) {
+      for (const cycleIds of sorted.cycles) {
+        warnings.push(
+          `Cycle in actions for plant ${plant.id}: ${cycleIds.join(' → ')}`,
+        );
+      }
+    }
+    const actionDates = new Map<string, string>();
+    for (const a of sorted.ordered) {
+      const ctx: AnchorContext = {
+        targetTransplantDate: inputs.targetTransplantDate,
+        lastFrostDate: inputs.lastFrostDate,
+        firstFrostDate: inputs.firstFrostDate,
+        today,
+        actionDates,
+      };
+      let lower: string | null = null;
+      let upper: string | null = null;
+      let missing: string | null = null;
+      const conflicts: string[] = [];
+      for (const c of a.constraints) {
+        const date = resolveConstraint(c, ctx);
+        if (date === null) {
+          missing = describeAnchor(c.anchor);
+          break;
+        }
+        if (c.kind === 'lower' || c.kind === 'exact') {
+          lower = maxDate(lower, date);
+        }
+        if (c.kind === 'upper' || c.kind === 'exact') {
+          upper = minDate(upper, date);
+        }
+      }
+      if (missing !== null) {
+        warnings.push(
+          `Plant ${plant.id} action "${a.id}" dropped: missing anchor ${missing}`,
+        );
+        continue;
+      }
+      if (lower === null || upper === null) {
+        continue;
+      }
+      if (lower > upper) {
+        conflicts.push(`Lower bound ${lower} is after upper bound ${upper}`);
+      }
+      actionDates.set(a.id, lower);
+      out.push({
+        plantId: plant.id,
+        cultivarId: plant.cultivarId,
+        actionId: a.id,
+        label: a.label,
+        earliest: lower,
+        latest: upper,
+        conflicts,
+      });
+    }
+  }
+
+  out.sort((a, b) => {
+    if (a.earliest !== b.earliest) return a.earliest < b.earliest ? -1 : 1;
+    return a.plantId < b.plantId ? -1 : a.plantId > b.plantId ? 1 : 0;
+  });
+  return { actions: out, warnings };
+}
+
+function topoSortActions(actions: ActionDef[]): {
+  ordered: ActionDef[];
+  cycles: string[][];
+} {
+  const byId = new Map(actions.map((a) => [a.id, a]));
+  const deps = new Map<string, Set<string>>();
+  for (const a of actions) {
+    const set = new Set<string>();
+    for (const c of a.constraints) {
+      if (c.anchor.kind === 'action' && byId.has(c.anchor.actionId)) {
+        set.add(c.anchor.actionId);
+      }
+    }
+    deps.set(a.id, set);
+  }
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const ordered: ActionDef[] = [];
+  const cycles: string[][] = [];
+
+  function visit(id: string, path: string[]): void {
+    if (visited.has(id)) return;
+    if (visiting.has(id)) {
+      const start = path.indexOf(id);
+      cycles.push(path.slice(start).concat(id));
+      return;
+    }
+    visiting.add(id);
+    for (const dep of deps.get(id) ?? new Set()) {
+      visit(dep, [...path, id]);
+    }
+    visiting.delete(id);
+    visited.add(id);
+    const a = byId.get(id);
+    if (a) ordered.push(a);
+  }
+
+  for (const a of actions) visit(a.id, []);
+
+  if (cycles.length > 0) {
+    const inCycle = new Set<string>(cycles.flat());
+    return {
+      ordered: ordered.filter((a) => !inCycle.has(a.id)),
+      cycles,
+    };
+  }
+  return { ordered, cycles: [] };
+}
+
+function describeAnchor(a: Anchor): string {
+  switch (a.kind) {
+    case 'target-transplant':
+    case 'last-frost':
+    case 'first-frost':
+    case 'today':
+      return a.kind;
+    case 'absolute': return `absolute(${a.date})`;
+    case 'action':   return `action(${a.actionId})`;
+  }
+}
+
+/** Returns the later of two ISO date strings; if current is null, returns candidate. */
+function maxDate(current: string | null, candidate: string): string {
+  return current === null || candidate > current ? candidate : current;
+}
+
+/** Returns the earlier of two ISO date strings; if current is null, returns candidate. */
+function minDate(current: string | null, candidate: string): string {
+  return current === null || candidate < current ? candidate : current;
+}
+
+function formatToday(): string {
+  const dt = new Date();
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 function formatISO(dt: Date): string {
   return `${pad4(dt.getUTCFullYear())}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
 }

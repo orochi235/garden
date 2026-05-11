@@ -112,3 +112,155 @@ describe('resolveConstraint', () => {
     }, ctxNoFirstFrost)).toBeNull();
   });
 });
+
+import { buildSchedule } from './scheduler';
+
+describe('buildSchedule', () => {
+  it('resolves a single exact action', () => {
+    const result = buildSchedule({
+      plants: [{
+        id: 'p1', cultivarId: 'tomato',
+        actions: [{
+          id: 'transplant', label: 'Transplant',
+          constraints: [{ kind: 'exact', anchor: { kind: 'target-transplant' } }],
+        }],
+      }],
+      targetTransplantDate: '2026-05-15',
+    });
+    expect(result.actions).toHaveLength(1);
+    expect(result.actions[0]).toMatchObject({
+      plantId: 'p1', actionId: 'transplant',
+      earliest: '2026-05-15', latest: '2026-05-15',
+      conflicts: [],
+    });
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('intersects lower + upper bounds into a window', () => {
+    const result = buildSchedule({
+      plants: [{
+        id: 'p1', cultivarId: 'tomato',
+        actions: [{
+          id: 'sow', label: 'Sow indoors',
+          constraints: [
+            { kind: 'lower', anchor: { kind: 'last-frost' }, offset: { amount: -6, unit: 'weeks' } },
+            { kind: 'upper', anchor: { kind: 'last-frost' }, offset: { amount: -4, unit: 'weeks' } },
+          ],
+        }],
+      }],
+      targetTransplantDate: '2026-05-15',
+      lastFrostDate: '2026-04-30',
+    });
+    expect(result.actions[0].earliest).toBe('2026-03-19');
+    expect(result.actions[0].latest).toBe('2026-04-02');
+  });
+
+  it('flags conflicts when lower > upper', () => {
+    const result = buildSchedule({
+      plants: [{
+        id: 'p1', cultivarId: 'tomato',
+        actions: [{
+          id: 'sow', label: 'Sow',
+          constraints: [
+            { kind: 'lower', anchor: { kind: 'last-frost' }, offset: { amount: -2, unit: 'weeks' } },
+            { kind: 'upper', anchor: { kind: 'last-frost' }, offset: { amount: -4, unit: 'weeks' } },
+          ],
+        }],
+      }],
+      targetTransplantDate: '2026-05-15',
+      lastFrostDate: '2026-04-30',
+    });
+    expect(result.actions[0].conflicts.length).toBeGreaterThan(0);
+  });
+
+  it('topologically resolves action references', () => {
+    const result = buildSchedule({
+      plants: [{
+        id: 'p1', cultivarId: 'tomato',
+        actions: [
+          {
+            id: 'harden-off', label: 'Harden off',
+            constraints: [{
+              kind: 'exact',
+              anchor: { kind: 'action', actionId: 'transplant' },
+              offset: { amount: -7, unit: 'days' },
+            }],
+          },
+          {
+            id: 'transplant', label: 'Transplant',
+            constraints: [{ kind: 'exact', anchor: { kind: 'target-transplant' } }],
+          },
+        ],
+      }],
+      targetTransplantDate: '2026-05-15',
+    });
+    const harden = result.actions.find((a) => a.actionId === 'harden-off')!;
+    expect(harden.earliest).toBe('2026-05-08');
+  });
+
+  it('drops actions referencing missing anchors and warns', () => {
+    const result = buildSchedule({
+      plants: [{
+        id: 'p1', cultivarId: 'tomato',
+        actions: [{
+          id: 'sow', label: 'Sow',
+          constraints: [{ kind: 'exact', anchor: { kind: 'last-frost' } }],
+        }],
+      }],
+      targetTransplantDate: '2026-05-15',
+    });
+    expect(result.actions).toHaveLength(0);
+    expect(result.warnings.some((w) => w.includes('last-frost'))).toBe(true);
+  });
+
+  it('detects cycles among action refs', () => {
+    const result = buildSchedule({
+      plants: [{
+        id: 'p1', cultivarId: 'tomato',
+        actions: [
+          {
+            id: 'a', label: 'A',
+            constraints: [{ kind: 'exact', anchor: { kind: 'action', actionId: 'b' } }],
+          },
+          {
+            id: 'b', label: 'B',
+            constraints: [{ kind: 'exact', anchor: { kind: 'action', actionId: 'a' } }],
+          },
+        ],
+      }],
+      targetTransplantDate: '2026-05-15',
+    });
+    expect(result.actions).toHaveLength(0);
+    expect(result.warnings.some((w) => w.toLowerCase().includes('cycle'))).toBe(true);
+  });
+
+  it('sorts output by earliest then plantId', () => {
+    const result = buildSchedule({
+      plants: [
+        {
+          id: 'p2', cultivarId: 'basil',
+          actions: [{
+            id: 'sow', label: 'Sow',
+            constraints: [{
+              kind: 'exact', anchor: { kind: 'last-frost' },
+              offset: { amount: -2, unit: 'weeks' },
+            }],
+          }],
+        },
+        {
+          id: 'p1', cultivarId: 'tomato',
+          actions: [{
+            id: 'sow', label: 'Sow',
+            constraints: [{
+              kind: 'exact', anchor: { kind: 'last-frost' },
+              offset: { amount: -6, unit: 'weeks' },
+            }],
+          }],
+        },
+      ],
+      targetTransplantDate: '2026-05-15',
+      lastFrostDate: '2026-04-30',
+    });
+    expect(result.actions.map((a) => a.plantId)).toEqual(['p1', 'p2']);
+  });
+});
