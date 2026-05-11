@@ -183,8 +183,10 @@ interface UiStore {
   almanacFilters: AlmanacFilters;
   collectionEditorOpen: boolean;
   scheduleOpen: boolean;
+  plantsModalOpen: boolean;
   setCollectionEditorOpen: (open: boolean) => void;
   setScheduleOpen: (open: boolean) => void;
+  setPlantsModalOpen: (open: boolean) => void;
   setShowSeedlingWarnings: (show: boolean) => void;
   setHighlightOpacity: (opacity: number) => void;
   setShowFootprintCircles: (show: boolean) => void;
@@ -302,6 +304,7 @@ function defaultState() {
     } as AlmanacFilters,
     collectionEditorOpen: readCollectionParam(),
     scheduleOpen: false,
+    plantsModalOpen: false,
   };
 }
 
@@ -371,6 +374,7 @@ export const useUiStore = create<UiStore>((set) => ({
       almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },
     }),
   setScheduleOpen: (open) => set({ scheduleOpen: open }),
+  setPlantsModalOpen: (open) => set({ plantsModalOpen: open }),
   setCollectionEditorOpen: (open) => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);

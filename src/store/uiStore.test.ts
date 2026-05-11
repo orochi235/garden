@@ -292,4 +292,12 @@ describe('uiStore', () => {
       expect(useUiStore.getState().collectionEditorOpen).toBe(false);
     });
   });
+
+  it('toggles plantsModalOpen', () => {
+    expect(useUiStore.getState().plantsModalOpen).toBe(false);
+    useUiStore.getState().setPlantsModalOpen(true);
+    expect(useUiStore.getState().plantsModalOpen).toBe(true);
+    useUiStore.getState().setPlantsModalOpen(false);
+    expect(useUiStore.getState().plantsModalOpen).toBe(false);
+  });
 });
