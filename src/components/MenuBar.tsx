@@ -17,6 +17,7 @@ export function MenuBar() {
   const collectionEditorOpen = useUiStore((s) => s.collectionEditorOpen);
   const setCollectionEditorOpen = useUiStore((s) => s.setCollectionEditorOpen);
   const setScheduleOpen = useUiStore((s) => s.setScheduleOpen);
+  const setPlantsModalOpen = useUiStore((s) => s.setPlantsModalOpen);
 
   async function handleOpen() {
     try {
@@ -72,6 +73,7 @@ export function MenuBar() {
         <span onClick={handleOpen}>Open</span>
         <span onClick={() => setCollectionEditorOpen(true)}>Collection…</span>
         <span onClick={() => setScheduleOpen(true)}>Schedule…</span>
+        <span onClick={() => setPlantsModalOpen(true)}>Plants…</span>
         <span
           onClick={handleSave}
           className={styles.saveButton}

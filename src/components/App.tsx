@@ -12,6 +12,7 @@ import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/f
 import type { Cultivar } from '../model/cultivars';
 import { WelcomeModal } from './WelcomeModal';
 import { ScheduleModal } from './schedule/ScheduleModal';
+import { PlantsModal } from './plants/PlantsModal';
 import { MenuBar } from './MenuBar';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
@@ -38,6 +39,7 @@ export function App() {
   const setCollection = useGardenStore((s) => s.setCollection);
   const appMode = useUiStore((s) => s.appMode);
   const scheduleOpen = useUiStore((s) => s.scheduleOpen);
+  const plantsModalOpen = useUiStore((s) => s.plantsModalOpen);
   const [showWelcome, setShowWelcome] = useState(false);
   const { theme, prevTheme, layerFlip, transitionDuration } = useActiveTheme();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
@@ -270,6 +272,7 @@ export function App() {
       </div>
       {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
       {scheduleOpen && <ScheduleModal />}
+      {plantsModalOpen && <PlantsModal />}
     </div>
   );
 }
