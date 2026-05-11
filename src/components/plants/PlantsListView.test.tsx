@@ -73,4 +73,60 @@ describe('PlantsListView', () => {
     await user.click(screen.getByRole('columnheader', { name: /location/i }));
     expect(locations()).toEqual(['Zzz Bed', 'Aaa Bed']);
   });
+
+  it('filters rows by text search across name/variety/location', async () => {
+    useGardenStore.getState().reset();
+    useUiStore.getState().reset();
+    const garden = useGardenStore.getState().garden;
+    const bed1 = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    bed1.label = 'North Bed';
+    const bed2 = createStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, length: 4 });
+    bed2.label = 'South Bed';
+    const cv = getAllCultivars()[0];
+    const p1 = createPlanting({ parentId: bed1.id, x: 0, y: 0, cultivarId: cv.id });
+    const p2 = createPlanting({ parentId: bed2.id, x: 0, y: 0, cultivarId: cv.id });
+    useGardenStore.setState({
+      garden: { ...garden, structures: [bed1, bed2], plantings: [p1, p2] },
+    });
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+    expect(screen.getAllByRole('row')).toHaveLength(3); // header + 2
+    await user.type(screen.getByPlaceholderText(/search/i), 'south');
+    expect(screen.getAllByRole('row')).toHaveLength(2); // header + 1
+    expect(screen.getByText('South Bed')).toBeDefined();
+  });
+
+  it('filters by stage chip', async () => {
+    useGardenStore.getState().reset();
+    useUiStore.getState().reset();
+    const garden = useGardenStore.getState().garden;
+    const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    bed.label = 'Bed';
+    const cv = getAllCultivars()[0];
+    const planting = createPlanting({ parentId: bed.id, x: 0, y: 0, cultivarId: cv.id });
+    useGardenStore.setState({
+      garden: {
+        ...garden,
+        structures: [bed],
+        plantings: [planting],
+        seedStarting: {
+          trays: [{
+            id: 't', label: 'Tray', rows: 1, cols: 1,
+            cellSize: 'medium', cellPitchIn: 1.5, widthIn: 5, heightIn: 5,
+            slots: [{ state: 'sown', seedlingId: 's' }],
+          }],
+          seedlings: [{ id: 's', cultivarId: cv.id, trayId: 't', row: 0, col: 0, labelOverride: null }],
+        },
+      },
+    });
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+    expect(screen.getAllByRole('row')).toHaveLength(3); // header + planting + seedling
+    await user.click(screen.getByRole('button', { name: /^plantings$/i }));
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: /^seedlings$/i }));
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: /^all$/i }));
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+  });
 });

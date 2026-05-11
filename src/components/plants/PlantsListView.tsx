@@ -121,14 +121,28 @@ export function PlantsListView() {
 
   const [sortColumn, setSortColumn] = useState<string>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [searchText, setSearchText] = useState('');
+  const [stageFilter, setStageFilter] = useState<'all' | 'planting' | 'seedling'>('all');
 
   const visibleColumns = COLUMNS.filter((c) => DEFAULT_VISIBLE.includes(c.id));
 
+  const filteredRows = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (stageFilter === 'planting' && r.kind !== 'planting') return false;
+      if (stageFilter === 'seedling' && r.kind !== 'seedling') return false;
+      if (!q) return true;
+      const haystack = [r.name, r.variety ?? '', r.location, r.cultivarId, r.id]
+        .join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [rows, searchText, stageFilter]);
+
   const sortedRows = useMemo(() => {
-    const arr = [...rows];
+    const arr = [...filteredRows];
     arr.sort((a, b) => compareRows(a, b, sortColumn));
     return sortDir === 'asc' ? arr : arr.reverse();
-  }, [rows, sortColumn, sortDir]);
+  }, [filteredRows, sortColumn, sortDir]);
 
   function onHeaderClick(colId: string) {
     if (colId === sortColumn) {
@@ -145,6 +159,27 @@ export function PlantsListView() {
 
   return (
     <div className={styles.root}>
+      <div className={styles.toolbar}>
+        <input
+          className={styles.search}
+          type="text"
+          placeholder="Search name, variety, location…"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+        <div className={styles.chips}>
+          {(['all', 'planting', 'seedling'] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`${styles.chip} ${stageFilter === s ? styles.chipActive : ''}`}
+              onClick={() => setStageFilter(s)}
+            >
+              {s === 'all' ? 'All' : s === 'planting' ? 'Plantings' : 'Seedlings'}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
@@ -171,6 +206,17 @@ export function PlantsListView() {
             ))}
           </tbody>
         </table>
+        {sortedRows.length === 0 && (
+          <div className={styles.empty}>
+            No plants match these filters.{' '}
+            <button
+              type="button"
+              onClick={() => { setSearchText(''); setStageFilter('all'); }}
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
