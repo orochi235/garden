@@ -7,7 +7,7 @@ import {
   setCell,
 } from './nursery';
 
-describe('seedStarting types', () => {
+describe('nursery types', () => {
   it('createTray builds a tray with rows*cols empty slots', () => {
     const tray = createTray({ rows: 6, cols: 6, cellSize: 'medium', label: '36-cell' });
     expect(tray.rows).toBe(6);

@@ -39,7 +39,7 @@ export function cellCenterInches(tray: Tray, row: number, col: number): { x: num
 
 /** Per-tray world origin used by `findSeedlingsInRect` to place cell centers
  *  in world space. Provided by callers (typically via
- *  `trayWorldOrigin(tray, ss)`) so this module stays free of seedStarting-state
+ *  `trayWorldOrigin(tray, ss)`) so this module stays free of nursery-state
  *  imports and keeps no view-transform dependency. */
 export type TrayOriginFn = (tray: Tray) => { x: number; y: number };
 

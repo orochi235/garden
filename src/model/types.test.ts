@@ -92,7 +92,7 @@ describe('factory functions', () => {
 });
 
 describe('createGarden', () => {
-  it('initializes seedStarting state', () => {
+  it('initializes nursery state', () => {
     const g = createGarden({ name: 't', widthFt: 1, lengthFt: 1 });
     expect(g.nursery).toEqual(emptyNurseryState());
   });
