@@ -10,7 +10,7 @@ export function PlantsModal() {
     <div className={styles.backdrop} onClick={() => setOpen(false)}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Plants</h2>
+          <h2 className={styles.title}>List</h2>
           <button
             type="button"
             className={styles.close}

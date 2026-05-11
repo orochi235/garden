@@ -73,7 +73,7 @@ export function MenuBar() {
         <span onClick={handleOpen}>Open</span>
         <span onClick={() => setCollectionEditorOpen(true)}>Collection…</span>
         <span onClick={() => setScheduleOpen(true)}>Schedule…</span>
-        <span onClick={() => setPlantsModalOpen(true)}>Plants…</span>
+        <span onClick={() => setPlantsModalOpen(true)}>List</span>
         <span
           onClick={handleSave}
           className={styles.saveButton}
