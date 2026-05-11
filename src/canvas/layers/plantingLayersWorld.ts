@@ -5,6 +5,7 @@ import {
   type View,
   PathBuilder,
   rectPath,
+  textCommand,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
@@ -364,28 +365,16 @@ export function createPlantingLayers(
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), (footprint / 2) * data.plantIconScale);
             const labelX = wx + radius + px(view, 3);
-            children.push({
-              kind: 'text',
-              x: labelX,
-              y: wy - px(view, 2),
-              text: `${footprint.toFixed(1)}ft`,
-              style: {
-                fontSize: fontPx,
-                align: 'left' as const,
-                fill: { fill: 'solid' as const, color: 'rgba(255, 255, 255, 0.7)' },
-              },
-            });
-            children.push({
-              kind: 'text',
-              x: labelX,
-              y: wy + px(view, 8),
-              text: `${spacing.toFixed(1)}ft`,
-              style: {
-                fontSize: fontPx,
-                align: 'left' as const,
-                fill: { fill: 'solid' as const, color: 'rgba(255, 255, 200, 0.5)' },
-              },
-            });
+            children.push(textCommand(labelX, wy - px(view, 2), `${footprint.toFixed(1)}ft`, {
+              fontSize: fontPx,
+              align: 'left',
+              fill: { fill: 'solid', color: 'rgba(255, 255, 255, 0.7)' },
+            }));
+            children.push(textCommand(labelX, wy + px(view, 8), `${spacing.toFixed(1)}ft`, {
+              fontSize: fontPx,
+              align: 'left',
+              fill: { fill: 'solid', color: 'rgba(255, 255, 200, 0.5)' },
+            }));
           }
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];
@@ -494,17 +483,11 @@ export function createPlantingLayers(
             ),
             fill: { fill: 'solid', color: 'rgba(0, 0, 0, 0.6)' },
           });
-          children.push({
-            kind: 'text',
-            x: label.rect.x + label.rect.w / 2,
-            y: label.rect.y,
-            text: label.text,
-            style: {
-              fontSize: fontPx,
-              align: 'center' as const,
-              fill: { fill: 'solid' as const, color: '#ffffff' },
-            },
-          });
+          children.push(textCommand(label.rect.x + label.rect.w / 2, label.rect.y, label.text, {
+            fontSize: fontPx,
+            align: 'center',
+            fill: { fill: 'solid', color: '#ffffff' },
+          }));
           labelOccluders.push(label.rect);
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];

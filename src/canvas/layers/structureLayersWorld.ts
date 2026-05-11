@@ -1,6 +1,7 @@
 import {
   type RenderLayer,
   rectPath,
+  textCommand,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
 import { paintFor } from '../patterns';
@@ -409,17 +410,11 @@ export function createStructureLayers(
           const e = entries[i];
           const isHidden = hidden.has(i);
           if (isHidden && !debugOverlappingLabels) continue;
-          const cmd: DrawCommand = {
-            kind: 'text',
-            x: e.x + e.w / 2,
-            y: e.y + padY,
-            text: e.label,
-            style: {
-              fontSize: fontPx,
-              align: 'center' as const,
-              fill: { fill: 'solid' as const, color: '#ffffff' },
-            },
-          };
+          const cmd: DrawCommand = textCommand(e.x + e.w / 2, e.y + padY, e.label, {
+            fontSize: fontPx,
+            align: 'center',
+            fill: { fill: 'solid', color: '#ffffff' },
+          });
           if (isHidden) {
             children.push({ kind: 'group', alpha: 0.4, children: [cmd] });
           } else {

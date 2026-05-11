@@ -1,6 +1,7 @@
 import {
   type RenderLayer,
   rectPath,
+  textCommand,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
@@ -130,17 +131,16 @@ export function createSelectionOutlineLayer(
         // Flagged: text commands require registerFont() wired at app boot.
         if (obj.label) {
           const fontPx = (labelFontSize ?? 10) / Math.max(0.0001, view.scale);
-          children.push({
-            kind: 'text',
-            x: obj.x + obj.width / 2,
-            y: obj.y + obj.length + px(view, 8),
-            text: obj.label,
-            style: {
+          children.push(textCommand(
+            obj.x + obj.width / 2,
+            obj.y + obj.length + px(view, 8),
+            obj.label,
+            {
               fontSize: fontPx,
-              align: 'center' as const,
-              fill: { fill: 'solid' as const, color: '#ffffff' },
+              align: 'center',
+              fill: { fill: 'solid', color: '#ffffff' },
             },
-          });
+          ));
         }
       }
 

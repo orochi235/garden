@@ -2,6 +2,7 @@ import {
   type RenderLayer,
   PathBuilder,
   rectPath,
+  textCommand,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
@@ -124,18 +125,9 @@ function makeAxesLayer(): RenderLayer<unknown> {
           fill: { fill: 'solid', color: '#ffffff' },
         },
         // Labels — flagged: text rendering requires registerFont() wired at app boot.
-        {
-          kind: 'text', x: 100 - px(20), y: -px(4),
-          text: '+x', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
-        },
-        {
-          kind: 'text', x: px(4), y: 100 - px(4),
-          text: '+y', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
-        },
-        {
-          kind: 'text', x: px(6), y: -px(6),
-          text: '(0,0)', style: { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } },
-        },
+        textCommand(100 - px(20), -px(4), '+x', { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } }),
+        textCommand(px(4), 100 - px(4), '+y', { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } }),
+        textCommand(px(6), -px(6), '(0,0)', { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } }),
       ];
       return [{ kind: 'group', transform: viewToMat3(view), children }];
     },

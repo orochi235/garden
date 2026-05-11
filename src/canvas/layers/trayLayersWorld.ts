@@ -1,5 +1,6 @@
 import {
   type RenderLayer,
+  textCommand,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon, roundRectPolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
@@ -112,17 +113,11 @@ function trayLabelCommands(tray: Tray, view: View): DrawCommand[] {
   const fontSize = px(view, LABEL_FONT_PX);
   const gapY = tray.heightIn + px(view, LABEL_GAP_PX);
   return [
-    {
-      kind: 'text',
-      x: tray.widthIn / 2,
-      y: gapY,
-      text: tray.label,
-      style: {
-        fontSize,
-        align: 'center' as const,
-        fill: { fill: 'solid' as const, color: 'rgba(255,255,255,0.65)' },
-      },
-    },
+    textCommand(tray.widthIn / 2, gapY, tray.label, {
+      fontSize,
+      align: 'center',
+      fill: { fill: 'solid', color: 'rgba(255,255,255,0.65)' },
+    }),
   ];
 }
 
