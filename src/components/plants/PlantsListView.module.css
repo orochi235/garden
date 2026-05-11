@@ -1,32 +1,53 @@
-.root { display: flex; flex-direction: column; min-height: 0; }
+.root { display: flex; flex-direction: column; min-height: 0; color: var(--theme-text, #eee); }
 .toolbar {
   display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--theme-divider, #333);
 }
-.search { flex: 1; padding: 4px 8px; font-size: 13px; }
+.search {
+  flex: 1; padding: 4px 8px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.06); color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333); border-radius: 3px;
+}
 .chips { display: flex; gap: 4px; }
 .chip {
-  padding: 2px 8px; border: 1px solid #888; background: #fff;
-  border-radius: 12px; font-size: 12px; cursor: pointer; color: #444;
+  padding: 2px 8px; border: 1px solid var(--theme-divider, #333);
+  background: rgba(255, 255, 255, 0.06); color: var(--theme-text, #eee);
+  border-radius: 12px; font-size: 12px; cursor: pointer;
 }
-.chipActive { background: #555; color: #fff; border-color: #555; }
+.chipActive { background: var(--theme-text, #eee); color: var(--theme-panel-bg, #1f2123); border-color: var(--theme-text, #eee); }
 .tableWrap { overflow: auto; max-height: 70vh; }
-.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--theme-text, #eee); }
 .table th, .table td {
-  text-align: left; padding: 4px 8px; border-bottom: 1px solid #eee;
+  text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--theme-divider, #333);
   white-space: nowrap;
 }
-.table th { cursor: pointer; user-select: none; background: #fafafa; position: sticky; top: 0; }
-.rowActive { background: #fff4c2; }
-.empty { padding: 24px; text-align: center; color: #888; }
+.table th {
+  cursor: pointer; user-select: none;
+  background: rgba(255, 255, 255, 0.06); color: var(--theme-text, #eee);
+  position: sticky; top: 0;
+}
+.table tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+.rowActive, .rowActive:hover { background: rgba(255, 220, 100, 0.18); }
+.empty { padding: 24px; text-align: center; color: var(--theme-text-muted, #888); }
+.empty button {
+  background: rgba(255, 255, 255, 0.06); color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333); border-radius: 3px;
+  padding: 2px 8px; cursor: pointer; margin-left: 4px;
+}
 .iconCell { width: 24px; }
 .iconCell img { width: 18px; height: 18px; object-fit: contain; display: block; }
 .numeric { text-align: right; font-variant-numeric: tabular-nums; }
 .colEditor { position: relative; }
+.colEditor > button {
+  background: rgba(255, 255, 255, 0.06); color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333); border-radius: 3px;
+  padding: 2px 8px; font-size: 12px; cursor: pointer;
+}
 .colEditorPopover {
   position: absolute; right: 0; top: 100%; margin-top: 4px;
-  background: #fff; border: 1px solid #ccc; border-radius: 4px;
-  padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 10;
+  background: var(--theme-panel-bg, #1f2123); color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333); border-radius: 4px;
+  padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); z-index: 10;
   min-width: 180px;
 }
 .colEditorPopover label { display: flex; gap: 6px; padding: 2px 0; font-size: 12px; cursor: pointer; }

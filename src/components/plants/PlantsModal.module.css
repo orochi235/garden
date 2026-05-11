@@ -3,15 +3,18 @@
   display: flex; align-items: center; justify-content: center; z-index: 2000;
 }
 .dialog {
-  background: #fff; border-radius: 6px; min-width: 880px; max-width: 1200px;
-  max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;
+  background: var(--theme-panel-bg, #1f2123); color: var(--theme-text, #eee);
+  border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  min-width: 880px; max-width: 1200px; max-height: 85vh;
+  overflow: hidden; display: flex; flex-direction: column;
 }
 .header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; border-bottom: 1px solid #ddd;
+  padding: 12px 16px; border-bottom: 1px solid var(--theme-divider, #333);
 }
-.title { margin: 0; font-size: 18px; }
+.title { margin: 0; font-size: 18px; color: var(--theme-text, #eee); }
 .close {
   background: none; border: none; font-size: 22px; cursor: pointer; line-height: 1;
+  color: var(--theme-text, #eee);
 }
 .body { flex: 1; overflow: auto; }
