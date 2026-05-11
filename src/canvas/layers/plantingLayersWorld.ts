@@ -497,10 +497,12 @@ export function createPlantingLayers(
             const rOuter = Math.min(s.width, s.length) / 2;
             const rInner = rOuter - wallWidth;
             if (rInner > 0 && s.clipChildren !== false) {
-              // Inner wall fill (container color)
+              // Inner wall fill (container color). No outer buffer here:
+              // pots/felt-planters use 'single' layout where the plant is
+              // sized to fit the container, so there's nothing to mask
+              // outside the outer edge — and a 1ft ring around a 1ft pot
+              // would dominate the visual.
               children.push(...annulusFill(cx, cy, rInner, rOuter, s.color));
-              // Outer buffer (ground color) — annulus from outer to outer+buffer
-              children.push(...annulusFill(cx, cy, rOuter, rOuter + OUTER_BUFFER_FT, groundColor));
             }
             if (rInner > 0) {
               children.push({
