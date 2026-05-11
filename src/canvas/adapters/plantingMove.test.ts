@@ -66,19 +66,19 @@ describe('plantingMoveAdapter', () => {
     expect(updated.parentId).toBe(bed2.id);
   });
 
-  it('removeObject removes the planting', () => {
+  it('removeNode removes the planting', () => {
     const { planting } = setup();
     const a = createPlantingMoveAdapter();
-    a.removeObject(planting.id);
+    a.removeNode(planting.id);
     expect(useGardenStore.getState().garden.plantings).toHaveLength(0);
   });
 
-  it('insertObject re-creates a deleted planting (round-trip)', () => {
+  it('insertNode re-creates a deleted planting (round-trip)', () => {
     const { planting } = setup();
     const a = createPlantingMoveAdapter();
     const snapshot = useGardenStore.getState().garden.plantings.find((p) => p.id === planting.id)!;
-    a.removeObject(planting.id);
-    a.insertObject(snapshot);
+    a.removeNode(planting.id);
+    a.insertNode(snapshot);
     const restored = useGardenStore.getState().garden.plantings.find((p) => p.id === planting.id)!;
     expect(restored.x).toBe(snapshot.x);
     expect(restored.y).toBe(snapshot.y);

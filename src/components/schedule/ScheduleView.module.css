@@ -1,0 +1,15 @@
+.root { display: flex; flex-direction: column; gap: 8px; padding: 8px; font-size: 14px; }
+.controls { display: flex; gap: 6px; align-items: center; }
+.toggle { display: inline-flex; gap: 0; }
+.toggleBtn { padding: 4px 8px; border: 1px solid #888; background: #fff; cursor: pointer; }
+.toggleBtnActive { background: #555; color: #fff; }
+.list { display: flex; flex-direction: column; gap: 4px; }
+.row { display: flex; gap: 8px; align-items: baseline; }
+.date { font-variant-numeric: tabular-nums; min-width: 8em; color: #444; }
+.action { font-weight: 500; }
+.plant { color: #666; }
+.conflict { color: #c33; margin-left: 4px; }
+.section { display: flex; flex-direction: column; gap: 2px; padding-bottom: 6px; }
+.sectionTitle { font-weight: 600; color: #333; margin-bottom: 2px; }
+.warning { color: #c33; font-size: 12px; }
+.empty { color: #888; font-style: italic; }

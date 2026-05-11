@@ -23,7 +23,7 @@ describe('gardenSceneAdapter', () => {
   it('getObjects returns all kinds with correct discriminators', () => {
     const { bed, bed2, zone, planting } = setup();
     const a = createGardenSceneAdapter();
-    const objs = a.getObjects();
+    const objs = a.getNodes();
     expect(objs).toHaveLength(4);
     const byKind = (k: string) => objs.filter((o) => o.kind === k).map((o) => o.id);
     expect(byKind('structure').sort()).toEqual([bed.id, bed2.id].sort());

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { getCultivar } from '../../model/cultivars';
 import type { Layout, LayoutType } from '../../model/layout';
 import type { FillType } from '../../model/types';
@@ -7,6 +8,7 @@ import { useUiStore } from '../../store/uiStore';
 import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
 import { SelectionPanel } from './SelectionPanel';
+import { ScheduleView } from '../schedule/ScheduleView';
 
 const FILL_TYPES: FillType[] = ['soil', 'sand', 'rocks', 'peat', 'potting-mix'];
 
@@ -25,6 +27,7 @@ export function PropertiesPanel() {
   const updateZone = useGardenStore((s) => s.commitZoneUpdate);
   const selectedIds = useUiStore((s) => s.selectedIds);
   const unit = garden.displayUnit;
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   if (selectedIds.length === 0) {
     return (
@@ -256,6 +259,20 @@ export function PropertiesPanel() {
               />
               <span>Clip plantings to container</span>
             </label>
+            {(() => {
+              const containerPlants = garden.plantings
+                .filter((p) => p.parentId === selectedId)
+                .map((p) => ({ id: p.id, cultivarId: p.cultivarId, label: p.label }));
+              return containerPlants.length > 0 ? (
+                <>
+                  <span className={f.label}></span>
+                  <div className={f.span12}>
+                    <button type="button" onClick={() => setScheduleOpen((v) => !v)}>Schedule</button>
+                    {scheduleOpen && <ScheduleView plants={containerPlants} />}
+                  </div>
+                </>
+              ) : null;
+            })()}
           </>
         )}
 

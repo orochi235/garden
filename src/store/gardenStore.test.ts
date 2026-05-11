@@ -637,7 +637,7 @@ describe('selection rides on history', () => {
     adapter.snapshotSelection([z1]);
     const ids = [z1];
     const cutOps = [
-      ...ids.map((id) => createDeleteOp({ object: adapter.getObject(id)! })),
+      ...ids.map((id) => createDeleteOp({ node: adapter.getNode(id)! })),
       createSetSelectionOp({ from: ids.map(asNodeId), to: [] }),
     ];
     adapter.applyBatch!(cutOps, 'Cut');
@@ -670,7 +670,7 @@ describe('selection rides on history', () => {
     const snap = adapter.snapshotSelection([z1]);
     const [pasted] = adapter.commitPaste(snap, { dx: 1, dy: 1 });
     adapter.applyBatch!(
-      [createInsertOp({ object: pasted }), createSetSelectionOp({ from: [asNodeId(z1)], to: [asNodeId(pasted.id)] })],
+      [createInsertOp({ node: pasted }), createSetSelectionOp({ from: [asNodeId(z1)], to: [asNodeId(pasted.id)] })],
       'Paste',
     );
     expect(useGardenStore.getState().garden.zones).toHaveLength(2);

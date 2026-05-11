@@ -58,10 +58,10 @@ function allNodes(): SceneNode[] {
 
 export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
   const adapter: Required<GardenSceneAdapter> = {
-    getObject(id) {
+    getNode(id) {
       return findNode(id);
     },
-    getObjects() {
+    getNodes() {
       return allNodes();
     },
     getPose(id) {

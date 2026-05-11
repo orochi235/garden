@@ -16,11 +16,11 @@ describe('createStructureResizeAdapter', () => {
     expect(a.getPose(s.id)).toEqual({ x: 0, y: 0, width: 4, length: 4 });
   });
 
-  it('getObject returns the structure', () => {
+  it('getNode returns the structure', () => {
     const s = useGardenStore.getState().garden.structures[0];
     const a = createStructureResizeAdapter();
-    expect(a.getObject(s.id)?.id).toBe(s.id);
-    expect(a.getObject('missing')).toBeUndefined();
+    expect(a.getNode(s.id)?.id).toBe(s.id);
+    expect(a.getNode('missing')).toBeUndefined();
   });
 
   it('applyBatch checkpoints + undo restores', () => {

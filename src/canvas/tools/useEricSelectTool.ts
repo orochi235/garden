@@ -129,7 +129,7 @@ function hitOutlineEdge(
 function trackPlantingSnap(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
   return {
     onMove(ctx) {
-      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind !== 'planting') return;
       const t = adapter.findSnapTarget?.(ctx.draggedIds[0], ctx.pointer.worldX, ctx.pointer.worldY);
       return { snap: t ?? null };
@@ -331,7 +331,7 @@ export function useEricSelectTool(
     commitInsert: () => null,
     commitPaste: () => [],
     getPasteOffset: () => ({ dx: 0, dy: 0 }),
-    insertObject: () => {},
+    insertNode: () => {},
     setSelection: () => {},
     getSelection: () => [],
     applyBatch: () => {},
