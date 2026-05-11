@@ -1,11 +1,21 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAllCultivars } from '../../model/cultivars';
 import { createPlanting, createStructure } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { PlantsListView } from './PlantsListView';
+
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; },
+  };
+})();
 
 function seedGarden() {
   useGardenStore.getState().reset();
@@ -22,6 +32,11 @@ function seedGarden() {
 }
 
 describe('PlantsListView', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', localStorageMock);
+    localStorageMock.clear();
+  });
+
   it('renders a row for each planting with the default columns', () => {
     const { cv } = seedGarden();
     render(<PlantsListView />);
@@ -139,5 +154,29 @@ describe('PlantsListView', () => {
     await user.click(row);
     expect(useUiStore.getState().selectedIds).toEqual([planting.id]);
     expect(useUiStore.getState().plantsModalOpen).toBe(true);
+  });
+
+  it('hides and shows columns via the column editor and persists to localStorage', async () => {
+    seedGarden();
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+    expect(screen.getByRole('columnheader', { name: /variety/i })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: /columns/i }));
+    await user.click(screen.getByRole('checkbox', { name: /variety/i }));
+    expect(screen.queryByRole('columnheader', { name: /variety/i })).toBeNull();
+    const stored = JSON.parse(window.localStorage.getItem('plantsListView.visibleColumns') ?? '[]');
+    expect(stored).not.toContain('variety');
+  });
+
+  it('honors localStorage visible-columns set on mount', () => {
+    window.localStorage.setItem(
+      'plantsListView.visibleColumns',
+      JSON.stringify(['name', 'rowId']),
+    );
+    seedGarden();
+    render(<PlantsListView />);
+    expect(screen.getByRole('columnheader', { name: /^id$/i })).toBeDefined();
+    // 'variety' was in the defaults but is not in our explicit list — should be hidden.
+    expect(screen.queryByRole('columnheader', { name: /variety/i })).toBeNull();
   });
 });

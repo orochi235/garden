@@ -82,6 +82,23 @@ const COLUMNS: ColumnDef[] = [
 
 const DEFAULT_VISIBLE = COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id);
 
+const LS_KEY = 'plantsListView.visibleColumns';
+
+function readVisibleColumns(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_VISIBLE;
+  try {
+    const raw = window.localStorage.getItem(LS_KEY);
+    if (!raw) return DEFAULT_VISIBLE;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !parsed.every((s) => typeof s === 'string')) {
+      return DEFAULT_VISIBLE;
+    }
+    return parsed;
+  } catch {
+    return DEFAULT_VISIBLE;
+  }
+}
+
 function compareRows(a: PlantRow, b: PlantRow, columnId: string): number {
   const valueFor = (r: PlantRow): string | number | undefined => {
     switch (columnId) {
@@ -126,8 +143,17 @@ export function PlantsListView() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [searchText, setSearchText] = useState('');
   const [stageFilter, setStageFilter] = useState<'all' | 'planting' | 'seedling'>('all');
+  const [visibleIds, setVisibleIds] = useState<string[]>(() => readVisibleColumns());
+  const [columnEditorOpen, setColumnEditorOpen] = useState(false);
+  const visibleColumns = COLUMNS.filter((c) => visibleIds.includes(c.id));
 
-  const visibleColumns = COLUMNS.filter((c) => DEFAULT_VISIBLE.includes(c.id));
+  function toggleColumn(id: string) {
+    setVisibleIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id];
+      try { window.localStorage.setItem(LS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
 
   const filteredRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -181,6 +207,25 @@ export function PlantsListView() {
               {s === 'all' ? 'All' : s === 'planting' ? 'Plantings' : 'Seedlings'}
             </button>
           ))}
+        </div>
+        <div className={styles.colEditor}>
+          <button type="button" onClick={() => setColumnEditorOpen((v) => !v)}>
+            Columns ▾
+          </button>
+          {columnEditorOpen && (
+            <div className={styles.colEditorPopover}>
+              {COLUMNS.filter((c) => c.label !== '').map((c) => (
+                <label key={c.id}>
+                  <input
+                    type="checkbox"
+                    checked={visibleIds.includes(c.id)}
+                    onChange={() => toggleColumn(c.id)}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className={styles.tableWrap}>
