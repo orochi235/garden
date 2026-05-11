@@ -17,12 +17,8 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  {
-    id: 'icon',
-    label: '',
-    defaultVisible: true,
-    render: (r) => (r.iconImage ? <img src={r.iconImage} alt="" /> : null),
-  },
+  { id: 'icon', label: '●', defaultVisible: true,
+    render: (r) => r.iconImage ? <img src={r.iconImage} alt="" /> : null },
   { id: 'name', label: 'Name', defaultVisible: true, render: (r) => r.name },
   { id: 'variety', label: 'Variety', defaultVisible: true, render: (r) => r.variety ?? '—' },
   { id: 'category', label: 'Category', defaultVisible: true, render: (r) => r.category ?? '—' },
@@ -247,7 +243,7 @@ export function PlantsListView() {
           </button>
           {columnEditorOpen && (
             <div className={styles.colEditorPopover}>
-              {COLUMNS.filter((c) => c.label !== '').map((c) => (
+              {COLUMNS.map((c) => (
                 <label key={c.id}>
                   <input
                     type="checkbox"
