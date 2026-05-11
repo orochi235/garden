@@ -69,16 +69,17 @@ export function MenuBar() {
         <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
       </div>
       <div className={styles.menus}>
-        <span onClick={handleNew}>New</span>
-        <span onClick={handleOpen}>Open</span>
-        <span onClick={() => setCollectionEditorOpen(true)}>Collection…</span>
-        <span onClick={() => setScheduleOpen(true)}>Schedule…</span>
-        <span onClick={() => setPlantsModalOpen(true)}>List</span>
-        <span
+        <button type="button" onClick={() => setCollectionEditorOpen(true)}>Collection…</button>
+        <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule">📅</button>
+        <button type="button" onClick={() => setPlantsModalOpen(true)}>List</button>
+        <button type="button" onClick={handleNew}>New</button>
+        <button type="button" onClick={handleOpen}>Load</button>
+        <button
+          type="button"
           onClick={handleSave}
           className={styles.saveButton}
           style={{ background: 'var(--theme-list-hover)' }}
-        >Save</span>
+        >Save</button>
       </div>
     </div>
   );
