@@ -1,7 +1,7 @@
 {
-  "id": "fixture-seed-with-seedlings",
+  "id": "fixture-nursery-with-seedlings",
   "version": 1,
-  "name": "Seed Starting With Seedlings",
+  "name": "Nursery With Seedlings",
   "widthFt": 20,
   "lengthFt": 20,
   "gridCellSizeFt": 1,
@@ -11,7 +11,7 @@
   "structures": [],
   "zones": [],
   "plantings": [],
-  "seedStarting": {
+  "nursery": {
     "trays": [
       {
         "id": "tray-1",

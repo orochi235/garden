@@ -11,8 +11,8 @@ interface Fixture { name: string; mode?: 'garden' | 'nursery'; }
 const FIXTURES: Fixture[] = [
   { name: 'garden-empty' },
   { name: 'garden-mixed' },
-  { name: 'seed-empty', mode: 'nursery' },
-  { name: 'seed-with-seedlings', mode: 'nursery' },
+  { name: 'nursery-empty', mode: 'nursery' },
+  { name: 'nursery-with-seedlings', mode: 'nursery' },
 ];
 
 const BASELINE_DIR = path.join(import.meta.dirname, 'baselines');
