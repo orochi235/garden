@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTray, trayInteriorOffsetIn } from '../model/seedStarting';
+import { createTray, trayInteriorOffsetIn } from '../model/nursery';
 import {
   cellCenterInches,
   findSeedlingsInRect,
@@ -7,7 +7,7 @@ import {
   hitTestCellInches,
 } from './seedStartingHitTest';
 import { trayWorldOrigin } from './adapters/seedStartingScene';
-import type { Seedling, SeedStartingState } from '../model/seedStarting';
+import type { Seedling, NurseryState } from '../model/nursery';
 
 const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
 
@@ -83,7 +83,7 @@ describe('world-coord conversion', () => {
   // helpers (caller subtracts origin → tray-local) to land on the correct cell.
   const t1 = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 'a' });
   const t2 = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 'b' });
-  const ss: SeedStartingState = { trays: [t1, t2], seedlings: [] };
+  const ss: NurseryState = { trays: [t1, t2], seedlings: [] };
   const o2 = trayWorldOrigin(t2, ss);
 
   it('non-zero tray origin: t2 has y > 0 (column-major auto-flow)', () => {

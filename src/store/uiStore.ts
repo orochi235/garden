@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
 import type { Season } from '../model/species';
-import type { CellSize } from '../model/seedStarting';
+import type { CellSize } from '../model/nursery';
 import type { PaletteEntry } from '../components/palette/paletteData';
 import type { ActiveDragPreview } from '../canvas/drag/putativeDrag';
 

@@ -27,7 +27,7 @@ export function useSowCellTool(): Tool<SowScratch> {
             const ui = useUiStore.getState();
             const cultivarId = ui.seedDragCultivarId ?? ui.armedCultivarId;
             if (!cultivarId) return 'pass';
-            const ss = useGardenStore.getState().garden.seedStarting;
+            const ss = useGardenStore.getState().garden.nursery;
             for (const tray of ss.trays) {
               const o = trayWorldOrigin(tray, ss);
               const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);

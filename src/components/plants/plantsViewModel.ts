@@ -76,10 +76,10 @@ export function buildPlantRows(
     });
   }
 
-  for (const s of garden.seedStarting.seedlings) {
+  for (const s of garden.nursery.seedlings) {
     const cv = getCultivar(s.cultivarId);
     const actions = actionsForPlant(schedule, s.id);
-    const tray = s.trayId ? garden.seedStarting.trays.find((t) => t.id === s.trayId) : null;
+    const tray = s.trayId ? garden.nursery.trays.find((t) => t.id === s.trayId) : null;
     rows.push({
       id: s.id,
       kind: 'seedling',

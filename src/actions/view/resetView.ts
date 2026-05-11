@@ -25,7 +25,7 @@ export function resetCurrentCanvasView(): void {
  */
 export function zoomToTray(trayId: string): void {
   const ui = useUiStore.getState();
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   if (!ss.trays.find((t) => t.id === trayId)) return;
   ui.setCurrentTrayId(trayId);
   ui.bumpSeedStartingViewResetTick();

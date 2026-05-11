@@ -28,8 +28,8 @@ export const deleteAction: ActionDescriptor = {
     for (const s of garden.structures) if (ids.has(s.id)) removedParents.add(s.id);
     for (const z of garden.zones) if (ids.has(z.id)) removedParents.add(z.id);
     const plantings = garden.plantings.filter((p) => !ids.has(p.id) && !removedParents.has(p.parentId));
-    // Seedlings (seed-starting mode): remove selected seedlings and clear their tray cells.
-    const ss = garden.seedStarting;
+    // Seedlings (nursery mode): remove selected seedlings and clear their tray cells.
+    const ss = garden.nursery;
     const remainingSeedlings = ss.seedlings.filter((s) => !ids.has(s.id));
     const removedSeedlingIds = new Set(ss.seedlings.filter((s) => ids.has(s.id)).map((s) => s.id));
     const trays = removedSeedlingIds.size === 0 ? ss.trays : ss.trays.map((tray) => {
@@ -46,7 +46,7 @@ export const deleteAction: ActionDescriptor = {
         structures,
         zones,
         plantings,
-        seedStarting: { ...state.garden.seedStarting, seedlings: remainingSeedlings, trays },
+        nursery: { ...state.garden.nursery, seedlings: remainingSeedlings, trays },
       },
     }));
     useUiStore.getState().clearSelection();

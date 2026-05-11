@@ -56,7 +56,7 @@ function publishMarquee(s: SeedSelectScratch['marquee']): void {
 
 /** True when (worldX, worldY) lies on a seedling-occupied cell. */
 function pointHitsSeedling(worldX: number, worldY: number): boolean {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   for (const tray of ss.trays) {
     const o = trayWorldOrigin(tray, ss);
     const cell = hitTestCellInches(tray, worldX - o.x, worldY - o.y);
@@ -96,7 +96,7 @@ export function useSeedSelectTool(
             if (pointHitsSeedling(ctx.worldX, ctx.worldY)) return 'pass';
             // Check for a label-area click — trigger inline rename.
             if (onLabelClick && viewRef?.current) {
-              const ss = useGardenStore.getState().garden.seedStarting;
+              const ss = useGardenStore.getState().garden.nursery;
               const hit = hitTestTrayLabel(ss.trays, ss, viewRef.current, ctx.worldX, ctx.worldY);
               if (hit) {
                 onLabelClick(hit.id);
@@ -142,7 +142,7 @@ export function useSeedSelectTool(
           onEnd: (_e, ctx) => {
             const m = ctx.scratch.marquee;
             if (!m) return 'pass';
-            const ss = useGardenStore.getState().garden.seedStarting;
+            const ss = useGardenStore.getState().garden.nursery;
             const rect = {
               x: m.startX,
               y: m.startY,

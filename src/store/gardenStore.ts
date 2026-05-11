@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { getSlots, getGridCells } from '../model/layout';
 import type { Layout } from '../model/layout';
-import { createSeedling, emptySeedStartingState, getCell, setCell } from '../model/seedStarting';
-import type { Seedling, Tray } from '../model/seedStarting';
+import { createSeedling, emptyNurseryState, getCell, setCell } from '../model/nursery';
+import type { NurseryState, Seedling, Tray } from '../model/nursery';
 import type { Cultivar } from '../model/cultivars';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
 import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
@@ -135,7 +135,13 @@ function backfillGarden(garden: Garden): Garden {
       s.clipChildren = true;
     }
   }
-  if (!garden.seedStarting) garden.seedStarting = emptySeedStartingState();
+  // Migrate legacy `seedStarting` field (pre-Nursery-rename save format).
+  const legacy = garden as unknown as { seedStarting?: NurseryState };
+  if (legacy.seedStarting && !garden.nursery) {
+    garden.nursery = legacy.seedStarting;
+    delete legacy.seedStarting;
+  }
+  if (!garden.nursery) garden.nursery = emptyNurseryState();
   if (!garden.collection) garden.collection = [];
   return garden;
 }
@@ -172,7 +178,7 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
   for (const s of garden.structures) live.add(s.id);
   for (const z of garden.zones) live.add(z.id);
   for (const p of garden.plantings) live.add(p.id);
-  for (const sd of garden.seedStarting?.seedlings ?? []) live.add(sd.id);
+  for (const sd of garden.nursery?.seedlings ?? []) live.add(sd.id);
   return ids.filter((id) => live.has(id));
 }
 
@@ -195,8 +201,8 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     replace: boolean,
     selector: (row: number, col: number) => boolean,
   ) {
-    const { seedStarting } = get().garden;
-    const tray = seedStarting.trays.find((t) => t.id === trayId);
+    const { nursery } = get().garden;
+    const tray = nursery.trays.find((t) => t.id === trayId);
     if (!tray) return;
     let updatedTray = tray;
     const newSeedlings: Seedling[] = [];
@@ -216,12 +222,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     }
     if (newSeedlings.length === 0) return;
     const remainingSeedlings = removedIds.size
-      ? seedStarting.seedlings.filter((s) => !removedIds.has(s.id))
-      : seedStarting.seedlings;
+      ? nursery.seedlings.filter((s) => !removedIds.has(s.id))
+      : nursery.seedlings;
     commitPatch({
-      seedStarting: {
-        ...seedStarting,
-        trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+      nursery: {
+        ...nursery,
+        trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
         seedlings: [...remainingSeedlings, ...newSeedlings],
       },
     });
@@ -456,57 +462,57 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     // --- Seed Starting ---
 
     addTray: (tray) => {
-      const { seedStarting } = get().garden;
+      const { nursery } = get().garden;
       commitPatch({
-        seedStarting: { ...seedStarting, trays: [...seedStarting.trays, tray] },
+        nursery: { ...nursery, trays: [...nursery.trays, tray] },
       });
       useUiStore.getState().bumpSeedStartingViewResetTick();
     },
 
     /** Add a tray without creating an undo entry — used when bootstrapping seed-starting mode. */
     addTraySilent: (tray) => {
-      const { seedStarting } = get().garden;
-      patch({ seedStarting: { ...seedStarting, trays: [...seedStarting.trays, tray] } });
+      const { nursery } = get().garden;
+      patch({ nursery: { ...nursery, trays: [...nursery.trays, tray] } });
     },
 
     removeTray: (trayId) => {
-      const { seedStarting } = get().garden;
+      const { nursery } = get().garden;
       commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.filter((t) => t.id !== trayId),
-          seedlings: seedStarting.seedlings.filter((s) => s.trayId !== trayId),
+        nursery: {
+          ...nursery,
+          trays: nursery.trays.filter((t) => t.id !== trayId),
+          seedlings: nursery.seedlings.filter((s) => s.trayId !== trayId),
         },
       });
     },
 
     renameTray: (trayId, label) => {
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray || tray.label === label) return;
       commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.map((t) => (t.id === trayId ? { ...t, label } : t)),
+        nursery: {
+          ...nursery,
+          trays: nursery.trays.map((t) => (t.id === trayId ? { ...t, label } : t)),
         },
       });
     },
 
     reorderTrays: (fromIndex, toIndex) => {
-      const { seedStarting } = get().garden;
-      const n = seedStarting.trays.length;
+      const { nursery } = get().garden;
+      const n = nursery.trays.length;
       if (fromIndex === toIndex) return;
       if (fromIndex < 0 || fromIndex >= n) return;
       if (toIndex < 0 || toIndex >= n) return;
-      const next = seedStarting.trays.slice();
+      const next = nursery.trays.slice();
       const [moved] = next.splice(fromIndex, 1);
       next.splice(toIndex, 0, moved);
-      commitPatch({ seedStarting: { ...seedStarting, trays: next } });
+      commitPatch({ nursery: { ...nursery, trays: next } });
     },
 
     sowCell: (trayId, row, col, cultivarId, opts) => {
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray) return;
       const slot = getCell(tray, row, col);
       if (!slot) return;
@@ -515,12 +521,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const seedling = createSeedling({ cultivarId, trayId, row, col });
       const updatedTray = setCell(tray, row, col, { state: 'sown', seedlingId: seedling.id });
       const filteredSeedlings = replacedId
-        ? seedStarting.seedlings.filter((s) => s.id !== replacedId)
-        : seedStarting.seedlings;
+        ? nursery.seedlings.filter((s) => s.id !== replacedId)
+        : nursery.seedlings;
       commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+        nursery: {
+          ...nursery,
+          trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings: [...filteredSeedlings, seedling],
         },
       });
@@ -531,23 +537,23 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     },
 
     fillRow: (trayId, row, cultivarId, opts) => {
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray || row < 0 || row >= tray.rows) return;
       fillCells(trayId, cultivarId, opts?.replace ?? false, (r, _c) => r === row);
     },
 
     fillColumn: (trayId, col, cultivarId, opts) => {
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray || col < 0 || col >= tray.cols) return;
       fillCells(trayId, cultivarId, opts?.replace ?? false, (_r, c) => c === col);
     },
 
     moveSeedling: (trayId, fromRow, fromCol, toRow, toCol) => {
       if (fromRow === toRow && fromCol === toCol) return;
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray) return;
       const fromSlot = getCell(tray, fromRow, fromCol);
       const toSlot = getCell(tray, toRow, toCol);
@@ -558,15 +564,15 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const movedIds = new Set<string>();
       if (fromSlot.seedlingId) movedIds.add(fromSlot.seedlingId);
       if (toSlot.seedlingId) movedIds.add(toSlot.seedlingId);
-      const seedlings = seedStarting.seedlings.map((s) => {
+      const seedlings = nursery.seedlings.map((s) => {
         if (s.id === fromSlot.seedlingId) return { ...s, row: toRow, col: toCol };
         if (s.id === toSlot.seedlingId) return { ...s, row: fromRow, col: fromCol };
         return s;
       });
       commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.map((t) => (t.id === trayId ? updated : t)),
+        nursery: {
+          ...nursery,
+          trays: nursery.trays.map((t) => (t.id === trayId ? updated : t)),
           seedlings,
         },
       });
@@ -574,11 +580,11 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     moveSeedlingGroup: (trayId, moves) => {
       if (moves.length === 0) return;
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray) return;
       const movingIds = new Set(moves.map((m) => m.seedlingId));
-      const seedlingById = new Map(seedStarting.seedlings.map((s) => [s.id, s]));
+      const seedlingById = new Map(nursery.seedlings.map((s) => [s.id, s]));
       // Skip the no-op case where every move keeps its seedling in place.
       let anyChange = false;
       for (const m of moves) {
@@ -605,15 +611,15 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         slots[m.toRow * tray.cols + m.toCol] = { state: 'sown', seedlingId: m.seedlingId };
       }
       const updatedTray = { ...tray, slots };
-      const seedlings = seedStarting.seedlings.map((s) => {
+      const seedlings = nursery.seedlings.map((s) => {
         if (!movingIds.has(s.id)) return s;
         const m = moves.find((mm) => mm.seedlingId === s.id)!;
         return { ...s, trayId, row: m.toRow, col: m.toCol };
       });
       commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+        nursery: {
+          ...nursery,
+          trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
           seedlings,
         },
       });
@@ -621,9 +627,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     moveSeedlingsAcrossTrays: (moves) => {
       if (moves.length === 0) return;
-      const { seedStarting } = get().garden;
-      const seedlingById = new Map(seedStarting.seedlings.map((s) => [s.id, s]));
-      const trayById = new Map(seedStarting.trays.map((t) => [t.id, t]));
+      const { nursery } = get().garden;
+      const seedlingById = new Map(nursery.seedlings.map((s) => [s.id, s]));
+      const trayById = new Map(nursery.trays.map((t) => [t.id, t]));
 
       // Validate every move references known entities and fits in its dest.
       for (const m of moves) {
@@ -695,34 +701,34 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         slots[m.toRow * tray.cols + m.toCol] = { state: 'sown', seedlingId: m.seedlingId };
       }
 
-      const newTrays = seedStarting.trays.map((t) => {
+      const newTrays = nursery.trays.map((t) => {
         const slots = slotsByTrayId.get(t.id);
         return slots ? { ...t, slots } : t;
       });
-      const newSeedlings = seedStarting.seedlings.map((s) => {
+      const newSeedlings = nursery.seedlings.map((s) => {
         if (!movingIds.has(s.id)) return s;
         const m = moves.find((mm) => mm.seedlingId === s.id)!;
         return { ...s, trayId: m.toTrayId, row: m.toRow, col: m.toCol };
       });
 
       commitPatch({
-        seedStarting: { ...seedStarting, trays: newTrays, seedlings: newSeedlings },
+        nursery: { ...nursery, trays: newTrays, seedlings: newSeedlings },
       });
     },
 
     clearCell: (trayId, row, col) => {
-      const { seedStarting } = get().garden;
-      const tray = seedStarting.trays.find((t) => t.id === trayId);
+      const { nursery } = get().garden;
+      const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray) return;
       const slot = getCell(tray, row, col);
       if (!slot || slot.state === 'empty') return;
       const seedlingId = slot.seedlingId;
       const updatedTray = setCell(tray, row, col, { state: 'empty', seedlingId: null });
       commitPatch({
-        seedStarting: {
-          ...seedStarting,
-          trays: seedStarting.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-          seedlings: seedStarting.seedlings.filter((s) => s.id !== seedlingId),
+        nursery: {
+          ...nursery,
+          trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+          seedlings: nursery.seedlings.filter((s) => s.id !== seedlingId),
         },
       });
     },

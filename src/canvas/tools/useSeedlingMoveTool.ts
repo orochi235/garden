@@ -13,7 +13,7 @@ import {
   hitTrayDropTarget,
   type TrayGutterMeta,
 } from '../layouts/trayDropTargets';
-import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/seedStarting';
+import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/nursery';
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
 import { trayWorldOrigin, type SeedStartingSceneAdapter } from '../adapters/seedStartingScene';
 import {
@@ -72,7 +72,7 @@ const initScratch = (): SeedlingMoveScratch => ({
 });
 
 function findSeedlingAt(worldX: number, worldY: number): { tray: Tray; seedling: Seedling } | null {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   for (const tray of ss.trays) {
     const o = trayWorldOrigin(tray, ss);
     const cell = hitTestCellInches(tray, worldX - o.x, worldY - o.y);
@@ -167,7 +167,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
           }
         }
         if (!trayId) return [];
-        const tray = useGardenStore.getState().garden.seedStarting.trays.find((t) => t.id === trayId);
+        const tray = useGardenStore.getState().garden.nursery.trays.find((t) => t.id === trayId);
         if (!tray) return [];
         const scale = view.scale;
         const cellPx = tray.cellPitchIn * scale;
@@ -289,7 +289,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
           onMove: (_e, ctx) => {
             if (!ctx.scratch.active) return 'pass';
             ctx.scratch.currentWorld = { x: ctx.worldX, y: ctx.worldY };
-            const ss = useGardenStore.getState().garden.seedStarting;
+            const ss = useGardenStore.getState().garden.nursery;
             const tray = ss.trays.find((t) => t.id === ctx.scratch.trayId);
             if (!tray) return 'claim';
 
@@ -402,7 +402,7 @@ export function useSeedlingMoveTool(adapter: SeedStartingSceneAdapter): Tool<See
           onEnd: (_e, ctx) => {
             if (!ctx.scratch.active) return 'pass';
             const trayId = ctx.scratch.trayId!;
-            const ss = useGardenStore.getState().garden.seedStarting;
+            const ss = useGardenStore.getState().garden.nursery;
             const tray = ss.trays.find((t) => t.id === trayId);
             const cleanup = () => {
               useUiStore.getState().setSeedFillPreview(null);

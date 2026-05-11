@@ -6,7 +6,7 @@ import {
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
 import type { Garden } from '../../model/types';
-import { trayInteriorOffsetIn } from '../../model/seedStarting';
+import { trayInteriorOffsetIn } from '../../model/nursery';
 import { isDebugEnabled } from '../debug';
 
 type Mode = 'garden' | 'seed-starting';
@@ -26,7 +26,7 @@ function bboxesGarden(g: Garden): Bbox[] {
 
 function bboxesSeedStarting(g: Garden): Bbox[] {
   // Tray world origin is (0,0) (see seedStartingScene adapter).
-  const trays = g.seedStarting.trays;
+  const trays = g.nursery.trays;
   const out: Bbox[] = [];
   for (const t of trays) {
     out.push({ x: 0, y: 0, w: t.widthIn, h: t.heightIn, label: t.label || t.id });
@@ -77,7 +77,7 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
       if (mode === 'garden') {
         x = 0; y = 0; w = g.widthFt; h = g.lengthFt;
       } else {
-        const t = g.seedStarting.trays[0];
+        const t = g.nursery.trays[0];
         if (!t) return [];
         x = 0; y = 0; w = t.widthIn; h = t.heightIn;
       }
@@ -153,7 +153,7 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
       if (mode === 'garden') {
         step = g.gridCellSizeFt; w = g.widthFt; h = g.lengthFt;
       } else {
-        const t = g.seedStarting.trays[0];
+        const t = g.nursery.trays[0];
         if (!t) return [];
         step = t.cellPitchIn; w = t.widthIn; h = t.heightIn;
       }

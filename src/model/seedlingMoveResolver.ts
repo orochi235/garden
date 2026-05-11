@@ -1,4 +1,4 @@
-import type { Tray } from './seedStarting';
+import type { Tray } from './nursery';
 
 export interface PendingMove {
   seedlingId: string;

@@ -2,7 +2,7 @@ import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
 import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
-import { trayInteriorOffsetIn } from '../../model/seedStarting';
+import { trayInteriorOffsetIn } from '../../model/nursery';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 
 /**
@@ -95,7 +95,7 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
      * same colors, same radius.
      */
     renderPreview(putative, view): DrawCommand[] {
-      const ss = useGardenStore.getState().garden.seedStarting;
+      const ss = useGardenStore.getState().garden.nursery;
       const tray = ss.trays.find((t) => t.id === putative.trayId);
       if (!tray || putative.cells.length === 0) return [];
 

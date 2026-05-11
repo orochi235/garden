@@ -1,5 +1,5 @@
 import type { AlmanacFilters } from '../store/uiStore';
-import type { CellSize } from './seedStarting';
+import type { CellSize } from './nursery';
 import type { Species } from './species';
 import { resolveSeedStarting, type SeedStartingFields } from './floraSeedStarting';
 import type { Cultivar } from './cultivars';

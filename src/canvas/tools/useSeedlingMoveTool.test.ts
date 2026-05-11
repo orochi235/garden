@@ -7,7 +7,7 @@ import {
 } from './useSeedlingMoveTool';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { createSeedStartingSceneAdapter } from '../adapters/seedStartingScene';
 import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
 
@@ -94,7 +94,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     useUiStore.getState().setCurrentTrayId(tray.id);
     // Sow a seedling so we have something to drag.
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'tomato');
-    const seedling = useGardenStore.getState().garden.seedStarting.seedlings[0];
+    const seedling = useGardenStore.getState().garden.nursery.seedlings[0];
 
     const { result } = renderTool();
     const tool = result.current;
@@ -168,7 +168,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     useUiStore.getState().setCurrentTrayId(tray.id);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'tomato');
     useGardenStore.getState().sowCell(tray.id, 0, 1, 'tomato');
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     useUiStore.getState().setSelection(ss.seedlings.map((s) => s.id));
 
     const { result } = renderTool();
@@ -200,8 +200,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     useGardenStore.getState().addTray(b);
     useUiStore.getState().setCurrentTrayId(a.id);
     useGardenStore.getState().sowCell(a.id, 0, 0, 'tomato');
-    const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
-    const ss0 = useGardenStore.getState().garden.seedStarting;
+    const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
+    const ss0 = useGardenStore.getState().garden.nursery;
     // World origin for tray B (use the same fn the tool uses).
     const trayBOrigin = (() => {
       // Recompute via the adapter export — column-major auto-flow.
@@ -231,7 +231,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     tool.drag!.onEnd!(makePointerMove(), ctxEnd);
 
     // Seedling now lives in tray B.
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     const trayB = ss.trays.find((t) => t.id === b.id)!;
     expect(trayB.slots[1 * trayB.cols + 1].seedlingId).toBe(sId);
     const moved = ss.seedlings.find((s) => s.id === sId)!;
@@ -241,7 +241,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     // Single undo restores.
     useGardenStore.getState().undo();
-    const ss2 = useGardenStore.getState().garden.seedStarting;
+    const ss2 = useGardenStore.getState().garden.nursery;
     expect(ss2.seedlings.find((s) => s.id === sId)!.trayId).toBe(a.id);
   });
 
@@ -254,7 +254,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     useGardenStore.getState().sowCell(a.id, 0, 0, 'tomato');
     useGardenStore.getState().sowCell(b.id, 1, 1, 'tomato'); // occupies dest
 
-    const ssBefore = useGardenStore.getState().garden.seedStarting;
+    const ssBefore = useGardenStore.getState().garden.nursery;
 
     const { result } = renderTool();
     const tool = result.current;
@@ -275,7 +275,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     tool.drag!.onEnd!(makePointerMove(), ctxEnd);
 
     // Source seedling unchanged.
-    const ssAfter = useGardenStore.getState().garden.seedStarting;
+    const ssAfter = useGardenStore.getState().garden.nursery;
     const aSeedling = ssAfter.seedlings.find((s) => s.trayId === a.id);
     expect(aSeedling).toBeDefined();
     expect(aSeedling!.row).toBe(0);
@@ -288,7 +288,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     useGardenStore.getState().addTray(a);
     useUiStore.getState().setCurrentTrayId(a.id);
     useGardenStore.getState().sowCell(a.id, 0, 0, 'tomato');
-    const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+    const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
 
     const { result } = renderTool();
     const tool = result.current;
@@ -301,7 +301,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const ctxEnd = makeMoveCtx(off.x + 2.5 * a.cellPitchIn, off.y + 1.5 * a.cellPitchIn, scratch);
     tool.drag!.onEnd!(makePointerMove(), ctxEnd);
 
-    const trayA = useGardenStore.getState().garden.seedStarting.trays[0];
+    const trayA = useGardenStore.getState().garden.nursery.trays[0];
     expect(trayA.slots[1 * trayA.cols + 2].seedlingId).toBe(sId);
     expect(trayA.slots[0].state).toBe('empty');
   });

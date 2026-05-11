@@ -1,4 +1,4 @@
-import { type CellSize, createTray, type Tray } from './seedStarting';
+import { type CellSize, createTray, type Tray } from './nursery';
 
 export interface TrayPreset {
   id: string;

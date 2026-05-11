@@ -8,7 +8,7 @@ import {
 } from './seedStartingScene';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import type { Op } from '@orochi235/weasel';
 
 function makeTray() {
@@ -27,7 +27,7 @@ describe('seedStartingSceneAdapter', () => {
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
     useGardenStore.getState().sowCell(tray.id, 1, 2, 'basil-genovese');
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     const t = ss.trays[0];
     const sA = ss.seedlings.find((s) => s.row === 0 && s.col === 0)!;
     const sB = ss.seedlings.find((s) => s.row === 1 && s.col === 2)!;
@@ -78,7 +78,7 @@ describe('seedStartingSceneAdapter', () => {
     a.setPose(sA.id, target);
     const moved = useGardenStore
       .getState()
-      .garden.seedStarting.seedlings.find((s) => s.id === sA.id)!;
+      .garden.nursery.seedlings.find((s) => s.id === sA.id)!;
     expect(moved.row).toBe(0);
     expect(moved.col).toBe(1);
   });
@@ -151,7 +151,7 @@ describe('seedStartingSceneAdapter', () => {
           createTray({ rows: t.rows, cols: t.cols, cellSize: 'medium', label: t.label }),
         );
       }
-      return useGardenStore.getState().garden.seedStarting;
+      return useGardenStore.getState().garden.nursery;
     }
 
     it('n=1: single tray sits at (0, 0); bounds equal tray dims', () => {

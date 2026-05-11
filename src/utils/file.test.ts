@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptySeedStartingState } from '../model/seedStarting';
+import { emptyNurseryState } from '../model/nursery';
 import { createGarden } from '../model/types';
 import { getCultivar } from '../model/cultivars';
 import { deserializeGarden, serializeGarden } from './file';
@@ -28,13 +28,35 @@ describe('deserializeGarden', () => {
   it('throws on missing required fields', () => {
     expect(() => deserializeGarden(JSON.stringify({ name: 'test' }))).toThrow();
   });
-  it('backfills seedStarting when missing from legacy save', () => {
+  it('backfills nursery when missing from legacy save', () => {
     const garden = createGarden({ name: 'Legacy', widthFt: 20, lengthFt: 15 });
     const json = serializeGarden(garden);
     const parsed = JSON.parse(json);
-    delete parsed.seedStarting;
+    delete parsed.nursery;
     const result = deserializeGarden(JSON.stringify(parsed));
-    expect(result.seedStarting).toEqual(emptySeedStartingState());
+    expect(result.nursery).toEqual(emptyNurseryState());
+  });
+  it('migrates legacy `seedStarting` field to `nursery`', () => {
+    const garden = createGarden({ name: 'Legacy', widthFt: 20, lengthFt: 15 });
+    const json = serializeGarden(garden);
+    const parsed = JSON.parse(json);
+    // Simulate a pre-rename save file by moving nursery → seedStarting on disk.
+    parsed.seedStarting = parsed.nursery;
+    delete parsed.nursery;
+    parsed.seedStarting.trays.push({
+      id: 'legacy-tray',
+      label: 't',
+      rows: 1, cols: 1,
+      cellSize: 'small',
+      cellPitchIn: 1.1,
+      widthIn: 1.8, heightIn: 1.8,
+      slots: [{ state: 'empty', seedlingId: null }],
+    });
+    const result = deserializeGarden(JSON.stringify(parsed));
+    expect(result.nursery.trays).toHaveLength(1);
+    expect(result.nursery.trays[0].id).toBe('legacy-tray');
+    // The legacy key must not survive.
+    expect((result as unknown as { seedStarting?: unknown }).seedStarting).toBeUndefined();
   });
   it('strips builtin cultivars from collection on serialize, re-hydrates on deserialize', () => {
     const garden = createGarden({ name: 'T', widthFt: 10, lengthFt: 10 });

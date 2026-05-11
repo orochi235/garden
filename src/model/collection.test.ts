@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addToCollection, findInUseRemovals, getCollectionCultivar, hasCultivar, removeFromCollection, snapshotCultivar, type Collection } from './collection';
 import type { Planting } from './types';
-import type { Seedling } from './seedStarting';
+import type { Seedling } from './nursery';
 import { getAllCultivars } from './cultivars';
 
 describe('snapshotCultivar', () => {

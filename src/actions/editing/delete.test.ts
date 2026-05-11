@@ -3,7 +3,7 @@ import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { deleteAction } from './delete';
 import { createStructure } from '../../model/types';
-import { createTray } from '../../model/seedStarting';
+import { createTray } from '../../model/nursery';
 import type { ActionContext } from '../types';
 
 const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true }, target: { kind: 'selection' } };
@@ -40,14 +40,14 @@ describe('deleteAction', () => {
 
   it('deletes selected seedlings and clears their tray slots', () => {
     useGardenStore.getState().addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
-    const trayId = useGardenStore.getState().garden.seedStarting.trays[0].id;
+    const trayId = useGardenStore.getState().garden.nursery.trays[0].id;
     useGardenStore.getState().sowCell(trayId, 0, 0, 'basil-genovese');
     useGardenStore.getState().sowCell(trayId, 0, 1, 'basil-genovese');
-    const seedlings = useGardenStore.getState().garden.seedStarting.seedlings;
+    const seedlings = useGardenStore.getState().garden.nursery.seedlings;
     const [sA, sB] = seedlings;
     useUiStore.getState().setSelection([sA.id]);
     deleteAction.execute(ctx);
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     expect(ss.seedlings.map((s) => s.id)).toEqual([sB.id]);
     const slot = ss.trays[0].slots[0]; // row=0, col=0
     expect(slot.state).toBe('empty');
@@ -56,14 +56,14 @@ describe('deleteAction', () => {
 
   it('seedling delete is a single undo checkpoint', () => {
     useGardenStore.getState().addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
-    const trayId = useGardenStore.getState().garden.seedStarting.trays[0].id;
+    const trayId = useGardenStore.getState().garden.nursery.trays[0].id;
     useGardenStore.getState().sowCell(trayId, 0, 0, 'basil-genovese');
-    const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+    const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
     useUiStore.getState().setSelection([sId]);
     deleteAction.execute(ctx);
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(0);
     useGardenStore.getState().undo();
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(1);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(1);
   });
 
   it('group-expanded delete is a single undo checkpoint', () => {

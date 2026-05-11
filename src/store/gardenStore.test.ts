@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { emptySeedStartingState } from '../model/seedStarting';
+import { emptyNurseryState } from '../model/nursery';
 import { blankGarden, useGardenStore } from './gardenStore';
 import { useUiStore } from './uiStore';
 
@@ -216,7 +216,7 @@ describe('gardenStore', () => {
       structures: [],
       zones: [],
       plantings: [],
-      seedStarting: emptySeedStartingState(),
+      nursery: emptyNurseryState(),
       collection: [],
     };
     loadGarden(data);
@@ -224,11 +224,11 @@ describe('gardenStore', () => {
     expect(useGardenStore.getState().garden.gridCellSizeFt).toBe(0.5);
   });
 
-  it('loadGarden backfills seedStarting when missing', () => {
+  it('loadGarden backfills nursery when missing', () => {
     const legacy = { ...blankGarden() } as any;
-    delete legacy.seedStarting;
+    delete legacy.nursery;
     useGardenStore.getState().loadGarden(legacy);
-    expect(useGardenStore.getState().garden.seedStarting).toEqual(emptySeedStartingState());
+    expect(useGardenStore.getState().garden.nursery).toEqual(emptyNurseryState());
   });
 });
 
@@ -271,7 +271,7 @@ describe('seed-starting actions', () => {
   it('addTray appends a tray and sets currentTrayId', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
-    expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(1);
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(1);
   });
 
   describe('reorderTrays', () => {
@@ -288,44 +288,44 @@ describe('seed-starting actions', () => {
     it('moves a tray from one index to another', () => {
       seedThreeTrays();
       useGardenStore.getState().reorderTrays(0, 2);
-      const ids = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+      const ids = useGardenStore.getState().garden.nursery.trays.map((t) => t.id);
       expect(ids).toEqual(['tray-b', 'tray-c', 'tray-a']);
     });
 
     it('moves a tray backwards', () => {
       seedThreeTrays();
       useGardenStore.getState().reorderTrays(2, 0);
-      const ids = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+      const ids = useGardenStore.getState().garden.nursery.trays.map((t) => t.id);
       expect(ids).toEqual(['tray-c', 'tray-a', 'tray-b']);
     });
 
     it('no-ops when fromIndex === toIndex', () => {
       seedThreeTrays();
-      const before = useGardenStore.getState().garden.seedStarting.trays;
+      const before = useGardenStore.getState().garden.nursery.trays;
       useGardenStore.getState().reorderTrays(1, 1);
-      expect(useGardenStore.getState().garden.seedStarting.trays).toBe(before);
+      expect(useGardenStore.getState().garden.nursery.trays).toBe(before);
     });
 
     it('no-ops on out-of-bounds indices', () => {
       seedThreeTrays();
-      const before = useGardenStore.getState().garden.seedStarting.trays;
+      const before = useGardenStore.getState().garden.nursery.trays;
       useGardenStore.getState().reorderTrays(-1, 1);
       useGardenStore.getState().reorderTrays(0, 99);
       useGardenStore.getState().reorderTrays(5, 0);
-      expect(useGardenStore.getState().garden.seedStarting.trays).toBe(before);
+      expect(useGardenStore.getState().garden.nursery.trays).toBe(before);
     });
 
     it('creates exactly one undo step', () => {
       seedThreeTrays();
-      const idsBefore = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+      const idsBefore = useGardenStore.getState().garden.nursery.trays.map((t) => t.id);
       useGardenStore.getState().reorderTrays(0, 2);
-      expect(useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id)).toEqual([
+      expect(useGardenStore.getState().garden.nursery.trays.map((t) => t.id)).toEqual([
         'tray-b',
         'tray-c',
         'tray-a',
       ]);
       useGardenStore.getState().undo();
-      expect(useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id)).toEqual(idsBefore);
+      expect(useGardenStore.getState().garden.nursery.trays.map((t) => t.id)).toEqual(idsBefore);
     });
   });
 
@@ -334,26 +334,26 @@ describe('seed-starting actions', () => {
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
     useGardenStore.getState().removeTray(tray.id);
-    expect(useGardenStore.getState().garden.seedStarting.trays).toHaveLength(0);
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(0);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(0);
   });
 
   it('sowCell creates a seedling and marks slot sown', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 1, 2, 'basil-genovese');
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots[1 * t.cols + 2].state).toBe('sown');
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(1);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(1);
   });
 
   it('fillTray fills all empty cells with seedlings', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().fillTray(tray.id, 'basil-genovese');
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(36);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(36);
   });
 
   it('fillTray only fills empty cells when one is already sown', () => {
@@ -361,8 +361,8 @@ describe('seed-starting actions', () => {
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
     useGardenStore.getState().fillTray(tray.id, 'basil-genovese');
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(36);
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(36);
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots.every((s) => s.state === 'sown')).toBe(true);
   });
 
@@ -370,14 +370,14 @@ describe('seed-starting actions', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().fillRow(tray.id, 1, 'basil-genovese');
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     for (let r = 0; r < t.rows; r++) {
       for (let c = 0; c < t.cols; c++) {
         const expected = r === 1 ? 'sown' : 'empty';
         expect(t.slots[r * t.cols + c].state).toBe(expected);
       }
     }
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.cols);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(t.cols);
   });
 
   it('fillRow skips already-sown cells', () => {
@@ -385,51 +385,51 @@ describe('seed-starting actions', () => {
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
     useGardenStore.getState().fillRow(tray.id, 0, 'basil-genovese');
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots.slice(0, t.cols).every((s) => s.state === 'sown')).toBe(true);
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.cols);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(t.cols);
   });
 
   it('fillRow ignores out-of-bounds row', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().fillRow(tray.id, 99, 'basil-genovese');
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(0);
   });
 
   it('fillColumn only fills cells in the specified column', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().fillColumn(tray.id, 2, 'basil-genovese');
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     for (let r = 0; r < t.rows; r++) {
       for (let c = 0; c < t.cols; c++) {
         const expected = c === 2 ? 'sown' : 'empty';
         expect(t.slots[r * t.cols + c].state).toBe(expected);
       }
     }
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(t.rows);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(t.rows);
   });
 
   it('fillColumn ignores out-of-bounds column', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().fillColumn(tray.id, 99, 'basil-genovese');
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(0);
   });
 
   it('moveSeedling moves a seedling into an empty cell', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
-    const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+    const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
     useGardenStore.getState().moveSeedling(tray.id, 0, 0, 1, 2);
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots[0 * t.cols + 0].state).toBe('empty');
     const dest = t.slots[1 * t.cols + 2];
     expect(dest.state).toBe('sown');
     expect(dest.seedlingId).toBe(sId);
-    const seedling = useGardenStore.getState().garden.seedStarting.seedlings[0];
+    const seedling = useGardenStore.getState().garden.nursery.seedlings[0];
     expect(seedling.row).toBe(1);
     expect(seedling.col).toBe(2);
   });
@@ -439,11 +439,11 @@ describe('seed-starting actions', () => {
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
     useGardenStore.getState().sowCell(tray.id, 1, 1, 'basil-genovese');
-    const before = useGardenStore.getState().garden.seedStarting.trays[0];
+    const before = useGardenStore.getState().garden.nursery.trays[0];
     const idA = before.slots[0 * before.cols + 0].seedlingId;
     const idB = before.slots[1 * before.cols + 1].seedlingId;
     useGardenStore.getState().moveSeedling(tray.id, 0, 0, 1, 1);
-    const after = useGardenStore.getState().garden.seedStarting.trays[0];
+    const after = useGardenStore.getState().garden.nursery.trays[0];
     expect(after.slots[0 * after.cols + 0].seedlingId).toBe(idB);
     expect(after.slots[1 * after.cols + 1].seedlingId).toBe(idA);
   });
@@ -452,7 +452,7 @@ describe('seed-starting actions', () => {
     const tray = instantiatePreset('1020-36')!;
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().moveSeedling(tray.id, 0, 0, 1, 1);
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots[0].state).toBe('empty');
     expect(t.slots[t.cols + 1].state).toBe('empty');
   });
@@ -462,9 +462,9 @@ describe('seed-starting actions', () => {
     useGardenStore.getState().addTray(tray);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil-genovese');
     useGardenStore.getState().clearCell(tray.id, 0, 0);
-    const t = useGardenStore.getState().garden.seedStarting.trays[0];
+    const t = useGardenStore.getState().garden.nursery.trays[0];
     expect(t.slots[0].state).toBe('empty');
-    expect(useGardenStore.getState().garden.seedStarting.seedlings).toHaveLength(0);
+    expect(useGardenStore.getState().garden.nursery.seedlings).toHaveLength(0);
   });
 
   describe('moveSeedlingsAcrossTrays', () => {
@@ -479,13 +479,13 @@ describe('seed-starting actions', () => {
     it('moves a seedling from tray A to tray B in one undo step', () => {
       const [a, b] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
-      const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+      const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
 
       useGardenStore.getState().moveSeedlingsAcrossTrays([
         { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 1, toCol: 2 },
       ]);
 
-      const ss = useGardenStore.getState().garden.seedStarting;
+      const ss = useGardenStore.getState().garden.nursery;
       const trayA = ss.trays.find((t) => t.id === a.id)!;
       const trayB = ss.trays.find((t) => t.id === b.id)!;
       expect(trayA.slots[0].state).toBe('empty');
@@ -498,7 +498,7 @@ describe('seed-starting actions', () => {
 
       // Single undo restores everything.
       useGardenStore.getState().undo();
-      const ss2 = useGardenStore.getState().garden.seedStarting;
+      const ss2 = useGardenStore.getState().garden.nursery;
       expect(ss2.trays.find((t) => t.id === a.id)!.slots[0].state).toBe('sown');
       expect(ss2.trays.find((t) => t.id === b.id)!.slots[1 * b.cols + 2].state).toBe('empty');
       const restored = ss2.seedlings.find((s) => s.id === sId)!;
@@ -511,28 +511,28 @@ describe('seed-starting actions', () => {
       const [a, b] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
       useGardenStore.getState().sowCell(b.id, 1, 2, 'basil-genovese'); // occupies dest
-      const sId = useGardenStore.getState().garden.seedStarting.seedlings.find(
+      const sId = useGardenStore.getState().garden.nursery.seedlings.find(
         (s) => s.trayId === a.id,
       )!.id;
-      const before = useGardenStore.getState().garden.seedStarting;
+      const before = useGardenStore.getState().garden.nursery;
 
       useGardenStore.getState().moveSeedlingsAcrossTrays([
         { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 1, toCol: 2 },
       ]);
 
       // Whole batch rejected — state unchanged.
-      const after = useGardenStore.getState().garden.seedStarting;
+      const after = useGardenStore.getState().garden.nursery;
       expect(after).toBe(before);
     });
 
     it('handles a within-tray move (toTrayId === fromTrayId)', () => {
       const [a] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
-      const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+      const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
       useGardenStore.getState().moveSeedlingsAcrossTrays([
         { seedlingId: sId, fromTrayId: a.id, toTrayId: a.id, toRow: 1, toCol: 1 },
       ]);
-      const trayA = useGardenStore.getState().garden.seedStarting.trays.find((t) => t.id === a.id)!;
+      const trayA = useGardenStore.getState().garden.nursery.trays.find((t) => t.id === a.id)!;
       expect(trayA.slots[0].state).toBe('empty');
       expect(trayA.slots[1 * trayA.cols + 1].seedlingId).toBe(sId);
     });
@@ -540,25 +540,25 @@ describe('seed-starting actions', () => {
     it('no-ops when the only move is already at its target', () => {
       const [a, b] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
-      const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
-      const before = useGardenStore.getState().garden.seedStarting;
+      const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
+      const before = useGardenStore.getState().garden.nursery;
       useGardenStore.getState().moveSeedlingsAcrossTrays([
         { seedlingId: sId, fromTrayId: a.id, toTrayId: a.id, toRow: 0, toCol: 0 },
       ]);
       void b;
       // No change → no commit.
-      expect(useGardenStore.getState().garden.seedStarting).toBe(before);
+      expect(useGardenStore.getState().garden.nursery).toBe(before);
     });
 
     it('rejects out-of-bounds destinations', () => {
       const [a, b] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
-      const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
-      const before = useGardenStore.getState().garden.seedStarting;
+      const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
+      const before = useGardenStore.getState().garden.nursery;
       useGardenStore.getState().moveSeedlingsAcrossTrays([
         { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 99, toCol: 99 },
       ]);
-      expect(useGardenStore.getState().garden.seedStarting).toBe(before);
+      expect(useGardenStore.getState().garden.nursery).toBe(before);
     });
   });
 });

@@ -34,7 +34,7 @@ export function getCollectionCultivar(collection: Collection, id: string): Culti
 }
 
 import type { Planting } from './types';
-import type { Seedling } from './seedStarting';
+import type { Seedling } from './nursery';
 
 /** Of the cultivar ids being removed, return those still referenced by any planting or seedling. */
 export function findInUseRemovals(

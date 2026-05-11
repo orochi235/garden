@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function TraySwitcher({ onOpenCustomBuilder }: Props) {
-  const trays = useGardenStore((s) => s.garden.seedStarting.trays);
+  const trays = useGardenStore((s) => s.garden.nursery.trays);
   const addTray = useGardenStore((s) => s.addTray);
   const currentTrayId = useUiStore((s) => s.currentTrayId);
   const setCurrentTrayId = useUiStore((s) => s.setCurrentTrayId);
@@ -22,7 +22,7 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
   // updates), then derive the per-tray slice + plants list with useMemo so
   // the array identity doesn't churn on every render — `useSyncExternalStore`
   // would otherwise loop "result of getSnapshot should be cached".
-  const allSeedlings = useGardenStore((s) => s.garden.seedStarting.seedlings);
+  const allSeedlings = useGardenStore((s) => s.garden.nursery.seedlings);
   const trayPlants = useMemo(() => {
     if (!tray) return [];
     return allSeedlings

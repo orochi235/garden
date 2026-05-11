@@ -1,8 +1,8 @@
 import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { Seedling, SeedStartingState, Tray } from '../../model/seedStarting';
-import { getCell } from '../../model/seedStarting';
+import type { Seedling, NurseryState, Tray } from '../../model/nursery';
+import { getCell } from '../../model/nursery';
 import { cellCenterInches, hitTestCellInches } from '../seedStartingHitTest';
 
 export interface ScenePose { x: number; y: number }
@@ -29,7 +29,7 @@ export const TRAYS_PER_COLUMN = 3;
  * `TRAYS_PER_COLUMN`, then wrap to a new column. Each column's width is the
  * max width of its members. Single-tray gardens get `(0, 0)`.
  */
-export function trayWorldOrigin(tray: Tray, ss: SeedStartingState): { x: number; y: number } {
+export function trayWorldOrigin(tray: Tray, ss: NurseryState): { x: number; y: number } {
   const idx = ss.trays.findIndex((t) => t.id === tray.id);
   if (idx < 0) return { x: 0, y: 0 };
   const col = Math.floor(idx / TRAYS_PER_COLUMN);
@@ -53,7 +53,7 @@ export function trayWorldOrigin(tray: Tray, ss: SeedStartingState): { x: number;
 }
 
 /** Total bounds spanned by all trays under the column-major auto-flow. */
-export function seedStartingWorldBounds(ss: SeedStartingState): { width: number; height: number } {
+export function seedStartingWorldBounds(ss: NurseryState): { width: number; height: number } {
   if (ss.trays.length === 0) return { width: 0, height: 0 };
   const cols = Math.ceil(ss.trays.length / TRAYS_PER_COLUMN);
   let width = 0;
@@ -78,7 +78,7 @@ export function seedStartingWorldBounds(ss: SeedStartingState): { width: number;
 }
 
 function findNode(id: string): SeedNode | undefined {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   const t = ss.trays.find((x) => x.id === id);
   if (t) return { kind: 'tray', id: t.id, data: t };
   const s = ss.seedlings.find((x) => x.id === id);
@@ -87,14 +87,14 @@ function findNode(id: string): SeedNode | undefined {
 }
 
 function allNodes(): SeedNode[] {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   const out: SeedNode[] = [];
   for (const t of ss.trays) out.push({ kind: 'tray', id: t.id, data: t });
   for (const s of ss.seedlings) out.push({ kind: 'seedling', id: s.id, data: s });
   return out;
 }
 
-function trayContains(tray: Tray, ss: SeedStartingState, worldX: number, worldY: number): boolean {
+function trayContains(tray: Tray, ss: NurseryState, worldX: number, worldY: number): boolean {
   const o = trayWorldOrigin(tray, ss);
   const lx = worldX - o.x;
   const ly = worldY - o.y;
@@ -142,7 +142,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
     getPose(id) {
       const node = findNode(id);
       if (!node) throw new Error(`seed-starting scene node not found: ${id}`);
-      const ss = useGardenStore.getState().garden.seedStarting;
+      const ss = useGardenStore.getState().garden.nursery;
       switch (node.kind) {
         case 'tray':
           return trayWorldOrigin(node.data, ss);
@@ -168,7 +168,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
       }
     },
     getChildren(parentId) {
-      const ss = useGardenStore.getState().garden.seedStarting;
+      const ss = useGardenStore.getState().garden.nursery;
       const out: string[] = [];
       for (const s of ss.seedlings) if (s.trayId === parentId) out.push(s.id);
       return out;
@@ -182,7 +182,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
           return;
         case 'seedling': {
           const s = node.data;
-          const ss = store.garden.seedStarting;
+          const ss = store.garden.nursery;
           // Pick the target tray: prefer the one currently containing the cursor,
           // else fall back to the seedling's existing tray.
           let targetTray: Tray | null = null;
@@ -235,7 +235,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
     findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
       const node = findNode(draggedId);
       if (!node || node.kind !== 'seedling') return null;
-      const ss = useGardenStore.getState().garden.seedStarting;
+      const ss = useGardenStore.getState().garden.nursery;
       // Find the nearest tray (by center) that has an available cell near the cursor.
       let bestTray: Tray | null = null;
       let bestDist = Infinity;
@@ -269,7 +269,7 @@ export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
       return adapter.hitAll(worldX, worldY)[0] ?? null;
     },
     hitAll(worldX, worldY) {
-      const ss = useGardenStore.getState().garden.seedStarting;
+      const ss = useGardenStore.getState().garden.nursery;
       const out: SeedNode[] = [];
       // Seedlings on top: hit-test by occupied cell.
       for (const tray of ss.trays) {

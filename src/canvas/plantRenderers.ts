@@ -55,7 +55,8 @@ function getImage(dataUri: string): HTMLImageElement | null {
 /**
  * Get the decoded ImageBitmap for a cultivar's icon, kicking off async
  * decode on first call. Returns null when not yet ready; subscribers via
- * `onIconLoad` are notified when it becomes available.
+ * `onIconLoad` are notified when it becomes available. The bitmap is the
+ * raw image — circular clipping is applied at draw time via a clip group.
  */
 export function getIconBitmap(cultivarId: string): ImageBitmap | null {
   const hit = bitmapCache.get(cultivarId);
@@ -69,23 +70,8 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
 
   pendingBitmaps.add(cultivarId);
 
-  // Ensure the HTMLImageElement is loaded first, then convert to a circle-
-  // clipped ImageBitmap. The clip is baked in at decode time because
-  // weasel's `kind: 'image'` DrawCommand has no clip-path option — the
-  // alternative is square-cornered icons spilling outside the footprint.
   const decodeFromImg = (img: HTMLImageElement) => {
-    const size = Math.max(img.naturalWidth, img.naturalHeight, 1);
-    const off = new OffscreenCanvas(size, size);
-    const octx = off.getContext('2d');
-    if (!octx) {
-      pendingBitmaps.delete(cultivarId);
-      return;
-    }
-    octx.beginPath();
-    octx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-    octx.clip();
-    octx.drawImage(img, 0, 0, size, size);
-    createImageBitmap(off).then((bitmap) => {
+    createImageBitmap(img).then((bitmap) => {
       bitmapCache.set(cultivarId, bitmap);
       pendingBitmaps.delete(cultivarId);
       for (const cb of loadCallbacks) cb();
@@ -101,34 +87,24 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
     return null;
   }
 
-  // Not yet loaded — kick off the HTMLImageElement load; our onload hook will
-  // fire loadCallbacks, which triggers a redraw; on the next frame getImage
-  // will return the element and we can start the bitmap decode.
-  // We attach a one-shot listener via a wrapper that also starts the decode.
+  // Not yet loaded — kick off the HTMLImageElement load and decode once it lands.
   const img = new Image();
   img.onload = () => {
     imageCache.set(dataUri, img);
     pendingLoads.delete(dataUri);
     decodeFromImg(img);
-    // loadCallbacks are fired inside createImageBitmap.then above, so we
-    // do NOT fire them here — avoid double-notify.
   };
   img.onerror = () => {
     pendingLoads.delete(dataUri);
     pendingBitmaps.delete(cultivarId);
   };
-  // Guard against the shared pendingLoads set so getImage() doesn't also kick
-  // off a duplicate load.
   if (!pendingLoads.has(dataUri)) {
     pendingLoads.add(dataUri);
     img.src = dataUri;
   } else {
-    // Another load is already in flight (e.g. the palette sidebar is rendering
-    // this icon via getImage). Piggyback: every time ANY icon finishes loading,
-    // check whether OUR image is now in the cache; only unsubscribe once we've
-    // actually kicked off our decode. (Earlier we unsubscribed on the first
-    // callback regardless — if a different icon loaded first, the piggyback
-    // gave up and the image never got decoded into a bitmap.)
+    // Another load is already in flight (e.g. the palette sidebar). Piggyback:
+    // every time ANY icon finishes loading, check whether OUR image is now
+    // cached, and unsubscribe only once we've kicked off our decode.
     const unsub = onIconLoad(() => {
       const loaded = imageCache.get(dataUri);
       if (!loaded) return;
@@ -148,13 +124,8 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
 
 /**
  * Build DrawCommands for a single plant glyph centered at (cx, cy) in world
- * coords. Emits the footprint background circle, the icon image (if loaded),
- * and a fallback stroke ring when the icon isn't ready.
- *
- * NOTE(concern): ImageDrawCommand renders the image stretched to the bounding
- * rect; there is no clip-to-circle in DrawCommand. Plant icons will show
- * square corners on the image. This is acceptable for now — the visual
- * regression rig will catch any notable change.
+ * coords. Emits the footprint background circle, the icon image (clipped to
+ * a circle via a group), and a fallback stroke ring when the icon isn't ready.
  */
 export function plantDrawCommands(
   cultivarId: string,
@@ -181,12 +152,16 @@ export function plantDrawCommands(
   const bitmap = getIconBitmap(cultivarId);
   if (bitmap) {
     cmds.push({
-      kind: 'image',
-      image: bitmap,
-      x: cx - radius,
-      y: cy - radius,
-      w: radius * 2,
-      h: radius * 2,
+      kind: 'group',
+      clip: circlePolygon(cx, cy, radius),
+      children: [{
+        kind: 'image',
+        image: bitmap,
+        x: cx - radius,
+        y: cy - radius,
+        w: radius * 2,
+        h: radius * 2,
+      }],
     });
   } else {
     cmds.push({

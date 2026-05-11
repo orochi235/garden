@@ -4,7 +4,7 @@ import type { ToolCtx } from '@orochi235/weasel';
 import { useSeedSelectTool, type SeedSelectScratch } from './useSeedSelectTool';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { createSeedStartingSceneAdapter } from '../adapters/seedStartingScene';
 import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
 
@@ -85,7 +85,7 @@ describe('useSeedSelectTool', () => {
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'tomato');
     useGardenStore.getState().sowCell(tray.id, 0, 1, 'tomato');
     useGardenStore.getState().sowCell(tray.id, 1, 2, 'tomato');
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     const sIds = ss.seedlings.map((s) => s.id);
 
     const { result } = renderTool();
@@ -119,7 +119,7 @@ describe('useSeedSelectTool', () => {
     useUiStore.getState().setCurrentTrayId(tray.id);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'tomato');
     useGardenStore.getState().sowCell(tray.id, 1, 2, 'tomato');
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     const [s0, s1] = ss.seedlings;
     useUiStore.getState().setSelection([s1.id]);
 
@@ -145,7 +145,7 @@ describe('useSeedSelectTool', () => {
     useGardenStore.getState().addTray(tray);
     useUiStore.getState().setCurrentTrayId(tray.id);
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'tomato');
-    const sId = useGardenStore.getState().garden.seedStarting.seedlings[0].id;
+    const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
     useUiStore.getState().setSelection([sId]);
 
     const { result } = renderTool();

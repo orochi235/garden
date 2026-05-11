@@ -37,7 +37,7 @@ export interface Seedling {
   labelOverride: string | null;
 }
 
-export interface SeedStartingState {
+export interface NurseryState {
   trays: Tray[];
   seedlings: Seedling[];
 }
@@ -112,7 +112,7 @@ export function createSeedling(opts: {
   };
 }
 
-export function emptySeedStartingState(): SeedStartingState {
+export function emptyNurseryState(): NurseryState {
   return { trays: [], seedlings: [] };
 }
 

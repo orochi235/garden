@@ -19,7 +19,7 @@ describe('loadFixtureFromUrl', () => {
       structures: [],
       zones: [],
       plantings: [],
-      seedStarting: { trays: [] },
+      nursery: { trays: [] },
     };
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

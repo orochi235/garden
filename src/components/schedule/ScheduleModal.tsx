@@ -20,7 +20,7 @@ export function ScheduleModal() {
 
   const plants = [
     ...garden.plantings.map((p) => ({ id: p.id, cultivarId: p.cultivarId, label: p.label })),
-    ...garden.seedStarting.seedlings.map((s) => ({ id: s.id, cultivarId: s.cultivarId })),
+    ...garden.nursery.seedlings.map((s) => ({ id: s.id, cultivarId: s.cultivarId })),
   ];
   return createPortal(
     <div className={styles.backdrop} onClick={() => setOpen(false)}>

@@ -1,5 +1,5 @@
 import type { DropTarget } from '@orochi235/weasel';
-import { trayInteriorOffsetIn, type Tray } from '../../model/seedStarting';
+import { trayInteriorOffsetIn, type Tray } from '../../model/nursery';
 
 /** Affordance gutter size in inches, expressed as a fraction of cell pitch. */
 export const DRAG_SPREAD_GUTTER_RATIO = 0.7;

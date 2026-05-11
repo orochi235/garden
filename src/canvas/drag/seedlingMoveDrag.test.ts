@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray } from '../../model/seedStarting';
+import { createTray } from '../../model/nursery';
 import {
   createSeedlingMoveDrag,
   SEEDLING_MOVE_DRAG_KIND,
@@ -12,7 +12,7 @@ import {
 function seedTray(): string {
   const garden = blankGarden();
   const tray = createTray({ rows: 4, cols: 4, cellSize: 'small', label: 'T' });
-  garden.seedStarting = { trays: [tray], seedlings: [] };
+  garden.nursery = { trays: [tray], seedlings: [] };
   useGardenStore.getState().loadGarden(garden);
   return tray.id;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGarden, createPlanting, createStructure, createZone } from './types';
-import { emptySeedStartingState } from './seedStarting';
+import { emptyNurseryState } from './nursery';
 
 describe('factory functions', () => {
   it('createGarden returns valid defaults', () => {
@@ -94,7 +94,7 @@ describe('factory functions', () => {
 describe('createGarden', () => {
   it('initializes seedStarting state', () => {
     const g = createGarden({ name: 't', widthFt: 1, lengthFt: 1 });
-    expect(g.seedStarting).toEqual(emptySeedStartingState());
+    expect(g.nursery).toEqual(emptyNurseryState());
   });
 });
 

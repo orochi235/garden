@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTray } from './seedStarting';
+import { createTray } from './nursery';
 import { resolveGroupMoves, type PendingMove } from './seedlingMoveResolver';
 
 function withSlot(tray: ReturnType<typeof createTray>, row: number, col: number, seedlingId: string) {

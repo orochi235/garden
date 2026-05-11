@@ -86,9 +86,9 @@ export function SeedStartingCanvasNewPrototype() {
     const getTrays = () => {
       // Multi-tray auto-flow: render every tray in insertion order. Each layer
       // applies the per-tray world transform via `trayWorldOrigin`.
-      return useGardenStore.getState().garden.seedStarting.trays;
+      return useGardenStore.getState().garden.nursery.trays;
     };
-    const getSeedlings = () => useGardenStore.getState().garden.seedStarting.seedlings;
+    const getSeedlings = () => useGardenStore.getState().garden.nursery.seedlings;
     const getSeedlingUi = (): SeedlingLayerUi => {
       const u = useUiStore.getState();
       return {
@@ -158,7 +158,7 @@ export function SeedStartingCanvasNewPrototype() {
   // setView is the only mutator and reset only fires through this hook.
   const resetTick = useUiStore((s) => s.seedStartingViewResetTick);
   const fitViewToTray = (containerW: number, containerH: number) => {
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     const tray = ss.trays.find(
       (t) => t.id === useUiStore.getState().currentTrayId,
     );
@@ -174,7 +174,7 @@ export function SeedStartingCanvasNewPrototype() {
   };
   // Initial fit / refit when tray or container size changes. The fit-key
   // includes tray dimensions so a tray edit (resize rows/cols) also refits.
-  const tray = garden.seedStarting.trays.find((t) => t.id === currentTrayId);
+  const tray = garden.nursery.trays.find((t) => t.id === currentTrayId);
   const trayDimsKey = tray ? `${tray.widthIn.toFixed(2)}x${tray.heightIn.toFixed(2)}` : 'none';
   const lastFitKeyRef = useRef<string>('');
   useEffect(() => {
@@ -228,7 +228,7 @@ export function SeedStartingCanvasNewPrototype() {
   const renameTray = useGardenStore((s) => s.renameTray);
 
   const handleLabelClick = useCallback((trayId: string) => {
-    const ss = useGardenStore.getState().garden.seedStarting;
+    const ss = useGardenStore.getState().garden.nursery;
     const tray = ss.trays.find((t) => t.id === trayId);
     if (tray) setRenaming({ trayId, value: tray.label });
   }, []);
@@ -304,7 +304,7 @@ export function SeedStartingCanvasNewPrototype() {
         />
       )}
       {renaming && (() => {
-        const ss = useGardenStore.getState().garden.seedStarting;
+        const ss = useGardenStore.getState().garden.nursery;
         const tray = ss.trays.find((t) => t.id === renaming.trayId);
         if (!tray) return null;
         const o = trayWorldOrigin(tray, ss);

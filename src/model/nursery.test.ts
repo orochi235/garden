@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   createTray,
   createSeedling,
-  emptySeedStartingState,
+  emptyNurseryState,
   getCell,
   setCell,
-} from './seedStarting';
+} from './nursery';
 
 describe('seedStarting types', () => {
   it('createTray builds a tray with rows*cols empty slots', () => {
@@ -31,8 +31,8 @@ describe('seedStarting types', () => {
     expect(getCell(updated, 0, 0)?.state).toBe('empty');
   });
 
-  it('emptySeedStartingState has empty trays and seedlings', () => {
-    const s = emptySeedStartingState();
+  it('emptyNurseryState has empty trays and seedlings', () => {
+    const s = emptyNurseryState();
     expect(s.trays).toEqual([]);
     expect(s.seedlings).toEqual([]);
   });

@@ -113,7 +113,7 @@ describe('PlantsListView', () => {
         ...garden,
         structures: [bed],
         plantings: [planting],
-        seedStarting: {
+        nursery: {
           trays: [{
             id: 't', label: 'Tray', rows: 1, cols: 1,
             cellSize: 'medium', cellPitchIn: 1.5, widthIn: 5, heightIn: 5,
@@ -177,7 +177,7 @@ describe('PlantsListView', () => {
     useGardenStore.setState({
       garden: {
         ...garden,
-        seedStarting: {
+        nursery: {
           trays: [{
             id: 'tray1', label: 'My Tray', rows: 1, cols: 1,
             cellSize: 'medium', cellPitchIn: 1.5, widthIn: 5, heightIn: 5,

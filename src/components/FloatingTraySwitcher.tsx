@@ -5,8 +5,8 @@ import { zoomToTray } from '../actions/view/resetView';
 import styles from '../styles/FloatingTraySwitcher.module.css';
 
 export function FloatingTraySwitcher() {
-  const trays = useGardenStore((s) => s.garden.seedStarting.trays);
-  const seedlings = useGardenStore((s) => s.garden.seedStarting.seedlings);
+  const trays = useGardenStore((s) => s.garden.nursery.trays);
+  const seedlings = useGardenStore((s) => s.garden.nursery.seedlings);
   const renameTray = useGardenStore((s) => s.renameTray);
   const removeTray = useGardenStore((s) => s.removeTray);
   const reorderTrays = useGardenStore((s) => s.reorderTrays);

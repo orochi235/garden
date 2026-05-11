@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray } from '../../model/seedStarting';
+import { createTray } from '../../model/nursery';
 import { createSeedFillTrayDrag, SEED_FILL_TRAY_DRAG_KIND } from './seedFillTrayDrag';
 import type { DragViewport } from './putativeDrag';
 
@@ -58,7 +58,7 @@ describe('seedFillTrayDrag', () => {
     // crash. Drive the commit through any non-null result.
     if (putative) {
       drag.commit(putative);
-      const seedlings = useGardenStore.getState().garden.seedStarting.seedlings;
+      const seedlings = useGardenStore.getState().garden.nursery.seedlings;
       // For 'cell' or 'row'/'col'/'all' scopes, at least one seedling exists.
       expect(seedlings.length).toBeGreaterThan(0);
     }

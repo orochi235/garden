@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSeedling, createTray, type CellSize } from './seedStarting';
+import { createSeedling, createTray, type CellSize } from './nursery';
 import { getAllCultivars } from './cultivars';
 import { cultivarHasTrayWarning, getSeedlingWarnings, hasSeedlingWarnings } from './seedlingWarnings';
 

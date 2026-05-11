@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import {
   DRAG_SPREAD_GUTTER_RATIO,
   getTrayDropTargets,

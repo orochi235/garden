@@ -1,4 +1,4 @@
-import type { CellSize } from './seedStarting';
+import type { CellSize } from './nursery';
 
 /** Per-species/cultivar seed-starting metadata. All fields optional in storage. */
 export interface SeedStartingFields {

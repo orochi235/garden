@@ -3,8 +3,8 @@ import {
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
-import type { Seedling, Tray } from '../../model/seedStarting';
-import { trayInteriorOffsetIn } from '../../model/seedStarting';
+import type { Seedling, Tray } from '../../model/nursery';
+import { trayInteriorOffsetIn } from '../../model/nursery';
 import { getCultivar } from '../../model/cultivars';
 import {
   cultivarHasTrayWarning,
@@ -226,7 +226,7 @@ function fillPreviewCommandsForTray(
 }
 
 function trayWorldTranslate(tray: Tray): Float32Array {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   const o = trayWorldOrigin(tray, ss);
   return translateMat3(o.x, o.y);
 }

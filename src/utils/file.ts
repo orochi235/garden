@@ -1,4 +1,4 @@
-import { emptySeedStartingState } from '../model/seedStarting';
+import { emptyNurseryState } from '../model/nursery';
 import type { Garden, Structure, Zone } from '../model/types';
 import { PLANTABLE_TYPES, getPlantableBounds } from '../model/types';
 import { getCultivar } from '../model/cultivars';
@@ -52,7 +52,13 @@ export function deserializeGarden(json: string): Garden {
   if (!data.version || !data.name || data.widthFt == null || data.lengthFt == null) {
     throw new Error('Invalid garden file: missing required fields');
   }
-  if (!data.seedStarting) data.seedStarting = emptySeedStartingState();
+  // Migrate legacy `seedStarting` field (the old name for the nursery
+  // mode-state) to `nursery`. Keeps older .garden files loadable.
+  if (data && typeof data === 'object' && data.seedStarting && !data.nursery) {
+    data.nursery = data.seedStarting;
+    delete data.seedStarting;
+  }
+  if (!data.nursery) data.nursery = emptyNurseryState();
   data.collection = hydrateCollection(data.collection);
   migrateLayoutsToCellGrid(data as Garden);
   snapPlantingsToCellGrid(data as Garden);

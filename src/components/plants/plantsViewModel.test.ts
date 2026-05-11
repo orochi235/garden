@@ -68,7 +68,7 @@ describe('buildPlantRows', () => {
   it('emits a row per seedling with kind="seedling" and tray label as location', () => {
     const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
     const cv = getAllCultivars()[0];
-    garden.seedStarting.trays.push({
+    garden.nursery.trays.push({
       id: 'tray1', label: 'Tray North', rows: 2, cols: 2,
       cellSize: 'medium', cellPitchIn: 1.5, widthIn: 10, heightIn: 10,
       slots: [
@@ -78,7 +78,7 @@ describe('buildPlantRows', () => {
         { state: 'empty', seedlingId: null },
       ],
     });
-    garden.seedStarting.seedlings.push({
+    garden.nursery.seedlings.push({
       id: 's1', cultivarId: cv.id, trayId: 'tray1',
       row: 0, col: 0, labelOverride: null,
     });
@@ -95,7 +95,7 @@ describe('buildPlantRows', () => {
   it('renders location as "—" for seedling without a tray', () => {
     const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
     const cv = getAllCultivars()[0];
-    garden.seedStarting.seedlings.push({
+    garden.nursery.seedlings.push({
       id: 's1', cultivarId: cv.id, trayId: null,
       row: null, col: null, labelOverride: null,
     });

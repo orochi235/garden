@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { useRef } from 'react';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray } from '../../model/seedStarting';
+import { createTray } from '../../model/nursery';
 import type { View } from '../layers/worldLayerData';
 import type { PaletteEntry } from '../../components/palette/paletteData';
 import { usePaletteDropTool } from './usePaletteDropTool';
@@ -157,7 +157,7 @@ describe('usePaletteDropTool', () => {
     dispatchPointer('pointermove', { clientX: 60, clientY: 60 });
     dispatchPointer('pointerup', { clientX: 50, clientY: 50 });
 
-    const sown = useGardenStore.getState().garden.seedStarting.seedlings;
+    const sown = useGardenStore.getState().garden.nursery.seedlings;
     // Either the cell math hits cell (0,0) or another nearby cell — what
     // matters is that *some* sow happened, driven by the local viewRef alone.
     void off;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { type CellSize, CELL_PITCH_IN, createTray } from '../model/seedStarting';
+import { type CellSize, CELL_PITCH_IN, createTray } from '../model/nursery';
 import styles from '../styles/CustomTrayBuilder.module.css';
 
 interface Props {

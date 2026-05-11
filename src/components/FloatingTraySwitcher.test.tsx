@@ -62,7 +62,7 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
     fireDragOver(target, 18);
     fireEvent.drop(target, { dataTransfer: makeDT() });
 
-    const ids = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+    const ids = useGardenStore.getState().garden.nursery.trays.map((t) => t.id);
     expect(ids).toEqual(['tray-b', 'tray-c', 'tray-a']);
   });
 
@@ -80,7 +80,7 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
     fireDragOver(target, 2);
     fireEvent.drop(target, { dataTransfer: makeDT() });
 
-    const ids = useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id);
+    const ids = useGardenStore.getState().garden.nursery.trays.map((t) => t.id);
     expect(ids).toEqual(['tray-c', 'tray-a', 'tray-b']);
   });
 
@@ -88,12 +88,12 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
     seedThreeTrays();
     const { container } = render(<FloatingTraySwitcher />);
     const rows = container.querySelectorAll<HTMLElement>('[data-tray-id]');
-    const before = useGardenStore.getState().garden.seedStarting.trays;
+    const before = useGardenStore.getState().garden.nursery.trays;
 
     fireEvent.dragStart(rows[0], { dataTransfer: makeDT() });
     fireEvent.dragEnd(rows[0]);
 
-    expect(useGardenStore.getState().garden.seedStarting.trays).toBe(before);
+    expect(useGardenStore.getState().garden.nursery.trays).toBe(before);
   });
 
   it('drop at the same slot is a no-op', () => {
@@ -101,7 +101,7 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
     const { container } = render(<FloatingTraySwitcher />);
     const rows = container.querySelectorAll<HTMLElement>('[data-tray-id]');
     const source = rows[1]; // B
-    const before = useGardenStore.getState().garden.seedStarting.trays;
+    const before = useGardenStore.getState().garden.nursery.trays;
 
     fireEvent.dragStart(source, { dataTransfer: makeDT() });
     source.getBoundingClientRect = () =>
@@ -109,7 +109,7 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
     fireDragOver(source, 2);
     fireEvent.drop(source, { dataTransfer: makeDT() });
 
-    expect(useGardenStore.getState().garden.seedStarting.trays.map((t) => t.id)).toEqual(
+    expect(useGardenStore.getState().garden.nursery.trays.map((t) => t.id)).toEqual(
       before.map((t) => t.id),
     );
   });

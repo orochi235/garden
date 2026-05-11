@@ -39,7 +39,7 @@ function makeGarden(): Garden {
     ],
     zones: [],
     plantings: [],
-    seedStarting: { trays: [], seedlings: [] },
+    nursery: { trays: [], seedlings: [] },
   } as unknown as Garden;
 }
 

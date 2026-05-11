@@ -32,7 +32,7 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
             if (e.button !== 0 || !ctx.modifiers.shift) return 'pass';
             const cultivarId = useUiStore.getState().seedDragCultivarId;
             if (!cultivarId) return 'pass';
-            const ss = useGardenStore.getState().garden.seedStarting;
+            const ss = useGardenStore.getState().garden.nursery;
             for (const tray of ss.trays) {
               const o = trayWorldOrigin(tray, ss);
               const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);
@@ -50,7 +50,7 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
           onStart: (_e, ctx) => (ctx.scratch.active ? 'claim' : 'pass'),
           onMove: (_e, ctx) => {
             if (!ctx.scratch.active || !ctx.scratch.trayId || !ctx.scratch.cultivarId) return 'pass';
-            const tray = useGardenStore.getState().garden.seedStarting.trays.find(
+            const tray = useGardenStore.getState().garden.nursery.trays.find(
               (t) => t.id === ctx.scratch.trayId,
             );
             if (!tray) return 'claim';

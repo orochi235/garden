@@ -1,5 +1,5 @@
 import { useUiStore } from '../../store/uiStore';
-import type { CellSize } from '../../model/seedStarting';
+import type { CellSize } from '../../model/nursery';
 import type { Season } from '../../model/species';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';

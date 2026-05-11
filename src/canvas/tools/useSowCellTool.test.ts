@@ -4,7 +4,7 @@ import type { ToolCtx } from '@orochi235/weasel';
 import { useSowCellTool, type SowScratch } from './useSowCellTool';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/seedStarting';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 
 function makeCtx(worldX: number, worldY: number, scratch: SowScratch): ToolCtx<SowScratch> {
   return {
@@ -51,7 +51,7 @@ describe('useSowCellTool', () => {
     const off = trayInteriorOffsetIn(tray);
     const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
     expect(result.current.pointer!.onClick!(makeClick(), ctx)).toBe('claim');
-    const seedlings = useGardenStore.getState().garden.seedStarting.seedlings;
+    const seedlings = useGardenStore.getState().garden.nursery.seedlings;
     expect(seedlings).toHaveLength(1);
     expect(seedlings[0].cultivarId).toBe('tomato');
     expect(seedlings[0].row).toBe(0);
@@ -68,7 +68,7 @@ describe('useSowCellTool', () => {
     const off = trayInteriorOffsetIn(tray);
     const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
     result.current.pointer!.onClick!(makeClick(), ctx);
-    const seedlings = useGardenStore.getState().garden.seedStarting.seedlings;
+    const seedlings = useGardenStore.getState().garden.nursery.seedlings;
     expect(seedlings).toHaveLength(1);
     expect(seedlings[0].cultivarId).toBe('basil');
   });

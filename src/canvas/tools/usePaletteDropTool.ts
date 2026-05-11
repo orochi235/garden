@@ -4,7 +4,7 @@ import { onIconLoad, renderPlant } from '../plantRenderers';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { View } from '../layers/worldLayerData';
-import type { Tray } from '../../model/seedStarting';
+import type { Tray } from '../../model/nursery';
 import { useDragController } from '../drag/useDragController';
 import {
   createSeedFillTrayDrag,
@@ -64,7 +64,7 @@ export function usePaletteDropTool({ containerRef, viewRef }: Options): void {
     function getCurrentTray(): Tray | null {
       const ui = useUiStore.getState();
       const garden = useGardenStore.getState().garden;
-      return garden.seedStarting.trays.find((t) => t.id === ui.currentTrayId) ?? null;
+      return garden.nursery.trays.find((t) => t.id === ui.currentTrayId) ?? null;
     }
 
     function startGesture(

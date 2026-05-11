@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
-import { createTray } from '@/model/seedStarting';
+import { createTray } from '@/model/nursery';
 import { resetViewAction } from './resetView';
 import type { ActionContext } from '../types';
 

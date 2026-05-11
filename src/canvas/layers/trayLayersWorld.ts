@@ -3,8 +3,8 @@ import {
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon, roundRectPolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
-import type { Tray, SeedStartingState } from '../../model/seedStarting';
-import { trayInteriorOffsetIn } from '../../model/seedStarting';
+import type { Tray, NurseryState } from '../../model/nursery';
+import { trayInteriorOffsetIn } from '../../model/nursery';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
 import { useGardenStore } from '../../store/gardenStore';
 
@@ -86,7 +86,7 @@ const LABEL_AREA_PX = LABEL_FONT_PX + 10; // hit-test height in screen px
  */
 export function hitTestTrayLabel(
   trays: Tray[],
-  ss: SeedStartingState,
+  ss: NurseryState,
   view: View,
   worldX: number,
   worldY: number,
@@ -127,7 +127,7 @@ function trayLabelCommands(tray: Tray, view: View): DrawCommand[] {
 }
 
 function trayGroupCommand(tray: Tray, children: DrawCommand[]): DrawCommand {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   const o = trayWorldOrigin(tray, ss);
   return { kind: 'group', transform: translateMat3(o.x, o.y), children };
 }

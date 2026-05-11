@@ -1,5 +1,5 @@
-import type { Seedling, Tray } from '../model/seedStarting';
-import { trayInteriorOffsetIn } from '../model/seedStarting';
+import type { Seedling, Tray } from '../model/nursery';
+import { trayInteriorOffsetIn } from '../model/nursery';
 
 export interface CellHit {
   row: number;

@@ -95,7 +95,7 @@ export function CollectionEditor() {
 
   function runSaveChecks() {
     const removed = state.computeRemovedIds();
-    const inUse = findInUseRemovals(removed, garden.plantings, garden.seedStarting.seedlings);
+    const inUse = findInUseRemovals(removed, garden.plantings, garden.nursery.seedlings);
     if (inUse.length > 0) {
       setWarnRemovals(inUse);
       return;

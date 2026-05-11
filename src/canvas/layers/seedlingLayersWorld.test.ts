@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSeedling, createTray, setCell } from '../../model/seedStarting';
+import { createSeedling, createTray, setCell } from '../../model/nursery';
 import { createSeedlingLayers, type SeedlingLayerUi } from './seedlingLayersWorld';
 
 const view = { x: 0, y: 0, scale: 30 };

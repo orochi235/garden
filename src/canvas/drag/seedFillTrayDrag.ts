@@ -7,7 +7,7 @@ import {
   hitTrayDropTarget,
 } from '../layouts/trayDropTargets';
 import { trayWorldOrigin } from '../adapters/seedStartingScene';
-import type { Tray } from '../../model/seedStarting';
+import type { Tray } from '../../model/nursery';
 
 /**
  * Phase-1-migrated drag: palette → seed-starting tray (sow cell / fill row /
@@ -124,7 +124,7 @@ function clientToWorld(
 }
 
 function pickTrayAtWorld(world: { x: number; y: number }): Tray | null {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   for (const t of ss.trays) {
     const o = trayWorldOrigin(t, ss);
     if (
@@ -145,7 +145,7 @@ function worldToTrayLocal(
   world: { x: number; y: number },
   tray: Tray,
 ): { x: number; y: number } {
-  const ss = useGardenStore.getState().garden.seedStarting;
+  const ss = useGardenStore.getState().garden.nursery;
   const o = trayWorldOrigin(tray, ss);
   return { x: world.x - o.x, y: world.y - o.y };
 }

@@ -1,10 +1,10 @@
 import {
   type RenderLayer,
   type Dims,
+  type Path,
   type View,
   PathBuilder,
   rectPath,
-  polygonFromPoints,
 } from '@orochi235/weasel';
 import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import { computeContainerOverlay } from '../../model/containerOverlay';
@@ -76,6 +76,30 @@ function buildParentLookup(plantings: Planting[], zones: Zone[], structures: Str
     plantingsByParent.set(p.parentId, group);
   }
   return { parentMap, childCount, plantingsByParent };
+}
+
+/**
+ * Inner-soil clip path for a container, or null if no clipping applies
+ * (zone, no walls, or `clipChildren === false`). Plants inside the container
+ * are wrapped in a group with this clip so icons can't bleed past the soil
+ * edge or onto the surrounding ground.
+ */
+function buildContainerClipPath(s: Structure | undefined): Path | null {
+  if (!s || !s.container || s.clipChildren === false) return null;
+  const wallWidth = s.wallThicknessFt ?? 0;
+  if (wallWidth <= 0) return null;
+  if (s.type === 'pot' || s.type === 'felt-planter') {
+    const cx = s.x + s.width / 2;
+    const cy = s.y + s.length / 2;
+    const rOuter = Math.min(s.width, s.length) / 2;
+    const rInner = rOuter - wallWidth;
+    if (rInner <= 0) return null;
+    return circlePolygon(cx, cy, rInner);
+  }
+  const innerW = s.width - wallWidth * 2;
+  const innerH = s.length - wallWidth * 2;
+  if (innerW <= 0 || innerH <= 0) return null;
+  return rectPath(s.x + wallWidth, s.y + wallWidth, innerW, innerH);
 }
 
 function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<string, number>, plantIconScale: number): number {
@@ -289,6 +313,7 @@ export function createPlantingLayers(
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
+        const structureById = new Map(structures.map((s) => [s.id, s]));
         const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
 
         const children: DrawCommand[] = [];
@@ -296,10 +321,18 @@ export function createPlantingLayers(
           const parent = parentMap.get(parentId);
           if (!parent) continue;
 
+          const cmds: DrawCommand[] = [];
           for (const p of group) {
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
-            children.push(...plantGlyphAt(p.cultivarId, wx, wy, radius, data.showFootprintCircles));
+            cmds.push(...plantGlyphAt(p.cultivarId, wx, wy, radius, data.showFootprintCircles));
+          }
+
+          const clip = buildContainerClipPath(structureById.get(parentId));
+          if (clip) {
+            children.push({ kind: 'group', clip, children: cmds });
+          } else {
+            children.push(...cmds);
           }
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];
@@ -480,18 +513,10 @@ export function createPlantingLayers(
 
     {
       ...meta['container-walls'],
-      // For containers with `clipChildren`, draw two masking layers on top of
-      // plantings:
-      //   1. INNER wall area, filled with the container's color (covers icon
-      //      overhang into the wall area between inner soil and outer edge)
-      //   2. OUTER buffer, filled with the GROUND color (covers icon overhang
-      //      that spills past the outer edge onto the ground)
-      // Plus an inner-rim stroke marking the soil/wall boundary.
-      //
-      // Rect walls: 4 strips (top/bottom/left/right) for inner. Circular
-      // walls: annulus polygon. Outer buffer was removed — drew a visible
-      // ground-colored frame around every container; will revisit when
-      // weasel exposes a real clip API.
+      // Inner-rim stroke marking the soil/wall boundary. Wall masking is
+      // gone: planting-icons now wraps each container's plants in a clip
+      // group keyed to the inner soil shape (see buildContainerClipPath),
+      // so icons can no longer bleed past the wall onto the ground.
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const structures = getStructures();
         const children: DrawCommand[] = [];
@@ -505,14 +530,6 @@ export function createPlantingLayers(
             const cy = s.y + s.length / 2;
             const rOuter = Math.min(s.width, s.length) / 2;
             const rInner = rOuter - wallWidth;
-            if (rInner > 0 && s.clipChildren !== false) {
-              // Inner wall fill (container color). No outer buffer here:
-              // pots/felt-planters use 'single' layout where the plant is
-              // sized to fit the container, so there's nothing to mask
-              // outside the outer edge — and a 1ft ring around a 1ft pot
-              // would dominate the visual.
-              children.push(...annulusFill(cx, cy, rInner, rOuter, s.color));
-            }
             if (rInner > 0) {
               children.push({
                 kind: 'path',
@@ -521,27 +538,12 @@ export function createPlantingLayers(
               });
             }
           } else {
-            const innerX = s.x + wallWidth;
-            const innerY = s.y + wallWidth;
             const innerW = s.width - wallWidth * 2;
             const innerH = s.length - wallWidth * 2;
-            if (innerW > 0 && innerH > 0 && s.clipChildren !== false) {
-              // Inner wall: 4 rectangular strips filled with container color.
-              // No outer buffer here either — drew a visible 1ft ground-colored
-              // frame around every bed. Plants at the inner edge can overhang
-              // slightly past the outer wall onto the ground; we accept that
-              // until weasel exposes a real clip API.
-              children.push(
-                { kind: 'path', path: rectPath(s.x, s.y, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
-                { kind: 'path', path: rectPath(s.x, s.y + s.length - wallWidth, s.width, wallWidth), fill: { fill: 'solid', color: s.color } },
-                { kind: 'path', path: rectPath(s.x, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
-                { kind: 'path', path: rectPath(s.x + s.width - wallWidth, innerY, wallWidth, innerH), fill: { fill: 'solid', color: s.color } },
-              );
-            }
             if (innerW > 0 && innerH > 0) {
               children.push({
                 kind: 'path',
-                path: rectPath(innerX, innerY, innerW, innerH),
+                path: rectPath(s.x + wallWidth, s.y + wallWidth, innerW, innerH),
                 stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
               });
             }
@@ -553,32 +555,3 @@ export function createPlantingLayers(
   ];
 }
 
-/**
- * Filled annulus (ring), drawn as N independent trapezoid wedges. We can't
- * use a single polygon with a hole — earcut would treat the whole vertex
- * list as one contour and the bridging edge from the last outer vertex to
- * the first inner vertex would get tessellated as a real edge, leaving a
- * fill gap near where the bridge sits. Wedges sidestep that.
- */
-function annulusFill(cx: number, cy: number, rInner: number, rOuter: number, color: string): DrawCommand[] {
-  const samples = 64;
-  const cmds: DrawCommand[] = [];
-  const fill = { fill: 'solid' as const, color };
-  for (let i = 0; i < samples; i++) {
-    const t0 = (i / samples) * Math.PI * 2;
-    const t1 = ((i + 1) / samples) * Math.PI * 2;
-    const cos0 = Math.cos(t0), sin0 = Math.sin(t0);
-    const cos1 = Math.cos(t1), sin1 = Math.sin(t1);
-    cmds.push({
-      kind: 'path',
-      path: polygonFromPoints([
-        { x: cx + cos0 * rOuter, y: cy + sin0 * rOuter },
-        { x: cx + cos1 * rOuter, y: cy + sin1 * rOuter },
-        { x: cx + cos1 * rInner, y: cy + sin1 * rInner },
-        { x: cx + cos0 * rInner, y: cy + sin0 * rInner },
-      ]),
-      fill,
-    });
-  }
-  return cmds;
-}
