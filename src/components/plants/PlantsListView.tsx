@@ -7,6 +7,7 @@ import { buildPlantRows, type PlantRow } from './plantsViewModel';
 import { buildSchedule, type Schedule } from '../../model/scheduler';
 import { defaultActionsForCultivar } from '../../model/defaultActions';
 import { getCultivar } from '../../model/cultivars';
+import { defaultTargetDate } from '../schedule/scheduleViewModel';
 
 interface ColumnDef {
   id: string;
@@ -135,6 +136,8 @@ export function PlantsListView() {
   const garden = useGardenStore((s) => s.garden);
   const selectedIds = useUiStore((s) => s.selectedIds);
   const setSelection = useUiStore((s) => s.setSelection);
+  const setAppMode = useUiStore((s) => s.setAppMode);
+  const setCurrentTrayId = useUiStore((s) => s.setCurrentTrayId);
 
   const almanacLastFrost = useUiStore((s) => s.almanacFilters?.lastFrostDate ?? null);
 
@@ -158,7 +161,7 @@ export function PlantsListView() {
       .filter((p): p is NonNullable<typeof p> => p !== null);
     return buildSchedule({
       plants,
-      targetTransplantDate: almanacLastFrost ?? new Date().toISOString().slice(0, 10),
+      targetTransplantDate: almanacLastFrost ?? defaultTargetDate(),
       lastFrostDate: almanacLastFrost ?? undefined,
     });
   }, [garden, almanacLastFrost]);
@@ -209,6 +212,14 @@ export function PlantsListView() {
       setSortColumn(colId);
       setSortDir('asc');
     }
+  }
+
+  function handleRowClick(row: PlantRow) {
+    if (row.kind === 'seedling' && row.parentId) {
+      setAppMode('seed-starting');
+      setCurrentTrayId(row.parentId);
+    }
+    setSelection([row.id]);
   }
 
   if (rows.length === 0) {
@@ -274,7 +285,7 @@ export function PlantsListView() {
                 key={row.id}
                 aria-label={row.name}
                 className={selectedIds.includes(row.id) ? styles.rowActive : undefined}
-                onClick={() => setSelection([row.id])}
+                onClick={() => handleRowClick(row)}
               >
                 {visibleColumns.map((col) => (
                   <td

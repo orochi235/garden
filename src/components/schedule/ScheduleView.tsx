@@ -4,7 +4,7 @@ import { defaultActionsForCultivar } from '../../model/defaultActions';
 import { getCultivar } from '../../model/cultivars';
 import { useUiStore } from '../../store/uiStore';
 import {
-  groupByDate, groupByPlant, formatWindow,
+  groupByDate, groupByPlant, formatWindow, defaultTargetDate,
 } from './scheduleViewModel';
 import styles from './ScheduleView.module.css';
 
@@ -173,8 +173,3 @@ function labelForPlant(plantsById: Map<string, SchedulePlantInput>, plantId: str
   return getCultivar(cultivarId)?.name ?? cultivarId;
 }
 
-function defaultTargetDate(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 2);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}

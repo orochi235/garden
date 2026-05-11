@@ -58,3 +58,10 @@ export function formatWindow(earliest: string, latest: string): string {
   if (earliest === latest) return formatDate(earliest);
   return `${formatDate(earliest)} – ${formatDate(latest)}`;
 }
+
+/** Default target transplant date: today + 2 months, ISO yyyy-mm-dd. */
+export function defaultTargetDate(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 2);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
