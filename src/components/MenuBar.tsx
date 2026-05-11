@@ -88,24 +88,9 @@ export function MenuBar() {
         <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
       </div>
       <div className={styles.menus}>
-        <button
-          type="button"
-          onClick={handleNew}
-          className={styles.actionButton}
-          style={{ background: 'var(--theme-list-hover)' }}
-        >New</button>
-        <button
-          type="button"
-          onClick={handleOpen}
-          className={styles.actionButton}
-          style={{ background: 'var(--theme-list-hover)' }}
-        >Load</button>
-        <button
-          type="button"
-          onClick={handleSave}
-          className={`${styles.actionButton} ${styles.boldButton}`}
-          style={{ background: 'var(--theme-list-hover)' }}
-        >Save</button>
+        <button type="button" onClick={handleNew} className={styles.actionButton}>New</button>
+        <button type="button" onClick={handleOpen} className={styles.actionButton}>Load</button>
+        <button type="button" onClick={handleSave} className={`${styles.actionButton} ${styles.boldButton}`}>Save</button>
       </div>
     </div>
   );

@@ -94,14 +94,15 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
-.actionButton {
+.menus .actionButton {
+  background: var(--theme-list-hover);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: background 0.15s, border-color 0.15s;
 }
-.actionButton:hover {
-  border-color: rgba(0, 0, 0, 0.22) !important;
+.menus .actionButton:hover {
+  border-color: rgba(0, 0, 0, 0.22);
 }
 .boldButton {
   font-weight: 700;
