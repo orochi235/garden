@@ -52,6 +52,13 @@ synthesizer that derives a default action set from the existing fields.
 
 ## Constraint model
 
+Bounds-based: each constraint is a lower bound, an upper bound, or an
+exact-match. The offset is signed (positive = after anchor, negative =
+before anchor). This avoids the ambiguity of an English `before`/`after`
+vocabulary where the same word would have to express both bound directions
+(e.g. "sow 4–6 weeks before last frost" needs a *lower* bound at -6w AND
+an *upper* bound at -4w — both "before" the anchor).
+
 ```ts
 type Unit = 'days' | 'weeks' | 'months';
 
@@ -63,11 +70,15 @@ type Anchor =
   | { kind: 'today' }
   | { kind: 'action'; actionId: string };    // ref to another action in the same plant
 
+interface Offset {
+  amount: number;                             // signed: positive = after, negative = before
+  unit: Unit;
+}
+
 interface Constraint {
-  kind: 'before' | 'after' | 'on';           // 'on' = anchor exactly (no offset)
-  amount?: number;                            // omitted when kind='on'
-  unit?: Unit;
+  kind: 'lower' | 'upper' | 'exact';          // 'exact' contributes both bounds
   anchor: Anchor;
+  offset?: Offset;                            // omitted = anchor itself, no offset
 }
 
 interface ActionDef {
@@ -77,18 +88,23 @@ interface ActionDef {
 }
 ```
 
+**Constraint resolution:** `resolveConstraint(c, anchorDates) → Date`
+applies `anchor.date + offset` (calendar-aware). Result feeds the bounds
+machinery below.
+
 **Engine combination rules:**
-- Each `before` constraint contributes an upper bound; each `after` a lower
-  bound; `on` contributes both (treated as a single point).
+- Each `lower` constraint contributes a lower bound; each `upper` an
+  upper bound; `exact` contributes both (treated as a single point).
 - Action's resolved date = `[max(lower bounds), min(upper bounds)]`.
 - If `lower > upper`: conflict (action emitted with `conflicts` populated;
   the schedule still renders so the user sees what's wrong).
-- An action with a single `on` or single before/after constraint resolves
+- An action with a single `exact` (or with matching lower/upper) resolves
   to a single date (lower == upper).
 
 **Calendar arithmetic:** `days|weeks|months` are added by ISO-calendar
 arithmetic, not raw millisecond multiples — so DST and month-length
-transitions don't shift things.
+transitions don't shift things. "1 month" added to Jan 31 clamps to the
+last valid day of February.
 
 ## Engine API
 
@@ -143,12 +159,12 @@ Derives a starter action set from the existing `SeedStartingFields` so a
 cultivar with no explicit `actions` override still produces a useful
 schedule:
 
-| Action id     | Label                | Constraints (when fields present)                                              |
-|---------------|----------------------|--------------------------------------------------------------------------------|
-| `sow`         | Sow indoors          | `after` last-frost by `weeksBeforeLastFrost.max` weeks (= start of window)     |
-|               |                      | `before` last-frost by `weeksBeforeLastFrost.min` weeks (= end of window)      |
-| `harden-off`  | Harden off           | `before` action `transplant` by 7 days (heuristic; only when `sow` was emitted)|
-| `transplant`  | Transplant outdoors  | `on` target-transplant                                                          |
+| Action id     | Label                | Constraints (when fields present)                                                          |
+|---------------|----------------------|--------------------------------------------------------------------------------------------|
+| `sow`         | Sow indoors          | `lower` anchor=last-frost offset=-`weeksBeforeLastFrost.max`w (earliest sow date)          |
+|               |                      | `upper` anchor=last-frost offset=-`weeksBeforeLastFrost.min`w (latest sow date)            |
+| `harden-off`  | Harden off           | `exact` anchor=action `transplant` offset=-7d (heuristic; only when `sow` was emitted)     |
+| `transplant`  | Transplant outdoors  | `exact` anchor=target-transplant (no offset)                                                |
 
 Cultivars whose `seedStarting.actions` is explicitly populated skip
 synthesis entirely — the JSON is authoritative.
