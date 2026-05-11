@@ -10,8 +10,8 @@ import { plantingLayoutFor } from './plantingLayout';
 export interface PlantingPose { x: number; y: number }
 
 export type PlantingMoveAdapter = MoveAdapter<Planting, PlantingPose> & {
-  insertObject(p: Planting): void;
-  removeObject(id: string): void;
+  insertNode(p: Planting): void;
+  removeNode(id: string): void;
 };
 
 function getPlanting(id: string): Planting | undefined {
@@ -24,10 +24,10 @@ function getParent(id: string): { id: string; x: number; y: number } | undefined
 
 export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
   const adapter: Required<PlantingMoveAdapter> = {
-    getObject(id) {
+    getNode(id) {
       return getPlanting(id);
     },
-    getObjects() {
+    getNodes() {
       return useGardenStore.getState().garden.plantings;
     },
     getPose(id) {
@@ -73,7 +73,7 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
     setParent(id, parentId) {
       useGardenStore.getState().updatePlanting(id, { parentId: parentId ?? '' });
     },
-    insertObject(planting) {
+    insertNode(planting) {
       // Insert preserving the original id so undo/redo is stable.
       useGardenStore.setState((s) => ({
         garden: {
@@ -82,7 +82,7 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
         },
       }));
     },
-    removeObject(id) {
+    removeNode(id) {
       useGardenStore.getState().removePlanting(id);
     },
     getLayout(containerId): LayoutStrategy<PlantingPose> | null {

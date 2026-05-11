@@ -9,7 +9,7 @@ export function createStructureResizeAdapter(): ResizeAdapter<Structure, Structu
     return useGardenStore.getState().garden.structures.find((s) => s.id === id);
   }
   const adapter: ResizeAdapter<Structure, StructureResizePose> = {
-    getObject(id) {
+    getNode(id) {
       return getStructure(id);
     },
     getPose(id) {

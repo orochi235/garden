@@ -5,8 +5,8 @@ import type { MoveAdapter } from '@orochi235/weasel';
 export interface StructurePose { x: number; y: number; widthFt: number; lengthFt: number }
 
 export type StructureMoveAdapter = MoveAdapter<Structure, StructurePose> & {
-  insertObject(s: Structure): void;
-  removeObject(id: string): void;
+  insertNode(s: Structure): void;
+  removeNode(id: string): void;
 };
 
 export function createStructureMoveAdapter(): StructureMoveAdapter {
@@ -14,10 +14,10 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
     return useGardenStore.getState().garden.structures.find((s) => s.id === id);
   }
   const adapter: StructureMoveAdapter = {
-    getObject(id) {
+    getNode(id) {
       return getStructure(id);
     },
-    getObjects() {
+    getNodes() {
       return useGardenStore.getState().garden.structures;
     },
     getPose(id) {
@@ -32,10 +32,10 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
     setParent(id, parentId) {
       useGardenStore.getState().updateStructure(id, { parentId: parentId ?? '' });
     },
-    insertObject(s) {
+    insertNode(s) {
       useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: [...st.garden.structures, s] } }));
     },
-    removeObject(id) {
+    removeNode(id) {
       useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: st.garden.structures.filter((s) => s.id !== id) } }));
     },
     applyBatch(ops, label) {

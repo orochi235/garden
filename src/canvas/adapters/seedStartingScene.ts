@@ -133,10 +133,10 @@ function findEmptyCellNearest(
 
 export function createSeedStartingSceneAdapter(): SeedStartingSceneAdapter {
   const adapter: SeedStartingSceneAdapter = {
-    getObject(id) {
+    getNode(id) {
       return findNode(id);
     },
-    getObjects() {
+    getNodes() {
       return allNodes();
     },
     getPose(id) {

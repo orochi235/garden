@@ -37,7 +37,7 @@ describe('seedStartingSceneAdapter', () => {
   it('getObjects returns all kinds with discriminators', () => {
     const { tray } = setup();
     const a = createSeedStartingSceneAdapter();
-    const objs = a.getObjects();
+    const objs = a.getNodes();
     expect(objs.filter((o) => o.kind === 'tray').map((o) => o.id)).toEqual([tray.id]);
     expect(objs.filter((o) => o.kind === 'seedling')).toHaveLength(2);
   });

@@ -9,7 +9,7 @@ export function createZoneResizeAdapter(): ResizeAdapter<Zone, ZoneResizePose> {
     return useGardenStore.getState().garden.zones.find((z) => z.id === id);
   }
   const adapter: ResizeAdapter<Zone, ZoneResizePose> = {
-    getObject(id) {
+    getNode(id) {
       return getZone(id);
     },
     getPose(id) {

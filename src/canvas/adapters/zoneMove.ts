@@ -5,8 +5,8 @@ import type { MoveAdapter } from '@orochi235/weasel';
 export interface ZonePose { x: number; y: number; widthFt: number; lengthFt: number }
 
 export type ZoneMoveAdapter = MoveAdapter<Zone, ZonePose> & {
-  insertObject(z: Zone): void;
-  removeObject(id: string): void;
+  insertNode(z: Zone): void;
+  removeNode(id: string): void;
 };
 
 export function createZoneMoveAdapter(): ZoneMoveAdapter {
@@ -14,10 +14,10 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
     return useGardenStore.getState().garden.zones.find((z) => z.id === id);
   }
   const adapter: ZoneMoveAdapter = {
-    getObject(id) {
+    getNode(id) {
       return getZone(id);
     },
-    getObjects() {
+    getNodes() {
       return useGardenStore.getState().garden.zones;
     },
     getPose(id) {
@@ -30,10 +30,10 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
       useGardenStore.getState().updateZone(id, { x: pose.x, y: pose.y });
     },
     setParent: () => {},
-    insertObject(z) {
+    insertNode(z) {
       useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [...s.garden.zones, z] } }));
     },
-    removeObject(id) {
+    removeNode(id) {
       useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: s.garden.zones.filter((z) => z.id !== id) } }));
     },
     applyBatch(ops, label) {

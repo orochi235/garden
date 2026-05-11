@@ -16,11 +16,11 @@ describe('createZoneResizeAdapter', () => {
     expect(a.getPose(z.id)).toEqual({ x: 1, y: 2, width: 4, length: 5 });
   });
 
-  it('getObject returns the zone', () => {
+  it('getNode returns the zone', () => {
     const z = useGardenStore.getState().garden.zones[0];
     const a = createZoneResizeAdapter();
-    expect(a.getObject(z.id)?.id).toBe(z.id);
-    expect(a.getObject('missing')).toBeUndefined();
+    expect(a.getNode(z.id)?.id).toBe(z.id);
+    expect(a.getNode('missing')).toBeUndefined();
   });
 
   it('applyBatch checkpoints + applies; undo restores', () => {

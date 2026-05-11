@@ -53,7 +53,7 @@ export function snapStructureZoneToGrid(
 ): MoveBehavior<ScenePose> {
   return {
     onMove(ctx, proposed) {
-      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind === 'planting') return;
       const shouldSnap =
         obj.kind === 'structure' ? obj.data.snapToGrid : true;
@@ -85,12 +85,12 @@ export function requirePlantingDrop(
   });
   return {
     onStart(ctx) {
-      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind !== 'planting') return;
       inner.onStart?.(ctx);
     },
     onEnd(ctx) {
-      const obj = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind !== 'planting') return;
       return inner.onEnd?.(ctx);
     },

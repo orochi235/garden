@@ -30,7 +30,7 @@ function unionDraggedAABB(
   let maxY = -Infinity;
 
   for (const id of draggedIds) {
-    const node = adapter.getObject(id) as SceneNode | undefined;
+    const node = adapter.getNode(id) as SceneNode | undefined;
     if (!node) continue;
     if (node.kind !== 'structure' && node.kind !== 'zone') continue;
     const o = origin.get(id);
@@ -68,7 +68,7 @@ export function clampStructureZoneToGardenBounds(
 ): MoveBehavior<ScenePose> {
   return {
     onMove(ctx, proposed) {
-      const node = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      const node = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!node) return;
       if (node.kind !== 'structure' && node.kind !== 'zone') return;
 
@@ -125,7 +125,7 @@ export function detectStructureClash(
 ): MoveBehavior<ScenePose> {
   return {
     onMove(ctx, proposed) {
-      const primary = adapter.getObject(ctx.draggedIds[0]) as SceneNode | undefined;
+      const primary = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!primary || primary.kind !== 'structure') {
         // Non-structure primary drags don't generate structure clashes.
         if (useUiStore.getState().dragClashIds.length > 0) {
@@ -143,7 +143,7 @@ export function detectStructureClash(
 
       const draggedRects: { x: number; y: number; width: number; height: number }[] = [];
       for (const id of ctx.draggedIds) {
-        const node = adapter.getObject(id) as SceneNode | undefined;
+        const node = adapter.getNode(id) as SceneNode | undefined;
         if (!node || node.kind !== 'structure') continue;
         const o = ctx.origin.get(id);
         if (!o) continue;

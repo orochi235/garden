@@ -16,8 +16,8 @@ interface SnapshotItem {
 }
 
 export interface GardenInsertAdapter extends InsertAdapter<GardenObj> {
-  removeObject(id: string): void;
-  getObject(id: string): GardenObj | undefined;
+  removeNode(id: string): void;
+  getNode(id: string): GardenObj | undefined;
 }
 
 export function createInsertAdapter(): GardenInsertAdapter {
@@ -129,7 +129,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
       const cell = useGardenStore.getState().garden.gridCellSizeFt;
       return { dx: cell, dy: cell };
     },
-    insertObject(obj) {
+    insertNode(obj) {
       if ('cultivarId' in obj) {
         useGardenStore.setState((s) => ({
           garden: { ...s.garden, plantings: [...s.garden.plantings, obj as Planting] },
@@ -144,7 +144,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
         }));
       }
     },
-    removeObject(id) {
+    removeNode(id) {
       useGardenStore.setState((s) => ({
         garden: {
           ...s.garden,
@@ -154,7 +154,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
         },
       }));
     },
-    getObject(id) {
+    getNode(id) {
       const { garden } = useGardenStore.getState();
       return (
         garden.structures.find((x) => x.id === id)
