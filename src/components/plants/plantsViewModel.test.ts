@@ -64,4 +64,42 @@ describe('buildPlantRows', () => {
     const rows = buildPlantRows(garden, { actions: [] });
     expect(rows[0].location).toBe('—');
   });
+
+  it('emits a row per seedling with kind="seedling" and tray label as location', () => {
+    const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
+    const cv = getAllCultivars()[0];
+    garden.seedStarting.trays.push({
+      id: 'tray1', label: 'Tray North', rows: 2, cols: 2,
+      cellSize: 'medium', cellPitchIn: 1.5, widthIn: 10, heightIn: 10,
+      slots: [
+        { state: 'sown', seedlingId: 's1' },
+        { state: 'empty', seedlingId: null },
+        { state: 'empty', seedlingId: null },
+        { state: 'empty', seedlingId: null },
+      ],
+    });
+    garden.seedStarting.seedlings.push({
+      id: 's1', cultivarId: cv.id, trayId: 'tray1',
+      row: 0, col: 0, labelOverride: null,
+    });
+    const rows = buildPlantRows(garden, { actions: [] });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe('seedling');
+    expect(rows[0].id).toBe('s1');
+    expect(rows[0].stage).toBe('seedling');
+    expect(rows[0].location).toBe('Tray North');
+    expect(rows[0].x).toBeNull();
+    expect(rows[0].y).toBeNull();
+  });
+
+  it('renders location as "—" for seedling without a tray', () => {
+    const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
+    const cv = getAllCultivars()[0];
+    garden.seedStarting.seedlings.push({
+      id: 's1', cultivarId: cv.id, trayId: null,
+      row: null, col: null, labelOverride: null,
+    });
+    const rows = buildPlantRows(garden, { actions: [] });
+    expect(rows[0].location).toBe('—');
+  });
 });

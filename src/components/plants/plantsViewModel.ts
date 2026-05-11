@@ -76,5 +76,32 @@ export function buildPlantRows(
     });
   }
 
+  for (const s of garden.seedStarting.seedlings) {
+    const cv = getCultivar(s.cultivarId);
+    const actions = actionsForPlant(schedule, s.id);
+    const tray = s.trayId ? garden.seedStarting.trays.find((t) => t.id === s.trayId) : null;
+    rows.push({
+      id: s.id,
+      kind: 'seedling',
+      cultivarId: s.cultivarId,
+      speciesId: cv?.speciesId ?? '',
+      parentId: s.trayId,
+      name: cv?.name ?? s.cultivarId,
+      variety: cv?.variety ?? null,
+      category: cv?.category ?? null,
+      location: tray?.label ?? '—',
+      stage: 'seedling',
+      spacingFt: cv?.spacingFt,
+      heightFt: cv?.heightFt,
+      footprintFt: cv?.footprintFt,
+      climber: cv?.climber ?? false,
+      iconImage: cv?.iconImage ?? null,
+      x: null,
+      y: null,
+      nextAction: nextActionFor(actions),
+      allActions: actions,
+    });
+  }
+
   return rows;
 }
