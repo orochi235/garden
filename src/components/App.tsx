@@ -38,8 +38,10 @@ export function App() {
   const loadGarden = useGardenStore((s) => s.loadGarden);
   const setCollection = useGardenStore((s) => s.setCollection);
   const appMode = useUiStore((s) => s.appMode);
+  const setAppMode = useUiStore((s) => s.setAppMode);
   const scheduleOpen = useUiStore((s) => s.scheduleOpen);
   const plantsModalOpen = useUiStore((s) => s.plantsModalOpen);
+  const collectionEditorOpen = useUiStore((s) => s.collectionEditorOpen);
   const [showWelcome, setShowWelcome] = useState(false);
   const { theme, prevTheme, layerFlip, transitionDuration } = useActiveTheme();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_PANEL);
@@ -85,6 +87,18 @@ export function App() {
       window.history.replaceState(null, '', next);
     }
   }, [appMode]);
+
+  // Esc exits seed-starting mode (when no modal is currently catching it).
+  useEffect(() => {
+    if (appMode !== 'seed-starting') return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      if (scheduleOpen || plantsModalOpen || collectionEditorOpen) return;
+      setAppMode('garden');
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [appMode, scheduleOpen, plantsModalOpen, collectionEditorOpen, setAppMode]);
 
   useEffect(() => {
     // Skip the autosave/seed restore when a fixture was loaded — the fixture
