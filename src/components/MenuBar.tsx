@@ -59,6 +59,19 @@ export function MenuBar() {
   return (
     <div className={styles.menuBar}>
       <div className={styles.title}>Garden Planner</div>
+      <div className={styles.menus}>
+        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection" className={styles.iconButton}>📦</button>
+        <button
+          type="button"
+          onClick={toggleSeedStarting}
+          aria-label="Seed starting"
+          aria-pressed={appMode === 'seed-starting'}
+          title="Seed starting"
+          className={`${styles.iconButton} ${appMode === 'seed-starting' ? styles.iconButtonActive : ''}`}
+        >🌱</button>
+        <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
+        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="List" title="List" className={styles.iconButton}>🔍</button>
+      </div>
       <ModeOnly mode="seed-starting">
         <TraySwitcher onOpenCustomBuilder={() => setBuilderOpen(true)} />
       </ModeOnly>
@@ -75,17 +88,6 @@ export function MenuBar() {
         <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
       </div>
       <div className={styles.menus}>
-        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection" className={styles.iconButton}>📦</button>
-        <button
-          type="button"
-          onClick={toggleSeedStarting}
-          aria-label="Seed starting"
-          aria-pressed={appMode === 'seed-starting'}
-          title="Seed starting"
-          className={`${styles.iconButton} ${appMode === 'seed-starting' ? styles.iconButtonActive : ''}`}
-        >🌱</button>
-        <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
-        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="List" title="List" className={styles.iconButton}>🔍</button>
         <button
           type="button"
           onClick={handleNew}
