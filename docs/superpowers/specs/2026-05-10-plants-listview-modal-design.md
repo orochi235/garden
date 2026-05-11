@@ -62,12 +62,12 @@ interface PlantRow {
   parentId: string | null;
   name: string;                // cultivar.name; falls back to cultivarId
   variety: string | null;
-  category: CultivarCategory;
+  category: CultivarCategory | null;  // null when cultivar is missing
   location: string;            // parent structure/zone label, or tray label, or "—"
   stage: 'planted' | 'seedling';
-  spacingFt: number;
+  spacingFt: number | undefined;      // undefined when cultivar is missing
   heightFt: number | undefined;
-  footprintFt: number;
+  footprintFt: number | undefined;    // undefined when cultivar is missing
   climber: boolean;
   iconImage: string | null;
   x: number | null;            // planting position; null for seedlings
