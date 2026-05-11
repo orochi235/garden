@@ -69,9 +69,9 @@ export function MenuBar() {
         <a href="drag-lab.html" target="_blank" rel="noreferrer">Layouts</a>
       </div>
       <div className={styles.menus}>
-        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection">🪴</button>
-        <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule">📅</button>
-        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="List" title="List">🔍</button>
+        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Collection" title="Collection" className={styles.iconButton}>🪴</button>
+        <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
+        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="List" title="List" className={styles.iconButton}>🔍</button>
         <button
           type="button"
           onClick={handleNew}
