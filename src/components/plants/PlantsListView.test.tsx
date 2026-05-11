@@ -168,4 +168,43 @@ describe('PlantsListView', () => {
     // 'variety' was in the defaults but is not in our explicit list — should be hidden.
     expect(screen.queryByRole('columnheader', { name: /variety/i })).toBeNull();
   });
+
+  it('seedling row click switches to seed-starting mode and selects the tray', async () => {
+    useGardenStore.getState().reset();
+    useUiStore.getState().reset();
+    const garden = useGardenStore.getState().garden;
+    const cv = getAllCultivars()[0];
+    useGardenStore.setState({
+      garden: {
+        ...garden,
+        seedStarting: {
+          trays: [{
+            id: 'tray1', label: 'My Tray', rows: 1, cols: 1,
+            cellSize: 'medium', cellPitchIn: 1.5, widthIn: 5, heightIn: 5,
+            slots: [{ state: 'sown', seedlingId: 'seed1' }],
+          }],
+          seedlings: [{ id: 'seed1', cultivarId: cv.id, trayId: 'tray1', row: 0, col: 0, labelOverride: null }],
+        },
+      },
+    });
+    useUiStore.getState().setAppMode('garden');
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+    const row = screen.getByRole('row', { name: new RegExp(cv.name, 'i') });
+    await user.click(row);
+    expect(useUiStore.getState().appMode).toBe('seed-starting');
+    expect(useUiStore.getState().currentTrayId).toBe('tray1');
+    expect(useUiStore.getState().selectedIds).toEqual(['seed1']);
+  });
+
+  it('planting row click does not change app mode', async () => {
+    const { planting } = seedGarden();
+    useUiStore.getState().setAppMode('garden');
+    const user = userEvent.setup();
+    render(<PlantsListView />);
+    const row = screen.getByRole('row', { name: new RegExp(planting.label, 'i') });
+    await user.click(row);
+    expect(useUiStore.getState().appMode).toBe('garden');
+    expect(useUiStore.getState().selectedIds).toEqual([planting.id]);
+  });
 });
