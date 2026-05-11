@@ -1,21 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { getAllCultivars } from '../../model/cultivars';
 import { createPlanting, createStructure } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { PlantsListView } from './PlantsListView';
-
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { store = {}; },
-  };
-})();
 
 function seedGarden() {
   useGardenStore.getState().reset();
@@ -33,8 +23,7 @@ function seedGarden() {
 
 describe('PlantsListView', () => {
   beforeEach(() => {
-    vi.stubGlobal('localStorage', localStorageMock);
-    localStorageMock.clear();
+    window.localStorage.clear();
   });
 
   it('renders a row for each planting with the default columns', () => {
