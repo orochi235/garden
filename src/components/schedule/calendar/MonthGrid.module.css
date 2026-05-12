@@ -1,5 +1,5 @@
 .month { display: flex; flex-direction: column; gap: 4px; }
-.title { font-weight: 600; font-size: 13px; color: var(--theme-text, #eee); margin: 8px 4px 2px; }
+.title { font-weight: 600; font-size: 13px; color: var(--theme-text, #eee); margin: 8px 4px 2px; text-align: center; }
 
 .grid {
   display: grid;
