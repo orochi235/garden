@@ -3,11 +3,12 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: var(--theme-divider, #333);
   padding: 1px;
   border-radius: 4px;
+  width: 100%;
 }
 .weekdayHeader {
   background: var(--theme-panel-bg, #1f2123);
@@ -22,6 +23,7 @@
   background: var(--theme-panel-bg, #1f2123);
   padding: 3px 3px 6px;
   min-height: 78px;
+  min-width: 0;
   position: relative;
   overflow: hidden;
   cursor: pointer;

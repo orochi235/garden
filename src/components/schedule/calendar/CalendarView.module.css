@@ -4,6 +4,10 @@
   flex-direction: column;
   gap: 8px;
   min-height: 400px;
+  /* Lock a stable width so cells are equal across months regardless of
+     bar text. The dialog (min/max 560/800px) will expand to fit. */
+  width: 720px;
+  max-width: 100%;
 }
 .controls {
   display: flex;
