@@ -17,3 +17,26 @@
 .sectionTitle { font-weight: 600; color: var(--theme-text, #eee); margin-bottom: 2px; }
 .warning { color: #ff7a7a; font-size: 12px; }
 .empty { color: var(--theme-text-muted, #888); font-style: italic; }
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--theme-divider, #333);
+  margin-bottom: 4px;
+}
+.tabBtn {
+  padding: 6px 14px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--theme-text-muted, #888);
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-family: inherit;
+}
+.tabBtn:hover { color: var(--theme-text, #eee); }
+.tabBtnActive {
+  color: var(--theme-text, #eee);
+  border-bottom-color: var(--theme-text, #eee);
+  font-weight: 600;
+}

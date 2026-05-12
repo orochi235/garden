@@ -1,0 +1,61 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 400px;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.scope { display: inline-flex; gap: 0; }
+.scopeBtn {
+  padding: 4px 8px; cursor: pointer;
+  background: rgba(255,255,255,0.06); color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333);
+  font-size: 12px;
+}
+.scopeBtnActive { background: var(--theme-text, #eee); color: var(--theme-panel-bg, #1f2123); border-color: var(--theme-text, #eee); }
+.nav { display: inline-flex; gap: 4px; align-items: center; }
+.navBtn {
+  padding: 2px 8px; cursor: pointer;
+  background: transparent; color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333);
+  font-size: 12px;
+  font-family: inherit;
+}
+.navBtn:hover { background: rgba(255,255,255,0.06); }
+.navBtn:disabled { opacity: 0.4; cursor: default; }
+.navLabel {
+  min-width: 8em;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--theme-text, #eee);
+}
+.encoding { margin-left: auto; }
+.encodingSelect {
+  background: var(--theme-panel-bg, #1f2123);
+  color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333);
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.gridArea {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  color: var(--theme-text-muted, #888);
+  font-style: italic;
+  padding: 24px 8px;
+  text-align: center;
+}
