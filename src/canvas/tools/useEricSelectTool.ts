@@ -304,22 +304,39 @@ export function useEricSelectTool(
   // mirrors above. The selection commit still flows through `areaSelect.end()`
   // in `drag.onEnd`, which runs the `selectFromMarquee` behavior; selection
   // is not part of the garden undo stack.
+  // NOTE: keyed on the overlay's VALUES, not its identity. Unlike
+  // `useMove`/`useResize` (whose overlays live in useState and keep a stable
+  // reference between pointer events), `useAreaSelect` rebuilds its overlay
+  // object on every render. An identity dep would re-fire this effect on each
+  // render; since `setDragPreview` itself re-renders any dragPreview
+  // subscriber (e.g. GardenCanvasNewPrototype), that's an infinite update
+  // loop — React kills it with "Maximum update depth exceeded" (#185).
   const areaSelectOverlay = areaSelect.overlay;
+  const marqueeStartX = areaSelectOverlay?.start.worldX;
+  const marqueeStartY = areaSelectOverlay?.start.worldY;
+  const marqueeCurrentX = areaSelectOverlay?.current.worldX;
+  const marqueeCurrentY = areaSelectOverlay?.current.worldY;
+  const marqueeShiftHeld = areaSelectOverlay?.shiftHeld ?? false;
   useEffect(() => {
     const ui = useUiStore.getState();
-    if (!areaSelectOverlay) {
+    if (
+      marqueeStartX === undefined ||
+      marqueeStartY === undefined ||
+      marqueeCurrentX === undefined ||
+      marqueeCurrentY === undefined
+    ) {
       if (ui.dragPreview && ui.dragPreview.kind === AREA_SELECT_DRAG_KIND) {
         ui.setDragPreview(null);
       }
       return;
     }
     const putative: AreaSelectPutative = {
-      start: { x: areaSelectOverlay.start.worldX, y: areaSelectOverlay.start.worldY },
-      current: { x: areaSelectOverlay.current.worldX, y: areaSelectOverlay.current.worldY },
-      shiftHeld: areaSelectOverlay.shiftHeld,
+      start: { x: marqueeStartX, y: marqueeStartY },
+      current: { x: marqueeCurrentX, y: marqueeCurrentY },
+      shiftHeld: marqueeShiftHeld,
     };
     ui.setDragPreview({ kind: AREA_SELECT_DRAG_KIND, putative });
-  }, [areaSelectOverlay]);
+  }, [marqueeStartX, marqueeStartY, marqueeCurrentX, marqueeCurrentY, marqueeShiftHeld]);
 
   // Clone-on-alt-drag. Wires through the optional insertAdapter; if none is
   // provided (legacy callsites) the gesture silently no-ops.

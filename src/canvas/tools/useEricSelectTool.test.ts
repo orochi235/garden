@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
 import { useEricSelectTool, type SelectScratch } from './useEricSelectTool';
 import { createGardenSceneAdapter } from '../adapters/gardenScene';
@@ -7,6 +7,7 @@ import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createGarden, createStructure } from '../../model/types';
 import { expandToGroups } from '../../utils/groups';
+import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
 
 function makeCtx(
   worldX: number,
@@ -351,6 +352,50 @@ describe('useEricSelectTool — click on group-sibling outline promotes selectio
     result.current.pointer!.onClick!(makePointerEvt(), ctx);
 
     expect(useUiStore.getState().selectedIds).toEqual([]);
+  });
+});
+
+describe('useEricSelectTool marquee → dragPreview mirror', () => {
+  beforeEach(() => {
+    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useUiStore.getState().clearSelection();
+    useUiStore.getState().setDragPreview(null);
+  });
+
+  // Regression: weasel's `useAreaSelect` rebuilds its `overlay` object on
+  // every render, so an effect keyed on the overlay's identity re-fires on
+  // each render. Combined with a component that subscribes to
+  // `uiStore.dragPreview` (as GardenCanvasNewPrototype does), publishing a
+  // fresh putative from that effect re-renders the subscriber, which rebuilds
+  // the overlay, which re-fires the effect — an infinite update loop that
+  // React kills with "Maximum update depth exceeded" (minified error #185).
+  it('publishes the live marquee without looping when a component subscribes to dragPreview', () => {
+    const adapter = createGardenSceneAdapter();
+    const { result } = renderHook(() => {
+      // Mirror GardenCanvasNewPrototype: same component subscribes to the
+      // slot the tool's mirror effect writes.
+      useUiStore((s) => s.dragPreview);
+      return useEricSelectTool(adapter);
+    });
+
+    const ctx = makeCtx(5, 5, { kind: 'area' }, adapter);
+    act(() => {
+      result.current.drag!.onStart!(makePointerEvt(), ctx);
+    });
+    act(() => {
+      result.current.drag!.onMove!(makePointerEvt(), makeCtx(12, 9, ctx.scratch, adapter));
+    });
+
+    const preview = useUiStore.getState().dragPreview;
+    expect(preview?.kind).toBe(AREA_SELECT_DRAG_KIND);
+    const putative = preview?.putative as { start: { x: number; y: number }; current: { x: number; y: number } };
+    expect(putative.start).toEqual({ x: 5, y: 5 });
+    expect(putative.current).toEqual({ x: 12, y: 9 });
+
+    act(() => {
+      result.current.drag!.onEnd!(makePointerEvt(), makeCtx(12, 9, ctx.scratch, adapter));
+    });
+    expect(useUiStore.getState().dragPreview).toBeNull();
   });
 });
 
