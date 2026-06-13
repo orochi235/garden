@@ -1,9 +1,9 @@
 import type { AddNodeSpec, Scene } from '@orochi235/weasel';
 import { createScene } from '@orochi235/weasel';
 import type { Layout } from '../model/layout';
-import type { FillType, Garden, StructureShape } from '../model/types';
+import type { FillType, Garden, LayerId, StructureShape } from '../model/types';
 
-export type GardenLayer = 'ground' | 'blueprint' | 'structures' | 'zones' | 'plantings';
+export type GardenLayer = LayerId;
 
 /** Render order, low→high. Matches the old structures-under-zones-under-plantings stacking. */
 export const GARDEN_LAYERS: readonly GardenLayer[] = [

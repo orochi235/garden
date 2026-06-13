@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGardenScene, GARDEN_LAYERS } from './gardenScene';
 
 describe('createGardenScene', () => {
-  it('declares the five garden layers in render order', () => {
+  it('contains the five garden layers in the correct render order', () => {
     expect(GARDEN_LAYERS).toEqual(['ground', 'blueprint', 'structures', 'zones', 'plantings']);
   });
 
