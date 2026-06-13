@@ -1,13 +1,7 @@
 import { asNodeId } from '@orochi235/weasel';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
-import type {
-  GardenAddNodeSpec,
-  GardenBase,
-  GardenNodeData,
-  GardenPose,
-  GardenScene,
-} from './gardenScene';
+import type { GardenAddNodeSpec, GardenBase, GardenScene } from './gardenScene';
 
 const DEFAULT_FOOTPRINT_FT = 0.5;
 
@@ -131,14 +125,15 @@ export function splitBase(garden: Garden): GardenBase {
   return base;
 }
 
+// Output array order follows scene.nodes insertion order (not zIndex); tests compare by id/sort.
 export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
   const structures: Structure[] = [];
   const zones: Zone[] = [];
   const plantings: Planting[] = [];
 
   for (const [, node] of scene.nodes) {
-    const data = node.data as GardenNodeData;
-    const pose = node.pose as GardenPose;
+    const data = node.data;
+    const pose = node.pose;
     const parentId = node.parent ? String(node.parent) : null;
 
     if (data.kind === 'structure') {
@@ -181,9 +176,11 @@ export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
         pattern: data.pattern,
       });
     } else if (data.kind === 'planting') {
+      if (!node.parent)
+        throw new Error(`sceneToGarden: planting '${String(node.id)}' has no parent`);
       plantings.push({
         id: String(node.id),
-        parentId: node.parent ? String(node.parent) : '',
+        parentId: String(node.parent),
         cultivarId: data.cultivarId,
         x: pose.x,
         y: pose.y,

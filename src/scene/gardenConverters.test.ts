@@ -1,3 +1,4 @@
+import { asNodeId } from '@orochi235/weasel';
 import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
@@ -135,7 +136,7 @@ describe('sceneToGarden round-trip', () => {
       rotation: 90,
     });
     expect(out.plantings[0]).toMatchObject({ id: 'p1', parentId: 's1', x: 1, y: 2 });
-    expect((out.plantings[0] as unknown as Record<string, unknown>).width).toBeUndefined();
+    expect(Object.keys(out.plantings[0])).not.toContain('width');
     expect(out.name).toBe('g');
     expect(out.nursery).toBe(g.nursery); // base reattached by reference
     expect(out.collection).toBe(g.collection);
@@ -148,5 +149,19 @@ describe('sceneToGarden round-trip', () => {
     const out = sceneToGarden(scene, splitBase(g));
     expect(out.structures.map((s) => s.id).sort()).toEqual(['hi', 'lo']);
     expect(out.structures.find((s) => s.id === 'hi')!.zIndex).toBe(5);
+  });
+
+  it('throws when a planting node has no parent', () => {
+    const g = createGarden({ name: 'g', widthFt: 1, lengthFt: 1 });
+    const scene = createGardenScene([]);
+    scene.add({
+      kind: 'leaf',
+      layer: 'structures',
+      pose: { x: 0, y: 0, width: 1, height: 1 },
+      data: { kind: 'planting', cultivarId: 'x', label: '', icon: null },
+      parent: null,
+      id: asNodeId('orphan'),
+    });
+    expect(() => sceneToGarden(scene, splitBase(g))).toThrow(/no parent/);
   });
 });
