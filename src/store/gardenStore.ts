@@ -11,7 +11,7 @@ import { loadAutosave, persistCollection } from '../utils/file';
 import { worldToLocalForParent } from '../utils/plantingPose';
 import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
 import { getCultivar } from '../model/cultivars';
-import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
+import { createHistoryStack } from './history';
 import { useUiStore } from './uiStore';
 import { createGardenScene } from '../scene/gardenScene';
 import type { GardenScene, GardenBase, GardenPose, GardenNodeData } from '../scene/gardenScene';
@@ -195,6 +195,8 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
 // which rebuild the scene wholesale from the composed garden (the "legacy
 // bridge"). Task C replaces this with fine-grained scene ops.
 
+const gardenHistory = createHistoryStack<Garden>();
+
 let scene: GardenScene = createGardenScene([]);
 let base: GardenBase = splitBase(blankGarden());
 // Live, not-yet-committed pose/data edits keyed by node id. EMPTY in B1 (Task C3 fills it).
@@ -260,7 +262,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
   /** Push current state to undo stack, then patch. */
   function commitPatch(updates: Partial<Garden>) {
-    pushHistory(get().garden, useUiStore.getState().selectedIds);
+    gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
     patch(updates);
   }
 
@@ -358,12 +360,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     garden: composeGarden(),
 
     loadGarden: (garden) => {
-      clearHistory();
+      gardenHistory.clear();
       adoptGarden(backfillGarden(garden));
     },
 
     reset: () => {
-      clearHistory();
+      gardenHistory.clear();
       adoptGarden(defaultGarden());
     },
 
@@ -817,26 +819,26 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     // --- History ---
 
     checkpoint: () => {
-      pushHistory(get().garden, useUiStore.getState().selectedIds);
+      gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
     },
 
     undo: () => {
-      const prev = undo(get().garden, useUiStore.getState().selectedIds);
+      const prev = gardenHistory.undo(get().garden, useUiStore.getState().selectedIds);
       if (prev) {
-        adoptGarden(prev.garden);
-        useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, prev.garden));
+        adoptGarden(prev.value);
+        useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, prev.value));
       }
     },
 
     redo: () => {
-      const next = redo(get().garden, useUiStore.getState().selectedIds);
+      const next = gardenHistory.redo(get().garden, useUiStore.getState().selectedIds);
       if (next) {
-        adoptGarden(next.garden);
-        useUiStore.getState().setSelection(scrubSelection(next.selectedIds, next.garden));
+        adoptGarden(next.value);
+        useUiStore.getState().setSelection(scrubSelection(next.selectedIds, next.value));
       }
     },
 
-    canUndo,
-    canRedo,
+    canUndo: () => gardenHistory.canUndo(),
+    canRedo: () => gardenHistory.canRedo(),
   };
 });
