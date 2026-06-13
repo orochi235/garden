@@ -75,12 +75,8 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
     },
     insertNode(planting) {
       // Insert preserving the original id so undo/redo is stable.
-      useGardenStore.setState((s) => ({
-        garden: {
-          ...s.garden,
-          plantings: [...s.garden.plantings, planting],
-        },
-      }));
+      const g = useGardenStore.getState().garden;
+      useGardenStore.getState().applyGardenPatch({ plantings: [...g.plantings, planting] });
     },
     removeNode(id) {
       useGardenStore.getState().removePlanting(id);

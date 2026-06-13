@@ -130,29 +130,22 @@ export function createInsertAdapter(): GardenInsertAdapter {
       return { dx: cell, dy: cell };
     },
     insertNode(obj) {
+      const g = useGardenStore.getState().garden;
       if ('cultivarId' in obj) {
-        useGardenStore.setState((s) => ({
-          garden: { ...s.garden, plantings: [...s.garden.plantings, obj as Planting] },
-        }));
+        useGardenStore.getState().applyGardenPatch({ plantings: [...g.plantings, obj as Planting] });
       } else if ('type' in obj) {
-        useGardenStore.setState((s) => ({
-          garden: { ...s.garden, structures: [...s.garden.structures, obj as Structure] },
-        }));
+        useGardenStore.getState().applyGardenPatch({ structures: [...g.structures, obj as Structure] });
       } else {
-        useGardenStore.setState((s) => ({
-          garden: { ...s.garden, zones: [...s.garden.zones, obj as Zone] },
-        }));
+        useGardenStore.getState().applyGardenPatch({ zones: [...g.zones, obj as Zone] });
       }
     },
     removeNode(id) {
-      useGardenStore.setState((s) => ({
-        garden: {
-          ...s.garden,
-          structures: s.garden.structures.filter((x) => x.id !== id),
-          zones: s.garden.zones.filter((x) => x.id !== id),
-          plantings: s.garden.plantings.filter((x) => x.id !== id),
-        },
-      }));
+      const g = useGardenStore.getState().garden;
+      useGardenStore.getState().applyGardenPatch({
+        structures: g.structures.filter((x) => x.id !== id),
+        zones: g.zones.filter((x) => x.id !== id),
+        plantings: g.plantings.filter((x) => x.id !== id),
+      });
     },
     getNode(id) {
       const { garden } = useGardenStore.getState();
