@@ -73,6 +73,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
   beforeEach(() => {
     useUiStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
+    // Seedling-move is a nursery-mode flow; undo/redo route by appMode.
+    useUiStore.getState().setAppMode('nursery');
   });
 
   it('overlay draws nothing when no drag is in flight', () => {

@@ -55,6 +55,8 @@ describe('deleteAction', () => {
   });
 
   it('seedling delete is a single undo checkpoint', () => {
+    // Seedling edits + undo live on the nursery stack, reachable only in nursery mode.
+    useUiStore.getState().setAppMode('nursery');
     useGardenStore.getState().addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
     const trayId = useGardenStore.getState().garden.nursery.trays[0].id;
     useGardenStore.getState().sowCell(trayId, 0, 0, 'basil-genovese');

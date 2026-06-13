@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyNurseryState } from '../model/nursery';
 import { blankGarden, useGardenStore } from './gardenStore';
 import { useUiStore } from './uiStore';
@@ -266,7 +266,12 @@ describe('setCollection', () => {
 import { instantiatePreset } from '../model/trayCatalog';
 
 describe('nursery actions', () => {
-  beforeEach(() => useGardenStore.getState().reset());
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+    // Nursery edits can only happen in nursery mode; undo/redo route by appMode.
+    useUiStore.getState().setAppMode('nursery');
+  });
+  afterEach(() => useUiStore.getState().setAppMode('garden'));
 
   it('addTray appends a tray and sets currentTrayId', () => {
     const tray = instantiatePreset('1020-36')!;
@@ -699,5 +704,30 @@ describe('collection orphan tolerance', () => {
     }));
     expect(useGardenStore.getState().garden.plantings[0].cultivarId).toBe(a.id);
     expect(useGardenStore.getState().garden.collection).toEqual([]);
+  });
+});
+
+describe('separate undo histories (garden vs nursery)', () => {
+  afterEach(() => useUiStore.getState().setAppMode('garden'));
+
+  it('garden and nursery edits undo independently (separate histories)', () => {
+    useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
+
+    useUiStore.getState().setAppMode('garden');
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(1);
+
+    useUiStore.getState().setAppMode('nursery');
+    useGardenStore.getState().addTray(instantiatePreset('1020-36')!);
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(1);
+
+    useGardenStore.getState().undo(); // nursery mode -> nursery stack
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(0);
+    expect(useGardenStore.getState().garden.structures).toHaveLength(1); // garden untouched
+
+    useUiStore.getState().setAppMode('garden');
+    useGardenStore.getState().undo(); // garden mode -> garden stack
+    expect(useGardenStore.getState().garden.structures).toHaveLength(0);
   });
 });

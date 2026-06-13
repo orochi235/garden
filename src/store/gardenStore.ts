@@ -191,11 +191,12 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
 // structures/zones/plantings) plus a non-spatial `base` (everything else). The
 // hundreds of `useGardenStore(s => s.garden.…)` readers see an unchanged Garden.
 //
-// Mutations are NOT rewritten yet — they still go through patch/commitPatch,
+// Mutations are NOT rewritten yet — they still go through patch/commitGarden/commitNursery,
 // which rebuild the scene wholesale from the composed garden (the "legacy
 // bridge"). Task C replaces this with fine-grained scene ops.
 
 const gardenHistory = createHistoryStack<Garden>();
+const nurseryHistory = createHistoryStack<NurseryState>();
 
 let scene: GardenScene = createGardenScene([]);
 let base: GardenBase = splitBase(blankGarden());
@@ -260,10 +261,16 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     adoptGarden({ ...composeGarden(), ...updates });
   }
 
-  /** Push current state to undo stack, then patch. */
-  function commitPatch(updates: Partial<Garden>) {
+  /** Push current garden state to the garden undo stack, then patch. */
+  function commitGarden(updates: Partial<Garden>) {
     gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
     patch(updates);
+  }
+
+  /** Push current nursery state to the nursery undo stack, then patch. */
+  function commitNursery(next: NurseryState) {
+    nurseryHistory.push(get().garden.nursery, useUiStore.getState().selectedIds);
+    patch({ nursery: next });
   }
 
   /** Fill a selection of cells with seedlings. When replace=true, sown cells are overwritten. */
@@ -296,12 +303,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     const remainingSeedlings = removedIds.size
       ? nursery.seedlings.filter((s) => !removedIds.has(s.id))
       : nursery.seedlings;
-    commitPatch({
-      nursery: {
-        ...nursery,
-        trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-        seedlings: [...remainingSeedlings, ...newSeedlings],
-      },
+    commitNursery({
+      ...nursery,
+      trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+      seedlings: [...remainingSeedlings, ...newSeedlings],
     });
   }
 
@@ -361,16 +366,18 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     loadGarden: (garden) => {
       gardenHistory.clear();
+      nurseryHistory.clear();
       adoptGarden(backfillGarden(garden));
     },
 
     reset: () => {
       gardenHistory.clear();
+      nurseryHistory.clear();
       adoptGarden(defaultGarden());
     },
 
     updateGarden: (updates) => {
-      commitPatch(updates);
+      commitGarden(updates);
     },
 
     setCollection: (collection) => {
@@ -381,7 +388,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     },
 
     setBlueprint: (blueprint) => {
-      commitPatch({ blueprint });
+      commitGarden({ blueprint });
     },
 
     // --- Structures ---
@@ -391,7 +398,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const { structures } = get().garden;
       const newStructure = createStructure(opts);
       if (structuresCollide(newStructure, structures)) return;
-      commitPatch({ structures: [...structures, newStructure] });
+      commitGarden({ structures: [...structures, newStructure] });
     },
 
     updateStructure: (id, updates) => {
@@ -406,17 +413,17 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         const parent = newStructures.find((s) => s.id === id);
         if (parent) {
           const newPlantings = rearrangePlantings(get().garden.plantings, id, parent);
-          commitPatch({ structures: newStructures, plantings: newPlantings });
+          commitGarden({ structures: newStructures, plantings: newPlantings });
           return;
         }
       }
-      commitPatch({ structures: newStructures });
+      commitGarden({ structures: newStructures });
     },
 
     removeStructure: (id) => {
       if (isLocked('structures')) return;
       const { structures, plantings } = get().garden;
-      commitPatch({
+      commitGarden({
         structures: structures.filter((s) => s.id !== id),
         plantings: plantings.filter((p) => p.parentId !== id),
       });
@@ -427,7 +434,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     addZone: (opts) => {
       if (isLocked('zones')) return;
       const { zones } = get().garden;
-      commitPatch({ zones: [...zones, createZone(opts)] });
+      commitGarden({ zones: [...zones, createZone(opts)] });
     },
 
     updateZone: (id, updates) => {
@@ -442,17 +449,17 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         const parent = newZones.find((z) => z.id === id);
         if (parent) {
           const newPlantings = rearrangePlantings(get().garden.plantings, id, parent);
-          commitPatch({ zones: newZones, plantings: newPlantings });
+          commitGarden({ zones: newZones, plantings: newPlantings });
           return;
         }
       }
-      commitPatch({ zones: newZones });
+      commitGarden({ zones: newZones });
     },
 
     removeZone: (id) => {
       if (isLocked('zones')) return;
       const { zones, plantings } = get().garden;
-      commitPatch({
+      commitGarden({
         zones: zones.filter((z) => z.id !== id),
         plantings: plantings.filter((p) => p.parentId !== id),
       });
@@ -485,9 +492,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       }
       const newPlantings = [...plantings, createPlanting(snappedOpts)];
       if (parent) {
-        commitPatch({ plantings: rearrangePlantings(newPlantings, opts.parentId, parent) });
+        commitGarden({ plantings: rearrangePlantings(newPlantings, opts.parentId, parent) });
       } else {
-        commitPatch({ plantings: newPlantings });
+        commitGarden({ plantings: newPlantings });
       }
     },
 
@@ -534,21 +541,19 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           }
         }
       }
-      commitPatch({ plantings: newPlantings });
+      commitGarden({ plantings: newPlantings });
     },
 
     removePlanting: (id) => {
       if (isLocked('plantings')) return;
-      commitPatch({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
+      commitGarden({ plantings: get().garden.plantings.filter((p) => p.id !== id) });
     },
 
     // --- Nursery ---
 
     addTray: (tray) => {
       const { nursery } = get().garden;
-      commitPatch({
-        nursery: { ...nursery, trays: [...nursery.trays, tray] },
-      });
+      commitNursery({ ...nursery, trays: [...nursery.trays, tray] });
       useUiStore.getState().bumpNurseryViewResetTick();
     },
 
@@ -560,12 +565,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     removeTray: (trayId) => {
       const { nursery } = get().garden;
-      commitPatch({
-        nursery: {
-          ...nursery,
-          trays: nursery.trays.filter((t) => t.id !== trayId),
-          seedlings: nursery.seedlings.filter((s) => s.trayId !== trayId),
-        },
+      commitNursery({
+        ...nursery,
+        trays: nursery.trays.filter((t) => t.id !== trayId),
+        seedlings: nursery.seedlings.filter((s) => s.trayId !== trayId),
       });
     },
 
@@ -573,11 +576,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const { nursery } = get().garden;
       const tray = nursery.trays.find((t) => t.id === trayId);
       if (!tray || tray.label === label) return;
-      commitPatch({
-        nursery: {
-          ...nursery,
-          trays: nursery.trays.map((t) => (t.id === trayId ? { ...t, label } : t)),
-        },
+      commitNursery({
+        ...nursery,
+        trays: nursery.trays.map((t) => (t.id === trayId ? { ...t, label } : t)),
       });
     },
 
@@ -590,7 +591,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const next = nursery.trays.slice();
       const [moved] = next.splice(fromIndex, 1);
       next.splice(toIndex, 0, moved);
-      commitPatch({ nursery: { ...nursery, trays: next } });
+      commitNursery({ ...nursery, trays: next });
     },
 
     sowCell: (trayId, row, col, cultivarId, opts) => {
@@ -606,12 +607,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       const filteredSeedlings = replacedId
         ? nursery.seedlings.filter((s) => s.id !== replacedId)
         : nursery.seedlings;
-      commitPatch({
-        nursery: {
-          ...nursery,
-          trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-          seedlings: [...filteredSeedlings, seedling],
-        },
+      commitNursery({
+        ...nursery,
+        trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+        seedlings: [...filteredSeedlings, seedling],
       });
     },
 
@@ -652,12 +651,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         if (s.id === toSlot.seedlingId) return { ...s, row: fromRow, col: fromCol };
         return s;
       });
-      commitPatch({
-        nursery: {
-          ...nursery,
-          trays: nursery.trays.map((t) => (t.id === trayId ? updated : t)),
-          seedlings,
-        },
+      commitNursery({
+        ...nursery,
+        trays: nursery.trays.map((t) => (t.id === trayId ? updated : t)),
+        seedlings,
       });
     },
 
@@ -699,12 +696,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         const m = moves.find((mm) => mm.seedlingId === s.id)!;
         return { ...s, trayId, row: m.toRow, col: m.toCol };
       });
-      commitPatch({
-        nursery: {
-          ...nursery,
-          trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-          seedlings,
-        },
+      commitNursery({
+        ...nursery,
+        trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+        seedlings,
       });
     },
 
@@ -794,9 +789,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         return { ...s, trayId: m.toTrayId, row: m.toRow, col: m.toCol };
       });
 
-      commitPatch({
-        nursery: { ...nursery, trays: newTrays, seedlings: newSeedlings },
-      });
+      commitNursery({ ...nursery, trays: newTrays, seedlings: newSeedlings });
     },
 
     clearCell: (trayId, row, col) => {
@@ -807,38 +800,62 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       if (!slot || slot.state === 'empty') return;
       const seedlingId = slot.seedlingId;
       const updatedTray = setCell(tray, row, col, { state: 'empty', seedlingId: null });
-      commitPatch({
-        nursery: {
-          ...nursery,
-          trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
-          seedlings: nursery.seedlings.filter((s) => s.id !== seedlingId),
-        },
+      commitNursery({
+        ...nursery,
+        trays: nursery.trays.map((t) => (t.id === trayId ? updatedTray : t)),
+        seedlings: nursery.seedlings.filter((s) => s.id !== seedlingId),
       });
     },
 
     // --- History ---
 
     checkpoint: () => {
-      gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
+      if (useUiStore.getState().appMode === 'nursery') {
+        nurseryHistory.push(get().garden.nursery, useUiStore.getState().selectedIds);
+      } else {
+        gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
+      }
     },
 
     undo: () => {
-      const prev = gardenHistory.undo(get().garden, useUiStore.getState().selectedIds);
-      if (prev) {
-        adoptGarden(prev.value);
-        useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, prev.value));
+      const sel = useUiStore.getState().selectedIds;
+      if (useUiStore.getState().appMode === 'nursery') {
+        const prev = nurseryHistory.undo(get().garden.nursery, sel);
+        if (prev) {
+          patch({ nursery: prev.value });
+          useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, get().garden));
+        }
+      } else {
+        const prev = gardenHistory.undo(get().garden, sel);
+        if (prev) {
+          // Overlay the LIVE nursery so a garden undo never reverts nursery edits.
+          adoptGarden({ ...prev.value, nursery: get().garden.nursery });
+          useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, get().garden));
+        }
       }
     },
 
     redo: () => {
-      const next = gardenHistory.redo(get().garden, useUiStore.getState().selectedIds);
-      if (next) {
-        adoptGarden(next.value);
-        useUiStore.getState().setSelection(scrubSelection(next.selectedIds, next.value));
+      const sel = useUiStore.getState().selectedIds;
+      if (useUiStore.getState().appMode === 'nursery') {
+        const next = nurseryHistory.redo(get().garden.nursery, sel);
+        if (next) {
+          patch({ nursery: next.value });
+          useUiStore.getState().setSelection(scrubSelection(next.selectedIds, get().garden));
+        }
+      } else {
+        const next = gardenHistory.redo(get().garden, sel);
+        if (next) {
+          // Overlay the LIVE nursery so a garden redo never reverts nursery edits.
+          adoptGarden({ ...next.value, nursery: get().garden.nursery });
+          useUiStore.getState().setSelection(scrubSelection(next.selectedIds, get().garden));
+        }
       }
     },
 
-    canUndo: () => gardenHistory.canUndo(),
-    canRedo: () => gardenHistory.canRedo(),
+    canUndo: () =>
+      useUiStore.getState().appMode === 'nursery' ? nurseryHistory.canUndo() : gardenHistory.canUndo(),
+    canRedo: () =>
+      useUiStore.getState().appMode === 'nursery' ? nurseryHistory.canRedo() : gardenHistory.canRedo(),
   };
 });
