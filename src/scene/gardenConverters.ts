@@ -25,8 +25,12 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
   // Structures — parents must be emitted before children; siblings in ascending zIndex.
   const structById = new Map(garden.structures.map((s) => [s.id, s]));
   const emittedStruct = new Set<string>();
+  const visitingStruct = new Set<string>();
   const emitStruct = (s: Structure) => {
     if (emittedStruct.has(s.id)) return;
+    if (visitingStruct.has(s.id))
+      throw new Error(`gardenToScene: cycle in structure parentId at '${s.id}'`);
+    visitingStruct.add(s.id);
     const parent = s.parentId ? structById.get(s.parentId) : undefined;
     if (parent) emitStruct(parent);
     specs.push({
@@ -52,14 +56,19 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
       },
     });
     emittedStruct.add(s.id);
+    visitingStruct.delete(s.id);
   };
   for (const s of [...garden.structures].sort(byZ)) emitStruct(s);
 
   // Zones (containers) — same parent-before-child guarantee; siblings in ascending zIndex.
   const zoneById = new Map(garden.zones.map((z) => [z.id, z]));
   const emittedZone = new Set<string>();
+  const visitingZone = new Set<string>();
   const emitZone = (z: Zone) => {
     if (emittedZone.has(z.id)) return;
+    if (visitingZone.has(z.id))
+      throw new Error(`gardenToScene: cycle in zone parentId at '${z.id}'`);
+    visitingZone.add(z.id);
     const parent = z.parentId ? zoneById.get(z.parentId) : undefined;
     if (parent) emitZone(parent);
     specs.push({
@@ -80,15 +89,24 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
       },
     });
     emittedZone.add(z.id);
+    visitingZone.delete(z.id);
   };
   for (const z of [...garden.zones].sort(byZ)) emitZone(z);
 
   // Plantings (leaves) — always have a parentId; parent already emitted above.
   // Weasel requires a child to be on the same layer as its parent, so we derive
   // the layer from whether the parent is a structure or zone.
+  // Plantings have no zIndex and are therefore emitted in array order (no sort).
   const zoneIds = new Set(garden.zones.map((z) => z.id));
   for (const p of garden.plantings) {
-    const layer = zoneIds.has(p.parentId) ? 'zones' : 'structures';
+    let layer: 'zones' | 'structures';
+    if (zoneIds.has(p.parentId)) {
+      layer = 'zones';
+    } else if (structById.has(p.parentId)) {
+      layer = 'structures';
+    } else {
+      throw new Error(`gardenToScene: planting '${p.id}' has unknown parentId '${p.parentId}'`);
+    }
     specs.push({
       id: asNodeId(p.id),
       kind: 'leaf',

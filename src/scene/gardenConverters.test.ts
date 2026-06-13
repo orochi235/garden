@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Planting, Structure } from '../model/types';
+import { getCultivar } from '../model/cultivars';
+import type { Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';
 import { gardenToScene } from './gardenConverters';
 import { createGardenScene } from './gardenScene';
@@ -31,6 +32,23 @@ function struct(p: Partial<Structure> & Pick<Structure, 'id'>): Structure {
 function plant(p: Partial<Planting> & Pick<Planting, 'id' | 'parentId'>): Planting {
   return { cultivarId: 'tomato', x: 1, y: 1, label: '', icon: null, ...p };
 }
+function zone(p: Partial<Zone> & Pick<Zone, 'id'>): Zone {
+  return {
+    x: 0,
+    y: 0,
+    width: 4,
+    length: 4,
+    color: '#aaa',
+    label: '',
+    zIndex: 0,
+    parentId: null,
+    soilType: null,
+    sunExposure: null,
+    layout: null,
+    pattern: null,
+    ...p,
+  };
+}
 
 describe('gardenToScene', () => {
   it('maps a container structure to a Scene container node on the structures layer', () => {
@@ -52,9 +70,10 @@ describe('gardenToScene', () => {
   });
 
   it('nests a planting under its parent structure with a derived square pose', () => {
+    const cultivarId = 'tomato';
     const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
     g.structures = [struct({ id: 's1' })];
-    g.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 2, cultivarId: 'tomato' })];
+    g.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 2, cultivarId })];
     const scene = createGardenScene(gardenToScene(g));
     const p = scene.get('p1' as never)!;
     expect(p.kind).toBe('leaf');
@@ -64,7 +83,30 @@ describe('gardenToScene', () => {
     expect(p.pose.x).toBe(1);
     expect(p.pose.y).toBe(2);
     expect(p.pose.width).toBeCloseTo(p.pose.height);
-    expect(p.pose.width).toBeGreaterThan(0);
+    const cultivar = getCultivar(cultivarId);
+    if (cultivar) {
+      expect(p.pose.width).toBeCloseTo(cultivar.footprintFt);
+    } else {
+      expect(p.pose.width).toBeGreaterThan(0);
+    }
+  });
+
+  it('nests a planting under a zone on the zones layer', () => {
+    const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
+    g.zones = [zone({ id: 'z1' })];
+    g.plantings = [plant({ id: 'p1', parentId: 'z1' })];
+    const scene = createGardenScene(gardenToScene(g));
+    const p = scene.get('p1' as never)!;
+    expect(p.layer).toBe('zones');
+    expect(p.parent).toBe('z1');
+  });
+
+  it('throws on a planting with an unknown parentId', () => {
+    const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
+    g.plantings = [plant({ id: 'p1', parentId: 'nonexistent' })];
+    expect(() => gardenToScene(g)).toThrow(
+      "gardenToScene: planting 'p1' has unknown parentId 'nonexistent'",
+    );
   });
 
   it('orders sibling roots by ascending zIndex', () => {
