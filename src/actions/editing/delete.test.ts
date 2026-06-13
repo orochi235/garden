@@ -1,18 +1,25 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createTray } from '../../model/nursery';
+import { createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { deleteAction } from './delete';
-import { createStructure } from '../../model/types';
-import { createTray } from '../../model/nursery';
 import type { ActionContext } from '../types';
+import { deleteAction } from './delete';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true }, target: { kind: 'selection' } };
+const ctx: ActionContext = {
+  clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true },
+  target: { kind: 'selection' },
+};
 
 describe('deleteAction', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
     useUiStore.getState().reset();
+  });
+
+  afterEach(() => {
+    useUiStore.getState().setAppMode('garden');
   });
 
   it('delete removes selected objects', () => {
@@ -25,9 +32,30 @@ describe('deleteAction', () => {
   });
 
   it('auto-expands to group siblings: deleting one member of a group of 3 deletes all 3', () => {
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
-    const b = createStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
-    const c = createStructure({ type: 'raised-bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const a = createStructure({
+      type: 'raised-bed',
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
+    const b = createStructure({
+      type: 'raised-bed',
+      x: 10,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
+    const c = createStructure({
+      type: 'raised-bed',
+      x: 20,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
     const d = createStructure({ type: 'raised-bed', x: 30, y: 0, width: 4, length: 4 });
     useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c, d] } }));
 
@@ -39,7 +67,9 @@ describe('deleteAction', () => {
   });
 
   it('deletes selected seedlings and clears their tray slots', () => {
-    useGardenStore.getState().addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
+    useGardenStore
+      .getState()
+      .addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
     const trayId = useGardenStore.getState().garden.nursery.trays[0].id;
     useGardenStore.getState().sowCell(trayId, 0, 0, 'basil-genovese');
     useGardenStore.getState().sowCell(trayId, 0, 1, 'basil-genovese');
@@ -57,7 +87,9 @@ describe('deleteAction', () => {
   it('seedling delete is a single undo checkpoint', () => {
     // Seedling edits + undo live on the nursery stack, reachable only in nursery mode.
     useUiStore.getState().setAppMode('nursery');
-    useGardenStore.getState().addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
+    useGardenStore
+      .getState()
+      .addTray(createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' }));
     const trayId = useGardenStore.getState().garden.nursery.trays[0].id;
     useGardenStore.getState().sowCell(trayId, 0, 0, 'basil-genovese');
     const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
@@ -69,9 +101,30 @@ describe('deleteAction', () => {
   });
 
   it('group-expanded delete is a single undo checkpoint', () => {
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
-    const b = createStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
-    const c = createStructure({ type: 'raised-bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const a = createStructure({
+      type: 'raised-bed',
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
+    const b = createStructure({
+      type: 'raised-bed',
+      x: 10,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
+    const c = createStructure({
+      type: 'raised-bed',
+      x: 20,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
     useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c] } }));
 
     useUiStore.getState().select(a.id);

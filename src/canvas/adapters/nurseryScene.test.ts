@@ -131,6 +131,7 @@ describe('nurseryScene', () => {
 
   it('applyBatch calls checkpoint once and applies each op', () => {
     setup();
+    useUiStore.getState().setAppMode('nursery');
     const a = createNurserySceneAdapter();
     const checkpoint = vi.spyOn(useGardenStore.getState(), 'checkpoint');
     const op1: Op = { apply: vi.fn(), invert: vi.fn() };
