@@ -13,6 +13,9 @@ import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../mo
 import { getCultivar } from '../model/cultivars';
 import { canRedo, canUndo, clearHistory, pushHistory, redo, undo } from './history';
 import { useUiStore } from './uiStore';
+import { createGardenScene } from '../scene/gardenScene';
+import type { GardenScene, GardenBase, GardenPose, GardenNodeData } from '../scene/gardenScene';
+import { gardenToScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
 
 interface GardenStore {
   garden: Garden;
@@ -182,10 +185,77 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
   return ids.filter((id) => live.has(id));
 }
 
+// --- Scene-backed garden facade (Task B1) ---
+//
+// gardenStore's public `garden` is composed from a weasel Scene (spatial nodes:
+// structures/zones/plantings) plus a non-spatial `base` (everything else). The
+// hundreds of `useGardenStore(s => s.garden.…)` readers see an unchanged Garden.
+//
+// Mutations are NOT rewritten yet — they still go through patch/commitPatch,
+// which rebuild the scene wholesale from the composed garden (the "legacy
+// bridge"). Task C replaces this with fine-grained scene ops.
+
+let scene: GardenScene = createGardenScene([]);
+let base: GardenBase = splitBase(blankGarden());
+// Live, not-yet-committed pose/data edits keyed by node id. EMPTY in B1 (Task C3 fills it).
+const overrides = new Map<string, { pose?: Partial<GardenPose>; data?: Partial<GardenNodeData> }>();
+
+let composed: Garden | null = null;
+let composedVersion = -1;
+let composedBase: GardenBase | null = null;
+let overridesDirty = false;
+
+// applyOverrides is identity in B1 (overrides always empty). Task C3 fills it in.
+function applyOverrides(g: Garden): Garden {
+  if (overrides.size === 0) return g;
+  return g; // Task C3
+}
+
+function composeGarden(): Garden {
+  const v = scene.getVersion();
+  if (composed && composedVersion === v && composedBase === base && !overridesDirty) return composed;
+  composed = applyOverrides(sceneToGarden(scene, base));
+  composedVersion = v;
+  composedBase = base;
+  overridesDirty = false;
+  return composed;
+}
+
+/** Reset the composed-garden memo so the next composeGarden() recomputes. */
+function invalidateComposed() {
+  composed = null;
+  composedVersion = -1;
+  composedBase = null;
+}
+
 export const useGardenStore = create<GardenStore>((set, get) => {
-  /** Apply a partial update to the garden object. */
+  /** (Re)subscribe to the current scene so any scene change refreshes the snapshot. */
+  function subscribeScene() {
+    scene.subscribe(() => {
+      set({ garden: composeGarden() });
+    });
+  }
+
+  /**
+   * Rebuild the scene + base from a full Garden snapshot and publish it. Shared
+   * by the legacy mutation bridge (patch) and undo/redo/loadGarden/reset.
+   */
+  function adoptGarden(next: Garden) {
+    base = splitBase(next);
+    scene = createGardenScene(gardenToScene(next));
+    subscribeScene();
+    overrides.clear();
+    invalidateComposed();
+    set({ garden: composeGarden() });
+  }
+
+  /**
+   * Apply a partial update to the garden — legacy bridge. Rebuilds the scene
+   * from the composed garden merged with `updates`. Coarse by design (no
+   * fine-grained scene ops yet); Task C replaces it.
+   */
   function patch(updates: Partial<Garden>) {
-    set((state) => ({ garden: { ...state.garden, ...updates } }));
+    adoptGarden({ ...composeGarden(), ...updates });
   }
 
   /** Push current state to undo stack, then patch. */
@@ -273,17 +343,28 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     return [...others, ...rearranged];
   }
 
+  // Bootstrap the module-scoped scene/base from the synchronous initial garden,
+  // then subscribe. (The module-level `scene`/`base` were initialized empty;
+  // adopt the real initial garden here so the first snapshot is correct.)
+  // initialGarden() already backfills the saved-autosave path; defaultGarden()
+  // is well-formed, so no extra backfill is needed here.
+  const bootstrap = initialGarden();
+  base = splitBase(bootstrap);
+  scene = createGardenScene(gardenToScene(bootstrap));
+  subscribeScene();
+  invalidateComposed();
+
   return {
-    garden: initialGarden(),
+    garden: composeGarden(),
 
     loadGarden: (garden) => {
       clearHistory();
-      set({ garden: backfillGarden(garden) });
+      adoptGarden(backfillGarden(garden));
     },
 
     reset: () => {
       clearHistory();
-      set({ garden: defaultGarden() });
+      adoptGarden(defaultGarden());
     },
 
     updateGarden: (updates) => {
@@ -742,7 +823,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     undo: () => {
       const prev = undo(get().garden, useUiStore.getState().selectedIds);
       if (prev) {
-        set({ garden: prev.garden });
+        adoptGarden(prev.garden);
         useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, prev.garden));
       }
     },
@@ -750,7 +831,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     redo: () => {
       const next = redo(get().garden, useUiStore.getState().selectedIds);
       if (next) {
-        set({ garden: next.garden });
+        adoptGarden(next.garden);
         useUiStore.getState().setSelection(scrubSelection(next.selectedIds, next.garden));
       }
     },
