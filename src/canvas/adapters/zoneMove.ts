@@ -31,10 +31,12 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
     },
     setParent: () => {},
     insertNode(z) {
-      useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [...s.garden.zones, z] } }));
+      const g = useGardenStore.getState().garden;
+      useGardenStore.getState().applyGardenPatch({ zones: [...g.zones, z] });
     },
     removeNode(id) {
-      useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: s.garden.zones.filter((z) => z.id !== id) } }));
+      const g = useGardenStore.getState().garden;
+      useGardenStore.getState().applyGardenPatch({ zones: g.zones.filter((z) => z.id !== id) });
     },
     applyBatch(ops, label) {
       useGardenStore.getState().checkpoint();

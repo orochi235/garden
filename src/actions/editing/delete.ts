@@ -39,15 +39,12 @@ export const deleteAction: ActionDescriptor = {
       );
       return { ...tray, slots };
     });
-    useGardenStore.setState((state) => ({
-      garden: {
-        ...state.garden,
-        structures,
-        zones,
-        plantings,
-        nursery: { ...state.garden.nursery, seedlings: remainingSeedlings, trays },
-      },
-    }));
+    useGardenStore.getState().applyGardenPatch({
+      structures,
+      zones,
+      plantings,
+      nursery: { ...garden.nursery, seedlings: remainingSeedlings, trays },
+    });
     useUiStore.getState().clearSelection();
   },
 };

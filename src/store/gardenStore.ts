@@ -28,6 +28,13 @@ interface GardenStore {
     >,
   ) => void;
   loadGarden: (garden: Garden) => void;
+  /**
+   * Facade-routed no-history write for transient/gesture mutations and bulk
+   * ops that own their own checkpoint. Rebuilds the scene so the change
+   * actually persists (unlike a raw setState({garden}), which the facade would
+   * overwrite).
+   */
+  applyGardenPatch: (updates: Partial<Garden>) => void;
   setCollection: (collection: Cultivar[]) => void;
   reset: () => void;
   setBlueprint: (blueprint: Blueprint | null) => void;
@@ -378,6 +385,10 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     updateGarden: (updates) => {
       commitGarden(updates);
+    },
+
+    applyGardenPatch: (updates) => {
+      patch(updates);
     },
 
     setCollection: (collection) => {

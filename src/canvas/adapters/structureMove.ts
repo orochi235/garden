@@ -33,10 +33,12 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
       useGardenStore.getState().updateStructure(id, { parentId: parentId ?? '' });
     },
     insertNode(s) {
-      useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: [...st.garden.structures, s] } }));
+      const g = useGardenStore.getState().garden;
+      useGardenStore.getState().applyGardenPatch({ structures: [...g.structures, s] });
     },
     removeNode(id) {
-      useGardenStore.setState((st) => ({ garden: { ...st.garden, structures: st.garden.structures.filter((s) => s.id !== id) } }));
+      const g = useGardenStore.getState().garden;
+      useGardenStore.getState().applyGardenPatch({ structures: g.structures.filter((s) => s.id !== id) });
     },
     applyBatch(ops, label) {
       useGardenStore.getState().checkpoint();

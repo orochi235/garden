@@ -34,7 +34,7 @@ export async function loadFixtureFromUrl(
   }
   const json = await res.text();
   const garden = deserializeGarden(json);
-  useGardenStore.setState({ garden });
+  useGardenStore.getState().loadGarden(garden);
 
   const rawMode = url.searchParams.get('mode');
   const mode = rawMode === LEGACY_NURSERY_MODE ? 'nursery' : rawMode;
