@@ -23,6 +23,36 @@ to `SceneCanvas`; the `dragPreview` subsystem is deleted.
 Chosen sequencing (user decision): **incremental, both canvases** — data-core first, one canvas at
 a time, app stays working after every sub-project.
 
+### Sequencing reality (revised after probing the pin, 2026-06-13)
+
+Probing the pinned weasel (`323d0914`) vs HEAD changed the sequencing:
+
+- The pin **already has the Scene/SceneCanvas data model** (`createScene`, `useScene`,
+  `sceneFromJSON`, `sceneToAdapter`, `SceneCanvas`) — but its `SceneCanvas` is driven by the **old
+  imperative hooks**, not the new actions.
+- The **Action API is HEAD-only**: `moveAction` / `resizeAction` / `areaSelectAction` /
+  `cloneAction`, `useGestureDispatcher`, `useSelectTool` did not exist at the pin. HEAD's
+  `SceneCanvas.tsx` differs by ~1821 lines; the `Scene` *type* differs by only ~51 lines.
+- HEAD **deleted the old hooks**, so any un-migrated canvas cannot compile on HEAD.
+
+Consequences:
+
+- **SP0 (packaging fix) is a prerequisite for the HEAD cutover (SP2+), NOT for SP1.** It is done.
+- **SP1 (data core) develops on the PIN.** The Scene data API is ~identical (51-line delta to
+  reconcile later), the old canvases keep working, so SP1's "no visible change / app runs" gate is
+  achievable. Building SP1 on HEAD would break both canvases and make the gate un-verifiable.
+- **SP2 + SP3 (canvas → Action API) are the HEAD cutover.** They can only run on HEAD (where the
+  action API lives). Because HEAD has no old hooks, garden and nursery cannot migrate strictly
+  one-at-a-time there without a bridge. Two options, decided at SP2 scoping:
+  1. **Temporary vendored-hooks bridge** — copy the deleted hooks into eric so the un-migrated
+     canvas compiles on HEAD; migrate garden, then nursery, then delete the bridge (SP4). Preserves
+     strict one-canvas-at-a-time. Risk: the old hooks depend on weasel internals that HEAD
+     reorganized, so the bridge may not port cleanly.
+  2. **Coupled cutover** — migrate garden + nursery to the action API in one HEAD branch; the branch
+     isn't runnable until both are done, then flip. Simpler, but a bigger atomic step.
+- **Symlink discipline:** SP1 develops with `eric/node_modules/@orochi235/weasel` → the pin
+  (`~/src/weasel-eric-pin`). The HEAD cutover (SP2) repoints it to `~/src/weasel`.
+
 ## Guiding decisions (apply to all sub-projects)
 
 1. **Keep the `.garden` file format.** Do NOT adopt weasel's `scene.toJSON()` serialized shape.
