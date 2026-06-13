@@ -56,7 +56,7 @@ export function serializeGarden(garden: Garden): string {
 export function deserializeGarden(json: string): Garden {
   const data = JSON.parse(json);
   migrateHeightToLength(data);
-  if (Array.isArray(data.structures)) stripLegacyStructureFields(data);
+  stripLegacyFields(data);
   if (!data.version || !data.name || data.widthFt == null || data.lengthFt == null) {
     throw new Error('Invalid garden file: missing required fields');
   }
@@ -142,17 +142,25 @@ function snapPlantingsToCellGrid(garden: Garden): void {
 }
 
 /**
- * Strip dead legacy fields from structure objects. `arrangement`, `trellisEdge`,
- * and `pattern` were once present on structures but are no longer in the `Structure`
- * model and are read nowhere. Older saved files still carry them; drop them at load
- * so the in-memory garden matches the type and round-trips cleanly through the Scene.
- * (`pattern` IS a valid Zone field — only strip it from structures.)
+ * Strip dead legacy fields at load. Structures once carried `arrangement`,
+ * `trellisEdge`, `pattern` (none in the `Structure` model, read nowhere); zones
+ * once carried `arrangement` (not in the `Zone` model). Older files still have
+ * them; drop them so the in-memory garden matches the type and round-trips
+ * cleanly through the Scene. (`pattern` IS a valid Zone field — never strip it
+ * from zones.)
  */
-function stripLegacyStructureFields(data: Record<string, unknown>): void {
-  for (const s of data.structures as Record<string, unknown>[]) {
-    delete s.arrangement;
-    delete s.trellisEdge;
-    delete s.pattern;
+function stripLegacyFields(data: Record<string, unknown>): void {
+  if (Array.isArray(data.structures)) {
+    for (const s of data.structures as Record<string, unknown>[]) {
+      delete s.arrangement;
+      delete s.trellisEdge;
+      delete s.pattern;
+    }
+  }
+  if (Array.isArray(data.zones)) {
+    for (const z of data.zones as Record<string, unknown>[]) {
+      delete z.arrangement;
+    }
   }
 }
 

@@ -112,7 +112,7 @@ describe('deserializeGarden', () => {
     expect(restored.collection[0].iconBgColor).toBe(cabbage.iconBgColor);
   });
 
-  it('strips dead legacy fields (arrangement, trellisEdge, pattern) from structures on load, but preserves pattern on zones', () => {
+  it('strips dead legacy fields (arrangement, trellisEdge, pattern) from structures on load, strips arrangement from zones, but preserves pattern on zones', () => {
     const garden = createGarden({ name: 'Legacy', widthFt: 20, lengthFt: 15 });
     const raw = JSON.parse(serializeGarden(garden));
     // Inject a structure with legacy fields.
@@ -139,7 +139,8 @@ describe('deserializeGarden', () => {
       trellisEdge: 'north',
       pattern: 'stripes',
     });
-    // Inject a zone with a real `pattern` field that must be preserved.
+    // Inject a zone with a real `pattern` field that must be preserved,
+    // and a dead `arrangement` field that must be stripped.
     raw.zones.push({
       id: 'zone-z',
       x: 0, y: 0,
@@ -152,14 +153,16 @@ describe('deserializeGarden', () => {
       sunExposure: null,
       layout: null,
       pattern: 'dots',
+      arrangement: 'legacy-dead-field',
     });
     const result = deserializeGarden(JSON.stringify(raw));
     const s = result.structures.find((x) => x.id === 'legacy-s')!;
     expect('arrangement' in s).toBe(false);
     expect('trellisEdge' in s).toBe(false);
     expect('pattern' in s).toBe(false);
-    // Zone pattern must survive.
+    // Zone: arrangement must be stripped, pattern must survive.
     const z = result.zones.find((x) => x.id === 'zone-z')!;
+    expect('arrangement' in z).toBe(false);
     expect(z.pattern).toBe('dots');
   });
 

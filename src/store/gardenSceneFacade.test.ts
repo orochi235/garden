@@ -109,48 +109,10 @@ describe('store round-trip: .garden -> loadGarden(scene) -> serialize', () => {
       const normStructures = (ss: typeof loaded.structures) =>
         sortById(ss).map((s) => normalizeStructure(s as unknown as Record<string, unknown>));
 
-      // Project zones to the canonical Zone fields only — older fixtures may
-      // carry legacy fields (e.g. `arrangement`) that aren't in the Zone model
-      // and that the scene round-trip correctly drops.
-      const projZone = (zs: Array<Record<string, unknown>>) =>
-        [...zs]
-          .sort((a, b) => (a.id as string).localeCompare(b.id as string))
-          .map(
-            ({
-              id,
-              x,
-              y,
-              width,
-              length,
-              color,
-              label,
-              zIndex,
-              parentId,
-              soilType,
-              sunExposure,
-              layout,
-              pattern,
-            }) => ({
-              id,
-              x,
-              y,
-              width,
-              length,
-              color,
-              label,
-              zIndex,
-              parentId,
-              soilType,
-              sunExposure,
-              layout,
-              pattern,
-            }),
-          );
-
       expect(normStructures(savedRaw.structures)).toEqual(normStructures(loaded.structures));
-      expect(projZone(savedRaw.zones as unknown as Array<Record<string, unknown>>)).toEqual(
-        projZone(loaded.zones as unknown as Array<Record<string, unknown>>),
-      );
+      // Full zone equality: legacy `arrangement` is now stripped at load time
+      // so zones are clean by the time they reach the scene.
+      expect(sortById(savedRaw.zones)).toEqual(sortById(loaded.zones));
       expect(projPlant(savedRaw.plantings)).toEqual(projPlant(loaded.plantings));
       expect(savedRaw.nursery).toEqual(loaded.nursery);
       expect(savedRaw.name).toBe(loaded.name);
