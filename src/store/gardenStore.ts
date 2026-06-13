@@ -207,7 +207,8 @@ const nurseryHistory = createHistoryStack<NurseryState>();
 
 let scene: GardenScene = createGardenScene([]);
 let base: GardenBase = splitBase(blankGarden());
-// Live, not-yet-committed pose/data edits keyed by node id. EMPTY in B1 (Task C3 fills it).
+// RESERVED/UNUSED under SP1 (Option B uses snapshot-stack undo, no override layer). Kept inert;
+// the cache-key + clear() calls are no-ops. A future scene-ops migration may repurpose it.
 const overrides = new Map<string, { pose?: Partial<GardenPose>; data?: Partial<GardenNodeData> }>();
 
 let composed: Garden | null = null;
@@ -215,7 +216,7 @@ let composedVersion = -1;
 let composedBase: GardenBase | null = null;
 let overridesDirty = false;
 
-// applyOverrides is identity in B1 (overrides always empty). Task C3 fills it in.
+// Identity under SP1 — no live override layer (see overrides above).
 function applyOverrides(g: Garden): Garden {
   if (overrides.size === 0) return g;
   return g; // Task C3

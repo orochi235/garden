@@ -730,4 +730,23 @@ describe('separate undo histories (garden vs nursery)', () => {
     useGardenStore.getState().undo(); // garden mode -> garden stack
     expect(useGardenStore.getState().garden.structures).toHaveLength(0);
   });
+
+  it('a garden undo preserves a later nursery edit (live-nursery overlay)', () => {
+    useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
+
+    useUiStore.getState().setAppMode('garden');
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
+    expect(useGardenStore.getState().garden.structures).toHaveLength(1);
+
+    useUiStore.getState().setAppMode('nursery');
+    useGardenStore.getState().addTray(instantiatePreset('1020-36')!);
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(1);
+
+    // Garden-mode undo of the structure must NOT revert the later nursery edit.
+    useUiStore.getState().setAppMode('garden');
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.structures).toHaveLength(0); // structure reverted
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(1); // tray preserved
+  });
 });
