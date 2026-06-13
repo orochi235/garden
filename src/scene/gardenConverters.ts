@@ -1,7 +1,13 @@
 import { asNodeId } from '@orochi235/weasel';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
-import type { GardenAddNodeSpec } from './gardenScene';
+import type {
+  GardenAddNodeSpec,
+  GardenBase,
+  GardenNodeData,
+  GardenPose,
+  GardenScene,
+} from './gardenScene';
 
 const DEFAULT_FOOTPRINT_FT = 0.5;
 
@@ -118,4 +124,74 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
   }
 
   return specs;
+}
+
+export function splitBase(garden: Garden): GardenBase {
+  const { structures: _s, zones: _z, plantings: _p, ...base } = garden;
+  return base;
+}
+
+export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
+  const structures: Structure[] = [];
+  const zones: Zone[] = [];
+  const plantings: Planting[] = [];
+
+  for (const [, node] of scene.nodes) {
+    const data = node.data as GardenNodeData;
+    const pose = node.pose as GardenPose;
+    const parentId = node.parent ? String(node.parent) : null;
+
+    if (data.kind === 'structure') {
+      structures.push({
+        id: String(node.id),
+        type: data.type,
+        shape: pose.shape ?? 'rectangle',
+        x: pose.x,
+        y: pose.y,
+        width: pose.width,
+        length: pose.height,
+        rotation: pose.rotation ?? 0,
+        color: data.color,
+        label: data.label,
+        zIndex: data.zIndex,
+        parentId,
+        groupId: data.groupId,
+        snapToGrid: data.snapToGrid,
+        surface: data.surface,
+        container: data.container,
+        fill: data.fill,
+        layout: data.layout,
+        wallThicknessFt: data.wallThicknessFt,
+        clipChildren: data.clipChildren,
+      });
+    } else if (data.kind === 'zone') {
+      zones.push({
+        id: String(node.id),
+        x: pose.x,
+        y: pose.y,
+        width: pose.width,
+        length: pose.height,
+        color: data.color,
+        label: data.label,
+        zIndex: data.zIndex,
+        parentId,
+        soilType: data.soilType,
+        sunExposure: data.sunExposure,
+        layout: data.layout,
+        pattern: data.pattern,
+      });
+    } else if (data.kind === 'planting') {
+      plantings.push({
+        id: String(node.id),
+        parentId: node.parent ? String(node.parent) : '',
+        cultivarId: data.cultivarId,
+        x: pose.x,
+        y: pose.y,
+        label: data.label,
+        icon: data.icon,
+      });
+    }
+  }
+
+  return { ...base, structures, zones, plantings };
 }

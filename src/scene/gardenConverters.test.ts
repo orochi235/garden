@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';
-import { gardenToScene } from './gardenConverters';
+import { gardenToScene, sceneToGarden, splitBase } from './gardenConverters';
 import { createGardenScene } from './gardenScene';
 
 function struct(p: Partial<Structure> & Pick<Structure, 'id'>): Structure {
@@ -114,5 +114,39 @@ describe('gardenToScene', () => {
     g.structures = [struct({ id: 'hi', zIndex: 5 }), struct({ id: 'lo', zIndex: 1 })];
     const scene = createGardenScene(gardenToScene(g));
     expect(scene.roots).toEqual(['lo', 'hi']);
+  });
+});
+
+describe('sceneToGarden round-trip', () => {
+  it('round-trips structures, zones, and plantings (modulo derived planting size)', () => {
+    const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
+    g.structures = [struct({ id: 's1', x: 1, y: 2, width: 4, length: 8, rotation: 90 })];
+    g.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 2 })];
+    const scene = createGardenScene(gardenToScene(g));
+
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.structures).toHaveLength(1);
+    expect(out.structures[0]).toMatchObject({
+      id: 's1',
+      x: 1,
+      y: 2,
+      width: 4,
+      length: 8,
+      rotation: 90,
+    });
+    expect(out.plantings[0]).toMatchObject({ id: 'p1', parentId: 's1', x: 1, y: 2 });
+    expect((out.plantings[0] as unknown as Record<string, unknown>).width).toBeUndefined();
+    expect(out.name).toBe('g');
+    expect(out.nursery).toBe(g.nursery); // base reattached by reference
+    expect(out.collection).toBe(g.collection);
+  });
+
+  it('preserves zIndex on the way back', () => {
+    const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
+    g.structures = [struct({ id: 'hi', zIndex: 5 }), struct({ id: 'lo', zIndex: 1 })];
+    const scene = createGardenScene(gardenToScene(g));
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.structures.map((s) => s.id).sort()).toEqual(['hi', 'lo']);
+    expect(out.structures.find((s) => s.id === 'hi')!.zIndex).toBe(5);
   });
 });
