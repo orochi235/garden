@@ -1,9 +1,9 @@
+import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
+import type { Cultivar } from '../model/cultivars';
+import { getCultivar } from '../model/cultivars';
 import { emptyNurseryState } from '../model/nursery';
 import type { Garden, Structure, Zone } from '../model/types';
-import { PLANTABLE_TYPES, getPlantableBounds } from '../model/types';
-import { getCultivar } from '../model/cultivars';
-import type { Cultivar } from '../model/cultivars';
-import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
+import { getPlantableBounds, PLANTABLE_TYPES } from '../model/types';
 
 /**
  * Project the collection to the on-disk form: builtin cultivars become
@@ -13,7 +13,9 @@ import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../mo
  * The runtime shape stays `Cultivar[]` — we re-hydrate on deserialize.
  * Older files with full Cultivar objects for builtins are still accepted.
  */
-function projectCollectionForExport(collection: Cultivar[] | undefined): Array<{ id: string } | Cultivar> {
+function projectCollectionForExport(
+  collection: Cultivar[] | undefined,
+): Array<{ id: string } | Cultivar> {
   return (collection ?? []).map((c) => (getCultivar(c.id) ? { id: c.id } : c));
 }
 
@@ -21,9 +23,10 @@ function hydrateCollection(raw: unknown): Cultivar[] {
   if (!Array.isArray(raw)) return [];
   const out: Cultivar[] = [];
   for (const entry of raw) {
-    const id = (entry as { id?: string } | string | null)?.constructor === String
-      ? (entry as unknown as string)
-      : (entry as { id?: string } | null)?.id;
+    const id =
+      (entry as { id?: string } | string | null)?.constructor === String
+        ? (entry as unknown as string)
+        : (entry as { id?: string } | null)?.id;
     if (!id) continue;
     const builtin = getCultivar(id);
     if (builtin) {
@@ -31,7 +34,11 @@ function hydrateCollection(raw: unknown): Cultivar[] {
       continue;
     }
     // Custom cultivar — must have the full Cultivar shape inline.
-    if (typeof entry === 'object' && entry !== null && typeof (entry as Cultivar).color === 'string') {
+    if (
+      typeof entry === 'object' &&
+      entry !== null &&
+      typeof (entry as Cultivar).color === 'string'
+    ) {
       out.push(entry as Cultivar);
     }
   }
@@ -49,6 +56,7 @@ export function serializeGarden(garden: Garden): string {
 export function deserializeGarden(json: string): Garden {
   const data = JSON.parse(json);
   migrateHeightToLength(data);
+  if (Array.isArray(data.structures)) stripLegacyStructureFields(data);
   if (!data.version || !data.name || data.widthFt == null || data.lengthFt == null) {
     throw new Error('Invalid garden file: missing required fields');
   }
@@ -133,6 +141,20 @@ function snapPlantingsToCellGrid(garden: Garden): void {
   }
 }
 
+/**
+ * Strip dead legacy fields from structure objects. `arrangement`, `trellisEdge`,
+ * and `pattern` were once present on structures but are no longer in the `Structure`
+ * model and are read nowhere. Older saved files still carry them; drop them at load
+ * so the in-memory garden matches the type and round-trips cleanly through the Scene.
+ * (`pattern` IS a valid Zone field — only strip it from structures.)
+ */
+function stripLegacyStructureFields(data: Record<string, unknown>): void {
+  for (const s of data.structures as Record<string, unknown>[]) {
+    delete s.arrangement;
+    delete s.trellisEdge;
+    delete s.pattern;
+  }
+}
 
 function migrateHeightToLength(data: Record<string, unknown>): void {
   if (data.lengthFt == null && data.heightFt != null) {
@@ -142,7 +164,12 @@ function migrateHeightToLength(data: Record<string, unknown>): void {
   for (const arr of [data.structures, data.zones]) {
     if (!Array.isArray(arr)) continue;
     for (const item of arr) {
-      if (item && typeof item === 'object' && (item as Record<string, unknown>).length == null && (item as Record<string, unknown>).height != null) {
+      if (
+        item &&
+        typeof item === 'object' &&
+        (item as Record<string, unknown>).length == null &&
+        (item as Record<string, unknown>).height != null
+      ) {
         (item as Record<string, unknown>).length = (item as Record<string, unknown>).height;
         delete (item as Record<string, unknown>).height;
       }

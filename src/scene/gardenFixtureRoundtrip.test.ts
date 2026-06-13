@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Garden, Structure, Zone } from '../model/types';
@@ -6,16 +6,29 @@ import { deserializeGarden } from '../utils/file';
 import { gardenToScene, sceneToGarden, splitBase } from './gardenConverters';
 import { createGardenScene } from './gardenScene';
 
-const FIXTURES = ['default', 'marinara', 'salsa', 'eight-tomatoes', 'trellis-bed'];
+const FIXTURES = readdirSync(join(process.cwd(), 'public'))
+  .filter((f) => f.endsWith('.garden'))
+  .map((f) => f.replace(/\.garden$/, ''));
 
 const sortById = <T extends { id: string }>(xs: T[]): T[] =>
   [...xs].sort((a, b) => a.id.localeCompare(b.id));
 
 /**
- * Project a Structure to the fields the current type models.
- * Older .garden files contain legacy fields (arrangement, trellisEdge, pattern) that
- * are not in the Structure type and are not carried through the Scene — they need a
- * deserializeGarden migration to be stripped. Until then we compare only typed fields.
+ * Project a Structure / Zone to only the fields the current type models, normalizing
+ * optional defaults so both sides of the comparison are symmetrical.
+ *
+ * Notes on what these projections do and why:
+ *
+ * - `deserializeGarden` does NOT backfill structure defaults (the live app does that
+ *   in `gardenStore.loadGarden` via `backfillGarden`). `sceneToGarden` intentionally
+ *   defaults `rotation → 0` and `shape → 'rectangle'` so the pose always has concrete
+ *   values. The `?? default` normalizations here mirror those intended defaults
+ *   symmetrically on BOTH the original and the round-tripped object so they match
+ *   intended normalization rather than hiding converter bugs. Keep them.
+ *
+ * - With the `stripLegacyStructureFields` migration in `deserializeGarden`, legacy
+ *   fields (arrangement, trellisEdge, pattern) are now dropped at load time, so the
+ *   projection only needs to enumerate the typed fields — no exclusion required.
  */
 const projStructure = (s: Structure) => ({
   id: s.id,
@@ -68,6 +81,9 @@ const projPlanting = (ps: Garden['plantings']) =>
   }));
 
 describe('gardenToScene/sceneToGarden fixture parity', () => {
+  it('discovers at least 5 .garden fixtures in public/', () => {
+    expect(FIXTURES.length).toBeGreaterThanOrEqual(5);
+  });
   for (const name of FIXTURES) {
     it(`round-trips public/${name}.garden`, () => {
       const json = readFileSync(join(process.cwd(), 'public', `${name}.garden`), 'utf8');
