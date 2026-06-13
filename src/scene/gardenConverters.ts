@@ -24,6 +24,14 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
 
   // Structures — parents must be emitted before children; siblings in ascending zIndex.
   const structById = new Map(garden.structures.map((s) => [s.id, s]));
+  // A structure must be a Weasel 'container' node if it has any child structures or
+  // plantings, even when its own `container` field is false (e.g. a patio that holds pots).
+  const structChildIds = new Set(
+    garden.structures.filter((s) => s.parentId).map((s) => s.parentId as string),
+  );
+  const plantingParentIds = new Set(garden.plantings.map((p) => p.parentId));
+  const isSceneContainer = (s: Structure) =>
+    s.container || structChildIds.has(s.id) || plantingParentIds.has(s.id);
   const emittedStruct = new Set<string>();
   const visitingStruct = new Set<string>();
   const emitStruct = (s: Structure) => {
@@ -35,7 +43,7 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
     if (parent) emitStruct(parent);
     specs.push({
       id: asNodeId(s.id),
-      kind: s.container ? 'container' : 'leaf',
+      kind: isSceneContainer(s) ? 'container' : 'leaf',
       layer: 'structures',
       pose: structurePose(s),
       parent: s.parentId ? asNodeId(s.parentId) : null,
