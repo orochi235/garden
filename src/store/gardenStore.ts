@@ -1,21 +1,29 @@
 import { create } from 'zustand';
-import { getSlots, getGridCells } from '../model/layout';
-import type { Layout } from '../model/layout';
-import { createSeedling, emptyNurseryState, getCell, setCell } from '../model/nursery';
-import type { NurseryState, Seedling, Tray } from '../model/nursery';
+import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
 import type { Cultivar } from '../model/cultivars';
+import { getCultivar } from '../model/cultivars';
+import type { Layout } from '../model/layout';
+import { getGridCells, getSlots } from '../model/layout';
+import type { NurseryState, Seedling, Tray } from '../model/nursery';
+import { createSeedling, emptyNurseryState, getCell, setCell } from '../model/nursery';
 import type { Blueprint, Garden, LayerId, Planting, Structure, Zone } from '../model/types';
-import { createGarden, createPlanting, createStructure, createZone, DEFAULT_WALL_THICKNESS_FT, generateId, getPlantableBounds } from '../model/types';
+import {
+  createGarden,
+  createPlanting,
+  createStructure,
+  createZone,
+  DEFAULT_WALL_THICKNESS_FT,
+  generateId,
+  getPlantableBounds,
+} from '../model/types';
+import { gardenToScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
+import type { GardenBase, GardenNodeData, GardenPose, GardenScene } from '../scene/gardenScene';
+import { createGardenScene } from '../scene/gardenScene';
 import { structuresCollide } from '../utils/collision';
 import { loadAutosave, persistCollection } from '../utils/file';
 import { worldToLocalForParent } from '../utils/plantingPose';
-import { computeOccupancy, nearestFreeCellCenter, resolveFootprint } from '../model/cellOccupancy';
-import { getCultivar } from '../model/cultivars';
 import { createHistoryStack } from './history';
 import { useUiStore } from './uiStore';
-import { createGardenScene } from '../scene/gardenScene';
-import type { GardenScene, GardenBase, GardenPose, GardenNodeData } from '../scene/gardenScene';
-import { gardenToScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
 
 interface GardenStore {
   garden: Garden;
@@ -48,12 +56,23 @@ interface GardenStore {
   updateStructure: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   commitStructureUpdate: (id: string, updates: Partial<Omit<Structure, 'id' | 'type'>>) => void;
   removeStructure: (id: string) => void;
-  addZone: (opts: { x: number; y: number; width: number; length: number; color?: string; pattern?: string | null }) => void;
+  addZone: (opts: {
+    x: number;
+    y: number;
+    width: number;
+    length: number;
+    color?: string;
+    pattern?: string | null;
+  }) => void;
   updateZone: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   commitZoneUpdate: (id: string, updates: Partial<Omit<Zone, 'id'>>) => void;
   removeZone: (id: string) => void;
   addPlanting: (opts: { parentId: string; x: number; y: number; cultivarId: string }) => void;
-  updatePlanting: (id: string, updates: Partial<Omit<Planting, 'id'>>, opts?: { skipRearrange?: boolean }) => void;
+  updatePlanting: (
+    id: string,
+    updates: Partial<Omit<Planting, 'id'>>,
+    opts?: { skipRearrange?: boolean },
+  ) => void;
   commitPlantingUpdate: (id: string, updates: Partial<Omit<Planting, 'id'>>) => void;
   removePlanting: (id: string) => void;
   addTray: (tray: Tray) => void;
@@ -61,7 +80,13 @@ interface GardenStore {
   removeTray: (trayId: string) => void;
   renameTray: (trayId: string, label: string) => void;
   reorderTrays: (fromIndex: number, toIndex: number) => void;
-  sowCell: (trayId: string, row: number, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
+  sowCell: (
+    trayId: string,
+    row: number,
+    col: number,
+    cultivarId: string,
+    opts?: { replace?: boolean },
+  ) => void;
   clearCell: (trayId: string, row: number, col: number) => void;
   moveSeedling: (
     trayId: string,
@@ -98,7 +123,12 @@ interface GardenStore {
   ) => void;
   fillTray: (trayId: string, cultivarId: string, opts?: { replace?: boolean }) => void;
   fillRow: (trayId: string, row: number, cultivarId: string, opts?: { replace?: boolean }) => void;
-  fillColumn: (trayId: string, col: number, cultivarId: string, opts?: { replace?: boolean }) => void;
+  fillColumn: (
+    trayId: string,
+    col: number,
+    cultivarId: string,
+    opts?: { replace?: boolean },
+  ) => void;
   checkpoint: () => void;
   undo: () => void;
   redo: () => void;
@@ -224,7 +254,8 @@ function applyOverrides(g: Garden): Garden {
 
 function composeGarden(): Garden {
   const v = scene.getVersion();
-  if (composed && composedVersion === v && composedBase === base && !overridesDirty) return composed;
+  if (composed && composedVersion === v && composedBase === base && !overridesDirty)
+    return composed;
   composed = applyOverrides(sceneToGarden(scene, base));
   composedVersion = v;
   composedBase = base;
@@ -337,16 +368,23 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   function rearrangePlantings(
     plantings: Planting[],
     parentId: string,
-    parent: { x: number; y: number; width: number; length: number; shape?: string; layout: Layout | null; wallThicknessFt?: number },
+    parent: {
+      x: number;
+      y: number;
+      width: number;
+      length: number;
+      shape?: string;
+      layout: Layout | null;
+      wallThicknessFt?: number;
+    },
   ): Planting[] {
     const layout = parent.layout;
     if (!layout || layout.type === 'cell-grid') return plantings;
 
     const bounds = getPlantableBounds(parent);
 
-    const slots = layout.type === 'grid'
-      ? getGridCells(layout.cellSizeFt, bounds)
-      : getSlots(layout, bounds);
+    const slots =
+      layout.type === 'grid' ? getGridCells(layout.cellSizeFt, bounds) : getSlots(layout, bounds);
 
     const children = plantings.filter((p) => p.parentId === parentId);
     const others = plantings.filter((p) => p.parentId !== parentId);
@@ -482,8 +520,8 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     addPlanting: (opts) => {
       if (isLocked('plantings')) return;
       const { plantings, structures, zones } = get().garden;
-      const parent = structures.find((s) => s.id === opts.parentId)
-        ?? zones.find((z) => z.id === opts.parentId);
+      const parent =
+        structures.find((s) => s.id === opts.parentId) ?? zones.find((z) => z.id === opts.parentId);
       // For cell-grid parents, snap the new planting to the nearest valid free
       // cell — preserves the "no two plants overlap" invariant for programmatic
       // adds (the drag tool already snaps via getPlantingPosition, but tests
@@ -494,12 +532,25 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         const bounds = getPlantableBounds(parent);
         const siblings = plantings
           .filter((p) => p.parentId === opts.parentId)
-          .map((p) => resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y))
+          .map((p) =>
+            resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y),
+          )
           .filter((f): f is NonNullable<typeof f> => f !== null);
-        const { occupied } = computeOccupancy({ bounds, cellSizeFt: cellSize, plantings: siblings });
+        const { occupied } = computeOccupancy({
+          bounds,
+          cellSizeFt: cellSize,
+          plantings: siblings,
+        });
         const cultivar = getCultivar(opts.cultivarId);
         const r = (cultivar?.footprintFt ?? 0.5) / 2;
-        const cell = nearestFreeCellCenter(bounds, cellSize, occupied, r, parent.x + opts.x, parent.y + opts.y);
+        const cell = nearestFreeCellCenter(
+          bounds,
+          cellSize,
+          occupied,
+          r,
+          parent.x + opts.x,
+          parent.y + opts.y,
+        );
         if (cell) snappedOpts = { ...opts, x: cell.x - parent.x, y: cell.y - parent.y };
       }
       const newPlantings = [...plantings, createPlanting(snappedOpts)];
@@ -517,15 +568,17 @@ export const useGardenStore = create<GardenStore>((set, get) => {
         const { structures, zones } = get().garden;
         const planting = get().garden.plantings.find((p) => p.id === id);
         // Rearrange target parent
-        const targetParent = structures.find((s) => s.id === updates.parentId)
-          ?? zones.find((z) => z.id === updates.parentId);
+        const targetParent =
+          structures.find((s) => s.id === updates.parentId) ??
+          zones.find((z) => z.id === updates.parentId);
         if (targetParent) {
           newPlantings = rearrangePlantings(newPlantings, updates.parentId!, targetParent);
         }
         // Rearrange source parent if different
         if (planting && planting.parentId !== updates.parentId) {
-          const srcParent = structures.find((s) => s.id === planting.parentId)
-            ?? zones.find((z) => z.id === planting.parentId);
+          const srcParent =
+            structures.find((s) => s.id === planting.parentId) ??
+            zones.find((z) => z.id === planting.parentId);
           if (srcParent) {
             newPlantings = rearrangePlantings(newPlantings, planting.parentId, srcParent);
           }
@@ -540,14 +593,16 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       if ('parentId' in updates) {
         const { structures, zones } = get().garden;
         const planting = get().garden.plantings.find((p) => p.id === id);
-        const targetParent = structures.find((s) => s.id === updates.parentId)
-          ?? zones.find((z) => z.id === updates.parentId);
+        const targetParent =
+          structures.find((s) => s.id === updates.parentId) ??
+          zones.find((z) => z.id === updates.parentId);
         if (targetParent) {
           newPlantings = rearrangePlantings(newPlantings, updates.parentId!, targetParent);
         }
         if (planting && planting.parentId !== updates.parentId) {
-          const srcParent = structures.find((s) => s.id === planting.parentId)
-            ?? zones.find((z) => z.id === planting.parentId);
+          const srcParent =
+            structures.find((s) => s.id === planting.parentId) ??
+            zones.find((z) => z.id === planting.parentId);
           if (srcParent) {
             newPlantings = rearrangePlantings(newPlantings, planting.parentId, srcParent);
           }
@@ -866,8 +921,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     },
 
     canUndo: () =>
-      useUiStore.getState().appMode === 'nursery' ? nurseryHistory.canUndo() : gardenHistory.canUndo(),
+      useUiStore.getState().appMode === 'nursery'
+        ? nurseryHistory.canUndo()
+        : gardenHistory.canUndo(),
     canRedo: () =>
-      useUiStore.getState().appMode === 'nursery' ? nurseryHistory.canRedo() : gardenHistory.canRedo(),
+      useUiStore.getState().appMode === 'nursery'
+        ? nurseryHistory.canRedo()
+        : gardenHistory.canRedo(),
   };
 });
