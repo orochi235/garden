@@ -242,7 +242,15 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
 
 const SPATIAL_KEYS = ['structures', 'zones', 'plantings'] as const;
 
-const gardenHistory = createHistoryStack<Garden>();
+/** A garden-mode undo entry: the serialized spatial scene plus the non-spatial
+ *  base. The live nursery is overlaid on restore (garden undo never reverts
+ *  nursery edits — see restoreSnapshot). */
+interface GardenSnapshot {
+  scene: GardenSerializedScene;
+  base: GardenBase;
+}
+
+const gardenHistory = createHistoryStack<GardenSnapshot>();
 const nurseryHistory = createHistoryStack<NurseryState>();
 
 let scene: GardenScene = createGardenScene([]);
@@ -301,6 +309,24 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     set({ garden: composeGarden() });
   }
 
+  /** Snapshot the live spatial scene + current base for the garden undo stack. */
+  function currentGardenSnapshot(): GardenSnapshot {
+    return { scene: scene.toJSON(), base };
+  }
+
+  /**
+   * Restore a garden-mode undo/redo snapshot IN PLACE. Swaps base (overlaying
+   * the LIVE nursery so a garden undo never reverts nursery edits) then loads
+   * the serialized scene into the existing instance via loadState. Base is set
+   * before loadState so the subscription's recompose sees the new base.
+   */
+  function restoreSnapshot(snap: GardenSnapshot) {
+    base = { ...snap.base, nursery: base.nursery };
+    invalidateComposed();
+    scene.loadState(snap.scene);
+    set({ garden: composeGarden() });
+  }
+
   /**
    * Apply a partial update to the garden via fine-grained, in-place scene ops
    * (Phase 3 — seam #2). Base (non-spatial) keys mutate the `base` object;
@@ -334,7 +360,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
   /** Push current garden state to the garden undo stack, then patch. */
   function commitGarden(updates: Partial<Garden>) {
-    gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
+    gardenHistory.push(currentGardenSnapshot(), useUiStore.getState().selectedIds);
     patch(updates);
   }
 
@@ -912,7 +938,7 @@ export const useGardenStore = create<GardenStore>((set, get) => {
       if (useUiStore.getState().appMode === 'nursery') {
         nurseryHistory.push(get().garden.nursery, useUiStore.getState().selectedIds);
       } else {
-        gardenHistory.push(get().garden, useUiStore.getState().selectedIds);
+        gardenHistory.push(currentGardenSnapshot(), useUiStore.getState().selectedIds);
       }
     },
 
@@ -925,10 +951,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, get().garden));
         }
       } else {
-        const prev = gardenHistory.undo(get().garden, sel);
+        const prev = gardenHistory.undo(currentGardenSnapshot(), sel);
         if (prev) {
-          // Overlay the LIVE nursery so a garden undo never reverts nursery edits.
-          adoptGarden({ ...prev.value, nursery: get().garden.nursery });
+          restoreSnapshot(prev.value);
           useUiStore.getState().setSelection(scrubSelection(prev.selectedIds, get().garden));
         }
       }
@@ -943,10 +968,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
           useUiStore.getState().setSelection(scrubSelection(next.selectedIds, get().garden));
         }
       } else {
-        const next = gardenHistory.redo(get().garden, sel);
+        const next = gardenHistory.redo(currentGardenSnapshot(), sel);
         if (next) {
-          // Overlay the LIVE nursery so a garden redo never reverts nursery edits.
-          adoptGarden({ ...next.value, nursery: get().garden.nursery });
+          restoreSnapshot(next.value);
           useUiStore.getState().setSelection(scrubSelection(next.selectedIds, get().garden));
         }
       }
