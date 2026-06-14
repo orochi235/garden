@@ -229,9 +229,12 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
 // structures/zones/plantings) plus a non-spatial `base` (everything else). The
 // hundreds of `useGardenStore(s => s.garden.…)` readers see an unchanged Garden.
 //
-// Mutations are NOT rewritten yet — they still go through patch/commitGarden/commitNursery,
-// which rebuild the scene wholesale from the composed garden (the "legacy
-// bridge"). Task C replaces this with fine-grained scene ops.
+// patch() (and thus commitGarden/commitNursery/applyGardenPatch) routes spatial
+// changes through fine-grained in-place reconcileScene ops (Phase 3 / seam #2)
+// — the Scene instance is never recreated on a normal mutation. undo/redo/
+// loadGarden/reset still recreate via adoptGarden, pending Phase 4 (loadState).
+
+const SPATIAL_KEYS = ['structures', 'zones', 'plantings'] as const;
 
 const gardenHistory = createHistoryStack<Garden>();
 const nurseryHistory = createHistoryStack<NurseryState>();
@@ -300,12 +303,11 @@ export const useGardenStore = create<GardenStore>((set, get) => {
    * loadGarden/reset still go through adoptGarden until Phase 4 (loadState).
    */
   function patch(updates: Partial<Garden>) {
-    const spatialKeys = ['structures', 'zones', 'plantings'];
     const baseUpdates: Record<string, unknown> = {};
     let hasBase = false;
     let hasSpatial = false;
     for (const k of Object.keys(updates)) {
-      if (spatialKeys.includes(k)) {
+      if ((SPATIAL_KEYS as readonly string[]).includes(k)) {
         hasSpatial = true;
       } else {
         baseUpdates[k] = (updates as Record<string, unknown>)[k];
