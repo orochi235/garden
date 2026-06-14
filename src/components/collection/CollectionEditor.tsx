@@ -1,15 +1,15 @@
+import type { DragPayload } from '@orochi235/weasel';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
 import { findInUseRemovals } from '../../model/collection';
-import { getAllCultivars, type CultivarCategory } from '../../model/cultivars';
+import { type CultivarCategory, getAllCultivars } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/CollectionEditor.module.css';
-import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
-import type { DragPayload } from '@orochi235/weasel';
+import { CollectionList } from './CollectionList';
 import { CultivarDataGrid } from './CultivarDataGrid';
 import { CultivarIconView } from './CultivarIconView';
-import { CollectionList } from './CollectionList';
 
 type ViewMode = 'list' | 'icons';
 
@@ -24,7 +24,14 @@ const CATEGORY_LABELS: Record<CultivarCategory, string> = {
   flowers: 'Flowers',
 };
 const CATEGORY_ORDER: CultivarCategory[] = [
-  'vegetables', 'greens', 'fruits', 'squash', 'root-vegetables', 'legumes', 'herbs', 'flowers',
+  'vegetables',
+  'greens',
+  'fruits',
+  'squash',
+  'root-vegetables',
+  'legumes',
+  'herbs',
+  'flowers',
 ];
 
 export function CollectionEditor() {
@@ -154,7 +161,9 @@ export function CollectionEditor() {
             onClick={attemptCancel}
             aria-label="Close"
             title="Close"
-          >×</button>
+          >
+            ×
+          </button>
         </div>
         <div className={styles.body}>
           <div className={styles.left}>
@@ -166,7 +175,9 @@ export function CollectionEditor() {
                 onClick={() => state.transferRight()}
                 disabled={state.checked.size === 0}
                 title="Add selected to collection"
-              >Add {state.checked.size > 0 ? `(${state.checked.size})` : ''} ›</button>
+              >
+                Add {state.checked.size > 0 ? `(${state.checked.size})` : ''} ›
+              </button>
             </div>
             <div className={styles.search}>
               <input
@@ -184,7 +195,8 @@ export function CollectionEditor() {
                   className={`${styles.chip} ${state.categories.has(cat) ? styles.chipActive : ''}`}
                   onClick={() => toggleCategory(cat)}
                 >
-                  {CATEGORY_LABELS[cat]} <span className={styles.chipCount}>{categoryCounts[cat] ?? 0}</span>
+                  {CATEGORY_LABELS[cat]}{' '}
+                  <span className={styles.chipCount}>{categoryCounts[cat] ?? 0}</span>
                 </span>
               ))}
               <div className={styles.viewToggle}>
@@ -193,13 +205,17 @@ export function CollectionEditor() {
                   className={`${styles.viewToggleButton} ${viewMode === 'list' ? styles.viewToggleActive : ''}`}
                   onClick={() => setViewMode('list')}
                   title="List view"
-                >☰</button>
+                >
+                  ☰
+                </button>
                 <button
                   type="button"
                   className={`${styles.viewToggleButton} ${viewMode === 'icons' ? styles.viewToggleActive : ''}`}
                   onClick={() => setViewMode('icons')}
                   title="Icon view"
-                >▦</button>
+                >
+                  ▦
+                </button>
               </div>
             </div>
             {viewMode === 'icons' ? (
@@ -213,19 +229,19 @@ export function CollectionEditor() {
                 />
               </div>
             ) : (
-            <CultivarDataGrid
-              visibleCultivars={visible}
-              expandedSpecies={state.expandedSpecies}
-              onSpeciesExpandToggle={state.toggleSpeciesExpand}
-              isChecked={(id) => state.checked.has(id)}
-              onCultivarToggle={state.toggleChecked}
-              speciesTriState={state.speciesSelectionState}
-              onSpeciesToggle={state.toggleSpeciesSelection}
-              sortColumn={state.sortColumn}
-              sortDir={state.sortDir}
-              onSortChange={state.setSort}
-              getDragPayload={getDragPayload}
-            />
+              <CultivarDataGrid
+                visibleCultivars={visible}
+                expandedSpecies={state.expandedSpecies}
+                onSpeciesExpandToggle={state.toggleSpeciesExpand}
+                isChecked={(id) => state.checked.has(id)}
+                onCultivarToggle={state.toggleChecked}
+                speciesTriState={state.speciesSelectionState}
+                onSpeciesToggle={state.toggleSpeciesSelection}
+                sortColumn={state.sortColumn}
+                sortDir={state.sortDir}
+                onSortChange={state.setSort}
+                getDragPayload={getDragPayload}
+              />
             )}
           </div>
           <div className={styles.right}>
@@ -240,13 +256,17 @@ export function CollectionEditor() {
           </div>
         </div>
         <div className={styles.footer}>
-          <button type="button" className={styles.button} onClick={attemptCancel}>Cancel</button>
+          <button type="button" className={styles.button} onClick={attemptCancel}>
+            Cancel
+          </button>
           <button
             type="button"
             className={`${styles.button} ${styles.buttonPrimary}`}
             onClick={attemptSave}
             disabled={!state.dirty}
-          >Save</button>
+          >
+            Save
+          </button>
         </div>
       </div>
 
@@ -255,8 +275,20 @@ export function CollectionEditor() {
           <div className={styles.confirmDialog}>
             <p>Discard changes?</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" className={styles.button} onClick={() => setConfirmDiscard(false)}>Keep editing</button>
-              <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={performCancel}>Discard</button>
+              <button
+                type="button"
+                className={styles.button}
+                onClick={() => setConfirmDiscard(false)}
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonPrimary}`}
+                onClick={performCancel}
+              >
+                Discard
+              </button>
             </div>
           </div>
         </div>
@@ -265,15 +297,39 @@ export function CollectionEditor() {
       {confirmAddSelected && (
         <div className={styles.backdrop} style={{ zIndex: 1100 }}>
           <div className={styles.confirmDialog}>
-            <p>You have {state.checked.size} packet{state.checked.size === 1 ? '' : 's'} selected. Add {state.checked.size === 1 ? 'it' : 'them'} to the collection before saving?</p>
+            <p>
+              You have {state.checked.size} packet{state.checked.size === 1 ? '' : 's'} selected.
+              Add {state.checked.size === 1 ? 'it' : 'them'} to the collection before saving?
+            </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" className={styles.button} onClick={() => setConfirmAddSelected(false)}>Keep editing</button>
-              <button type="button" className={styles.button} onClick={() => { setConfirmAddSelected(false); runSaveChecks(); }}>Save without adding</button>
+              <button
+                type="button"
+                className={styles.button}
+                onClick={() => setConfirmAddSelected(false)}
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                className={styles.button}
+                onClick={() => {
+                  setConfirmAddSelected(false);
+                  runSaveChecks();
+                }}
+              >
+                Save without adding
+              </button>
               <button
                 type="button"
                 className={`${styles.button} ${styles.buttonPrimary}`}
-                onClick={() => { state.transferRight(); setConfirmAddSelected(false); setPendingSaveAfterTransfer(true); }}
-              >Add and save</button>
+                onClick={() => {
+                  state.transferRight();
+                  setConfirmAddSelected(false);
+                  setPendingSaveAfterTransfer(true);
+                }}
+              >
+                Add and save
+              </button>
             </div>
           </div>
         </div>
@@ -282,17 +338,30 @@ export function CollectionEditor() {
       {warnRemovals && (
         <div className={styles.backdrop} style={{ zIndex: 1100 }}>
           <div className={styles.confirmDialog}>
-            <p>{warnRemovals.length} cultivar{warnRemovals.length === 1 ? '' : 's'} in your garden will no longer appear in palettes:</p>
+            <p>
+              {warnRemovals.length} cultivar{warnRemovals.length === 1 ? '' : 's'} in your garden
+              will no longer appear in palettes:
+            </p>
             <ul>
               {warnRemovals.map((id) => {
-                const c = garden.collection.find((cc) => cc.id === id) ?? database.find((cc) => cc.id === id);
+                const c =
+                  garden.collection.find((cc) => cc.id === id) ??
+                  database.find((cc) => cc.id === id);
                 return <li key={id}>{c?.name ?? id}</li>;
               })}
             </ul>
             <p>Existing plantings will remain.</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" className={styles.button} onClick={() => setWarnRemovals(null)}>Cancel</button>
-              <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={performSave}>Save anyway</button>
+              <button type="button" className={styles.button} onClick={() => setWarnRemovals(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonPrimary}`}
+                onClick={performSave}
+              >
+                Save anyway
+              </button>
             </div>
           </div>
         </div>

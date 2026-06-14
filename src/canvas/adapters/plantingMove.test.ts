@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createPlantingMoveAdapter } from './plantingMove';
-import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createTransformOp } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { createPlantingMoveAdapter } from './plantingMove';
 
 describe('plantingMoveAdapter', () => {
   beforeEach(() => {
@@ -37,7 +37,13 @@ describe('plantingMoveAdapter', () => {
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const before = useGardenStore.getState().canUndo();
     a.applyBatch!(
-      [createTransformOp<{ x: number; y: number }>({ id: planting.id, from: { x: 0, y: 0 }, to: { x: 10, y: 10 } })],
+      [
+        createTransformOp<{ x: number; y: number }>({
+          id: planting.id,
+          from: { x: 0, y: 0 },
+          to: { x: 10, y: 10 },
+        }),
+      ],
       'Move',
     );
     expect(useGardenStore.getState().canUndo()).toBe(true);
@@ -58,7 +64,9 @@ describe('plantingMoveAdapter', () => {
 
   it('setParent rewrites parent and converts pose to new parent-relative coords', () => {
     const { planting } = setup();
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, length: 4 });
+    useGardenStore
+      .getState()
+      .addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, length: 4 });
     const bed2 = useGardenStore.getState().garden.structures[1];
     const a = createPlantingMoveAdapter();
     a.setParent(planting.id, bed2.id);

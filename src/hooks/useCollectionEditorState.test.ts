@@ -1,9 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { snapshotCultivar } from '../model/collection';
 import type { Collection } from '../model/collection';
-import { getAllCultivars } from '../model/cultivars';
+import { snapshotCultivar } from '../model/collection';
 import type { Cultivar } from '../model/cultivars';
+import { getAllCultivars } from '../model/cultivars';
 import { getSpecies } from '../model/species';
 import { useCollectionEditorState } from './useCollectionEditorState';
 
@@ -98,11 +98,13 @@ describe('useCollectionEditorState — search and categories', () => {
     const visible = result.current.visibleCultivars(db);
     expect(visible.some((c) => c.id === target.id)).toBe(true);
     const needle = speciesName.toLowerCase();
-    expect(visible.every((c) => {
-      const sp = getSpecies(c.speciesId);
-      const haystack = [c.name, sp?.name ?? '', sp?.taxonomicName ?? ''].join(' ').toLowerCase();
-      return haystack.includes(needle);
-    })).toBe(true);
+    expect(
+      visible.every((c) => {
+        const sp = getSpecies(c.speciesId);
+        const haystack = [c.name, sp?.name ?? '', sp?.taxonomicName ?? ''].join(' ').toLowerCase();
+        return haystack.includes(needle);
+      }),
+    ).toBe(true);
   });
 
   it('category filter restricts to selected categories; empty = no restriction', () => {

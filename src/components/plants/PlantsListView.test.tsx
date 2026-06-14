@@ -63,11 +63,14 @@ describe('PlantsListView', () => {
     render(<PlantsListView />);
 
     const locations = () =>
-      screen.getAllByRole('row').slice(1).map((tr) => {
-        const cells = within(tr).getAllByRole('cell');
-        // Locate the Location cell by index: Icon(0) Name(1) Variety(2) Category(3) Location(4) …
-        return cells[4].textContent;
-      });
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((tr) => {
+          const cells = within(tr).getAllByRole('cell');
+          // Locate the Location cell by index: Icon(0) Name(1) Variety(2) Category(3) Location(4) …
+          return cells[4].textContent;
+        });
 
     // Insertion order initially: Zzz Bed, Aaa Bed (no sort applied yet — default sort is by name, ties)
     // After first click on Location: asc — Aaa Bed first.
@@ -114,12 +117,22 @@ describe('PlantsListView', () => {
         structures: [bed],
         plantings: [planting],
         nursery: {
-          trays: [{
-            id: 't', label: 'Tray', rows: 1, cols: 1,
-            cellSize: 'medium', cellPitchIn: 1.5, widthIn: 5, heightIn: 5,
-            slots: [{ state: 'sown', seedlingId: 's' }],
-          }],
-          seedlings: [{ id: 's', cultivarId: cv.id, trayId: 't', row: 0, col: 0, labelOverride: null }],
+          trays: [
+            {
+              id: 't',
+              label: 'Tray',
+              rows: 1,
+              cols: 1,
+              cellSize: 'medium',
+              cellPitchIn: 1.5,
+              widthIn: 5,
+              heightIn: 5,
+              slots: [{ state: 'sown', seedlingId: 's' }],
+            },
+          ],
+          seedlings: [
+            { id: 's', cultivarId: cv.id, trayId: 't', row: 0, col: 0, labelOverride: null },
+          ],
         },
       },
     });
@@ -158,10 +171,7 @@ describe('PlantsListView', () => {
   });
 
   it('honors localStorage visible-columns set on mount', () => {
-    window.localStorage.setItem(
-      'plantsListView.visibleColumns',
-      JSON.stringify(['name', 'rowId']),
-    );
+    window.localStorage.setItem('plantsListView.visibleColumns', JSON.stringify(['name', 'rowId']));
     seedGarden();
     render(<PlantsListView />);
     expect(screen.getByRole('columnheader', { name: /^id$/i })).toBeDefined();
@@ -178,12 +188,29 @@ describe('PlantsListView', () => {
       garden: {
         ...garden,
         nursery: {
-          trays: [{
-            id: 'tray1', label: 'My Tray', rows: 1, cols: 1,
-            cellSize: 'medium', cellPitchIn: 1.5, widthIn: 5, heightIn: 5,
-            slots: [{ state: 'sown', seedlingId: 'seed1' }],
-          }],
-          seedlings: [{ id: 'seed1', cultivarId: cv.id, trayId: 'tray1', row: 0, col: 0, labelOverride: null }],
+          trays: [
+            {
+              id: 'tray1',
+              label: 'My Tray',
+              rows: 1,
+              cols: 1,
+              cellSize: 'medium',
+              cellPitchIn: 1.5,
+              widthIn: 5,
+              heightIn: 5,
+              slots: [{ state: 'sown', seedlingId: 'seed1' }],
+            },
+          ],
+          seedlings: [
+            {
+              id: 'seed1',
+              cultivarId: cv.id,
+              trayId: 'tray1',
+              row: 0,
+              col: 0,
+              labelOverride: null,
+            },
+          ],
         },
       },
     });

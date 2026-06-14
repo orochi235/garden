@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { defineTool, zoomAt } from '@orochi235/weasel';
 import type { Tool } from '@orochi235/weasel';
+import { defineTool, zoomAt } from '@orochi235/weasel';
+import { useMemo } from 'react';
 
 export interface EricWheelZoomOpts {
   min?: number;
@@ -30,7 +30,7 @@ export function useEricWheelZoomTool(opts: EricWheelZoomOpts = {}): Tool<null> {
             e.preventDefault();
             const rect = ctx.canvasRect;
             const anchor = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-            const factor = Math.pow(wheelStep, -e.deltaY / 100);
+            const factor = wheelStep ** (-e.deltaY / 100);
             ctx.setView(zoomAt(ctx.view, anchor, factor, { min, max }));
             return 'claim';
           },

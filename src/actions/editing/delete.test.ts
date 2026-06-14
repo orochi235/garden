@@ -44,7 +44,9 @@ describe('deleteAction', () => {
 
     // Recompose: a fresh add rebuilds/reads the scene. If delete had bypassed
     // the facade, the deleted structure would resurface here.
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4 });
+    useGardenStore
+      .getState()
+      .addStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4 });
     const ids = useGardenStore.getState().garden.structures.map((s) => s.id);
     expect(ids).not.toContain(id);
     expect(ids).toHaveLength(1);

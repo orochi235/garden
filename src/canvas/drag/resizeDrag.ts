@@ -1,7 +1,7 @@
-import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
 import { rectPath } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
+import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
+import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Phase-2-migrated drag: structure / zone resize.
@@ -79,23 +79,49 @@ export function createResizeDrag(): Drag<ResizeInput, ResizePutative> {
       if (layer === 'structures') {
         const structure = garden.structures.find((s) => s.id === targetId);
         if (!structure) return [];
-        const path = (structure as { shape?: string }).shape === 'circle'
-          ? ellipsePolygon(pose.x + pose.width / 2, pose.y + pose.length / 2, pose.width / 2, pose.length / 2)
-          : rectPath(pose.x, pose.y, pose.width, pose.length);
-        return [{ kind: 'group', alpha: 0.55, children: [
-          { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },
-          { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: strokeWidth } },
-        ]}];
+        const path =
+          (structure as { shape?: string }).shape === 'circle'
+            ? ellipsePolygon(
+                pose.x + pose.width / 2,
+                pose.y + pose.length / 2,
+                pose.width / 2,
+                pose.length / 2,
+              )
+            : rectPath(pose.x, pose.y, pose.width, pose.length);
+        return [
+          {
+            kind: 'group',
+            alpha: 0.55,
+            children: [
+              { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },
+              {
+                kind: 'path',
+                path,
+                stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: strokeWidth },
+              },
+            ],
+          },
+        ];
       }
 
       // zones
       const zone = garden.zones.find((z) => z.id === targetId);
       if (!zone) return [];
       const path = rectPath(pose.x, pose.y, pose.width, pose.length);
-      return [{ kind: 'group', alpha: 0.4, children: [
-        { kind: 'path', path, fill: { fill: 'solid', color: zone.color } },
-        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: strokeWidth } },
-      ]}];
+      return [
+        {
+          kind: 'group',
+          alpha: 0.4,
+          children: [
+            { kind: 'path', path, fill: { fill: 'solid', color: zone.color } },
+            {
+              kind: 'path',
+              path,
+              stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: strokeWidth },
+            },
+          ],
+        },
+      ];
     },
 
     // No-op: the actual commit lives in `useResize.end()` (called from

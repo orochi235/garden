@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
+import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { hitTestCellInches } from '../nurseryHitTest';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
+import { hitTestCellInches } from '../nurseryHitTest';
 
-export interface SowScratch { handled: boolean }
+export interface SowScratch {
+  handled: boolean;
+}
 
 /** Click an empty tray cell to sow with the currently dragging cultivar
  *  (`useUiStore.seedDragCultivarId`) or, as a fallback, the currently armed

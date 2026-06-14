@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { createTransformOp } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createStructureResizeAdapter } from './structureResize';
-import { createTransformOp } from '@orochi235/weasel';
 
 describe('createStructureResizeAdapter', () => {
   beforeEach(() => {
@@ -28,11 +28,13 @@ describe('createStructureResizeAdapter', () => {
     const a = createStructureResizeAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     a.applyBatch!(
-      [createTransformOp({
-        id: s.id,
-        from: { x: s.x, y: s.y, width: s.width, length: s.length },
-        to: { x: 0, y: 0, width: 8, length: 8 },
-      })],
+      [
+        createTransformOp({
+          id: s.id,
+          from: { x: s.x, y: s.y, width: s.width, length: s.length },
+          to: { x: 0, y: 0, width: 8, length: 8 },
+        }),
+      ],
       'Resize',
     );
     expect(useGardenStore.getState().garden.structures[0].width).toBe(8);

@@ -4,9 +4,9 @@ import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
 import { AlmanacPanel } from './AlmanacPanel';
 import { DebugThemePanel } from './DebugThemePanel';
-import { ThemeDebugPanel } from './ThemeDebugPanel';
 import { LayerSection } from './LayerSection';
 import { RenderLayersPanel } from './RenderLayersPanel';
+import { ThemeDebugPanel } from './ThemeDebugPanel';
 
 const GROUND_COLORS = [
   { value: '#4A7C59', label: 'Grass' },
@@ -175,7 +175,12 @@ export function LayerPropertiesPanel() {
               onChange={(e) => setRenderLayerVisible('structure-surfaces', e.target.checked)}
             />
             <svg className={styles.surfaceSwatch} width="14" height="14" viewBox="0 0 14 14">
-              <rect width="14" height="14" rx="2" fill={renderLayerVisibility['structure-surfaces'] ? '#A0926B' : '#3a3a3a'} />
+              <rect
+                width="14"
+                height="14"
+                rx="2"
+                fill={renderLayerVisibility['structure-surfaces'] ? '#A0926B' : '#3a3a3a'}
+              />
               {renderLayerVisibility['structure-surfaces'] && (
                 <g stroke="goldenrod" strokeWidth="1.2">
                   <line x1="0" y1="5" x2="5" y2="0" />
@@ -213,7 +218,9 @@ export function LayerPropertiesPanel() {
             <input
               type="checkbox"
               checked={renderLayerVisibility['planting-footprint-circles'] ?? true}
-              onChange={(e) => setRenderLayerVisible('planting-footprint-circles', e.target.checked)}
+              onChange={(e) =>
+                setRenderLayerVisible('planting-footprint-circles', e.target.checked)
+              }
             />
             <span>Show footprint circles</span>
           </label>

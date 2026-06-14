@@ -1,6 +1,6 @@
-import type { ActionDescriptor } from '../types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import type { ActionDescriptor } from '../types';
 
 export const selectAllAction: ActionDescriptor = {
   id: 'editing.selectAll',

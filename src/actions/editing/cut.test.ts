@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cutAction } from './cut';
 import type { ActionContext } from '../types';
+import { cutAction } from './cut';
 
 describe('cutAction', () => {
   it('cut calls clipboard.cut', () => {

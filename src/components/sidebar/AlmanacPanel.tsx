@@ -1,11 +1,11 @@
-import { useUiStore } from '../../store/uiStore';
+import { useEffect } from 'react';
+import { useFrostZoneByLocation } from '../../hooks/useFrostZoneByLocation';
 import type { CellSize } from '../../model/nursery';
 import type { Season } from '../../model/species';
+import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
 import f from '../../styles/PropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
-import { useEffect } from 'react';
-import { useFrostZoneByLocation } from '../../hooks/useFrostZoneByLocation';
 
 const CELL_SIZES: { value: CellSize; label: string }[] = [
   { value: 'small', label: 'S' },
@@ -99,7 +99,9 @@ export function AlmanacPanel() {
           placeholder="Any"
           onChange={(e) => {
             const v = e.target.value;
-            setFilters({ usdaZone: v === '' ? null : Math.max(1, Math.min(13, parseInt(v, 10) || 0)) });
+            setFilters({
+              usdaZone: v === '' ? null : Math.max(1, Math.min(13, parseInt(v, 10) || 0)),
+            });
           }}
         />
 

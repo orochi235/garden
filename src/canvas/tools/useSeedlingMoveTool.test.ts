@@ -1,15 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { renderHook } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
-import {
-  useSeedlingMoveTool,
-  type SeedlingMoveScratch,
-} from './useSeedlingMoveTool';
+import { renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
+import { type SeedlingMoveScratch, useSeedlingMoveTool } from './useSeedlingMoveTool';
 
 /**
  * Tests cover the gutter-affordance overlay that this tool owns (per the
@@ -22,7 +19,14 @@ import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTarget
  *     markers receive different fill colors in the DrawCommand tree).
  */
 
-type DrawCommand = { kind: string; fill?: { fill: string; color: string }; stroke?: { paint: { color: string } }; children?: DrawCommand[]; alpha?: number; transform?: unknown };
+type DrawCommand = {
+  kind: string;
+  fill?: { fill: string; color: string };
+  stroke?: { paint: { color: string } };
+  children?: DrawCommand[];
+  alpha?: number;
+  transform?: unknown;
+};
 
 function collectFills(cmds: DrawCommand[]): string[] {
   const fills: string[] = [];
@@ -86,7 +90,11 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const tool = result.current;
     expect(tool.overlay).toBeDefined();
 
-    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const cmds = tool.overlay!.draw(
+      undefined as never,
+      { x: 0, y: 0, scale: 50 },
+      { width: 800, height: 600 },
+    );
     expect(cmds).toHaveLength(0);
   });
 
@@ -117,7 +125,11 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     expect(scratch.isGroup).toBe(false);
     expect(scratch.draggedId).toBe(seedling.id);
 
-    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const cmds = tool.overlay!.draw(
+      undefined as never,
+      { x: 0, y: 0, scale: 50 },
+      { width: 800, height: 600 },
+    );
     const fills = collectFills(cmds as DrawCommand[]);
     // Markers were drawn — at least one fill with the base marker color.
     expect(fills.some((f) => f === '#d4a55a')).toBe(true);
@@ -157,7 +169,11 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     tool.drag!.onMove!(makePointerMove(), ctxMove);
     expect(scratch.affordance?.kind).toBe('row');
 
-    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const cmds = tool.overlay!.draw(
+      undefined as never,
+      { x: 0, y: 0, scale: 50 },
+      { width: 800, height: 600 },
+    );
     const fills = collectFills(cmds as DrawCommand[]);
     // Both base and hover colors were emitted (row marker hovered, others not).
     expect(fills).toContain('#d4a55a');
@@ -186,7 +202,11 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     expect(scratch.isGroup).toBe(true);
     expect(scratch.active).toBe(true);
 
-    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const cmds = tool.overlay!.draw(
+      undefined as never,
+      { x: 0, y: 0, scale: 50 },
+      { width: 800, height: 600 },
+    );
     const fills = collectFills(cmds as DrawCommand[]);
     // Group drags suppress the gutter overlay (single-seedling-only feature).
     expect(fills.some((f) => f === '#d4a55a')).toBe(false);
@@ -319,7 +339,11 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     // Arm a palette drag — overlay's secondary trigger.
     useUiStore.getState().setSeedDragCultivarId('tomato');
 
-    const cmds = tool.overlay!.draw(undefined as never, { x: 0, y: 0, scale: 50 }, { width: 800, height: 600 });
+    const cmds = tool.overlay!.draw(
+      undefined as never,
+      { x: 0, y: 0, scale: 50 },
+      { width: 800, height: 600 },
+    );
     const fills = collectFills(cmds as DrawCommand[]);
     expect(fills.some((f) => f === '#d4a55a')).toBe(true);
   });

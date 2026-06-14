@@ -1,19 +1,17 @@
 #!/usr/bin/env node
+
 // Resize and quantize the base64-embedded plant icons in cultivars.json and
 // species.json. Source PNGs in /icons/ are untouched.
 
-import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const TARGET_PX = 128;
 const TARGET_COLORS = 128;
 
-const FILES = [
-  'src/data/cultivars.json',
-  'src/data/species.json',
-];
+const FILES = ['src/data/cultivars.json', 'src/data/species.json'];
 
 function optimizePngBuffer(buf, scratchDir, idx) {
   const inPath = join(scratchDir, `in-${idx}.png`);
@@ -21,10 +19,13 @@ function optimizePngBuffer(buf, scratchDir, idx) {
   writeFileSync(inPath, buf);
   execFileSync('magick', [
     inPath,
-    '-resize', `${TARGET_PX}x${TARGET_PX}`,
+    '-resize',
+    `${TARGET_PX}x${TARGET_PX}`,
     '-strip',
-    '-colors', String(TARGET_COLORS),
-    '-define', 'png:compression-level=9',
+    '-colors',
+    String(TARGET_COLORS),
+    '-define',
+    'png:compression-level=9',
     outPath,
   ]);
   return { buf: readFileSync(outPath), path: outPath };
@@ -37,11 +38,19 @@ const PATCH = 6;
 
 function samplePatch(pngPath, x, y, w, h) {
   const out = execFileSync('magick', [
-    pngPath, '-alpha', 'off',
-    '-crop', `${w}x${h}+${x}+${y}`,
-    '-format', '%[fx:int(mean.r*255)] %[fx:int(mean.g*255)] %[fx:int(mean.b*255)]',
+    pngPath,
+    '-alpha',
+    'off',
+    '-crop',
+    `${w}x${h}+${x}+${y}`,
+    '-format',
+    '%[fx:int(mean.r*255)] %[fx:int(mean.g*255)] %[fx:int(mean.b*255)]',
     'info:',
-  ]).toString().trim().split(/\s+/).map((s) => parseInt(s, 10));
+  ])
+    .toString()
+    .trim()
+    .split(/\s+/)
+    .map((s) => parseInt(s, 10));
   return out;
 }
 
@@ -51,7 +60,9 @@ function colorDist(a, b) {
 
 function sampleEdgeColor(pngPath) {
   const dims = execFileSync('magick', ['identify', '-format', '%w %h', pngPath])
-    .toString().trim().split(/\s+/);
+    .toString()
+    .trim()
+    .split(/\s+/);
   const W = parseInt(dims[0], 10);
   const H = parseInt(dims[1], 10);
   // 8 patches arranged around the icon, each PATCHxPATCH, INSET pixels in
@@ -63,8 +74,14 @@ function sampleEdgeColor(pngPath) {
   const xMid = Math.round((W - PATCH) / 2);
   const yMid = Math.round((H - PATCH) / 2);
   const patches = [
-    [xL, yT], [xR, yT], [xL, yB], [xR, yB],
-    [xMid, yT], [xMid, yB], [xL, yMid], [xR, yMid],
+    [xL, yT],
+    [xR, yT],
+    [xL, yB],
+    [xR, yB],
+    [xMid, yT],
+    [xMid, yB],
+    [xL, yMid],
+    [xR, yMid],
   ];
   const samples = patches.map(([x, y]) => samplePatch(pngPath, x, y, PATCH, PATCH));
 

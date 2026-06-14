@@ -1,15 +1,28 @@
 import { useMemo, useState } from 'react';
-import type { Schedule, ResolvedAction } from '../../../model/scheduler';
+import type { ResolvedAction, Schedule } from '../../../model/scheduler';
 import type { SchedulePlantInput } from '../ScheduleView';
-import { MonthGrid } from './MonthGrid';
-import { CellPopover, type Selection } from './CellPopover';
-import { monthsCoveringActions, todayIso } from './calendarLayout';
 import type { ColorEncoding } from './barColors';
 import styles from './CalendarView.module.css';
+import { CellPopover, type Selection } from './CellPopover';
+import { monthsCoveringActions, todayIso } from './calendarLayout';
+import { MonthGrid } from './MonthGrid';
 
 type ViewScope = 'month' | 'season';
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 export interface CalendarViewProps {
   schedule: Schedule;
@@ -17,10 +30,7 @@ export interface CalendarViewProps {
 }
 
 export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
-  const seasonMonths = useMemo(
-    () => monthsCoveringActions(schedule.actions),
-    [schedule.actions],
-  );
+  const seasonMonths = useMemo(() => monthsCoveringActions(schedule.actions), [schedule.actions]);
   const seasonHasMultiple = seasonMonths.length > 1;
 
   // Default to the earliest action's month; fall back to today's month.
@@ -51,14 +61,20 @@ export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
   function prevMonth() {
     let { year, month } = focused;
     month--;
-    if (month < 0) { month = 11; year--; }
+    if (month < 0) {
+      month = 11;
+      year--;
+    }
     setFocused({ year, month });
   }
 
   function nextMonth() {
     let { year, month } = focused;
     month++;
-    if (month > 11) { month = 0; year++; }
+    if (month > 11) {
+      month = 0;
+      year++;
+    }
     setFocused({ year, month });
   }
 
@@ -68,14 +84,22 @@ export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
   }
 
   if (schedule.actions.length === 0) {
-    return <div className={styles.root}><div className={styles.empty}>No actions in this schedule.</div></div>;
+    return (
+      <div className={styles.root}>
+        <div className={styles.empty}>No actions in this schedule.</div>
+      </div>
+    );
   }
 
   return (
     <div className={styles.root}>
       <div className={styles.controls}>
         <span className={styles.scope}>
-          <ScopeBtn label="Month" active={viewScope === 'month'} onClick={() => setViewScope('month')} />
+          <ScopeBtn
+            label="Month"
+            active={viewScope === 'month'}
+            onClick={() => setViewScope('month')}
+          />
           <ScopeBtn
             label="Full season"
             active={viewScope === 'season'}
@@ -87,15 +111,35 @@ export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
 
         {viewScope === 'month' && (
           <span className={styles.nav}>
-            <button type="button" className={styles.navBtn} onClick={prevMonth} aria-label="Previous month">‹</button>
-            <span className={styles.navLabel}>{MONTH_NAMES[focused.month]} {focused.year}</span>
-            <button type="button" className={styles.navBtn} onClick={nextMonth} aria-label="Next month">›</button>
-            <button type="button" className={styles.navBtn} onClick={todayMonth}>Today</button>
+            <button
+              type="button"
+              className={styles.navBtn}
+              onClick={prevMonth}
+              aria-label="Previous month"
+            >
+              ‹
+            </button>
+            <span className={styles.navLabel}>
+              {MONTH_NAMES[focused.month]} {focused.year}
+            </span>
+            <button
+              type="button"
+              className={styles.navBtn}
+              onClick={nextMonth}
+              aria-label="Next month"
+            >
+              ›
+            </button>
+            <button type="button" className={styles.navBtn} onClick={todayMonth}>
+              Today
+            </button>
           </span>
         )}
 
         <span className={styles.encoding}>
-          <label style={{ fontSize: 12, marginRight: 4, color: 'var(--theme-text-muted, #888)' }}>Color:</label>
+          <label style={{ fontSize: 12, marginRight: 4, color: 'var(--theme-text-muted, #888)' }}>
+            Color:
+          </label>
           <select
             className={styles.encodingSelect}
             value={colorEncoding}
@@ -135,8 +179,18 @@ export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
   );
 }
 
-function ScopeBtn({ label, active, onClick, disabled, title }: {
-  label: string; active: boolean; onClick: () => void; disabled?: boolean; title?: string;
+function ScopeBtn({
+  label,
+  active,
+  onClick,
+  disabled,
+  title,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
@@ -145,6 +199,8 @@ function ScopeBtn({ label, active, onClick, disabled, title }: {
       disabled={disabled}
       title={title}
       className={`${styles.scopeBtn}${active ? ` ${styles.scopeBtnActive}` : ''}`}
-    >{label}</button>
+    >
+      {label}
+    </button>
   );
 }

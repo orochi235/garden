@@ -1,21 +1,20 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { LabItem, Point, ContainerShape } from './types';
-import type { WorkspaceState, SavedState } from './types';
-import { getStrategy, strategyNames } from './strategies';
+import { useDragHandle, useDropZone } from '@orochi235/weasel';
+import { useCallback, useEffect, useState } from 'react';
 import { CanvasRenderer } from './CanvasRenderer';
 import { ItemPalette } from './ItemPalette';
-import { useDragHandle, useDropZone } from '@orochi235/weasel';
-import type { QuadtreeLayerId } from './strategies/quadtreeRenderer';
+import { getStrategy, strategyNames } from './strategies';
 import {
-  QUADTREE_LAYER_IDS,
-  QUADTREE_LAYER_LABELS,
-  QUADTREE_LAYER_CSS,
-  LAYER_DEFAULT_OFF,
+  getLayerOrder,
   LAYER_ALWAYS_ON,
   LAYER_CONFIG_KEY,
-  getLayerOrder,
+  LAYER_DEFAULT_OFF,
+  QUADTREE_LAYER_CSS,
+  QUADTREE_LAYER_IDS,
+  QUADTREE_LAYER_LABELS,
   resolvedDepth,
 } from './strategies/quadtree';
+import type { QuadtreeLayerId } from './strategies/quadtreeRenderer';
+import type { ContainerShape, LabItem, Point, SavedState, WorkspaceState } from './types';
 
 function LegendRow({
   layer,
@@ -37,7 +36,9 @@ function LegendRow({
   const handle = useDragHandle(() => ({ kind: 'legend-row', ids: [layer] }));
   const dropRef = useDropZone<HTMLDivElement>({
     accepts: (k) => k === 'legend-row',
-    onOver: (active) => { if (!active) onSetDropIdx(null); },
+    onOver: (active) => {
+      if (!active) onSetDropIdx(null);
+    },
     onMove: () => onSetDropIdx(index),
     onDrop: (payload) => {
       onReorder(payload.ids[0] as QuadtreeLayerId, index);
@@ -51,7 +52,9 @@ function LegendRow({
       style={handle.style}
       onPointerDown={handle.onPointerDown}
     >
-      <span className="dl-legend-handle" title="Drag to reorder">&#x2261;</span>
+      <span className="dl-legend-handle" title="Drag to reorder">
+        &#x2261;
+      </span>
       {LAYER_ALWAYS_ON.has(layer) ? (
         <span className="dl-legend-checkbox-spacer" />
       ) : (
@@ -67,7 +70,10 @@ function LegendRow({
   );
 }
 
-function QuadtreeLegend({ state, onSetConfig }: {
+function QuadtreeLegend({
+  state,
+  onSetConfig,
+}: {
   state: WorkspaceState;
   onSetConfig: (key: string, value: unknown) => void;
 }) {
@@ -98,7 +104,9 @@ function QuadtreeLegend({ state, onSetConfig }: {
       <div className="dl-controls-divider" />
       <div className="dl-legend-section-label">
         <span>Render layers — top draws last</span>
-        <button type="button" onClick={resetLayers} title="Reset layer order and visibility">Reset</button>
+        <button type="button" onClick={resetLayers} title="Reset layer order and visibility">
+          Reset
+        </button>
       </div>
       {displayOrder.map((layer, i) => (
         <LegendRow
@@ -108,17 +116,23 @@ function QuadtreeLegend({ state, onSetConfig }: {
           highlighted={dropIdx === i}
           onSetDropIdx={setDropIdx}
           onReorder={reorder}
-          checkboxValue={LAYER_DEFAULT_OFF.has(layer) ? state.config[LAYER_CONFIG_KEY[layer]] === true : state.config[LAYER_CONFIG_KEY[layer]] !== false}
+          checkboxValue={
+            LAYER_DEFAULT_OFF.has(layer)
+              ? state.config[LAYER_CONFIG_KEY[layer]] === true
+              : state.config[LAYER_CONFIG_KEY[layer]] !== false
+          }
           onSetConfig={onSetConfig}
         />
       ))}
       <div className="dl-controls-divider" />
       <div className="dl-legend-section-label">Drag overlays</div>
-      {([
-        ['showTarget', 'dl-legend-target', 'Drop target'],
-        ['showSplits', 'dl-legend-split', 'Will split'],
-        ['showPutative', 'dl-legend-putative', 'Possible cells'],
-      ] as const).map(([key, cls, label]) => (
+      {(
+        [
+          ['showTarget', 'dl-legend-target', 'Drop target'],
+          ['showSplits', 'dl-legend-split', 'Will split'],
+          ['showPutative', 'dl-legend-putative', 'Possible cells'],
+        ] as const
+      ).map(([key, cls, label]) => (
         <label key={key} className="dl-legend-item">
           <input
             type="checkbox"
@@ -131,10 +145,12 @@ function QuadtreeLegend({ state, onSetConfig }: {
       ))}
       <div className="dl-controls-divider" />
       <div className="dl-legend-section-label">Render options</div>
-      {([
-        ['depthScaledBorders', 'Depth-scaled borders'],
-        ['opaqueBorders', 'Opaque borders'],
-      ] as const).map(([key, label]) => (
+      {(
+        [
+          ['depthScaledBorders', 'Depth-scaled borders'],
+          ['opaqueBorders', 'Opaque borders'],
+        ] as const
+      ).map(([key, label]) => (
         <label key={key} className="dl-legend-item">
           <input
             type="checkbox"
@@ -201,7 +217,14 @@ export function Workspace({
   const handleDrop = useCallback(
     (pos: Point, item: LabItem) => {
       const bounds = { x: 0, y: 0, width: state.containerWidth, height: state.containerHeight };
-      const result = strategy.onDrop(bounds, state.containerShape, pos, item, state.items, state.config);
+      const result = strategy.onDrop(
+        bounds,
+        state.containerShape,
+        pos,
+        item,
+        state.items,
+        state.config,
+      );
       onAddItem(result.item);
     },
     [strategy, state, onAddItem],
@@ -215,9 +238,18 @@ export function Workspace({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === 'z' && !e.shiftKey) { e.preventDefault(); onUndo(); }
-      if (mod && e.key === 'z' && e.shiftKey) { e.preventDefault(); onRedo(); }
-      if (mod && e.key === 'y') { e.preventDefault(); onRedo(); }
+      if (mod && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        onUndo();
+      }
+      if (mod && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        onRedo();
+      }
+      if (mod && e.key === 'y') {
+        e.preventDefault();
+        onRedo();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -227,8 +259,12 @@ export function Workspace({
     <div className="dl-workspace">
       <div className="dl-toolbar">
         <span className="dl-toolbar-title">{state.strategyName}</span>
-        <button type="button" onClick={onUndo} title="Undo (Ctrl+Z)">Undo</button>
-        <button type="button" onClick={onRedo} title="Redo (Ctrl+Shift+Z)">Redo</button>
+        <button type="button" onClick={onUndo} title="Undo (Ctrl+Z)">
+          Undo
+        </button>
+        <button type="button" onClick={onRedo} title="Redo (Ctrl+Shift+Z)">
+          Redo
+        </button>
         <input
           type="range"
           min={0.5}
@@ -239,20 +275,34 @@ export function Workspace({
           title={`Zoom: ${Math.round(zoom * 100)}%`}
           className="dl-zoom-slider"
         />
-        <button type="button" onClick={handleSave} title="Save state">Save</button>
+        <button type="button" onClick={handleSave} title="Save state">
+          Save
+        </button>
         <select
-          onChange={(e) => { if (e.target.value) onLoad(saves[Number(e.target.value)]); }}
+          onChange={(e) => {
+            if (e.target.value) onLoad(saves[Number(e.target.value)]);
+          }}
           value=""
         >
           <option value="">Load...</option>
           {saves.map((s, i) => (
-            <option key={s.timestamp} value={i}>{s.name}</option>
+            <option key={s.timestamp} value={i}>
+              {s.name}
+            </option>
           ))}
         </select>
-        <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100%">⌂</button>
-        <button type="button" onClick={onClone} title="Clone workspace">Clone</button>
-        <button type="button" onClick={onReset} title="Reset to defaults">Reset</button>
-        <button type="button" onClick={onClose} title="Close workspace">X</button>
+        <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100%">
+          ⌂
+        </button>
+        <button type="button" onClick={onClone} title="Clone workspace">
+          Clone
+        </button>
+        <button type="button" onClick={onReset} title="Reset to defaults">
+          Reset
+        </button>
+        <button type="button" onClick={onClose} title="Close workspace">
+          X
+        </button>
       </div>
 
       <div className="dl-workspace-body">
@@ -276,7 +326,9 @@ export function Workspace({
             <span>Strategy</span>
             <select value={state.strategyName} onChange={(e) => onSetStrategy(e.target.value)}>
               {strategyNames.map((n) => (
-                <option key={n} value={n}>{n}</option>
+                <option key={n} value={n}>
+                  {n}
+                </option>
               ))}
             </select>
           </label>
@@ -339,54 +391,67 @@ export function Workspace({
           {(() => {
             const isQuadtree = strategy.name === 'Quadtree';
             const resolved = isQuadtree
-              ? resolvedDepth({ x: 0, y: 0, width: state.containerWidth, height: state.containerHeight }, state.items, 8)
+              ? resolvedDepth(
+                  { x: 0, y: 0, width: state.containerWidth, height: state.containerHeight },
+                  state.items,
+                  8,
+                )
               : 0;
             const limitOn = state.config.limitToResolved !== false;
             return schema.map((field) => {
-              const sliderMax = isQuadtree && field.key === 'maxDepth' && limitOn && resolved > 0
-                ? Math.max(field.min ?? 1, resolved)
-                : field.max;
+              const sliderMax =
+                isQuadtree && field.key === 'maxDepth' && limitOn && resolved > 0
+                  ? Math.max(field.min ?? 1, resolved)
+                  : field.max;
               const rawValue = (state.config[field.key] as number) ?? field.default;
-              const sliderValue = isQuadtree && field.key === 'maxDepth' && limitOn && resolved > 0
-                ? Math.min(rawValue, resolved)
-                : rawValue;
-              const labelText = isQuadtree && field.key === 'limitToResolved'
-                ? `${field.label} (${resolved})`
-                : field.label;
+              const sliderValue =
+                isQuadtree && field.key === 'maxDepth' && limitOn && resolved > 0
+                  ? Math.min(rawValue, resolved)
+                  : rawValue;
+              const labelText =
+                isQuadtree && field.key === 'limitToResolved'
+                  ? `${field.label} (${resolved})`
+                  : field.label;
               return (
-                <label key={field.key} className={`dl-control-row${field.type === 'checkbox' ? ' dl-checkbox-row' : ''}`}>
-              {field.type === 'checkbox' && (
-                <input
-                  type="checkbox"
-                  checked={(state.config[field.key] as boolean) ?? field.default}
-                  onChange={(e) => onSetConfig(field.key, e.target.checked)}
-                />
-              )}
-              <span>
-                {labelText}
-                {field.type === 'slider' && `: ${sliderValue?.toFixed(field.step != null && field.step % 1 === 0 ? 0 : 2) ?? field.default}`}
-              </span>
-              {field.type === 'slider' && (
-                <input
-                  type="range"
-                  min={field.min}
-                  max={sliderMax}
-                  step={field.step}
-                  value={sliderValue}
-                  onChange={(e) => onSetConfig(field.key, Number(e.target.value))}
-                />
-              )}
-              {field.type === 'dropdown' && (
-                <select
-                  value={(state.config[field.key] as string) ?? field.default}
-                  onChange={(e) => onSetConfig(field.key, e.target.value)}
+                <label
+                  key={field.key}
+                  className={`dl-control-row${field.type === 'checkbox' ? ' dl-checkbox-row' : ''}`}
                 >
-                  {field.options?.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              )}
-            </label>
+                  {field.type === 'checkbox' && (
+                    <input
+                      type="checkbox"
+                      checked={(state.config[field.key] as boolean) ?? field.default}
+                      onChange={(e) => onSetConfig(field.key, e.target.checked)}
+                    />
+                  )}
+                  <span>
+                    {labelText}
+                    {field.type === 'slider' &&
+                      `: ${sliderValue?.toFixed(field.step != null && field.step % 1 === 0 ? 0 : 2) ?? field.default}`}
+                  </span>
+                  {field.type === 'slider' && (
+                    <input
+                      type="range"
+                      min={field.min}
+                      max={sliderMax}
+                      step={field.step}
+                      value={sliderValue}
+                      onChange={(e) => onSetConfig(field.key, Number(e.target.value))}
+                    />
+                  )}
+                  {field.type === 'dropdown' && (
+                    <select
+                      value={(state.config[field.key] as string) ?? field.default}
+                      onChange={(e) => onSetConfig(field.key, e.target.value)}
+                    >
+                      {field.options?.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </label>
               );
             });
           })()}

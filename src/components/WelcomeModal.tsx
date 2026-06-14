@@ -17,7 +17,14 @@ export function WelcomeModal({ onClose }: Props) {
   return createPortal(
     <div className={styles.backdrop}>
       <div className={styles.confirmDialog} style={{ maxWidth: 420 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
           <strong>Welcome</strong>
           <button
             type="button"
@@ -25,12 +32,23 @@ export function WelcomeModal({ onClose }: Props) {
             onClick={onClose}
             aria-label="Close"
             title="Close"
-          >×</button>
+          >
+            ×
+          </button>
         </div>
-        <p>Your seed collection is empty. Pick the cultivars you want to grow before laying out your garden.</p>
+        <p>
+          Your seed collection is empty. Pick the cultivars you want to grow before laying out your
+          garden.
+        </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-          <button type="button" className={styles.button} onClick={onClose}>Cancel</button>
-          <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={openEditor}>
+          <button type="button" className={styles.button} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.buttonPrimary}`}
+            onClick={openEditor}
+          >
             Open Collection Editor
           </button>
         </div>

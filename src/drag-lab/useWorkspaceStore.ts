@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { WorkspaceState, SavedState, LabItem, ContainerShape } from './types';
 import { getStrategy } from './strategies';
+import type { ContainerShape, LabItem, SavedState, WorkspaceState } from './types';
 
 const STORAGE_KEY = 'drag-lab-workspaces';
 const SAVES_KEY = 'drag-lab-saves';
@@ -27,7 +27,9 @@ function loadWorkspaces(): WorkspaceState[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [createDefaultWorkspace()];
 }
 
@@ -39,7 +41,9 @@ function loadSaves(): SavedState[] {
   try {
     const raw = localStorage.getItem(SAVES_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 
@@ -83,7 +87,11 @@ function getStack(stacks: Record<string, UndoStack>, id: string): UndoStack {
   return stacks[id] ?? { past: [], future: [] };
 }
 
-function pushSnapshot(stacks: Record<string, UndoStack>, id: string, items: LabItem[]): Record<string, UndoStack> {
+function pushSnapshot(
+  stacks: Record<string, UndoStack>,
+  id: string,
+  items: LabItem[],
+): Record<string, UndoStack> {
   const stack = getStack(stacks, id);
   const past = [...stack.past, items].slice(-MAX_UNDO);
   return { ...stacks, [id]: { past, future: [] } };
@@ -105,7 +113,11 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     set((s) => {
       const source = s.workspaces.find((w) => w.id === id);
       if (!source) return s;
-      const clone: WorkspaceState = { ...source, id: generateId(), items: source.items.map((i) => ({ ...i, id: generateId() })) };
+      const clone: WorkspaceState = {
+        ...source,
+        id: generateId(),
+        items: source.items.map((i) => ({ ...i, id: generateId() })),
+      };
       const workspaces = [...s.workspaces, clone];
       saveWorkspaces(workspaces);
       return { workspaces };
@@ -139,9 +151,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     set((s) => {
       const current = s.workspaces.find((w) => w.id === id);
       // Snapshot on layer reorder
-      const undoStacks = key === 'layerOrder' && current
-        ? pushSnapshot(s.undoStacks, id, current.items)
-        : s.undoStacks;
+      const undoStacks =
+        key === 'layerOrder' && current
+          ? pushSnapshot(s.undoStacks, id, current.items)
+          : s.undoStacks;
       const workspaces = s.workspaces.map((w) =>
         w.id === id ? { ...w, config: { ...w.config, [key]: value } } : w,
       );
@@ -163,7 +176,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   removeItem: (workspaceId, itemId) =>
     set((s) => {
       const current = s.workspaces.find((w) => w.id === workspaceId);
-      const undoStacks = current ? pushSnapshot(s.undoStacks, workspaceId, current.items) : s.undoStacks;
+      const undoStacks = current
+        ? pushSnapshot(s.undoStacks, workspaceId, current.items)
+        : s.undoStacks;
       const workspaces = s.workspaces.map((w) =>
         w.id === workspaceId ? { ...w, items: w.items.filter((i) => i.id !== itemId) } : w,
       );
@@ -242,9 +257,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
           future: [current.items, ...stack.future],
         },
       };
-      const workspaces = s.workspaces.map((w) =>
-        w.id === id ? { ...w, items: prev } : w,
-      );
+      const workspaces = s.workspaces.map((w) => (w.id === id ? { ...w, items: prev } : w));
       saveWorkspaces(workspaces);
       return { workspaces, undoStacks };
     }),
@@ -263,9 +276,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
           future: stack.future.slice(1),
         },
       };
-      const workspaces = s.workspaces.map((w) =>
-        w.id === id ? { ...w, items: next } : w,
-      );
+      const workspaces = s.workspaces.map((w) => (w.id === id ? { ...w, items: next } : w));
       saveWorkspaces(workspaces);
       return { workspaces, undoStacks };
     }),

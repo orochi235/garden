@@ -1,8 +1,13 @@
-import { useGardenStore } from '../../store/gardenStore';
-import type { Zone } from '../../model/types';
 import type { MoveAdapter } from '@orochi235/weasel';
+import type { Zone } from '../../model/types';
+import { useGardenStore } from '../../store/gardenStore';
 
-export interface ZonePose { x: number; y: number; widthFt: number; lengthFt: number }
+export interface ZonePose {
+  x: number;
+  y: number;
+  widthFt: number;
+  lengthFt: number;
+}
 
 export type ZoneMoveAdapter = MoveAdapter<Zone, ZonePose> & {
   insertNode(z: Zone): void;

@@ -163,7 +163,10 @@ export function dayOfYearToMmDd(doy: number): string {
   if (doy < 1 || doy > 366) return '';
   let month = 1;
   for (let m = 11; m >= 0; m--) {
-    if (doy > DAYS_BEFORE_MONTH[m]) { month = m + 1; break; }
+    if (doy > DAYS_BEFORE_MONTH[m]) {
+      month = m + 1;
+      break;
+    }
   }
   const day = doy - DAYS_BEFORE_MONTH[month - 1];
   return `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;

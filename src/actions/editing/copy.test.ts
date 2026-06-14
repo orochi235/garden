@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { copyAction } from './copy';
 import type { ActionContext } from '../types';
+import { copyAction } from './copy';
 
 describe('copyAction', () => {
   it('copy calls clipboard.copy', () => {

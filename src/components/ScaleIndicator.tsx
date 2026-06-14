@@ -1,6 +1,6 @@
+import { useViewMoving } from '../hooks/useViewMoving';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { useViewMoving } from '../hooks/useViewMoving';
 import { formatMeasurement } from '../utils/units';
 
 interface Props {
@@ -64,7 +64,8 @@ export function ScaleIndicator({ canvasHeight }: Props) {
           userSelect: 'none',
         }}
       >
-        {label}<sup>2</sup>
+        {label}
+        <sup>2</sup>
       </span>
     </div>
   );

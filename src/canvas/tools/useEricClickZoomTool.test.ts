@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
-import { useEricClickZoomTool } from './useEricClickZoomTool';
+import { renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import type { View } from '../layers/worldLayerData';
+import { useEricClickZoomTool } from './useEricClickZoomTool';
 
 function makeCtx(
   view: View,
@@ -15,7 +15,11 @@ function makeCtx(
     worldX: 0,
     worldY: 0,
     modifiers: {
-      alt: false, shift: false, meta: false, ctrl: false, space: false,
+      alt: false,
+      shift: false,
+      meta: false,
+      ctrl: false,
+      space: false,
       ...modifiers,
     },
     selection: {} as never,
@@ -28,13 +32,24 @@ function makeCtx(
   };
 }
 
-function pointer(init: Partial<PointerEventInit> & { button?: number; shiftKey?: boolean; clientX?: number; clientY?: number }): PointerEvent {
+function pointer(
+  init: Partial<PointerEventInit> & {
+    button?: number;
+    shiftKey?: boolean;
+    clientX?: number;
+    clientY?: number;
+  },
+): PointerEvent {
   const e = new Event('pointerdown') as PointerEvent;
   Object.assign(e, {
     button: 0,
     buttons: 1,
-    clientX: 0, clientY: 0,
-    ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
+    clientX: 0,
+    clientY: 0,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    altKey: false,
     preventDefault: vi.fn(),
     ...init,
   });
@@ -63,11 +78,12 @@ describe('useEricClickZoomTool', () => {
   it('zooms about the cursor; world point under cursor stays invariant', () => {
     const { result } = renderHook(() => useEricClickZoomTool());
     const setView = vi.fn();
-    const ctx = makeCtx(
-      { x: 0, y: 0, scale: 50 },
-      setView,
-      { x: 10, y: 5, width: 400, height: 300 } as Partial<DOMRect>,
-    );
+    const ctx = makeCtx({ x: 0, y: 0, scale: 50 }, setView, {
+      x: 10,
+      y: 5,
+      width: 400,
+      height: 300,
+    } as Partial<DOMRect>);
     result.current.pointer!.onDown!(pointer({ button: 0, clientX: 110, clientY: 105 }), ctx);
     const next = setView.mock.calls[0][0] as View;
     // anchor in canvas coords: (100, 100); world point = (2, 2).

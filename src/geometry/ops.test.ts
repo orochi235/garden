@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
-  shapeUnion,
-  shapeDifference,
-  shapeIntersection,
-  shapeXor,
-  shapeOffset,
+  pointInShape,
   shapeArea,
   shapeBounds,
-  pointInShape,
+  shapeDifference,
+  shapeIntersection,
+  shapeOffset,
+  shapeUnion,
+  shapeXor,
 } from './ops';
-import { rectPath, ellipsePath } from './shapes';
+import { ellipsePath, rectPath } from './shapes';
 
 describe('boolean ops', () => {
   it('unions two overlapping rectangles', () => {

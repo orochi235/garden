@@ -1,13 +1,10 @@
-import {
-  type RenderLayer,
-  textCommand,
-} from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3, circlePolygon, roundRectPolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
-import type { Tray, NurseryState } from '../../model/nursery';
+import { type RenderLayer, textCommand } from '@orochi235/weasel';
+import type { NurseryState, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
-import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { useGardenStore } from '../../store/gardenStore';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
+import { circlePolygon, type DrawCommand, roundRectPolygon, viewToMat3 } from '../util/weaselLocal';
 
 export type GetTrays = () => Tray[];
 
@@ -19,7 +16,6 @@ function px(view: View, p: number): number {
 function translateMat3(tx: number, ty: number): Float32Array {
   return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
 }
-
 
 function trayBodyCommands(tray: Tray, view: View): DrawCommand[] {
   const w = tray.widthIn;
@@ -155,9 +151,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
       label: 'Tray Grid',
       defaultVisible: true,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
-        const children = getTrays().map((tray) =>
-          trayGroupCommand(tray, trayGridCommands(tray)),
-        );
+        const children = getTrays().map((tray) => trayGroupCommand(tray, trayGridCommands(tray)));
         return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },

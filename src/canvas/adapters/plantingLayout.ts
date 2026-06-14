@@ -8,18 +8,19 @@
  * are the authority on where children go, this file just shapes that into the
  * `DropTarget` / `LayoutStrategy` contract weasel expects.
  */
+
+import type { Op } from '@orochi235/weasel';
 import {
   createReparentOp,
   createTransformOp,
-  type LayoutStrategy,
   type DropTarget,
   type LayoutSnap,
+  type LayoutStrategy,
 } from '@orochi235/weasel';
-import type { Op } from '@orochi235/weasel';
-import { getSlots, getGridCells, type Layout } from '../../model/layout';
-import { getPlantableBounds } from '../../model/types';
-import type { Garden, Structure, Zone } from '../../model/types';
 import { getCultivar } from '../../model/cultivars';
+import { getGridCells, getSlots, type Layout } from '../../model/layout';
+import type { Garden, Structure, Zone } from '../../model/types';
+import { getPlantableBounds } from '../../model/types';
 import type { PlantingPose } from './plantingMove';
 
 type Container = (Structure | Zone) & { layout: Layout | null };
@@ -33,7 +34,14 @@ function findContainer(garden: Garden, id: string): Container | null {
 }
 
 /** True if a circle (cx,cy,r) overlaps an axis-aligned cell whose center is (cellCx,cellCy) with half-width halfCell. */
-function circleIntersectsCell(cx: number, cy: number, r: number, cellCx: number, cellCy: number, halfCell: number): boolean {
+function circleIntersectsCell(
+  cx: number,
+  cy: number,
+  r: number,
+  cellCx: number,
+  cellCy: number,
+  halfCell: number,
+): boolean {
   const nearX = Math.max(cellCx - halfCell, Math.min(cx, cellCx + halfCell));
   const nearY = Math.max(cellCy - halfCell, Math.min(cy, cellCy + halfCell));
   const dx = cx - nearX;
@@ -51,7 +59,10 @@ function nearestSlotSnap(): LayoutSnap<PlantingPose> {
         const dx = t.origin.x - pointer.x;
         const dy = t.origin.y - pointer.y;
         const d = dx * dx + dy * dy;
-        if (d < bestDist) { bestDist = d; best = t; }
+        if (d < bestDist) {
+          bestDist = d;
+          best = t;
+        }
       }
       return best;
     },
@@ -82,10 +93,11 @@ export function plantingLayoutFor(
         const rx = c.width / 2;
         const ry = c.length / 2;
         if (rx === 0 || ry === 0) return false;
-        return ((point.x - cx) ** 2) / (rx * rx) + ((point.y - cy) ** 2) / (ry * ry) <= 1;
+        return (point.x - cx) ** 2 / (rx * rx) + (point.y - cy) ** 2 / (ry * ry) <= 1;
       }
-      return point.x >= c.x && point.x <= c.x + c.width
-        && point.y >= c.y && point.y <= c.y + c.length;
+      return (
+        point.x >= c.x && point.x <= c.x + c.width && point.y >= c.y && point.y <= c.y + c.length
+      );
     },
 
     getChildPositions(_container, children) {
@@ -146,9 +158,17 @@ export function plantingLayoutFor(
         .filter((candidate) => {
           for (const cell of cells) {
             if (
-              circleIntersectsCell(candidate.x, candidate.y, dragRadius, cell.x, cell.y, halfCell) &&
+              circleIntersectsCell(
+                candidate.x,
+                candidate.y,
+                dragRadius,
+                cell.x,
+                cell.y,
+                halfCell,
+              ) &&
               occupiedKeys.has(`${cell.x},${cell.y}`)
-            ) return false;
+            )
+              return false;
           }
           return true;
         })
@@ -163,26 +183,31 @@ export function plantingLayoutFor(
       const ops: Op[] = [];
       if (target === null) return ops;
       if (dragged.sourceContainerId !== containerId) {
-        ops.push(createReparentOp({
-          id: dragged.id,
-          fromParentId: dragged.sourceContainerId,
-          toParentId: containerId,
-          label: 'Drop into container',
-        }));
+        ops.push(
+          createReparentOp({
+            id: dragged.id,
+            fromParentId: dragged.sourceContainerId,
+            toParentId: containerId,
+            label: 'Drop into container',
+          }),
+        );
       }
-      ops.push(createTransformOp<PlantingPose>({
-        id: dragged.id,
-        from: dragged.originPose,
-        to: target.pose,
-        label: 'Drop into container',
-      }));
+      ops.push(
+        createTransformOp<PlantingPose>({
+          id: dragged.id,
+          from: dragged.originPose,
+          to: target.pose,
+          label: 'Drop into container',
+        }),
+      );
       return ops;
     },
   };
 }
 
 /** Returns a `getLayout` callback suitable for `MoveAdapter.getLayout`. */
-export function createPlantingGetLayout(getGarden: () => Garden): (id: string) => LayoutStrategy<PlantingPose> | null {
+export function createPlantingGetLayout(
+  getGarden: () => Garden,
+): (id: string) => LayoutStrategy<PlantingPose> | null {
   return (id) => plantingLayoutFor(getGarden, id);
 }
-

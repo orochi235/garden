@@ -1,27 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { createPlantingLayers, PLANTING_LAYER_DESCRIPTORS } from './plantingLayersWorld';
 import {
-  STRUCTURE_LAYER_DESCRIPTORS,
-  createStructureLayers,
-} from './structureLayersWorld';
-import {
-  ZONE_LAYER_DESCRIPTORS,
-  createZoneLayers,
-} from './zoneLayersWorld';
-import {
-  PLANTING_LAYER_DESCRIPTORS,
-  createPlantingLayers,
-} from './plantingLayersWorld';
-import {
-  SELECTION_LAYER_DESCRIPTORS,
-  createSelectionOutlineLayer,
   createGroupOutlineLayer,
   createSelectionHandlesLayer,
+  createSelectionOutlineLayer,
+  SELECTION_LAYER_DESCRIPTORS,
 } from './selectionLayersWorld';
-import {
-  SYSTEM_LAYER_DESCRIPTORS,
-  createSystemLayers,
-} from './systemLayersWorld';
+import { createStructureLayers, STRUCTURE_LAYER_DESCRIPTORS } from './structureLayersWorld';
+import { createSystemLayers, SYSTEM_LAYER_DESCRIPTORS } from './systemLayersWorld';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
+import { createZoneLayers, ZONE_LAYER_DESCRIPTORS } from './zoneLayersWorld';
 
 const ui: ReturnType<GetUi> = {
   selectedIds: [],
@@ -57,17 +45,28 @@ function assertMatches(
 
 describe('layer descriptor / factory invariants', () => {
   it('structure factory matches STRUCTURE_LAYER_DESCRIPTORS exactly', () => {
-    const layers = createStructureLayers(() => [], () => ui);
+    const layers = createStructureLayers(
+      () => [],
+      () => ui,
+    );
     assertMatches(STRUCTURE_LAYER_DESCRIPTORS, layers);
   });
 
   it('zone factory matches ZONE_LAYER_DESCRIPTORS exactly', () => {
-    const layers = createZoneLayers(() => [], () => ui);
+    const layers = createZoneLayers(
+      () => [],
+      () => ui,
+    );
     assertMatches(ZONE_LAYER_DESCRIPTORS, layers);
   });
 
   it('planting factory matches PLANTING_LAYER_DESCRIPTORS exactly', () => {
-    const layers = createPlantingLayers(() => [], () => [], () => [], () => ui);
+    const layers = createPlantingLayers(
+      () => [],
+      () => [],
+      () => [],
+      () => ui,
+    );
     assertMatches(PLANTING_LAYER_DESCRIPTORS, layers);
   });
 
@@ -80,9 +79,21 @@ describe('layer descriptor / factory invariants', () => {
     // Selection layers are produced by three separate factories; together
     // they must cover the descriptor set exactly with no orphans either way.
     const layers = [
-      createGroupOutlineLayer(() => [], () => ui),
-      createSelectionOutlineLayer(() => [], () => [], () => [], () => ui),
-      createSelectionHandlesLayer(() => [], () => [], () => ui),
+      createGroupOutlineLayer(
+        () => [],
+        () => ui,
+      ),
+      createSelectionOutlineLayer(
+        () => [],
+        () => [],
+        () => [],
+        () => ui,
+      ),
+      createSelectionHandlesLayer(
+        () => [],
+        () => [],
+        () => ui,
+      ),
     ];
     assertMatches(SELECTION_LAYER_DESCRIPTORS, layers);
   });

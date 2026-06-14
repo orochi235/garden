@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { createStructure } from '../model/types';
+import { tracePolyline, traceShapePath } from './canvas';
 import { structureToShape } from './convert';
-import { shapeUnion, shapeDifference, shapeOffset, shapeArea, pointInShape, shapeBounds } from './ops';
-import { traceShapePath, tracePolyline } from './canvas';
 import { flattenPath } from './flatten';
+import {
+  pointInShape,
+  shapeArea,
+  shapeBounds,
+  shapeDifference,
+  shapeOffset,
+  shapeUnion,
+} from './ops';
 
 describe('geometry integration', () => {
   it('unions two overlapping raised beds', () => {
@@ -59,10 +66,18 @@ describe('geometry integration', () => {
     // Trace source shape (uses native bezierCurveTo if curves)
     const calls1: string[] = [];
     const sink1 = {
-      moveTo() { calls1.push('moveTo'); },
-      lineTo() { calls1.push('lineTo'); },
-      bezierCurveTo() { calls1.push('bezierCurveTo'); },
-      closePath() { calls1.push('closePath'); },
+      moveTo() {
+        calls1.push('moveTo');
+      },
+      lineTo() {
+        calls1.push('lineTo');
+      },
+      bezierCurveTo() {
+        calls1.push('bezierCurveTo');
+      },
+      closePath() {
+        calls1.push('closePath');
+      },
     };
     traceShapePath(sink1, shape);
     expect(calls1[0]).toBe('moveTo');
@@ -72,10 +87,18 @@ describe('geometry integration', () => {
     const pts = flattenPath(shape);
     const calls2: string[] = [];
     const sink2 = {
-      moveTo() { calls2.push('moveTo'); },
-      lineTo() { calls2.push('lineTo'); },
-      bezierCurveTo() { calls2.push('bezierCurveTo'); },
-      closePath() { calls2.push('closePath'); },
+      moveTo() {
+        calls2.push('moveTo');
+      },
+      lineTo() {
+        calls2.push('lineTo');
+      },
+      bezierCurveTo() {
+        calls2.push('bezierCurveTo');
+      },
+      closePath() {
+        calls2.push('closePath');
+      },
     };
     tracePolyline(sink2, pts);
     expect(calls2).not.toContain('bezierCurveTo');

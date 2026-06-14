@@ -1,10 +1,10 @@
 import type { MoveBehavior } from '@orochi235/weasel';
 import {
-  snapToGrid as weaselSnapToGrid,
   snapBackOrDelete as weaselSnapBackOrDelete,
+  snapToGrid as weaselSnapToGrid,
 } from '@orochi235/weasel/move';
-import type { GardenSceneAdapter, ScenePose, SceneNode } from '../adapters/gardenScene';
 import { useGardenStore } from '../../store/gardenStore';
+import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
 
 /**
  * Mapping from Phase 5 deferral vocabulary → eric implementations:
@@ -48,15 +48,12 @@ import { useGardenStore } from '../../store/gardenStore';
  * has its own slot-based snapping. The Alt key bypasses snap. Per-structure
  * `snapToGrid: false` opts a structure out (free-move).
  */
-export function snapStructureZoneToGrid(
-  adapter: GardenSceneAdapter,
-): MoveBehavior<ScenePose> {
+export function snapStructureZoneToGrid(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
   return {
     onMove(ctx, proposed) {
       const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind === 'planting') return;
-      const shouldSnap =
-        obj.kind === 'structure' ? obj.data.snapToGrid : true;
+      const shouldSnap = obj.kind === 'structure' ? obj.data.snapToGrid : true;
       if (!shouldSnap) return;
       // Re-read spacing each move; the garden grid cell size is editable.
       const inner = weaselSnapToGrid<ScenePose>({
@@ -74,9 +71,7 @@ export function snapStructureZoneToGrid(
  * empty space. Wraps weasel's `snapBackOrDelete` with `radius: Infinity`
  * (any release with no snap aborts) and `'snap-back'` policy.
  */
-export function requirePlantingDrop(
-  adapter: GardenSceneAdapter,
-): MoveBehavior<ScenePose> {
+export function requirePlantingDrop(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
   // Infinity radius → any no-snap release counts as "within radius" → returns
   // null (gesture aborted). Snap-back policy → never deletes.
   const inner = weaselSnapBackOrDelete<ScenePose>({

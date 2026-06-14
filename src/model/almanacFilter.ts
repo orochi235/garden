@@ -1,8 +1,8 @@
 import type { AlmanacFilters } from '../store/uiStore';
+import type { Cultivar } from './cultivars';
+import { resolveSeedStarting, type SeedStartingFields } from './floraSeedStarting';
 import type { CellSize } from './nursery';
 import type { Species } from './species';
-import { resolveSeedStarting, type SeedStartingFields } from './floraSeedStarting';
-import type { Cultivar } from './cultivars';
 
 /**
  * Should this cultivar pass the active almanac filters?

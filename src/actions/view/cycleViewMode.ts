@@ -1,5 +1,5 @@
-import type { ActionDescriptor } from '../types';
 import { useUiStore, type ViewMode } from '../../store/uiStore';
+import type { ActionDescriptor } from '../types';
 
 const MODES: ViewMode[] = ['select', 'select-area', 'draw', 'pan', 'zoom'];
 

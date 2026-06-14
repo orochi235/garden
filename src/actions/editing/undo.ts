@@ -1,5 +1,5 @@
-import type { ActionDescriptor } from '../types';
 import { useGardenStore } from '../../store/gardenStore';
+import type { ActionDescriptor } from '../types';
 
 export const undoAction: ActionDescriptor = {
   id: 'editing.undo',
@@ -9,5 +9,7 @@ export const undoAction: ActionDescriptor = {
   targets: ['none'],
   transient: true,
   canExecute: () => useGardenStore.getState().canUndo(),
-  execute: () => { useGardenStore.getState().undo(); },
+  execute: () => {
+    useGardenStore.getState().undo();
+  },
 };

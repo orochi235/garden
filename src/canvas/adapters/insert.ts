@@ -1,12 +1,8 @@
+import type { ClipboardSnapshot, InsertAdapter, Op } from '@orochi235/weasel';
+import type { Planting, Structure, Zone } from '../../model/types';
+import { createPlanting, createStructure, createZone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import {
-  createPlanting,
-  createStructure,
-  createZone,
-} from '../../model/types';
-import type { Planting, Structure, Zone } from '../../model/types';
-import type { ClipboardSnapshot, InsertAdapter, Op } from '@orochi235/weasel';
 
 type GardenObj = Structure | Zone | Planting;
 
@@ -61,7 +57,11 @@ export function createInsertAdapter(): GardenInsertAdapter {
       }
       return { items };
     },
-    commitPaste(clipboard: ClipboardSnapshot, offset, ctx?: { dropPoint?: { worldX: number; worldY: number } }) {
+    commitPaste(
+      clipboard: ClipboardSnapshot,
+      offset,
+      ctx?: { dropPoint?: { worldX: number; worldY: number } },
+    ) {
       const out: GardenObj[] = [];
       for (const raw of clipboard.items) {
         const item = raw as SnapshotItem;
@@ -97,10 +97,18 @@ export function createInsertAdapter(): GardenInsertAdapter {
             const { garden } = useGardenStore.getState();
             const container =
               garden.structures.find(
-                (s) => worldX >= s.x && worldX <= s.x + s.width && worldY >= s.y && worldY <= s.y + s.length,
+                (s) =>
+                  worldX >= s.x &&
+                  worldX <= s.x + s.width &&
+                  worldY >= s.y &&
+                  worldY <= s.y + s.length,
               ) ??
               garden.zones.find(
-                (z) => worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.length,
+                (z) =>
+                  worldX >= z.x &&
+                  worldX <= z.x + z.width &&
+                  worldY >= z.y &&
+                  worldY <= z.y + z.length,
               );
             if (!container) continue; // silent drop
             out.push(
@@ -132,9 +140,13 @@ export function createInsertAdapter(): GardenInsertAdapter {
     insertNode(obj) {
       const g = useGardenStore.getState().garden;
       if ('cultivarId' in obj) {
-        useGardenStore.getState().applyGardenPatch({ plantings: [...g.plantings, obj as Planting] });
+        useGardenStore
+          .getState()
+          .applyGardenPatch({ plantings: [...g.plantings, obj as Planting] });
       } else if ('type' in obj) {
-        useGardenStore.getState().applyGardenPatch({ structures: [...g.structures, obj as Structure] });
+        useGardenStore
+          .getState()
+          .applyGardenPatch({ structures: [...g.structures, obj as Structure] });
       } else {
         useGardenStore.getState().applyGardenPatch({ zones: [...g.zones, obj as Zone] });
       }
@@ -150,9 +162,9 @@ export function createInsertAdapter(): GardenInsertAdapter {
     getNode(id) {
       const { garden } = useGardenStore.getState();
       return (
-        garden.structures.find((x) => x.id === id)
-        ?? garden.zones.find((x) => x.id === id)
-        ?? garden.plantings.find((x) => x.id === id)
+        garden.structures.find((x) => x.id === id) ??
+        garden.zones.find((x) => x.id === id) ??
+        garden.plantings.find((x) => x.id === id)
       );
     },
     setSelection(ids) {

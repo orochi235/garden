@@ -1,13 +1,20 @@
-import { findSnapContainer } from '../findSnapContainer';
-import { useGardenStore } from '../../store/gardenStore';
+import type { LayoutStrategy, MoveAdapter, SnapTarget } from '@orochi235/weasel';
+import { validCellsForContainer } from '../../model/cellOccupancy';
 import type { Planting } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
-import { getPlantingParent, plantingWorldPose, worldToLocalForParent } from '../../utils/plantingPose';
-import { validCellsForContainer } from '../../model/cellOccupancy';
-import type { MoveAdapter, SnapTarget, LayoutStrategy } from '@orochi235/weasel';
+import { useGardenStore } from '../../store/gardenStore';
+import {
+  getPlantingParent,
+  plantingWorldPose,
+  worldToLocalForParent,
+} from '../../utils/plantingPose';
+import { findSnapContainer } from '../findSnapContainer';
 import { plantingLayoutFor } from './plantingLayout';
 
-export interface PlantingPose { x: number; y: number }
+export interface PlantingPose {
+  x: number;
+  y: number;
+}
 
 export type PlantingMoveAdapter = MoveAdapter<Planting, PlantingPose> & {
   insertNode(p: Planting): void;
@@ -39,7 +46,10 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
       return getPlanting(id)?.parentId ?? null;
     },
     getChildren(parentId) {
-      return useGardenStore.getState().garden.plantings.filter((p) => p.parentId === parentId).map((p) => p.id);
+      return useGardenStore
+        .getState()
+        .garden.plantings.filter((p) => p.parentId === parentId)
+        .map((p) => p.id);
     },
     setPose(id, pose) {
       const p = getPlanting(id);
@@ -61,7 +71,10 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
           let bestDist = Infinity;
           for (const cell of validCells) {
             const d = (cell.x - pose.x) ** 2 + (cell.y - pose.y) ** 2;
-            if (d < bestDist) { bestDist = d; best = cell; }
+            if (d < bestDist) {
+              bestDist = d;
+              best = cell;
+            }
           }
           snapped = { x: best.x, y: best.y };
         }
@@ -95,7 +108,12 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
       return {
         parentId: snap.id,
         slotPose: { x: parent.x + snap.slotX, y: parent.y + snap.slotY },
-        metadata: { instant: snap.cursorInside && snap.empty, kind: snap.kind, slotX: snap.slotX, slotY: snap.slotY },
+        metadata: {
+          instant: snap.cursorInside && snap.empty,
+          kind: snap.kind,
+          slotX: snap.slotX,
+          slotY: snap.slotY,
+        },
       };
     },
     applyBatch(ops, label) {

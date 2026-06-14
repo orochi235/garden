@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createTray,
-  createSeedling,
-  emptyNurseryState,
-  getCell,
-  setCell,
-} from './nursery';
+import { createSeedling, createTray, emptyNurseryState, getCell, setCell } from './nursery';
 
 describe('nursery types', () => {
   it('createTray builds a tray with rows*cols empty slots', () => {

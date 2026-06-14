@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 // Hard-paints the outermost TRIM pixels of each icon with its sampled
 // background color. Eliminates gridline artifacts left over from the source
 // grid crop (dark borders, anti-aliased seams, stray pixels) without
@@ -20,16 +21,16 @@
 //   node scripts/seal-icon-edges.mjs --files   # only the PNG files
 //   node scripts/seal-icon-edges.mjs --dry     # report only
 
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const ROOT = process.cwd();
-const TRIM = 2;     // px of edge to overwrite with bg color
-const INSET = 8;    // sample patches start this many px from the edge
-const PATCH = 6;    // sample patch side
-const TOL = 24;     // L1 distance from median to keep a patch
+const TRIM = 2; // px of edge to overwrite with bg color
+const INSET = 8; // sample patches start this many px from the edge
+const PATCH = 6; // sample patch side
+const TOL = 24; // L1 distance from median to keep a patch
 
 const args = new Set(process.argv.slice(2));
 const DRY = args.has('--dry');
@@ -42,11 +43,19 @@ function magick(...a) {
 
 function samplePatch(path, x, y, w, h) {
   return magick(
-    path, '-alpha', 'off',
-    '-crop', `${w}x${h}+${x}+${y}`,
-    '-format', '%[fx:int(mean.r*255)] %[fx:int(mean.g*255)] %[fx:int(mean.b*255)]',
+    path,
+    '-alpha',
+    'off',
+    '-crop',
+    `${w}x${h}+${x}+${y}`,
+    '-format',
+    '%[fx:int(mean.r*255)] %[fx:int(mean.g*255)] %[fx:int(mean.b*255)]',
     'info:',
-  ).toString().trim().split(/\s+/).map((s) => parseInt(s, 10));
+  )
+    .toString()
+    .trim()
+    .split(/\s+/)
+    .map((s) => parseInt(s, 10));
 }
 
 function sampleBg(path, W, H) {
@@ -57,8 +66,14 @@ function sampleBg(path, W, H) {
   const xMid = Math.round((W - PATCH) / 2);
   const yMid = Math.round((H - PATCH) / 2);
   const points = [
-    [xL, yT], [xR, yT], [xL, yB], [xR, yB],
-    [xMid, yT], [xMid, yB], [xL, yMid], [xR, yMid],
+    [xL, yT],
+    [xR, yT],
+    [xL, yB],
+    [xR, yB],
+    [xMid, yT],
+    [xMid, yB],
+    [xL, yMid],
+    [xR, yMid],
   ];
   const samples = points.map(([x, y]) => samplePatch(path, x, y, PATCH, PATCH));
   const median = (arr) => {
@@ -97,11 +112,16 @@ function sealOne(inBuf, scratchDir, idx) {
   // Hard-paint the four border bands. Each rectangle is inclusive in IM.
   magick(
     inPath,
-    '-fill', bg,
-    '-draw', `rectangle 0,0 ${W - 1},${TRIM - 1}`,
-    '-draw', `rectangle 0,${H - TRIM} ${W - 1},${H - 1}`,
-    '-draw', `rectangle 0,0 ${TRIM - 1},${H - 1}`,
-    '-draw', `rectangle ${W - TRIM},0 ${W - 1},${H - 1}`,
+    '-fill',
+    bg,
+    '-draw',
+    `rectangle 0,0 ${W - 1},${TRIM - 1}`,
+    '-draw',
+    `rectangle 0,${H - TRIM} ${W - 1},${H - 1}`,
+    '-draw',
+    `rectangle 0,0 ${TRIM - 1},${H - 1}`,
+    '-draw',
+    `rectangle ${W - TRIM},0 ${W - 1},${H - 1}`,
     outPath,
   );
 
@@ -137,7 +157,11 @@ function processJson(rel) {
 function processDir(rel) {
   const dir = join(ROOT, rel);
   let entries;
-  try { entries = readdirSync(dir); } catch { return; }
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return;
+  }
   const pngs = entries.filter((f) => f.toLowerCase().endsWith('.png'));
   if (pngs.length === 0) return;
   const scratch = mkdtempSync(join(tmpdir(), 'icon-seal-'));
@@ -147,7 +171,7 @@ function processDir(rel) {
       const path = join(dir, f);
       const stat = statSync(path);
       if (stat.size > 50 * 1024 * 1024) {
-        console.log(`  skip ${f} (too large: ${(stat.size/1e6).toFixed(0)}MB)`);
+        console.log(`  skip ${f} (too large: ${(stat.size / 1e6).toFixed(0)}MB)`);
         return;
       }
       const buf = readFileSync(path);

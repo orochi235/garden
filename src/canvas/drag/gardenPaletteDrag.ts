@@ -1,10 +1,10 @@
-import { useGardenStore } from '../../store/gardenStore';
+import type { PaletteEntry } from '../../components/palette/paletteData';
 import { getCultivar } from '../../model/cultivars';
+import { useGardenStore } from '../../store/gardenStore';
 import { getPlantingPosition } from '../../utils/planting';
 import { plantDrawCommands } from '../plantRenderers';
-import type { PaletteEntry } from '../../components/palette/paletteData';
-import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 import type { DrawCommand } from '../util/weaselLocal';
+import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Phase-2 migrated drag: palette → garden canvas (plantings only).
@@ -77,13 +77,14 @@ export function createGardenPaletteDrag(opts: {
       const container = garden.structures.find(
         (s) =>
           s.container &&
-          worldX >= s.x && worldX <= s.x + s.width &&
-          worldY >= s.y && worldY <= s.y + s.length,
+          worldX >= s.x &&
+          worldX <= s.x + s.width &&
+          worldY >= s.y &&
+          worldY <= s.y + s.length,
       );
       const zone = garden.zones.find(
         (z) =>
-          worldX >= z.x && worldX <= z.x + z.width &&
-          worldY >= z.y && worldY <= z.y + z.length,
+          worldX >= z.x && worldX <= z.x + z.width && worldY >= z.y && worldY <= z.y + z.length,
       );
       const parent = container ?? zone;
       if (!parent) return null;
@@ -117,11 +118,20 @@ export function createGardenPaletteDrag(opts: {
       const color = cultivar?.color ?? putative.color;
       // Show the actual plant glyph (bg circle + icon image when loaded),
       // wrapped in alpha for the "ghost" feel.
-      return [{
-        kind: 'group',
-        alpha: 0.7,
-        children: plantDrawCommands(putative.cultivarId, putative.x, putative.y, radius, color, cultivar?.iconBgColor),
-      }];
+      return [
+        {
+          kind: 'group',
+          alpha: 0.7,
+          children: plantDrawCommands(
+            putative.cultivarId,
+            putative.x,
+            putative.y,
+            radius,
+            color,
+            cultivar?.iconBgColor,
+          ),
+        },
+      ];
     },
 
     commit(putative: GardenPalettePutative): void {

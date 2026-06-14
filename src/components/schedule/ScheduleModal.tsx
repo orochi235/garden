@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useUiStore } from '../../store/uiStore';
 import { useGardenStore } from '../../store/gardenStore';
-import { ScheduleView } from './ScheduleView';
+import { useUiStore } from '../../store/uiStore';
 import styles from './ScheduleModal.module.css';
+import { ScheduleView } from './ScheduleView';
 
 /** Garden-mode entry point: schedule for every planting + every tray seedling. */
 export function ScheduleModal() {
@@ -27,7 +27,14 @@ export function ScheduleModal() {
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 className={styles.title}>Schedule</h2>
-          <button type="button" className={styles.close} onClick={() => setOpen(false)} aria-label="Close">×</button>
+          <button
+            type="button"
+            className={styles.close}
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
         <ScheduleView plants={plants} />
       </div>

@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { renderHook } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
-import { useSeedSelectTool, type SeedSelectScratch } from './useSeedSelectTool';
+import { renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
+import { type SeedSelectScratch, useSeedSelectTool } from './useSeedSelectTool';
 
 function makeCtx(
   worldX: number,
@@ -99,7 +99,11 @@ describe('useSeedSelectTool', () => {
     tool.drag!.onStart!(pointer(), start);
 
     // dragPreview slot should mirror the marquee while in flight (after onMove).
-    const moveCtx = makeCtx(off.x + 1.5 * tray.cellPitchIn, off.y + 0.5 * tray.cellPitchIn, scratch);
+    const moveCtx = makeCtx(
+      off.x + 1.5 * tray.cellPitchIn,
+      off.y + 0.5 * tray.cellPitchIn,
+      scratch,
+    );
     tool.drag!.onMove!(pointer(), moveCtx);
     expect(useUiStore.getState().dragPreview?.kind).toBe(AREA_SELECT_DRAG_KIND);
 

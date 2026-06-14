@@ -1,9 +1,9 @@
-import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
 import { rectPath } from '@orochi235/weasel';
-import { useGardenStore } from '../../store/gardenStore';
 import { getCultivar } from '../../model/cultivars';
+import { useGardenStore } from '../../store/gardenStore';
 import { plantDrawCommands } from '../plantRenderers';
+import { type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
+import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Phase-2-migrated drag: structure / zone / planting move (single + multi-select).
@@ -105,10 +105,19 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
           const snapStroke = 2 / Math.max(0.0001, view.scale);
           const dash = 6 / Math.max(0.0001, view.scale);
           const gap = 4 / Math.max(0.0001, view.scale);
-          const snapPath = (c as { shape?: string }).shape === 'circle'
-            ? ellipsePolygon(c.x + c.width / 2, c.y + c.length / 2, c.width / 2, c.length / 2)
-            : rectPath(c.x, c.y, c.width, c.length);
-          cmds.push({ kind: 'path', path: snapPath, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: snapStroke, dash: [dash, gap] } });
+          const snapPath =
+            (c as { shape?: string }).shape === 'circle'
+              ? ellipsePolygon(c.x + c.width / 2, c.y + c.length / 2, c.width / 2, c.length / 2)
+              : rectPath(c.x, c.y, c.width, c.length);
+          cmds.push({
+            kind: 'path',
+            path: snapPath,
+            stroke: {
+              paint: { fill: 'solid', color: '#5BA4CF' },
+              width: snapStroke,
+              dash: [dash, gap],
+            },
+          });
         }
       }
 
@@ -130,31 +139,59 @@ export function createMoveDrag(): Drag<MoveInput, MovePutative> {
           cmds.push({
             kind: 'group',
             alpha: 0.65,
-            children: plantDrawCommands(planting.cultivarId, pose.x, pose.y, radius, color, cultivar.iconBgColor),
+            children: plantDrawCommands(
+              planting.cultivarId,
+              pose.x,
+              pose.y,
+              radius,
+              color,
+              cultivar.iconBgColor,
+            ),
           });
           continue;
         }
 
         const structure = garden.structures.find((s) => s.id === id);
         if (structure) {
-          const path = (structure as { shape?: string }).shape === 'circle'
-            ? ellipsePolygon(pose.x + structure.width / 2, pose.y + structure.length / 2, structure.width / 2, structure.length / 2)
-            : rectPath(pose.x, pose.y, structure.width, structure.length);
-          cmds.push({ kind: 'group', alpha: 0.55, children: [
-            { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },
-            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: ghostStroke } },
-          ]});
+          const path =
+            (structure as { shape?: string }).shape === 'circle'
+              ? ellipsePolygon(
+                  pose.x + structure.width / 2,
+                  pose.y + structure.length / 2,
+                  structure.width / 2,
+                  structure.length / 2,
+                )
+              : rectPath(pose.x, pose.y, structure.width, structure.length);
+          cmds.push({
+            kind: 'group',
+            alpha: 0.55,
+            children: [
+              { kind: 'path', path, fill: { fill: 'solid', color: '#cfe2ec' } },
+              {
+                kind: 'path',
+                path,
+                stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: ghostStroke },
+              },
+            ],
+          });
           continue;
         }
 
         const zone = garden.zones.find((z) => z.id === id);
         if (zone) {
           const path = rectPath(pose.x, pose.y, zone.width, zone.length);
-          cmds.push({ kind: 'group', alpha: 0.4, children: [
-            { kind: 'path', path, fill: { fill: 'solid', color: zone.color } },
-            { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: ghostStroke } },
-          ]});
-          continue;
+          cmds.push({
+            kind: 'group',
+            alpha: 0.4,
+            children: [
+              { kind: 'path', path, fill: { fill: 'solid', color: zone.color } },
+              {
+                kind: 'path',
+                path,
+                stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: ghostStroke },
+              },
+            ],
+          });
         }
       }
       return cmds;

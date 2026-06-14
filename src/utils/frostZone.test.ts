@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   dayOfYearToMmDd,
-  zoneIndexToString,
-  parseGrid,
-  lookupFrostZone,
   type FrostZoneGrid,
+  lookupFrostZone,
+  parseGrid,
+  zoneIndexToString,
 } from './frostZone';
 
 describe('dayOfYearToMmDd', () => {
@@ -47,7 +47,8 @@ describe('zoneIndexToString', () => {
 
 function buildSyntheticGrid(): { buf: ArrayBuffer; grid: FrostZoneGrid } {
   // 4x4 grid covering 30..32 N, -100..-98 W at 0.5 deg.
-  const nLat = 4, nLon = 4;
+  const nLat = 4,
+    nLon = 4;
   const buf = new ArrayBuffer(18 + nLat * nLon * 3);
   const v = new DataView(buf);
   v.setUint8(0, 'F'.charCodeAt(0));
@@ -65,7 +66,9 @@ function buildSyntheticGrid(): { buf: ArrayBuffer; grid: FrostZoneGrid } {
   // Fill: only cell (li=2, oi=2) has data: doy=79 (3/20), zone=14 (7b).
   for (let i = 0; i < nLat * nLon; i++) {
     const off = 18 + i * 3;
-    v.setUint8(off, 0); v.setUint8(off + 1, 0); v.setUint8(off + 2, 0);
+    v.setUint8(off, 0);
+    v.setUint8(off + 1, 0);
+    v.setUint8(off + 2, 0);
   }
   const target = 18 + (2 * nLon + 2) * 3;
   v.setUint8(target, 79 & 0xff);

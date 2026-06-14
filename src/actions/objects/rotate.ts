@@ -1,6 +1,6 @@
-import type { ActionDescriptor } from '../types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import type { ActionDescriptor } from '../types';
 import { animateRotation } from './animateRotation';
 
 function rotate(ccw: boolean): void {
@@ -17,9 +17,12 @@ function rotate(ccw: boolean): void {
         ? (structure.rotation - 90 + 360) % 360
         : (structure.rotation + 90) % 360;
       animateRotation(
-        id, 'structures',
-        structure.width, structure.length,
-        structure.length, structure.width,
+        id,
+        'structures',
+        structure.width,
+        structure.length,
+        structure.length,
+        structure.width,
         newRotation,
       );
       continue;

@@ -105,9 +105,7 @@ export function SelectionPanel() {
               >
                 <span className={s.swatch} style={{ background: child.color }} />
                 <span className={s.itemLabel}>{child.label}</span>
-                {child.sublabel && (
-                  <span className={s.itemSublabel}>{child.sublabel}</span>
-                )}
+                {child.sublabel && <span className={s.itemSublabel}>{child.sublabel}</span>}
               </button>
             ))}
           </div>
@@ -123,9 +121,7 @@ export function SelectionPanel() {
               >
                 <span className={s.swatch} style={{ background: item.color }} />
                 <span className={s.itemLabel}>{item.label}</span>
-                {item.sublabel && (
-                  <span className={s.itemSublabel}>{item.sublabel}</span>
-                )}
+                {item.sublabel && <span className={s.itemSublabel}>{item.sublabel}</span>}
               </button>
             ))}
           </div>

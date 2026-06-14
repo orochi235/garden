@@ -54,6 +54,12 @@ export default defineConfig({
       },
     },
     setupFiles: ['./src/test-setup.ts'],
-    exclude: ['**/node_modules/**', '**/.worktrees/**', '**/.claude/**', '**/dist/**', 'tests/visual/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/.worktrees/**',
+      '**/.claude/**',
+      '**/dist/**',
+      'tests/visual/**',
+    ],
   },
 });

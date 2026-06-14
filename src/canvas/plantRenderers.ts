@@ -5,10 +5,9 @@
  * Falls back to a simple colored circle when no image is available.
  */
 
+import { getCultivar } from '../model/cultivars';
 import type { DrawCommand } from './util/weaselLocal';
 import { circlePolygon } from './util/weaselLocal';
-import { getCultivar } from '../model/cultivars';
-
 
 // ---------------------------------------------------------------------------
 // Image cache — decode base64 data URIs once, reuse across frames
@@ -71,14 +70,16 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
   pendingBitmaps.add(cultivarId);
 
   const decodeFromImg = (img: HTMLImageElement) => {
-    createImageBitmap(img).then((bitmap) => {
-      bitmapCache.set(cultivarId, bitmap);
-      pendingBitmaps.delete(cultivarId);
-      for (const cb of loadCallbacks) cb();
-    }).catch((err) => {
-      console.warn(`[plantRenderers] createImageBitmap failed for ${cultivarId}:`, err);
-      pendingBitmaps.delete(cultivarId);
-    });
+    createImageBitmap(img)
+      .then((bitmap) => {
+        bitmapCache.set(cultivarId, bitmap);
+        pendingBitmaps.delete(cultivarId);
+        for (const cb of loadCallbacks) cb();
+      })
+      .catch((err) => {
+        console.warn(`[plantRenderers] createImageBitmap failed for ${cultivarId}:`, err);
+        pendingBitmaps.delete(cultivarId);
+      });
   };
 
   const existing = imageCache.get(dataUri);
@@ -121,7 +122,6 @@ export function getIconBitmap(cultivarId: string): ImageBitmap | null {
 // DrawCommand builder — world-layer consumers use this instead of ctx API
 // ---------------------------------------------------------------------------
 
-
 /**
  * Build DrawCommands for a single plant glyph centered at (cx, cy) in world
  * coords. Emits the footprint background circle, the icon image (clipped to
@@ -154,14 +154,16 @@ export function plantDrawCommands(
     cmds.push({
       kind: 'group',
       clip: circlePolygon(cx, cy, radius),
-      children: [{
-        kind: 'image',
-        image: bitmap,
-        x: cx - radius,
-        y: cy - radius,
-        w: radius * 2,
-        h: radius * 2,
-      }],
+      children: [
+        {
+          kind: 'image',
+          image: bitmap,
+          x: cx - radius,
+          y: cy - radius,
+          w: radius * 2,
+          h: radius * 2,
+        },
+      ],
     });
   } else {
     cmds.push({
@@ -178,11 +180,7 @@ export function plantDrawCommands(
 // Fallback — simple colored circle/square when no image available
 // ---------------------------------------------------------------------------
 
-function drawFallback(
-  ctx: CanvasRenderingContext2D,
-  radius: number,
-  color: string,
-): void {
+function drawFallback(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
   ctx.save();
   ctx.globalAlpha = 0.7;
   ctx.strokeStyle = color;

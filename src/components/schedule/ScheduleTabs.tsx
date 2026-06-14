@@ -11,12 +11,24 @@ export function ScheduleTabs({ active, onChange }: ScheduleTabsProps) {
   return (
     <div className={styles.tabs} role="tablist">
       <TabBtn label="List" active={active === 'list'} onClick={() => onChange('list')} />
-      <TabBtn label="Calendar" active={active === 'calendar'} onClick={() => onChange('calendar')} />
+      <TabBtn
+        label="Calendar"
+        active={active === 'calendar'}
+        onClick={() => onChange('calendar')}
+      />
     </div>
   );
 }
 
-function TabBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function TabBtn({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -24,6 +36,8 @@ function TabBtn({ label, active, onClick }: { label: string; active: boolean; on
       aria-selected={active}
       onClick={onClick}
       className={`${styles.tabBtn}${active ? ` ${styles.tabBtnActive}` : ''}`}
-    >{label}</button>
+    >
+      {label}
+    </button>
   );
 }

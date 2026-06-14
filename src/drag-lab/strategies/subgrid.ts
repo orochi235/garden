@@ -1,7 +1,10 @@
 // src/drag-lab/strategies/subgrid.ts
-import type { LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult } from '../types';
+import type { ConfigField, DragFeedback, DropResult, LayoutStrategy, Point, Rect } from '../types';
 
-interface CellCoord { col: number; row: number; }
+interface CellCoord {
+  col: number;
+  row: number;
+}
 
 function getGridDims(config: Record<string, unknown>) {
   const cols = (config.cols as number) ?? 4;
@@ -10,7 +13,14 @@ function getGridDims(config: Record<string, unknown>) {
   return { cols, rows, gapFt };
 }
 
-function cellCenter(bounds: Rect, cols: number, rows: number, gapFt: number, col: number, row: number): Point {
+function cellCenter(
+  bounds: Rect,
+  cols: number,
+  rows: number,
+  gapFt: number,
+  col: number,
+  row: number,
+): Point {
   const totalGapX = gapFt * (cols - 1);
   const totalGapY = gapFt * (rows - 1);
   const cellW = (bounds.width - totalGapX) / cols;
@@ -31,7 +41,14 @@ function posToCell(bounds: Rect, cols: number, rows: number, gapFt: number, pos:
   return { col: Math.max(0, Math.min(cols - 1, col)), row: Math.max(0, Math.min(rows - 1, row)) };
 }
 
-function cellRect(bounds: Rect, cols: number, rows: number, gapFt: number, col: number, row: number): Rect {
+function cellRect(
+  bounds: Rect,
+  cols: number,
+  rows: number,
+  gapFt: number,
+  col: number,
+  row: number,
+): Rect {
   const totalGapX = gapFt * (cols - 1);
   const totalGapY = gapFt * (rows - 1);
   const cellW = (bounds.width - totalGapX) / cols;
@@ -131,7 +148,10 @@ export const subgridStrategy: LayoutStrategy = {
         const cc = cellCenter(bounds, cols, rows, gapFt, c, r);
         if (occupied.has(`${cc.x},${cc.y}`)) continue;
         const d = (cc.x - pos.x) ** 2 + (cc.y - pos.y) ** 2;
-        if (d < bestDist) { bestDist = d; bestCenter = cc; }
+        if (d < bestDist) {
+          bestDist = d;
+          bestCenter = cc;
+        }
       }
     }
     return { item: { ...item, x: bestCenter.x, y: bestCenter.y }, state: {} };
@@ -143,7 +163,15 @@ export const subgridStrategy: LayoutStrategy = {
 
   configSchema(): ConfigField[] {
     return [
-      { key: 'cols', label: 'Columns', type: 'slider' as const, min: 1, max: 12, step: 1, default: 4 },
+      {
+        key: 'cols',
+        label: 'Columns',
+        type: 'slider' as const,
+        min: 1,
+        max: 12,
+        step: 1,
+        default: 4,
+      },
       { key: 'rows', label: 'Rows', type: 'slider' as const, min: 1, max: 12, step: 1, default: 4 },
     ];
   },

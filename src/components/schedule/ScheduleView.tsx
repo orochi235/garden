@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { buildSchedule, type Schedule } from '../../model/scheduler';
-import { defaultActionsForCultivar } from '../../model/defaultActions';
 import { getCultivar } from '../../model/cultivars';
+import { defaultActionsForCultivar } from '../../model/defaultActions';
+import { buildSchedule, type Schedule } from '../../model/scheduler';
 import { useUiStore } from '../../store/uiStore';
-import { defaultTargetDate } from './scheduleViewModel';
-import { ListView } from './ListView';
-import { ScheduleTabs, type ScheduleTab } from './ScheduleTabs';
 import { CalendarView } from './calendar/CalendarView';
+import { ListView } from './ListView';
+import { type ScheduleTab, ScheduleTabs } from './ScheduleTabs';
 import styles from './ScheduleView.module.css';
+import { defaultTargetDate } from './scheduleViewModel';
 
 export interface SchedulePlantInput {
   id: string;
@@ -24,7 +24,11 @@ export interface ScheduleViewProps {
 }
 
 export function ScheduleView({
-  plants, targetTransplantDate, lastFrostDate, firstFrostDate, defaultTab = 'list',
+  plants,
+  targetTransplantDate,
+  lastFrostDate,
+  firstFrostDate,
+  defaultTab = 'list',
 }: ScheduleViewProps) {
   const almanacLastFrost = useUiStore((s) => s.almanacFilters?.lastFrostDate ?? null);
   const [tab, setTab] = useState<ScheduleTab>(defaultTab);
@@ -53,13 +57,14 @@ export function ScheduleView({
     });
   }, [plants, targetDate, lastFrostDate, firstFrostDate, almanacLastFrost]);
 
-  const plantsById = useMemo(
-    () => new Map(plants.map((p) => [p.id, p])),
-    [plants],
-  );
+  const plantsById = useMemo(() => new Map(plants.map((p) => [p.id, p])), [plants]);
 
   if (plants.length === 0) {
-    return <div className={styles.root}><div className={styles.empty}>No plants to schedule.</div></div>;
+    return (
+      <div className={styles.root}>
+        <div className={styles.empty}>No plants to schedule.</div>
+      </div>
+    );
   }
 
   return (
@@ -83,7 +88,11 @@ export function ScheduleView({
 
       {schedule.warnings.length > 0 && (
         <div>
-          {schedule.warnings.map((w, i) => <div key={i} className={styles.warning}>{w}</div>)}
+          {schedule.warnings.map((w, i) => (
+            <div key={i} className={styles.warning}>
+              {w}
+            </div>
+          ))}
         </div>
       )}
     </div>

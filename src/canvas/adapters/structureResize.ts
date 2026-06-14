@@ -1,8 +1,13 @@
-import { useGardenStore } from '../../store/gardenStore';
-import type { Structure } from '../../model/types';
 import type { ResizeAdapter } from '@orochi235/weasel';
+import type { Structure } from '../../model/types';
+import { useGardenStore } from '../../store/gardenStore';
 
-export interface StructureResizePose { x: number; y: number; width: number; length: number }
+export interface StructureResizePose {
+  x: number;
+  y: number;
+  width: number;
+  length: number;
+}
 
 export function createStructureResizeAdapter(): ResizeAdapter<Structure, StructureResizePose> {
   function getStructure(id: string): Structure | undefined {

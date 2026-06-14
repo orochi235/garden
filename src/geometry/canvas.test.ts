@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { traceShapePath, tracePolyline } from './canvas';
+import { tracePolyline, traceShapePath } from './canvas';
 import { rectPath } from './shapes';
 import { closedPath, cubicTo } from './types';
 
@@ -8,12 +8,18 @@ function mockCtx() {
   const calls: { method: string; args: number[] }[] = [];
   return {
     calls,
-    moveTo(x: number, y: number) { calls.push({ method: 'moveTo', args: [x, y] }); },
-    lineTo(x: number, y: number) { calls.push({ method: 'lineTo', args: [x, y] }); },
+    moveTo(x: number, y: number) {
+      calls.push({ method: 'moveTo', args: [x, y] });
+    },
+    lineTo(x: number, y: number) {
+      calls.push({ method: 'lineTo', args: [x, y] });
+    },
     bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number) {
       calls.push({ method: 'bezierCurveTo', args: [cp1x, cp1y, cp2x, cp2y, x, y] });
     },
-    closePath() { calls.push({ method: 'closePath', args: [] }); },
+    closePath() {
+      calls.push({ method: 'closePath', args: [] });
+    },
   };
 }
 
@@ -43,7 +49,11 @@ describe('traceShapePath', () => {
 describe('tracePolyline', () => {
   it('traces a point array as moveTo + lineTo + closePath', () => {
     const ctx = mockCtx();
-    tracePolyline(ctx, [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 4 }]);
+    tracePolyline(ctx, [
+      { x: 0, y: 0 },
+      { x: 3, y: 0 },
+      { x: 3, y: 4 },
+    ]);
     expect(ctx.calls).toEqual([
       { method: 'moveTo', args: [0, 0] },
       { method: 'lineTo', args: [3, 0] },

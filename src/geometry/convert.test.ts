@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { createStructure, createZone } from '../model/types';
 import { structureToShape, zoneToShape } from './convert';
 import { flattenPath } from './flatten';
-import { shapeArea, pointInShape } from './ops';
-import { createStructure, createZone } from '../model/types';
+import { pointInShape, shapeArea } from './ops';
 
 describe('structureToShape', () => {
   it('converts a rectangular structure to a rect path', () => {
@@ -21,7 +21,7 @@ describe('structureToShape', () => {
     const s = createStructure({ type: 'pot', x: 0, y: 0, width: 6, length: 6 });
     const shape = structureToShape(s);
     // Should be cubic bezier segments (ellipse)
-    expect(shape.segments.every(seg => seg.kind === 'cubic')).toBe(true);
+    expect(shape.segments.every((seg) => seg.kind === 'cubic')).toBe(true);
     // Area should approximate pi*r^2
     expect(shapeArea(shape)).toBeCloseTo(Math.PI * 9, 0);
   });

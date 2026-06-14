@@ -1,14 +1,18 @@
 import type { Garden, Planting } from '../model/types';
 
-export interface WorldPose { x: number; y: number }
+export interface WorldPose {
+  x: number;
+  y: number;
+}
 
 /** Look up a planting's parent (structure or zone) by id. */
 export function getPlantingParent(
   garden: Pick<Garden, 'structures' | 'zones'>,
   parentId: string,
 ): { id: string; x: number; y: number } | undefined {
-  return garden.structures.find((s) => s.id === parentId)
-    ?? garden.zones.find((z) => z.id === parentId);
+  return (
+    garden.structures.find((s) => s.id === parentId) ?? garden.zones.find((z) => z.id === parentId)
+  );
 }
 
 /** Compose a planting's world pose by adding its parent's offset. */

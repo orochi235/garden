@@ -1,6 +1,6 @@
-import type { ActionDescriptor } from '../types';
 import type { LayerId } from '../../model/types';
 import { useUiStore } from '../../store/uiStore';
+import type { ActionDescriptor } from '../types';
 
 const ALL_LAYERS: LayerId[] = ['ground', 'blueprint', 'structures', 'zones', 'plantings'];
 const NURSERY_LAYERS: LayerId[] = ['zones', 'plantings'];

@@ -1,29 +1,27 @@
+import {
+  type Dims,
+  defineTool,
+  PathBuilder,
+  type RenderLayer,
+  type Tool,
+  type View,
+} from '@orochi235/weasel';
 import { useMemo, useRef } from 'react';
-import { defineTool, PathBuilder, type Dims, type RenderLayer, type Tool, type View } from '@orochi235/weasel';
-import { type DrawCommand } from '../util/weaselLocal';
+import { type Seedling, type Tray, trayInteriorOffsetIn } from '../../model/nursery';
+import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { type NurserySceneAdapter, trayWorldOrigin } from '../adapters/nurseryScene';
+import { SEED_FILL_TRAY_DRAG_KIND, type SeedFillPutative } from '../drag/seedFillTrayDrag';
+import { SEEDLING_MOVE_DRAG_KIND, type SeedlingMovePutative } from '../drag/seedlingMoveDrag';
 import {
-  hitTestCellAcrossTrays,
-  hitTestCellInches,
-} from '../nurseryHitTest';
-import { DRAG_SPREAD_GUTTER_RATIO } from '../layouts/trayDropTargets';
-import {
+  DRAG_SPREAD_GUTTER_RATIO,
   getTrayDropTargets,
   hitTrayDropTarget,
   type TrayGutterMeta,
 } from '../layouts/trayDropTargets';
-import { trayInteriorOffsetIn, type Seedling, type Tray } from '../../model/nursery';
-import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
-import { trayWorldOrigin, type NurserySceneAdapter } from '../adapters/nurseryScene';
-import {
-  SEEDLING_MOVE_DRAG_KIND,
-  type SeedlingMovePutative,
-} from '../drag/seedlingMoveDrag';
-import {
-  SEED_FILL_TRAY_DRAG_KIND,
-  type SeedFillPutative,
-} from '../drag/seedFillTrayDrag';
+import { hitTestCellAcrossTrays, hitTestCellInches } from '../nurseryHitTest';
+import type { DrawCommand } from '../util/weaselLocal';
 
 /**
  * Publish a seedling-move ghost putative into the framework's shared
@@ -135,14 +133,16 @@ function markerCommands(
   const sin = Math.sin(rotation);
   // Column-major 3×3: [cos, sin, 0, -sin, cos, 0, cx, cy, 1]
   const transform = new Float32Array([cos, sin, 0, -sin, cos, 0, cx, cy, 1]);
-  return [{
-    kind: 'group',
-    transform,
-    children: [
-      { kind: 'path', path, fill: { fill: 'solid', color: fillColor } },
-      { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: 1 } },
-    ],
-  }];
+  return [
+    {
+      kind: 'group',
+      transform,
+      children: [
+        { kind: 'path', path, fill: { fill: 'solid', color: fillColor } },
+        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: 1 } },
+      ],
+    },
+  ];
 }
 
 export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<SeedlingMoveScratch> {
@@ -186,9 +186,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
           // back to the active tray.
           const dp = ui.dragPreview;
           const fp =
-            dp && dp.kind === SEED_FILL_TRAY_DRAG_KIND
-              ? (dp.putative as SeedFillPutative)
-              : null;
+            dp && dp.kind === SEED_FILL_TRAY_DRAG_KIND ? (dp.putative as SeedFillPutative) : null;
           trayId = fp?.trayId ?? ui.currentTrayId;
           if (fp && (fp.scope === 'all' || fp.scope === 'row' || fp.scope === 'col')) {
             affKind = fp.scope;
@@ -235,15 +233,17 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             widthScale = 1.35;
             isHover = affKind === 'all';
           }
-          cmds.push(...markerCommands(
-            cx,
-            cy,
-            markerLen * lenScale,
-            markerW * widthScale,
-            rotation,
-            isHover ? hoverFill : baseFill,
-            baseStroke,
-          ));
+          cmds.push(
+            ...markerCommands(
+              cx,
+              cy,
+              markerLen * lenScale,
+              markerW * widthScale,
+              rotation,
+              isHover ? hoverFill : baseFill,
+              baseStroke,
+            ),
+          );
         }
         return cmds;
       },
@@ -288,8 +288,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
 
             const sel = useUiStore.getState().selectedIds;
             const isAnchorSelected = sel.includes(hit.seedling.id);
-            const groupIds =
-              isAnchorSelected && sel.length > 1 ? sel.slice() : [hit.seedling.id];
+            const groupIds = isAnchorSelected && sel.length > 1 ? sel.slice() : [hit.seedling.id];
             const isGroup = groupIds.length > 1;
 
             ctx.scratch.draggedId = hit.seedling.id;
@@ -323,12 +322,18 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             if (!tray) return 'claim';
 
             if (!ctx.scratch.isGroup) {
-              const hit = hitTrayDropTarget(getTrayDropTargets(tray), { x: ctx.worldX, y: ctx.worldY });
-              const aff: TrayGutterMeta | null =
-                hit && hit.meta.kind !== 'cell' ? hit.meta : null;
+              const hit = hitTrayDropTarget(getTrayDropTargets(tray), {
+                x: ctx.worldX,
+                y: ctx.worldY,
+              });
+              const aff: TrayGutterMeta | null = hit && hit.meta.kind !== 'cell' ? hit.meta : null;
               ctx.scratch.affordance = aff;
               if (aff) {
-                const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId!, replace: true };
+                const base = {
+                  trayId: tray.id,
+                  cultivarId: ctx.scratch.cultivarId!,
+                  replace: true,
+                };
                 setFillGhost(
                   aff.kind === 'all'
                     ? { ...base, scope: 'all' }
@@ -348,12 +353,16 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             // intra-source-tray (anchor-delta semantics don't generalize
             // across trays of different shapes/sizes).
             const crossHit = !ctx.scratch.isGroup
-              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) => trayWorldOrigin(t, ss))
+              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) =>
+                  trayWorldOrigin(t, ss),
+                )
               : null;
             const o = trayWorldOrigin(tray, ss);
             const cell = ctx.scratch.isGroup
               ? hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y)
-              : (crossHit && crossHit.trayId === tray.id ? { row: crossHit.row, col: crossHit.col } : null);
+              : crossHit && crossHit.trayId === tray.id
+                ? { row: crossHit.row, col: crossHit.col }
+                : null;
             // Cross-tray drop: target is a different tray. Render a single-cell
             // ghost on the destination via setMoveGhost (feasibility = dest
             // cell empty). Don't set the (intra-tray) fill ghost.
@@ -365,12 +374,14 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
                 setMoveGhost({
                   trayId: destTray.id,
                   feasible: destFree,
-                  cells: [{
-                    row: crossHit.row,
-                    col: crossHit.col,
-                    cultivarId: ctx.scratch.cultivarId!,
-                    bumped: false,
-                  }],
+                  cells: [
+                    {
+                      row: crossHit.row,
+                      col: crossHit.col,
+                      cultivarId: ctx.scratch.cultivarId!,
+                      bumped: false,
+                    },
+                  ],
                 });
                 setFillGhost(null);
                 scratchRef.current = ctx.scratch;
@@ -389,8 +400,10 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               const dc = cell.col - ctx.scratch.anchorFromCol;
               const groupSeedlings = ctx.scratch.groupIds
                 .map((id) => ss.seedlings.find((s) => s.id === id))
-                .filter((s): s is Seedling =>
-                  !!s && s.trayId === tray.id && s.row != null && s.col != null);
+                .filter(
+                  (s): s is Seedling =>
+                    !!s && s.trayId === tray.id && s.row != null && s.col != null,
+                );
               const pending = groupSeedlings.map((s) => ({
                 seedlingId: s.id,
                 cultivarId: s.cultivarId,
@@ -411,7 +424,10 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
                 })),
               });
               setFillGhost(null);
-            } else if (cell.row !== ctx.scratch.anchorFromRow || cell.col !== ctx.scratch.anchorFromCol) {
+            } else if (
+              cell.row !== ctx.scratch.anchorFromRow ||
+              cell.col !== ctx.scratch.anchorFromCol
+            ) {
               setFillGhost({
                 trayId: tray.id,
                 cultivarId: ctx.scratch.cultivarId!,
@@ -452,7 +468,8 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               gs.clearCell(trayId, ctx.scratch.anchorFromRow, ctx.scratch.anchorFromCol);
               const aff = ctx.scratch.affordance;
               if (aff.kind === 'all') gs.fillTray(trayId, cultivarId, { replace: true });
-              else if (aff.kind === 'row') gs.fillRow(trayId, aff.row, cultivarId, { replace: true });
+              else if (aff.kind === 'row')
+                gs.fillRow(trayId, aff.row, cultivarId, { replace: true });
               else gs.fillColumn(trayId, aff.col, cultivarId, { replace: true });
               cleanup();
               return 'claim';
@@ -461,13 +478,11 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             const oEnd = trayWorldOrigin(tray, ss);
             // Cross-tray drop on commit: single-seedling drags only.
             const crossHitEnd = !ctx.scratch.isGroup
-              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) => trayWorldOrigin(t, ss))
+              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) =>
+                  trayWorldOrigin(t, ss),
+                )
               : null;
-            if (
-              !ctx.scratch.isGroup
-              && crossHitEnd
-              && crossHitEnd.trayId !== trayId
-            ) {
+            if (!ctx.scratch.isGroup && crossHitEnd && crossHitEnd.trayId !== trayId) {
               const destTray = ss.trays.find((t) => t.id === crossHitEnd.trayId);
               if (destTray) {
                 const destSlot = destTray.slots[crossHitEnd.row * destTray.cols + crossHitEnd.col];
@@ -500,8 +515,10 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               }
               const groupSeedlings = ctx.scratch.groupIds
                 .map((id) => ss.seedlings.find((s) => s.id === id))
-                .filter((s): s is Seedling =>
-                  !!s && s.trayId === tray.id && s.row != null && s.col != null);
+                .filter(
+                  (s): s is Seedling =>
+                    !!s && s.trayId === tray.id && s.row != null && s.col != null,
+                );
               const pending = groupSeedlings.map((s) => ({
                 seedlingId: s.id,
                 cultivarId: s.cultivarId,
@@ -528,7 +545,9 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
             }
 
             if (!cell) {
-              useGardenStore.getState().clearCell(trayId, ctx.scratch.anchorFromRow, ctx.scratch.anchorFromCol);
+              useGardenStore
+                .getState()
+                .clearCell(trayId, ctx.scratch.anchorFromRow, ctx.scratch.anchorFromCol);
               cleanup();
               return 'claim';
             }
@@ -536,13 +555,15 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
               cleanup();
               return 'claim';
             }
-            useGardenStore.getState().moveSeedling(
-              trayId,
-              ctx.scratch.anchorFromRow,
-              ctx.scratch.anchorFromCol,
-              cell.row,
-              cell.col,
-            );
+            useGardenStore
+              .getState()
+              .moveSeedling(
+                trayId,
+                ctx.scratch.anchorFromRow,
+                ctx.scratch.anchorFromCol,
+                cell.row,
+                cell.col,
+              );
             cleanup();
             return 'claim';
           },

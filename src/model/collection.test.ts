@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { addToCollection, findInUseRemovals, getCollectionCultivar, hasCultivar, removeFromCollection, snapshotCultivar, type Collection } from './collection';
-import type { Planting } from './types';
-import type { Seedling } from './nursery';
+import {
+  addToCollection,
+  type Collection,
+  findInUseRemovals,
+  getCollectionCultivar,
+  hasCultivar,
+  removeFromCollection,
+  snapshotCultivar,
+} from './collection';
 import { getAllCultivars } from './cultivars';
+import type { Seedling } from './nursery';
+import type { Planting } from './types';
 
 describe('snapshotCultivar', () => {
   it('produces a deep copy that equals the source', () => {
@@ -118,6 +126,8 @@ describe('findInUseRemovals', () => {
   });
 
   it('deduplicates: an id used by both a planting and a seedling appears once', () => {
-    expect(findInUseRemovals(['cult-a'], [planting('cult-a')], [seedling('cult-a')])).toEqual(['cult-a']);
+    expect(findInUseRemovals(['cult-a'], [planting('cult-a')], [seedling('cult-a')])).toEqual([
+      'cult-a',
+    ]);
   });
 });

@@ -35,7 +35,10 @@ export interface CollectionEditorState {
   computeRemovedIds: () => string[];
 }
 
-export function useCollectionEditorState(committed: Collection, database: Cultivar[]): CollectionEditorState {
+export function useCollectionEditorState(
+  committed: Collection,
+  database: Cultivar[],
+): CollectionEditorState {
   const [pending, setPending] = useState<Collection>(committed);
   const [checked, setChecked] = useState<Set<string>>(() => new Set());
   const [search, setSearchState] = useState('');
@@ -137,38 +140,44 @@ export function useCollectionEditorState(committed: Collection, database: Cultiv
     setChecked(new Set());
   }, [checked, database]);
 
-  const addOne = useCallback((id: string) => {
-    const source = database.find((c) => c.id === id);
-    if (!source) return;
-    setPending((prev) => addToCollection(prev, [snapshotCultivar(source)]));
-    setChecked((prev) => {
-      if (!prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  }, [database]);
-
-  const addMany = useCallback((ids: string[]) => {
-    if (ids.length === 0) return;
-    const additions: Cultivar[] = [];
-    for (const id of ids) {
+  const addOne = useCallback(
+    (id: string) => {
       const source = database.find((c) => c.id === id);
-      if (source) additions.push(snapshotCultivar(source));
-    }
-    if (additions.length === 0) return;
-    setPending((prev) => addToCollection(prev, additions));
-    setChecked((prev) => {
-      let next: Set<string> | null = null;
+      if (!source) return;
+      setPending((prev) => addToCollection(prev, [snapshotCultivar(source)]));
+      setChecked((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+    [database],
+  );
+
+  const addMany = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      const additions: Cultivar[] = [];
       for (const id of ids) {
-        if (prev.has(id)) {
-          if (!next) next = new Set(prev);
-          next.delete(id);
-        }
+        const source = database.find((c) => c.id === id);
+        if (source) additions.push(snapshotCultivar(source));
       }
-      return next ?? prev;
-    });
-  }, [database]);
+      if (additions.length === 0) return;
+      setPending((prev) => addToCollection(prev, additions));
+      setChecked((prev) => {
+        let next: Set<string> | null = null;
+        for (const id of ids) {
+          if (prev.has(id)) {
+            if (!next) next = new Set(prev);
+            next.delete(id);
+          }
+        }
+        return next ?? prev;
+      });
+    },
+    [database],
+  );
 
   const removeOne = useCallback((id: string) => {
     setPending((prev) => removeFromCollection(prev, [id]));

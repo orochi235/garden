@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import type { Constraint, ActionDef, ScheduleInputs } from './scheduler';
+import { describe, expect, it } from 'vitest';
+import type { ActionDef, Constraint, ScheduleInputs } from './scheduler';
 import { addOffset } from './scheduler';
 
 describe('scheduler types', () => {
@@ -85,31 +85,51 @@ describe('resolveConstraint', () => {
   };
 
   it('exact constraint with no offset returns the anchor date', () => {
-    expect(resolveConstraint({ kind: 'exact', anchor: { kind: 'target-transplant' } }, ctx))
-      .toBe('2026-05-15');
+    expect(resolveConstraint({ kind: 'exact', anchor: { kind: 'target-transplant' } }, ctx)).toBe(
+      '2026-05-15',
+    );
   });
 
   it('lower with negative offset (4 weeks before last-frost)', () => {
-    expect(resolveConstraint({
-      kind: 'lower',
-      anchor: { kind: 'last-frost' },
-      offset: { amount: -4, unit: 'weeks' },
-    }, ctx)).toBe('2026-04-02');
+    expect(
+      resolveConstraint(
+        {
+          kind: 'lower',
+          anchor: { kind: 'last-frost' },
+          offset: { amount: -4, unit: 'weeks' },
+        },
+        ctx,
+      ),
+    ).toBe('2026-04-02');
   });
 
   it('upper with negative day offset', () => {
-    expect(resolveConstraint({
-      kind: 'upper',
-      anchor: { kind: 'target-transplant' },
-      offset: { amount: -7, unit: 'days' },
-    }, ctx)).toBe('2026-05-08');
+    expect(
+      resolveConstraint(
+        {
+          kind: 'upper',
+          anchor: { kind: 'target-transplant' },
+          offset: { amount: -7, unit: 'days' },
+        },
+        ctx,
+      ),
+    ).toBe('2026-05-08');
   });
 
   it('returns null when anchor cannot be resolved', () => {
-    const ctxNoFirstFrost = { targetTransplantDate: '2026-05-15', actionDates: new Map<string, string>() };
-    expect(resolveConstraint({
-      kind: 'exact', anchor: { kind: 'first-frost' },
-    }, ctxNoFirstFrost)).toBeNull();
+    const ctxNoFirstFrost = {
+      targetTransplantDate: '2026-05-15',
+      actionDates: new Map<string, string>(),
+    };
+    expect(
+      resolveConstraint(
+        {
+          kind: 'exact',
+          anchor: { kind: 'first-frost' },
+        },
+        ctxNoFirstFrost,
+      ),
+    ).toBeNull();
   });
 });
 
@@ -118,19 +138,27 @@ import { buildSchedule } from './scheduler';
 describe('buildSchedule', () => {
   it('resolves a single exact action', () => {
     const result = buildSchedule({
-      plants: [{
-        id: 'p1', cultivarId: 'tomato',
-        actions: [{
-          id: 'transplant', label: 'Transplant',
-          constraints: [{ kind: 'exact', anchor: { kind: 'target-transplant' } }],
-        }],
-      }],
+      plants: [
+        {
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'transplant',
+              label: 'Transplant',
+              constraints: [{ kind: 'exact', anchor: { kind: 'target-transplant' } }],
+            },
+          ],
+        },
+      ],
       targetTransplantDate: '2026-05-15',
     });
     expect(result.actions).toHaveLength(1);
     expect(result.actions[0]).toMatchObject({
-      plantId: 'p1', actionId: 'transplant',
-      earliest: '2026-05-15', latest: '2026-05-15',
+      plantId: 'p1',
+      actionId: 'transplant',
+      earliest: '2026-05-15',
+      latest: '2026-05-15',
       conflicts: [],
     });
     expect(result.warnings).toEqual([]);
@@ -138,16 +166,30 @@ describe('buildSchedule', () => {
 
   it('intersects lower + upper bounds into a window', () => {
     const result = buildSchedule({
-      plants: [{
-        id: 'p1', cultivarId: 'tomato',
-        actions: [{
-          id: 'sow', label: 'Sow indoors',
-          constraints: [
-            { kind: 'lower', anchor: { kind: 'last-frost' }, offset: { amount: -6, unit: 'weeks' } },
-            { kind: 'upper', anchor: { kind: 'last-frost' }, offset: { amount: -4, unit: 'weeks' } },
+      plants: [
+        {
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'sow',
+              label: 'Sow indoors',
+              constraints: [
+                {
+                  kind: 'lower',
+                  anchor: { kind: 'last-frost' },
+                  offset: { amount: -6, unit: 'weeks' },
+                },
+                {
+                  kind: 'upper',
+                  anchor: { kind: 'last-frost' },
+                  offset: { amount: -4, unit: 'weeks' },
+                },
+              ],
+            },
           ],
-        }],
-      }],
+        },
+      ],
       targetTransplantDate: '2026-05-15',
       lastFrostDate: '2026-04-30',
     });
@@ -157,16 +199,30 @@ describe('buildSchedule', () => {
 
   it('flags conflicts when lower > upper', () => {
     const result = buildSchedule({
-      plants: [{
-        id: 'p1', cultivarId: 'tomato',
-        actions: [{
-          id: 'sow', label: 'Sow',
-          constraints: [
-            { kind: 'lower', anchor: { kind: 'last-frost' }, offset: { amount: -2, unit: 'weeks' } },
-            { kind: 'upper', anchor: { kind: 'last-frost' }, offset: { amount: -4, unit: 'weeks' } },
+      plants: [
+        {
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'sow',
+              label: 'Sow',
+              constraints: [
+                {
+                  kind: 'lower',
+                  anchor: { kind: 'last-frost' },
+                  offset: { amount: -2, unit: 'weeks' },
+                },
+                {
+                  kind: 'upper',
+                  anchor: { kind: 'last-frost' },
+                  offset: { amount: -4, unit: 'weeks' },
+                },
+              ],
+            },
           ],
-        }],
-      }],
+        },
+      ],
       targetTransplantDate: '2026-05-15',
       lastFrostDate: '2026-04-30',
     });
@@ -175,23 +231,30 @@ describe('buildSchedule', () => {
 
   it('topologically resolves action references', () => {
     const result = buildSchedule({
-      plants: [{
-        id: 'p1', cultivarId: 'tomato',
-        actions: [
-          {
-            id: 'harden-off', label: 'Harden off',
-            constraints: [{
-              kind: 'exact',
-              anchor: { kind: 'action', actionId: 'transplant' },
-              offset: { amount: -7, unit: 'days' },
-            }],
-          },
-          {
-            id: 'transplant', label: 'Transplant',
-            constraints: [{ kind: 'exact', anchor: { kind: 'target-transplant' } }],
-          },
-        ],
-      }],
+      plants: [
+        {
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'harden-off',
+              label: 'Harden off',
+              constraints: [
+                {
+                  kind: 'exact',
+                  anchor: { kind: 'action', actionId: 'transplant' },
+                  offset: { amount: -7, unit: 'days' },
+                },
+              ],
+            },
+            {
+              id: 'transplant',
+              label: 'Transplant',
+              constraints: [{ kind: 'exact', anchor: { kind: 'target-transplant' } }],
+            },
+          ],
+        },
+      ],
       targetTransplantDate: '2026-05-15',
     });
     const harden = result.actions.find((a) => a.actionId === 'harden-off')!;
@@ -200,13 +263,19 @@ describe('buildSchedule', () => {
 
   it('drops actions referencing missing anchors and warns', () => {
     const result = buildSchedule({
-      plants: [{
-        id: 'p1', cultivarId: 'tomato',
-        actions: [{
-          id: 'sow', label: 'Sow',
-          constraints: [{ kind: 'exact', anchor: { kind: 'last-frost' } }],
-        }],
-      }],
+      plants: [
+        {
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'sow',
+              label: 'Sow',
+              constraints: [{ kind: 'exact', anchor: { kind: 'last-frost' } }],
+            },
+          ],
+        },
+      ],
       targetTransplantDate: '2026-05-15',
     });
     expect(result.actions).toHaveLength(0);
@@ -215,19 +284,24 @@ describe('buildSchedule', () => {
 
   it('detects cycles among action refs', () => {
     const result = buildSchedule({
-      plants: [{
-        id: 'p1', cultivarId: 'tomato',
-        actions: [
-          {
-            id: 'a', label: 'A',
-            constraints: [{ kind: 'exact', anchor: { kind: 'action', actionId: 'b' } }],
-          },
-          {
-            id: 'b', label: 'B',
-            constraints: [{ kind: 'exact', anchor: { kind: 'action', actionId: 'a' } }],
-          },
-        ],
-      }],
+      plants: [
+        {
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'a',
+              label: 'A',
+              constraints: [{ kind: 'exact', anchor: { kind: 'action', actionId: 'b' } }],
+            },
+            {
+              id: 'b',
+              label: 'B',
+              constraints: [{ kind: 'exact', anchor: { kind: 'action', actionId: 'a' } }],
+            },
+          ],
+        },
+      ],
       targetTransplantDate: '2026-05-15',
     });
     expect(result.actions).toHaveLength(0);
@@ -238,24 +312,38 @@ describe('buildSchedule', () => {
     const result = buildSchedule({
       plants: [
         {
-          id: 'p2', cultivarId: 'basil',
-          actions: [{
-            id: 'sow', label: 'Sow',
-            constraints: [{
-              kind: 'exact', anchor: { kind: 'last-frost' },
-              offset: { amount: -2, unit: 'weeks' },
-            }],
-          }],
+          id: 'p2',
+          cultivarId: 'basil',
+          actions: [
+            {
+              id: 'sow',
+              label: 'Sow',
+              constraints: [
+                {
+                  kind: 'exact',
+                  anchor: { kind: 'last-frost' },
+                  offset: { amount: -2, unit: 'weeks' },
+                },
+              ],
+            },
+          ],
         },
         {
-          id: 'p1', cultivarId: 'tomato',
-          actions: [{
-            id: 'sow', label: 'Sow',
-            constraints: [{
-              kind: 'exact', anchor: { kind: 'last-frost' },
-              offset: { amount: -6, unit: 'weeks' },
-            }],
-          }],
+          id: 'p1',
+          cultivarId: 'tomato',
+          actions: [
+            {
+              id: 'sow',
+              label: 'Sow',
+              constraints: [
+                {
+                  kind: 'exact',
+                  anchor: { kind: 'last-frost' },
+                  offset: { amount: -6, unit: 'weeks' },
+                },
+              ],
+            },
+          ],
         },
       ],
       targetTransplantDate: '2026-05-15',

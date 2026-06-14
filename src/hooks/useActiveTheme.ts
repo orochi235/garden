@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUiStore } from '../store/uiStore';
-import {
-  CYCLE_PERIODS,
-  getCurrentTheme,
-  getTheme,
-  type TimeTheme,
-} from '../utils/timeTheme';
+import { CYCLE_PERIODS, getCurrentTheme, getTheme, type TimeTheme } from '../utils/timeTheme';
 
 const CYCLE_INTERVAL = 5000;
 const SLOW_CYCLE_INTERVAL = 20000;

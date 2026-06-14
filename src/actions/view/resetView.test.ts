@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createTray } from '@/model/nursery';
 import { blankGarden, useGardenStore } from '@/store/gardenStore';
 import { useUiStore } from '@/store/uiStore';
-import { createTray } from '@/model/nursery';
-import { resetViewAction } from './resetView';
 import type { ActionContext } from '../types';
+import { resetViewAction } from './resetView';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
+const ctx: ActionContext = {
+  clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true },
+};
 
 describe('resetViewAction', () => {
   let container: HTMLDivElement;

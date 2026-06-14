@@ -1,42 +1,37 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { onIconLoad } from './plantRenderers';
-import {
-  Canvas,
-  computeFitView,
-  useCanvasSize,
-  useTools,
-} from '@orochi235/weasel';
-import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
-import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
 import type { RenderLayer } from '@orochi235/weasel';
+import { Canvas, computeFitView, useCanvasSize, useTools } from '@orochi235/weasel';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
-import { useUiStore } from '../store/uiStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
+import { useUiStore } from '../store/uiStore';
 import {
   createNurserySceneAdapter,
-  trayWorldOrigin,
-  type SeedNode,
   type ScenePose,
+  type SeedNode,
+  trayWorldOrigin,
 } from './adapters/nurseryScene';
-import { createTrayLayers } from './layers/trayLayersWorld';
-import { createSeedlingLayers, type SeedlingLayerUi } from './layers/seedlingLayersWorld';
-import { createSystemLayers } from './layers/systemLayersWorld';
-import type { View } from './layers/worldLayerData';
-import { useEricRightDragPan } from './tools/useEricRightDragPan';
-import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
-import { useSeedSelectTool } from './tools/useSeedSelectTool';
-import { useSowCellTool } from './tools/useSowCellTool';
-import { useFillTrayTool } from './tools/useFillTrayTool';
-import { usePaletteDropTool } from './tools/usePaletteDropTool';
+import { isDebugEnabled } from './debug';
+import { createAreaSelectDrag } from './drag/areaSelectDrag';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createSeedFillTrayDrag } from './drag/seedFillTrayDrag';
 import { createSeedlingMoveDrag } from './drag/seedlingMoveDrag';
-import { createAreaSelectDrag } from './drag/areaSelectDrag';
-import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { createDebugLayers } from './layers/debugLayers';
-import { createAllHandlesLayer } from './layers/selectionLayersWorld';
-import { isDebugEnabled } from './debug';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
+import { createSeedlingLayers, type SeedlingLayerUi } from './layers/seedlingLayersWorld';
+import { createAllHandlesLayer } from './layers/selectionLayersWorld';
+import { createSystemLayers } from './layers/systemLayersWorld';
+import { createTrayLayers } from './layers/trayLayersWorld';
+import { wrapLayersWithVisibility } from './layers/visibilityWrap';
+import type { View } from './layers/worldLayerData';
+import { onIconLoad } from './plantRenderers';
+import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
+import { useEricRightDragPan } from './tools/useEricRightDragPan';
+import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
+import { useFillTrayTool } from './tools/useFillTrayTool';
+import { usePaletteDropTool } from './tools/usePaletteDropTool';
+import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
+import { useSeedSelectTool } from './tools/useSeedSelectTool';
+import { useSowCellTool } from './tools/useSowCellTool';
 
 const SEED_MIN_ZOOM = 5;
 const SEED_MAX_ZOOM = 100;
@@ -103,8 +98,9 @@ export function NurseryCanvas() {
     // the registry. The seed-fill-tray drag owns its own rendering as of
     // the 2026-05-11 close-out; no legacy fill-preview layer remains.
     const dragPreviewRegistry = {
-      [createSeedFillTrayDrag({ getCultivarId: () => null }).kind]:
-        createSeedFillTrayDrag({ getCultivarId: () => null }),
+      [createSeedFillTrayDrag({ getCultivarId: () => null }).kind]: createSeedFillTrayDrag({
+        getCultivarId: () => null,
+      }),
       [createSeedlingMoveDrag().kind]: createSeedlingMoveDrag(),
       [createAreaSelectDrag().kind]: createAreaSelectDrag(),
     };
@@ -116,10 +112,12 @@ export function NurseryCanvas() {
     ];
     const debugLayers = createDebugLayers('nursery', () => useGardenStore.getState().garden);
     if (isDebugEnabled('handles')) {
-      debugLayers.push(createAllHandlesLayer({
-        getTrays,
-        getSeedlings,
-      }));
+      debugLayers.push(
+        createAllHandlesLayer({
+          getTrays,
+          getSeedlings,
+        }),
+      );
     }
     setRegisteredLayers('nursery', [...baseList, ...debugLayers]);
     const list = [
@@ -127,7 +125,9 @@ export function NurseryCanvas() {
       ...debugLayers,
     ];
     const map: Record<string, { layer: RenderLayer<unknown> }> = {};
-    list.forEach((l) => { map[l.id] = { layer: l }; });
+    list.forEach((l) => {
+      map[l.id] = { layer: l };
+    });
     return map;
     // iconTick — see plant-icon redraw note in CanvasNewPrototype.
   }, [iconTick]);
@@ -139,7 +139,9 @@ export function NurseryCanvas() {
   // Mirror to a ref so document-level pointer listeners (palette drop tool)
   // can read the latest view without re-attaching listeners every frame.
   const viewRef = useRef(view);
-  useEffect(() => { viewRef.current = view; }, [view]);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
 
   const BASE_SEED_ZOOM = 30; // px/in at "100%"
 
@@ -156,9 +158,7 @@ export function NurseryCanvas() {
   const resetTick = useUiStore((s) => s.nurseryViewResetTick);
   const fitViewToTray = (containerW: number, containerH: number) => {
     const ss = useGardenStore.getState().garden.nursery;
-    const tray = ss.trays.find(
-      (t) => t.id === useUiStore.getState().currentTrayId,
-    );
+    const tray = ss.trays.find((t) => t.id === useUiStore.getState().currentTrayId);
     if (!tray) return;
     const fit = computeFitView(containerW, containerH, tray.widthIn, tray.heightIn);
     // computeFitView returns garden-style {zoom, panX, panY} — convert to our
@@ -230,11 +230,14 @@ export function NurseryCanvas() {
     if (tray) setRenaming({ trayId, value: tray.label });
   }, []);
 
-  const commitRename = useCallback((trayId: string, value: string) => {
-    const trimmed = value.trim();
-    if (trimmed) renameTray(trayId, trimmed);
-    setRenaming(null);
-  }, [renameTray]);
+  const commitRename = useCallback(
+    (trayId: string, value: string) => {
+      const trimmed = value.trim();
+      if (trimmed) renameTray(trayId, trimmed);
+      setRenaming(null);
+    },
+    [renameTray],
+  );
 
   // --- Tools ---
   const moveTool = useSeedlingMoveTool(adapter);
@@ -300,43 +303,44 @@ export function NurseryCanvas() {
           selectionMode="none"
         />
       )}
-      {renaming && (() => {
-        const ss = useGardenStore.getState().garden.nursery;
-        const tray = ss.trays.find((t) => t.id === renaming.trayId);
-        if (!tray) return null;
-        const o = trayWorldOrigin(tray, ss);
-        const v = view;
-        const left = (o.x - v.x) * v.scale;
-        const top = (o.y + tray.heightIn - v.y) * v.scale + 6;
-        const w = tray.widthIn * v.scale;
-        return (
-          <input
-            autoFocus
-            value={renaming.value}
-            onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitRename(renaming.trayId, renaming.value);
-              if (e.key === 'Escape') setRenaming(null);
-            }}
-            onBlur={() => commitRename(renaming.trayId, renaming.value)}
-            style={{
-              position: 'absolute',
-              left,
-              top,
-              width: w,
-              fontSize: 12,
-              textAlign: 'center',
-              background: 'rgba(0,0,0,0.75)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.4)',
-              borderRadius: 3,
-              padding: '1px 4px',
-              boxSizing: 'border-box',
-              outline: 'none',
-            }}
-          />
-        );
-      })()}
+      {renaming &&
+        (() => {
+          const ss = useGardenStore.getState().garden.nursery;
+          const tray = ss.trays.find((t) => t.id === renaming.trayId);
+          if (!tray) return null;
+          const o = trayWorldOrigin(tray, ss);
+          const v = view;
+          const left = (o.x - v.x) * v.scale;
+          const top = (o.y + tray.heightIn - v.y) * v.scale + 6;
+          const w = tray.widthIn * v.scale;
+          return (
+            <input
+              autoFocus
+              value={renaming.value}
+              onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitRename(renaming.trayId, renaming.value);
+                if (e.key === 'Escape') setRenaming(null);
+              }}
+              onBlur={() => commitRename(renaming.trayId, renaming.value)}
+              style={{
+                position: 'absolute',
+                left,
+                top,
+                width: w,
+                fontSize: 12,
+                textAlign: 'center',
+                background: 'rgba(0,0,0,0.75)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.4)',
+                borderRadius: 3,
+                padding: '1px 4px',
+                boxSizing: 'border-box',
+                outline: 'none',
+              }}
+            />
+          );
+        })()}
     </div>
   );
 }

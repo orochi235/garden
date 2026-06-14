@@ -7,8 +7,8 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay } from '../../utils/units';
-import { SelectionPanel } from './SelectionPanel';
 import { ScheduleView } from '../schedule/ScheduleView';
+import { SelectionPanel } from './SelectionPanel';
 
 const FILL_TYPES: FillType[] = ['soil', 'sand', 'rocks', 'peat', 'potting-mix'];
 
@@ -19,7 +19,6 @@ const FILL_LABELS: Record<FillType, string> = {
   peat: 'Peat',
   'potting-mix': 'Potting mix',
 };
-
 
 export function PropertiesPanel() {
   const garden = useGardenStore((s) => s.garden);
@@ -47,13 +46,15 @@ export function PropertiesPanel() {
   const selectedId = selectedIds[0];
   const structure = garden.structures.find((s) => s.id === selectedId);
   const zone = !structure ? garden.zones.find((z) => z.id === selectedId) : undefined;
-  const planting = !structure && !zone ? garden.plantings.find((p) => p.id === selectedId) : undefined;
+  const planting =
+    !structure && !zone ? garden.plantings.find((p) => p.id === selectedId) : undefined;
   const obj = structure ?? zone;
 
   if (planting) {
     const cultivar = getCultivar(planting.cultivarId);
-    const parent = garden.structures.find((s) => s.id === planting.parentId)
-      ?? garden.zones.find((z) => z.id === planting.parentId);
+    const parent =
+      garden.structures.find((s) => s.id === planting.parentId) ??
+      garden.zones.find((z) => z.id === planting.parentId);
     return (
       <div className={f.panel}>
         <div className={f.title}>Planting</div>
@@ -62,7 +63,10 @@ export function PropertiesPanel() {
           <div className={f.span12}>
             <span className={f.readOnly}>{cultivar?.name ?? planting.cultivarId}</span>
             {cultivar?.taxonomicName && (
-              <div className={f.readOnly} style={{ fontStyle: 'italic', fontSize: '0.9em', opacity: 0.7 }}>
+              <div
+                className={f.readOnly}
+                style={{ fontStyle: 'italic', fontSize: '0.9em', opacity: 0.7 }}
+              >
                 {cultivar.taxonomicName}
               </div>
             )}
@@ -80,7 +84,9 @@ export function PropertiesPanel() {
             className={`${f.input} ${f.span12}`}
             type="text"
             value={planting.label}
-            onChange={(e) => useGardenStore.getState().commitPlantingUpdate(selectedId, { label: e.target.value })}
+            onChange={(e) =>
+              useGardenStore.getState().commitPlantingUpdate(selectedId, { label: e.target.value })
+            }
           />
 
           <span className={f.label}>Position</span>
@@ -90,7 +96,11 @@ export function PropertiesPanel() {
             type="number"
             step="0.1"
             value={parseFloat(feetToDisplay(planting.x, unit).toFixed(2))}
-            onChange={(e) => useGardenStore.getState().commitPlantingUpdate(selectedId, { x: displayToFeet(parseFloat(e.target.value) || 0, unit) })}
+            onChange={(e) =>
+              useGardenStore.getState().commitPlantingUpdate(selectedId, {
+                x: displayToFeet(parseFloat(e.target.value) || 0, unit),
+              })
+            }
           />
           <span className={`${f.miniLabel} ${f.span2}`}>Y</span>
           <input
@@ -98,7 +108,11 @@ export function PropertiesPanel() {
             type="number"
             step="0.1"
             value={parseFloat(feetToDisplay(planting.y, unit).toFixed(2))}
-            onChange={(e) => useGardenStore.getState().commitPlantingUpdate(selectedId, { y: displayToFeet(parseFloat(e.target.value) || 0, unit) })}
+            onChange={(e) =>
+              useGardenStore.getState().commitPlantingUpdate(selectedId, {
+                y: displayToFeet(parseFloat(e.target.value) || 0, unit),
+              })
+            }
           />
 
           {cultivar && (
@@ -118,7 +132,9 @@ export function PropertiesPanel() {
           {parent && (
             <>
               <span className={f.label}>Container</span>
-              <span className={`${f.readOnly} ${f.span12}`}>{parent.label || ('type' in parent ? parent.type : 'zone')}</span>
+              <span className={`${f.readOnly} ${f.span12}`}>
+                {parent.label || ('type' in parent ? parent.type : 'zone')}
+              </span>
             </>
           )}
 
@@ -251,7 +267,10 @@ export function PropertiesPanel() {
               </select>
             </div>
             <span className={f.label}></span>
-            <label className={f.span12} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+            <label
+              className={f.span12}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+            >
               <input
                 type="checkbox"
                 checked={structure.clipChildren !== false}
@@ -267,7 +286,9 @@ export function PropertiesPanel() {
                 <>
                   <span className={f.label}></span>
                   <div className={f.span12}>
-                    <button type="button" onClick={() => setScheduleOpen((v) => !v)}>Schedule</button>
+                    <button type="button" onClick={() => setScheduleOpen((v) => !v)}>
+                      Schedule
+                    </button>
                     {scheduleOpen && <ScheduleView plants={containerPlants} />}
                   </div>
                 </>
@@ -285,11 +306,16 @@ export function PropertiesPanel() {
               value={obj.layout?.type ?? 'none'}
               onChange={(e) => {
                 const t = e.target.value as LayoutType | 'none';
-                if (t === 'none') { updateObj({ layout: null }); return; }
+                if (t === 'none') {
+                  updateObj({ layout: null });
+                  return;
+                }
                 const next: Layout =
-                  t === 'single' ? { type: 'single' }
-                  : t === 'grid' ? { type: 'grid', cellSizeFt: 0.25 }
-                  : { type: 'snap-points', points: [] };
+                  t === 'single'
+                    ? { type: 'single' }
+                    : t === 'grid'
+                      ? { type: 'grid', cellSizeFt: 0.25 }
+                      : { type: 'snap-points', points: [] };
                 updateObj({ layout: next });
               }}
             >

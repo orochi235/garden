@@ -1,28 +1,93 @@
-.switcher { position: relative; display: inline-flex; align-items: center; gap: 6px; margin: 0 12px; white-space: nowrap; flex-wrap: nowrap; }
-.trigger { padding: 4px 12px; border: 1px solid currentColor; background: transparent;
-  border-radius: 6px; cursor: pointer; font: inherit; color: inherit; white-space: nowrap; }
+.switcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+.trigger {
+  padding: 4px 12px;
+  border: 1px solid currentColor;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
 .schedulePopover {
-  position: absolute; top: 100%; left: 0; margin-top: 4px;
-  background: var(--theme-panel-bg, #1f2123); color: var(--theme-text, #eee);
-  border: 1px solid var(--theme-divider, #333); border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 360px; max-width: 560px;
-  max-height: 60vh; overflow: auto; z-index: 100;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--theme-panel-bg, #1f2123);
+  color: var(--theme-text, #eee);
+  border: 1px solid var(--theme-divider, #333);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 360px;
+  max-width: 560px;
+  max-height: 60vh;
+  overflow: auto;
+  z-index: 100;
 }
 .scheduleClose {
-  position: sticky; top: 4px; float: right; margin-right: 4px;
-  background: transparent; border: none; color: inherit;
-  font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 6px;
+  position: sticky;
+  top: 4px;
+  float: right;
+  margin-right: 4px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
   border-radius: 4px;
 }
-.scheduleClose:hover { background: rgba(255, 255, 255, 0.08); }
-.menu { position: absolute; top: 100%; left: 0; margin-top: 4px;
-  background: var(--menu-bg, #fff); color: #222; border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15); min-width: 220px; z-index: 100;
-  padding: 4px 0; }
-.section { padding: 4px 0; border-bottom: 1px solid #eee; }
-.section:last-child { border-bottom: none; }
-.sectionLabel { font-size: 11px; opacity: 0.6; padding: 2px 12px;
-  text-transform: uppercase; letter-spacing: 0.05em; }
-.item { display: block; width: 100%; text-align: left; padding: 6px 12px;
-  border: none; background: transparent; cursor: pointer; font: inherit; color: inherit; }
-.item:hover { background: #f0f0f0; }
+.scheduleClose:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--menu-bg, #fff);
+  color: #222;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  z-index: 100;
+  padding: 4px 0;
+}
+.section {
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+}
+.section:last-child {
+  border-bottom: none;
+}
+.sectionLabel {
+  font-size: 11px;
+  opacity: 0.6;
+  padding: 2px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.item:hover {
+  background: #f0f0f0;
+}

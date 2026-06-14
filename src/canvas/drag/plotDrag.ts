@@ -1,6 +1,6 @@
-import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand } from '../util/weaselLocal';
 import { rectPath } from '@orochi235/weasel';
+import type { DrawCommand } from '../util/weaselLocal';
+import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Phase-2-migrated drag: plot (rectangle) — palette plot tools that draw a
@@ -99,10 +99,16 @@ export function createPlotDrag(): Drag<PlotInput, PlotPutative> {
       const dash = 4 * invScale;
       const path = rectPath(x, y, w, h);
       return [
-        { kind: 'group', alpha: 0.25, children: [
-          { kind: 'path', path, fill: { fill: 'solid', color } },
-        ]},
-        { kind: 'path', path, stroke: { paint: { fill: 'solid', color }, width: invScale, dash: [dash, dash] } },
+        {
+          kind: 'group',
+          alpha: 0.25,
+          children: [{ kind: 'path', path, fill: { fill: 'solid', color } }],
+        },
+        {
+          kind: 'path',
+          path,
+          stroke: { paint: { fill: 'solid', color }, width: invScale, dash: [dash, dash] },
+        },
       ];
     },
 

@@ -2,7 +2,15 @@ import cultivarData from '../data/cultivars.json';
 import { resolveSeedStarting, type SeedStartingFields } from './floraSeedStarting';
 import { getSpecies } from './species';
 
-export type CultivarCategory = 'herbs' | 'vegetables' | 'greens' | 'fruits' | 'squash' | 'flowers' | 'root-vegetables' | 'legumes';
+export type CultivarCategory =
+  | 'herbs'
+  | 'vegetables'
+  | 'greens'
+  | 'fruits'
+  | 'squash'
+  | 'flowers'
+  | 'root-vegetables'
+  | 'legumes';
 
 /** Raw cultivar entry as stored in JSON — only overrides are present. */
 interface CultivarRaw {
@@ -89,4 +97,4 @@ export function getAllCultivars(): Cultivar[] {
 
 // Re-export scheduling types so any future per-cultivar `seedStarting.actions`
 // override has consistent typing.
-export type { Constraint, Anchor, Offset, Unit, ActionDef } from './scheduler';
+export type { ActionDef, Anchor, Constraint, Offset, Unit } from './scheduler';

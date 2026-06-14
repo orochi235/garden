@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/MenuBar.module.css';
-import { downloadGarden, openGardenFile } from '../utils/file';
 import { enterNursery } from '../utils/enterNursery';
-import { CollectionEditor } from './collection/CollectionEditor';
+import { downloadGarden, openGardenFile } from '../utils/file';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
+import { CollectionEditor } from './collection/CollectionEditor';
 import { ModeOnly } from './ModeOnly';
 import { TraySwitcher } from './TraySwitcher';
 
@@ -85,10 +85,36 @@ export function MenuBar() {
           aria-pressed={appMode === 'nursery'}
           title="Nursery mode"
           className={`${styles.iconButton} ${appMode === 'nursery' ? styles.iconButtonActive : ''}`}
-        >🌱</button>
-        <button type="button" onClick={() => setCollectionEditorOpen(true)} aria-label="Cultivar collection" title="Cultivar collection" className={styles.iconButton}>📦</button>
-        <button type="button" onClick={() => setScheduleOpen(true)} aria-label="Schedule" title="Schedule" className={styles.iconButton}>📅</button>
-        <button type="button" onClick={() => setPlantsModalOpen(true)} aria-label="Plant list" title="Plant list" className={styles.iconButton}>🔍</button>
+        >
+          🌱
+        </button>
+        <button
+          type="button"
+          onClick={() => setCollectionEditorOpen(true)}
+          aria-label="Cultivar collection"
+          title="Cultivar collection"
+          className={styles.iconButton}
+        >
+          📦
+        </button>
+        <button
+          type="button"
+          onClick={() => setScheduleOpen(true)}
+          aria-label="Schedule"
+          title="Schedule"
+          className={styles.iconButton}
+        >
+          📅
+        </button>
+        <button
+          type="button"
+          onClick={() => setPlantsModalOpen(true)}
+          aria-label="Plant list"
+          title="Plant list"
+          className={styles.iconButton}
+        >
+          🔍
+        </button>
       </div>
       <div className={styles.spacer} />
       <ModeOnly mode="nursery">
@@ -111,17 +137,35 @@ export function MenuBar() {
         </button>
         {devOpen && (
           <div className={styles.devMenu} role="menu">
-            <a href="docs/patterns.html" target="_blank" rel="noreferrer" role="menuitem">Patterns</a>
-            <a href="docs/cultivars.html" target="_blank" rel="noreferrer" role="menuitem">Flora</a>
-            <a href="docs/themes.html" target="_blank" rel="noreferrer" role="menuitem">Themes</a>
-            <a href="drag-lab.html" target="_blank" rel="noreferrer" role="menuitem">Layouts</a>
+            <a href="docs/patterns.html" target="_blank" rel="noreferrer" role="menuitem">
+              Patterns
+            </a>
+            <a href="docs/cultivars.html" target="_blank" rel="noreferrer" role="menuitem">
+              Flora
+            </a>
+            <a href="docs/themes.html" target="_blank" rel="noreferrer" role="menuitem">
+              Themes
+            </a>
+            <a href="drag-lab.html" target="_blank" rel="noreferrer" role="menuitem">
+              Layouts
+            </a>
           </div>
         )}
       </div>
       <div className={styles.menus}>
-        <button type="button" onClick={handleNew} className={styles.actionButton}>New</button>
-        <button type="button" onClick={handleOpen} className={styles.actionButton}>Load</button>
-        <button type="button" onClick={handleSave} className={`${styles.actionButton} ${styles.boldButton}`}>Save</button>
+        <button type="button" onClick={handleNew} className={styles.actionButton}>
+          New
+        </button>
+        <button type="button" onClick={handleOpen} className={styles.actionButton}>
+          Load
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className={`${styles.actionButton} ${styles.boldButton}`}
+        >
+          Save
+        </button>
       </div>
     </div>
   );

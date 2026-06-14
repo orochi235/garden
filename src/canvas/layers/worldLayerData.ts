@@ -2,7 +2,11 @@ import type { LabelMode } from '../../store/uiStore';
 
 /** Camera-coords viewport. Mirrors `@orochi235/weasel`'s internal `View` (not
  *  exported from the package index). */
-export interface View { x: number; y: number; scale: number }
+export interface View {
+  x: number;
+  y: number;
+  scale: number;
+}
 
 /**
  * Per-frame UI knobs that vary across renders. Read via a closure-supplied

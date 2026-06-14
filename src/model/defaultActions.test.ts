@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { defaultActionsForCultivar } from './defaultActions';
 import { getCultivar } from './cultivars';
+import { defaultActionsForCultivar } from './defaultActions';
 
 describe('defaultActionsForCultivar', () => {
   it('emits sow + harden-off + transplant for a cultivar with weeksBeforeLastFrost', () => {
@@ -33,10 +33,14 @@ describe('defaultActionsForCultivar', () => {
     const actions = defaultActionsForCultivar(c);
     const sow = actions.find((a) => a.id === 'sow')!;
     expect(sow.constraints).toContainEqual({
-      kind: 'lower', anchor: { kind: 'last-frost' }, offset: { amount: -max, unit: 'weeks' },
+      kind: 'lower',
+      anchor: { kind: 'last-frost' },
+      offset: { amount: -max, unit: 'weeks' },
     });
     expect(sow.constraints).toContainEqual({
-      kind: 'upper', anchor: { kind: 'last-frost' }, offset: { amount: -min, unit: 'weeks' },
+      kind: 'upper',
+      anchor: { kind: 'last-frost' },
+      offset: { amount: -min, unit: 'weeks' },
     });
   });
 
@@ -45,10 +49,12 @@ describe('defaultActionsForCultivar', () => {
     if (c.seedStarting.weeksBeforeLastFrost === null) return;
     const actions = defaultActionsForCultivar(c);
     const ho = actions.find((a) => a.id === 'harden-off')!;
-    expect(ho.constraints).toEqual([{
-      kind: 'exact',
-      anchor: { kind: 'action', actionId: 'transplant' },
-      offset: { amount: -7, unit: 'days' },
-    }]);
+    expect(ho.constraints).toEqual([
+      {
+        kind: 'exact',
+        anchor: { kind: 'action', actionId: 'transplant' },
+        offset: { amount: -7, unit: 'days' },
+      },
+    ]);
   });
 });

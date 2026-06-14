@@ -1,6 +1,6 @@
-import type { Layout, ParentBounds } from './layout';
-import { getCultivar } from './cultivars';
 import type { Cultivar } from './cultivars';
+import { getCultivar } from './cultivars';
+import type { Layout, ParentBounds } from './layout';
 import type { NurseryState } from './nursery';
 import { emptyNurseryState } from './nursery';
 
@@ -175,17 +175,25 @@ export function createStructure(opts: {
     surface: SURFACE_TYPES.has(opts.type),
     container: CONTAINER_TYPES.has(opts.type),
     fill: CONTAINER_TYPES.has(opts.type) ? 'soil' : null,
-    layout: opts.type === 'pot' || opts.type === 'felt-planter'
-      ? { type: 'single' }
-      : opts.type === 'raised-bed'
-      ? { type: 'cell-grid', cellSizeFt: 1 / 6 }
-      : null,
+    layout:
+      opts.type === 'pot' || opts.type === 'felt-planter'
+        ? { type: 'single' }
+        : opts.type === 'raised-bed'
+          ? { type: 'cell-grid', cellSizeFt: 1 / 6 }
+          : null,
     wallThicknessFt: DEFAULT_WALL_THICKNESS_FT[opts.type] ?? 0,
     clipChildren: true,
   };
 }
 
-export function createZone(opts: { x: number; y: number; width: number; length: number; color?: string; pattern?: string | null }): Zone {
+export function createZone(opts: {
+  x: number;
+  y: number;
+  width: number;
+  length: number;
+  color?: string;
+  pattern?: string | null;
+}): Zone {
   return {
     id: generateId(),
     x: opts.x,
@@ -222,7 +230,14 @@ export function createPlanting(opts: {
 }
 
 /** Return the inner plantable bounds of a structure, inset by wall thickness. */
-export function getPlantableBounds(s: { x: number; y: number; width: number; length: number; shape?: string; wallThicknessFt?: number }): ParentBounds {
+export function getPlantableBounds(s: {
+  x: number;
+  y: number;
+  width: number;
+  length: number;
+  shape?: string;
+  wallThicknessFt?: number;
+}): ParentBounds {
   const wall = s.wallThicknessFt ?? 0;
   const inset = wall * 2;
   return {

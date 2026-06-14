@@ -9,7 +9,12 @@ function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {
 }
 
 describe('useKeyboardActionDispatch', () => {
-  const mockClipboard = { copy: vi.fn(), cut: vi.fn(), paste: vi.fn(), isEmpty: vi.fn(() => false) };
+  const mockClipboard = {
+    copy: vi.fn(),
+    cut: vi.fn(),
+    paste: vi.fn(),
+    isEmpty: vi.fn(() => false),
+  };
 
   beforeEach(() => {
     useGardenStore.getState().reset();
@@ -74,20 +79,20 @@ describe('useKeyboardActionDispatch', () => {
     setup();
 
     const osShortcuts: KeyboardEventInit[] = [
-      { key: 'Tab', metaKey: true },        // Cmd+Tab (app switcher)
+      { key: 'Tab', metaKey: true }, // Cmd+Tab (app switcher)
       { key: 'Tab', metaKey: true, shiftKey: true }, // Cmd+Shift+Tab
-      { key: 'q', metaKey: true },           // Cmd+Q (quit)
-      { key: 'w', metaKey: true },           // Cmd+W (close window)
-      { key: 'h', metaKey: true },           // Cmd+H (hide)
-      { key: 'm', metaKey: true },           // Cmd+M (minimize)
-      { key: ' ', metaKey: true },           // Cmd+Space (Spotlight)
-      { key: 'Tab', altKey: true },          // Alt+Tab
-      { key: 'F4', altKey: true },           // Alt+F4 (close, Windows)
-      { key: 'l', metaKey: true },           // Cmd+L (address bar)
-      { key: 't', metaKey: true },           // Cmd+T (new tab)
-      { key: 'n', metaKey: true },           // Cmd+N (new window)
-      { key: 'r', metaKey: true },           // Cmd+R (reload)
-      { key: '0', metaKey: true },           // Cmd+0 (reset zoom)
+      { key: 'q', metaKey: true }, // Cmd+Q (quit)
+      { key: 'w', metaKey: true }, // Cmd+W (close window)
+      { key: 'h', metaKey: true }, // Cmd+H (hide)
+      { key: 'm', metaKey: true }, // Cmd+M (minimize)
+      { key: ' ', metaKey: true }, // Cmd+Space (Spotlight)
+      { key: 'Tab', altKey: true }, // Alt+Tab
+      { key: 'F4', altKey: true }, // Alt+F4 (close, Windows)
+      { key: 'l', metaKey: true }, // Cmd+L (address bar)
+      { key: 't', metaKey: true }, // Cmd+T (new tab)
+      { key: 'n', metaKey: true }, // Cmd+N (new window)
+      { key: 'r', metaKey: true }, // Cmd+R (reload)
+      { key: '0', metaKey: true }, // Cmd+0 (reset zoom)
     ];
 
     for (const opts of osShortcuts) {
@@ -99,7 +104,9 @@ describe('useKeyboardActionDispatch', () => {
         opts.altKey && 'Alt',
         opts.shiftKey && 'Shift',
         opts.key,
-      ].filter(Boolean).join('+');
+      ]
+        .filter(Boolean)
+        .join('+');
       expect(prevented, `${label} should not be intercepted`).toBe(false);
     }
   });

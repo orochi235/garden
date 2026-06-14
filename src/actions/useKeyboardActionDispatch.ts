@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import type { ActionContext } from './types';
-import { resolveAction, deriveKeyboardTarget } from './dispatch';
-import { getActiveScopePath } from './scopes';
-import { allActions } from './registry';
 import { useGardenStore } from '../store/gardenStore';
+import { deriveKeyboardTarget, resolveAction } from './dispatch';
+import { allActions } from './registry';
+import { getActiveScopePath } from './scopes';
+import type { ActionContext } from './types';
 
 export function useKeyboardActionDispatch(ctx: ActionContext) {
   useEffect(() => {

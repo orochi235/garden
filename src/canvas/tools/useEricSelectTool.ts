@@ -1,51 +1,44 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  defineTool,
-  useMove,
-  useResize,
-  useAreaSelect,
-  useClone,
   cloneByAltDrag,
   cornerResizeHandles,
-  hitCornerHandle,
-  selectFromMarquee,
   type Dims,
-  type Tool,
+  defineTool,
+  hitCornerHandle,
+  type InsertAdapter,
+  type MoveBehavior,
   type RenderLayer,
   type ResizeAnchor,
+  selectFromMarquee,
+  type Tool,
   type UseMoveOptions,
   type UseResizeOptions,
-  type MoveBehavior,
-  type InsertAdapter,
+  useAreaSelect,
+  useClone,
+  useMove,
+  useResize,
   type View,
 } from '@orochi235/weasel';
-import { type DrawCommand } from '../util/weaselLocal';
-import { useUiStore } from '../../store/uiStore';
-import { useGardenStore } from '../../store/gardenStore';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { validCellsForContainer } from '../../model/cellOccupancy';
 import { getCultivar } from '../../model/cultivars';
 import { getPlantableBounds } from '../../model/types';
-import { validCellsForContainer } from '../../model/cellOccupancy';
-import { plantingWorldPose } from '../../utils/plantingPose';
-import { plantDrawCommands } from '../plantRenderers';
-import {
-  type GardenSceneAdapter,
-  type ScenePose,
-  type SceneNode,
-} from '../adapters/gardenScene';
-import { createStructureResizeAdapter, type StructureResizePose } from '../adapters/structureResize';
-import { createZoneResizeAdapter } from '../adapters/zoneResize';
+import { useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
 import { expandToGroups } from '../../utils/groups';
+import { plantingWorldPose } from '../../utils/plantingPose';
+import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
 import {
-  clampStructureZoneToGardenBounds,
-  detectStructureClash,
-} from './structureMoveBehaviors';
-import {
-  snapStructureZoneToGrid,
-  requirePlantingDrop,
-} from './snapMoveBehaviors';
+  createStructureResizeAdapter,
+  type StructureResizePose,
+} from '../adapters/structureResize';
+import { createZoneResizeAdapter } from '../adapters/zoneResize';
+import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 import { MOVE_DRAG_KIND, type MovePutative } from '../drag/moveDrag';
 import { RESIZE_DRAG_KIND, type ResizePutative } from '../drag/resizeDrag';
-import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
+import { plantDrawCommands } from '../plantRenderers';
+import type { DrawCommand } from '../util/weaselLocal';
+import { requirePlantingDrop, snapStructureZoneToGrid } from './snapMoveBehaviors';
+import { clampStructureZoneToGardenBounds, detectStructureClash } from './structureMoveBehaviors';
 
 export type SelectScratch =
   | { kind: 'idle' }
@@ -145,7 +138,11 @@ function trackPlantingSnap(adapter: GardenSceneAdapter): MoveBehavior<ScenePose>
 // override pose, because the live drag visual is owned by the layout
 // strategy (`getLayout()` on the adapter).
 
-interface CloneOverlayItem { id: string; x: number; y: number }
+interface CloneOverlayItem {
+  id: string;
+  x: number;
+  y: number;
+}
 
 export function useEricSelectTool(
   adapter: GardenSceneAdapter,
@@ -232,7 +229,10 @@ export function useEricSelectTool(
       let bestDist = Infinity;
       for (const cell of cells) {
         const d = (cell.x - p.x) ** 2 + (cell.y - p.y) ** 2;
-        if (d < bestDist) { bestDist = d; best = cell; }
+        if (d < bestDist) {
+          bestDist = d;
+          best = cell;
+        }
       }
       return { x: best.x, y: best.y };
     };
@@ -280,7 +280,13 @@ export function useEricSelectTool(
       }
       return;
     }
-    const p = ov.targetPose as { x: number; y: number; width: number; length?: number; height?: number };
+    const p = ov.targetPose as {
+      x: number;
+      y: number;
+      width: number;
+      length?: number;
+      height?: number;
+    };
     const putative: ResizePutative = {
       targetId: ov.id,
       layer,
@@ -343,16 +349,19 @@ export function useEricSelectTool(
   const [cloneOverlay, setCloneOverlay] = useState<CloneOverlayItem[]>([]);
   const cloneAdapter = opts?.insertAdapter;
   // useClone requires an adapter unconditionally; pass a stub when none is wired.
-  const cloneStubAdapter = useMemo<InsertAdapter<{ id: string }>>(() => ({
-    snapshotSelection: () => ({ items: [] }),
-    commitInsert: () => null,
-    commitPaste: () => [],
-    getPasteOffset: () => ({ dx: 0, dy: 0 }),
-    insertNode: () => {},
-    setSelection: () => {},
-    getSelection: () => [],
-    applyBatch: () => {},
-  }), []);
+  const cloneStubAdapter = useMemo<InsertAdapter<{ id: string }>>(
+    () => ({
+      snapshotSelection: () => ({ items: [] }),
+      commitInsert: () => null,
+      commitPaste: () => [],
+      getPasteOffset: () => ({ dx: 0, dy: 0 }),
+      insertNode: () => {},
+      setSelection: () => {},
+      getSelection: () => [],
+      applyBatch: () => {},
+    }),
+    [],
+  );
   const clone = useClone<{ id: string }>(cloneAdapter ?? cloneStubAdapter, {
     behaviors: [cloneByAltDrag()],
     setOverlay: (_layer, objects) => setCloneOverlay(objects as CloneOverlayItem[]),
@@ -401,7 +410,9 @@ export function useEricSelectTool(
           const radiusPx = (footprintFt / 2) * view.scale;
           const color = cultivar.color ?? '#4A7C59';
           const iconBgColor = cultivar.iconBgColor ?? null;
-          children.push(...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor));
+          children.push(
+            ...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor),
+          );
         }
         return [{ kind: 'group', alpha: 0.5, children }];
       },
@@ -486,7 +497,12 @@ export function useEricSelectTool(
                 const bounds = { x: s.x, y: s.y, width: s.width, height: s.length };
                 for (const h of cornerResizeHandles(bounds)) {
                   if (hitCornerHandle(h, ctx.worldX, ctx.worldY, radiusWorld)) {
-                    ctx.scratch = { kind: 'resize', targetId: id, layer: 'structures', anchor: h.anchor };
+                    ctx.scratch = {
+                      kind: 'resize',
+                      targetId: id,
+                      layer: 'structures',
+                      anchor: h.anchor,
+                    };
                     return 'claim';
                   }
                 }
@@ -496,7 +512,12 @@ export function useEricSelectTool(
                 const bounds = { x: z.x, y: z.y, width: z.width, height: z.length };
                 for (const h of cornerResizeHandles(bounds)) {
                   if (hitCornerHandle(h, ctx.worldX, ctx.worldY, radiusWorld)) {
-                    ctx.scratch = { kind: 'resize', targetId: id, layer: 'zones', anchor: h.anchor };
+                    ctx.scratch = {
+                      kind: 'resize',
+                      targetId: id,
+                      layer: 'zones',
+                      anchor: h.anchor,
+                    };
                     return 'claim';
                   }
                 }
@@ -583,8 +604,10 @@ export function useEricSelectTool(
                 clone.move(ctx.worldX, ctx.worldY, ctx.modifiers);
                 return 'claim';
               case 'resize':
-                if (activeResize.current === 'structures') structureResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
-                else if (activeResize.current === 'zones') zoneResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+                if (activeResize.current === 'structures')
+                  structureResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
+                else if (activeResize.current === 'zones')
+                  zoneResize.move(ctx.worldX, ctx.worldY, ctx.modifiers);
                 return 'claim';
               case 'area':
                 areaSelect.move(ctx.worldX, ctx.worldY, ctx.modifiers);
@@ -610,9 +633,10 @@ export function useEricSelectTool(
                 return 'claim';
               case 'area': {
                 const overlay = areaSelect.overlay;
-                const dragged = overlay
-                  && (Math.abs(overlay.current.worldX - overlay.start.worldX) > 0.0001
-                    || Math.abs(overlay.current.worldY - overlay.start.worldY) > 0.0001);
+                const dragged =
+                  overlay &&
+                  (Math.abs(overlay.current.worldX - overlay.start.worldX) > 0.0001 ||
+                    Math.abs(overlay.current.worldY - overlay.start.worldY) > 0.0001);
                 if (dragged) {
                   areaSelect.end();
                   // Expand marquee result so touching any member of a group
@@ -660,6 +684,17 @@ export function useEricSelectTool(
           },
         },
       }),
-    [adapter, move, clone, cloneAdapter, structureResize, zoneResize, areaSelect, overlay, forceMarquee, opts?.toolId],
+    [
+      adapter,
+      move,
+      clone,
+      cloneAdapter,
+      structureResize,
+      zoneResize,
+      areaSelect,
+      overlay,
+      forceMarquee,
+      opts?.toolId,
+    ],
   );
 }

@@ -1,9 +1,24 @@
-import type { LabItem, LayoutStrategy, Rect, ContainerShape, Point, ConfigField, DragFeedback, DropResult } from '../types';
+import type {
+  ConfigField,
+  ContainerShape,
+  DragFeedback,
+  DropResult,
+  LabItem,
+  LayoutStrategy,
+  Point,
+  Rect,
+} from '../types';
 
 export const freeFormStrategy: LayoutStrategy = {
   name: 'Free-form',
 
-  render(ctx: CanvasRenderingContext2D, _bounds: Rect, _shape: ContainerShape, items: LabItem[], _config: Record<string, unknown>): void {
+  render(
+    ctx: CanvasRenderingContext2D,
+    _bounds: Rect,
+    _shape: ContainerShape,
+    items: LabItem[],
+    _config: Record<string, unknown>,
+  ): void {
     for (const item of items) {
       ctx.beginPath();
       ctx.arc(item.x, item.y, item.radiusFt, 0, Math.PI * 2);
@@ -15,14 +30,27 @@ export const freeFormStrategy: LayoutStrategy = {
     }
   },
 
-  onDragOver(_bounds: Rect, _shape: ContainerShape, _pos: Point, _items: LabItem[], _config: Record<string, unknown>): DragFeedback | null {
+  onDragOver(
+    _bounds: Rect,
+    _shape: ContainerShape,
+    _pos: Point,
+    _items: LabItem[],
+    _config: Record<string, unknown>,
+  ): DragFeedback | null {
     return {
       hide: 'preview' as const,
       render() {},
     };
   },
 
-  onDrop(_bounds: Rect, _shape: ContainerShape, pos: Point, item: LabItem, _items: LabItem[], _config: Record<string, unknown>): DropResult {
+  onDrop(
+    _bounds: Rect,
+    _shape: ContainerShape,
+    pos: Point,
+    item: LabItem,
+    _items: LabItem[],
+    _config: Record<string, unknown>,
+  ): DropResult {
     return {
       item: { ...item, x: pos.x, y: pos.y },
       state: {},

@@ -1,11 +1,24 @@
 import { useMemo, useState } from 'react';
-import type { ResolvedAction } from '../../../model/scheduler';
 import { getCultivar } from '../../../model/cultivars';
-import { layoutMonth, type DayLayout, type CellPlacement } from './calendarLayout';
+import type { ResolvedAction } from '../../../model/scheduler';
 import { barColor, type ColorEncoding } from './barColors';
+import { type CellPlacement, type DayLayout, layoutMonth } from './calendarLayout';
 import styles from './MonthGrid.module.css';
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export interface MonthGridProps {
@@ -22,11 +35,19 @@ export interface MonthGridProps {
 }
 
 export function MonthGrid({
-  year, month, actions, today, colorEncoding,
+  year,
+  month,
+  actions,
+  today,
+  colorEncoding,
   collapseWhenEmpty = true,
-  onSelectDay, onSelectBar,
+  onSelectDay,
+  onSelectBar,
 }: MonthGridProps) {
-  const layout = useMemo(() => layoutMonth(year, month, actions, today), [year, month, actions, today]);
+  const layout = useMemo(
+    () => layoutMonth(year, month, actions, today),
+    [year, month, actions, today],
+  );
   const [expanded, setExpanded] = useState(false);
 
   const title = `${MONTH_NAMES[month]} ${year}`;
@@ -39,7 +60,12 @@ export function MonthGrid({
           role="button"
           tabIndex={0}
           onClick={() => setExpanded(true)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(true); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setExpanded(true);
+            }
+          }}
         >
           {title} — no actions (click to expand)
         </div>
@@ -52,7 +78,9 @@ export function MonthGrid({
       <div className={styles.title}>{title}</div>
       <div className={styles.grid}>
         {WEEKDAYS.map((w) => (
-          <div key={w} className={styles.weekdayHeader}>{w}</div>
+          <div key={w} className={styles.weekdayHeader}>
+            {w}
+          </div>
         ))}
         {layout.weeks.flat().map((cell, i) => (
           <Cell
@@ -89,7 +117,9 @@ function Cell({ cell, today, colorEncoding, onSelectDay, onSelectBar }: CellProp
     busy && styles.cellBusy,
     cell.isOverdue && styles.cellOverdue,
     cell.hasConflict && styles.cellConflict,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
@@ -97,11 +127,22 @@ function Cell({ cell, today, colorEncoding, onSelectDay, onSelectBar }: CellProp
       role="button"
       tabIndex={0}
       onClick={() => onSelectDay(cell.date)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDay(cell.date); } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectDay(cell.date);
+        }
+      }}
     >
       <div className={`${styles.dayNum} ${cell.isToday ? styles.dayNumToday : ''}`}>{day}</div>
       {cell.visible.map((p, i) => (
-        <Bar key={i} placement={p} today={today} colorEncoding={colorEncoding} onSelect={onSelectBar} />
+        <Bar
+          key={i}
+          placement={p}
+          today={today}
+          colorEncoding={colorEncoding}
+          onSelect={onSelectBar}
+        />
       ))}
       {busy && (
         <div className={styles.busyHint} aria-label={`${cell.hiddenCount} more`}>
@@ -129,15 +170,22 @@ function Bar({ placement, today, colorEncoding, onSelect }: BarProps) {
     overdue && styles.barOverdue,
     continuationLeft && styles.barContinueLeft,
     continuationRight && styles.barContinueRight,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
     <div
       className={classes}
       style={{ background: color.bg, color: color.fg }}
       title={action.label}
-      onClick={(e) => { e.stopPropagation(); onSelect(action); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(action);
+      }}
     >
-      {continuationLeft ? '…' : ''}{action.label}{continuationRight ? '…' : ''}
+      {continuationLeft ? '…' : ''}
+      {action.label}
+      {continuationRight ? '…' : ''}
     </div>
   );
 }

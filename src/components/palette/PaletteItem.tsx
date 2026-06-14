@@ -62,7 +62,9 @@ export function PaletteItem({ entry, onDragBegin }: Props) {
   return (
     <div
       className={`${styles.item} ${isActive ? styles.active : ''}`}
-      onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
+      onPointerDown={(e) => {
+        if (e.button === 0) onDragBegin(entry, e);
+      }}
       onClick={handleClick}
     >
       {entry.category === 'plantings' ? (
@@ -120,7 +122,9 @@ export function PlantingLeafRow({ entry, onDragBegin }: LeafRowProps) {
   return (
     <div
       className={`${styles.row} ${armed ? styles.rowArmed : ''}`}
-      onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
+      onPointerDown={(e) => {
+        if (e.button === 0) onDragBegin(entry, e);
+      }}
       onClick={() => {
         if (appMode !== 'nursery') return;
         setArmedCultivarId(armedCultivarId === entry.id ? null : entry.id);
@@ -181,7 +185,9 @@ export function PlantingChildRow({ entry, onDragBegin }: ChildRowProps) {
   return (
     <div
       className={`${styles.row} ${styles.rowChild} ${armed ? styles.rowArmed : ''}`}
-      onPointerDown={(e) => { if (e.button === 0) onDragBegin(entry, e); }}
+      onPointerDown={(e) => {
+        if (e.button === 0) onDragBegin(entry, e);
+      }}
       onClick={() => {
         if (appMode !== 'nursery') return;
         setArmedCultivarId(armedCultivarId === entry.id ? null : entry.id);

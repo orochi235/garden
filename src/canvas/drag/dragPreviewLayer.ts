@@ -1,6 +1,6 @@
 import type { RenderLayer } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import { useUiStore } from '../../store/uiStore';
+import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import type { Drag } from './putativeDrag';
 
 /**

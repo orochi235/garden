@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PaletteEntry } from './paletteData';
 
 export interface PlantingLeafNode {
@@ -70,9 +70,7 @@ export function usePlantingTree(plantingEntries: PaletteEntry[], isSearching: bo
   // Auto-expand all groups when searching, collapse when search clears
   useEffect(() => {
     if (isSearching) {
-      setExpanded(new Set(
-        tree.filter((n) => n.kind === 'group').map((n) => n.speciesId),
-      ));
+      setExpanded(new Set(tree.filter((n) => n.kind === 'group').map((n) => n.speciesId)));
     } else {
       setExpanded(new Set());
     }

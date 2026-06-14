@@ -1,4 +1,8 @@
+import type { Op } from '@orochi235/weasel';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
 import {
   createNurserySceneAdapter,
   nurseryWorldBounds,
@@ -6,10 +10,6 @@ import {
   TRAYS_PER_COLUMN,
   trayWorldOrigin,
 } from './nurseryScene';
-import { blankGarden, useGardenStore } from '../../store/gardenStore';
-import { useUiStore } from '../../store/uiStore';
-import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
-import type { Op } from '@orochi235/weasel';
 
 function makeTray() {
   return createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
@@ -76,9 +76,7 @@ describe('nurseryScene', () => {
       y: off.y + 0.5 * tray.cellPitchIn + 0.02,
     };
     a.setPose(sA.id, target);
-    const moved = useGardenStore
-      .getState()
-      .garden.nursery.seedlings.find((s) => s.id === sA.id)!;
+    const moved = useGardenStore.getState().garden.nursery.seedlings.find((s) => s.id === sA.id)!;
     expect(moved.row).toBe(0);
     expect(moved.col).toBe(1);
   });
@@ -88,7 +86,11 @@ describe('nurseryScene', () => {
     const a = createNurserySceneAdapter();
     const off = trayInteriorOffsetIn(tray);
     // Drop near cell (1, 1) — empty.
-    const t = a.findSnapTarget!(sA.id, off.x + 1.5 * tray.cellPitchIn, off.y + 1.5 * tray.cellPitchIn);
+    const t = a.findSnapTarget!(
+      sA.id,
+      off.x + 1.5 * tray.cellPitchIn,
+      off.y + 1.5 * tray.cellPitchIn,
+    );
     expect(t).not.toBeNull();
     expect(t!.parentId).toBe(tray.id);
     expect(t!.metadata).toEqual({ row: 1, col: 1 });
@@ -148,9 +150,11 @@ describe('nurseryScene', () => {
       useGardenStore.getState().reset();
       useGardenStore.getState().loadGarden(blankGarden());
       for (const t of trays) {
-        useGardenStore.getState().addTraySilent(
-          createTray({ rows: t.rows, cols: t.cols, cellSize: 'medium', label: t.label }),
-        );
+        useGardenStore
+          .getState()
+          .addTraySilent(
+            createTray({ rows: t.rows, cols: t.cols, cellSize: 'medium', label: t.label }),
+          );
       }
       return useGardenStore.getState().garden.nursery;
     }

@@ -1,20 +1,20 @@
-export type { Point2D, LineSeg, CubicSeg, PathSegment, ShapePath } from './types';
-export { lineTo, cubicTo, closedPath, segEnd } from './types';
+export type { PathSink } from './canvas';
+export { tracePolyline, traceShapePath } from './canvas';
+export { structureToShape, zoneToShape } from './convert';
 export { flattenPath } from './flatten';
-export { rectPath, ellipsePath, polygonPath } from './shapes';
 export {
-  shapeUnion,
-  shapeDifference,
-  shapeIntersection,
-  shapeXor,
-  shapeOffset,
-  shapeArea,
-  shapeBounds,
-  pointInShape,
   isHole,
   minkowskiSum,
+  pointInShape,
+  shapeArea,
+  shapeBounds,
+  shapeDifference,
+  shapeIntersection,
+  shapeOffset,
+  shapeUnion,
+  shapeXor,
   triangulate,
 } from './ops';
-export type { PathSink } from './canvas';
-export { traceShapePath, tracePolyline } from './canvas';
-export { structureToShape, zoneToShape } from './convert';
+export { ellipsePath, polygonPath, rectPath } from './shapes';
+export type { CubicSeg, LineSeg, PathSegment, Point2D, ShapePath } from './types';
+export { closedPath, cubicTo, lineTo, segEnd } from './types';

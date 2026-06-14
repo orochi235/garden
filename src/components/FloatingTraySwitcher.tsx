@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { zoomToTray } from '../actions/view/resetView';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { zoomToTray } from '../actions/view/resetView';
 import styles from '../styles/FloatingTraySwitcher.module.css';
 
 export function FloatingTraySwitcher() {
@@ -130,7 +130,10 @@ export function FloatingTraySwitcher() {
           );
         }
         const showInsertionBefore =
-          dragFromIndex !== null && dropSlot === index && dropSlot !== dragFromIndex && dropSlot !== dragFromIndex + 1;
+          dragFromIndex !== null &&
+          dropSlot === index &&
+          dropSlot !== dragFromIndex &&
+          dropSlot !== dragFromIndex + 1;
         const showInsertionAfter =
           dragFromIndex !== null &&
           index === trays.length - 1 &&
@@ -140,7 +143,9 @@ export function FloatingTraySwitcher() {
         const isDragging = dragFromIndex === index;
         return (
           <div key={t.id} className={styles.rowWrapper}>
-            {showInsertionBefore && <div className={styles.insertionLine} data-testid="insertion-line-before" />}
+            {showInsertionBefore && (
+              <div className={styles.insertionLine} data-testid="insertion-line-before" />
+            )}
             <div
               role="option"
               aria-selected={active}
@@ -175,7 +180,9 @@ export function FloatingTraySwitcher() {
                 ×
               </button>
             </div>
-            {showInsertionAfter && <div className={styles.insertionLine} data-testid="insertion-line-after" />}
+            {showInsertionAfter && (
+              <div className={styles.insertionLine} data-testid="insertion-line-after" />
+            )}
           </div>
         );
       })}

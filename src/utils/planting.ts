@@ -1,9 +1,9 @@
-import { getSlots, getGridCells, type Layout, type ParentBounds } from '../model/layout';
+import { roundToCell } from '@orochi235/weasel';
+import { validCellsForContainer } from '../model/cellOccupancy';
+import { getGridCells, getSlots, type Layout, type ParentBounds } from '../model/layout';
 import type { Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
-import { validCellsForContainer } from '../model/cellOccupancy';
 import { worldToLocalForParent } from './plantingPose';
-import { roundToCell } from '@orochi235/weasel';
 
 /**
  * Determine where to place a new planting inside a parent.
@@ -16,7 +16,15 @@ import { roundToCell } from '@orochi235/weasel';
  * - No layout: snap to `cellSize` grid.
  */
 export function getPlantingPosition(
-  parent: { x: number; y: number; width: number; length: number; layout: Layout | null; shape?: string; wallThicknessFt?: number },
+  parent: {
+    x: number;
+    y: number;
+    width: number;
+    length: number;
+    layout: Layout | null;
+    shape?: string;
+    wallThicknessFt?: number;
+  },
   existing: Planting[],
   worldX: number,
   worldY: number,
@@ -35,13 +43,20 @@ export function getPlantingPosition(
   const bounds = getPlantableBounds(parent);
 
   if (layout.type === 'cell-grid') {
-    return placeOnCellGrid(parent, bounds, layout.cellSizeFt, existing, worldX, worldY, newCultivarId);
+    return placeOnCellGrid(
+      parent,
+      bounds,
+      layout.cellSizeFt,
+      existing,
+      worldX,
+      worldY,
+      newCultivarId,
+    );
   }
 
-  const slots = layout.type === 'grid'
-    ? getGridCells(layout.cellSizeFt, bounds)
-    : getSlots(layout, bounds);
-  const occupiedSet = new Set(existing.map(p => `${p.x},${p.y}`));
+  const slots =
+    layout.type === 'grid' ? getGridCells(layout.cellSizeFt, bounds) : getSlots(layout, bounds);
+  const occupiedSet = new Set(existing.map((p) => `${p.x},${p.y}`));
 
   for (const slot of slots) {
     const local = worldToLocalForParent(parent, slot.x, slot.y);
@@ -79,7 +94,10 @@ function placeOnCellGrid(
   let bestDist = Infinity;
   for (const cell of validCells) {
     const d = (cell.x - worldX) ** 2 + (cell.y - worldY) ** 2;
-    if (d < bestDist) { bestDist = d; best = cell; }
+    if (d < bestDist) {
+      bestDist = d;
+      best = cell;
+    }
   }
   return worldToLocalForParent(parent, best.x, best.y);
 }

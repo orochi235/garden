@@ -1,9 +1,9 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { useGardenStore, blankGarden } from '../../store/gardenStore';
+import { createInsertOp } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createPlanting, createStructure } from '../../model/types';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createInsertAdapter } from './insert';
-import { createInsertOp } from '@orochi235/weasel';
-import { createPlanting, createStructure } from '../../model/types';
 
 describe('createInsertAdapter', () => {
   beforeEach(() => {
@@ -148,9 +148,13 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const planting = createPlanting({ parentId: 'orig', x: 0, y: 0, cultivarId: 'tomato' });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'planting', data: planting }] };
-    const out = a.commitPaste(snap, { dx: 0, dy: 0 }, {
-      dropPoint: { worldX: 7, worldY: 8 },
-    }) as Array<{ parentId: string; x: number; y: number }>;
+    const out = a.commitPaste(
+      snap,
+      { dx: 0, dy: 0 },
+      {
+        dropPoint: { worldX: 7, worldY: 8 },
+      },
+    ) as Array<{ parentId: string; x: number; y: number }>;
     expect(out).toHaveLength(1);
     expect(out[0].parentId).toBe(sId);
     expect(out[0].x).toBe(2); // 7 - 5
@@ -161,9 +165,13 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const planting = createPlanting({ parentId: 'orig', x: 0, y: 0, cultivarId: 'tomato' });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'planting', data: planting }] };
-    const out = a.commitPaste(snap, { dx: 0, dy: 0 }, {
-      dropPoint: { worldX: 999, worldY: 999 },
-    });
+    const out = a.commitPaste(
+      snap,
+      { dx: 0, dy: 0 },
+      {
+        dropPoint: { worldX: 999, worldY: 999 },
+      },
+    );
     expect(out).toHaveLength(0);
   });
 
@@ -171,7 +179,11 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const planting = createPlanting({ parentId: 'orig', x: 1, y: 1, cultivarId: 'tomato' });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'planting', data: planting }] };
-    const out = a.commitPaste(snap, { dx: 0.5, dy: 0.5 }) as Array<{ parentId: string; x: number; y: number }>;
+    const out = a.commitPaste(snap, { dx: 0.5, dy: 0.5 }) as Array<{
+      parentId: string;
+      x: number;
+      y: number;
+    }>;
     expect(out).toHaveLength(1);
     expect(out[0].parentId).toBe('orig');
     expect(out[0].x).toBe(1.5);
@@ -182,9 +194,13 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const structure = createStructure({ type: 'pot', x: 5, y: 6, width: 1, length: 1 });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'structure', data: structure }] };
-    const out = a.commitPaste(snap, { dx: 1, dy: 2 }, {
-      dropPoint: { worldX: 999, worldY: 999 },
-    }) as Array<{ x: number; y: number }>;
+    const out = a.commitPaste(
+      snap,
+      { dx: 1, dy: 2 },
+      {
+        dropPoint: { worldX: 999, worldY: 999 },
+      },
+    ) as Array<{ x: number; y: number }>;
     expect(out[0].x).toBe(6);
     expect(out[0].y).toBe(8);
   });

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { rectPath, ellipsePath, polygonPath } from './shapes';
 import { flattenPath } from './flatten';
+import { ellipsePath, polygonPath, rectPath } from './shapes';
 
 describe('rectPath', () => {
   it('creates a rectangle as 4 line segments', () => {
     const r = rectPath(1, 2, 4, 3);
     expect(r.start).toEqual({ x: 1, y: 2 });
     expect(r.segments).toHaveLength(3);
-    expect(r.segments.every(s => s.kind === 'line')).toBe(true);
+    expect(r.segments.every((s) => s.kind === 'line')).toBe(true);
     const pts = flattenPath(r);
     expect(pts).toEqual([
       { x: 1, y: 2 },
@@ -23,7 +23,7 @@ describe('ellipsePath', () => {
     const e = ellipsePath(5, 5, 3, 2);
     // 4 cubic segments for a full ellipse approximation
     expect(e.segments).toHaveLength(4);
-    expect(e.segments.every(s => s.kind === 'cubic')).toBe(true);
+    expect(e.segments.every((s) => s.kind === 'cubic')).toBe(true);
   });
 
   it('produces a circle when rx === ry', () => {

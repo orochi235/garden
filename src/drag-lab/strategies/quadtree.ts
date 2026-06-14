@@ -1,16 +1,25 @@
-import type { LabItem, LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult, QuadNode } from '../types';
-import { renderLayers, layerEnabled as isLayerEnabled, type LayerData } from './quadtreeRenderer';
+import type {
+  ConfigField,
+  DragFeedback,
+  DropResult,
+  LabItem,
+  LayoutStrategy,
+  Point,
+  QuadNode,
+  Rect,
+} from '../types';
+import { layerEnabled as isLayerEnabled, type LayerData, renderLayers } from './quadtreeRenderer';
 
 // Re-export renderer symbols so existing imports from './strategies/quadtree' still work.
 export {
-  QUADTREE_LAYER_IDS,
-  type QuadtreeLayerId,
-  QUADTREE_LAYER_LABELS,
-  QUADTREE_LAYER_CSS,
+  getLayerOrder,
+  LAYER_ALWAYS_ON,
   LAYER_CONFIG_KEY,
   LAYER_DEFAULT_OFF,
-  LAYER_ALWAYS_ON,
-  getLayerOrder,
+  QUADTREE_LAYER_CSS,
+  QUADTREE_LAYER_IDS,
+  QUADTREE_LAYER_LABELS,
+  type QuadtreeLayerId,
 } from './quadtreeRenderer';
 
 function makeNode(x: number, y: number, w: number, h: number, depth: number): QuadNode {
@@ -77,12 +86,16 @@ function insertItem(node: QuadNode, item: LabItem, targetDepth: number, maxDepth
 }
 
 function containsPoint(node: QuadNode, pos: Point): boolean {
-  return pos.x >= node.x && pos.x < node.x + node.w &&
-         pos.y >= node.y && pos.y < node.y + node.h;
+  return pos.x >= node.x && pos.x < node.x + node.w && pos.y >= node.y && pos.y < node.y + node.h;
 }
 
 /** Find the best unoccupied node for a drop at a given depth. */
-function findDropNode(node: QuadNode, pos: Point, targetDepth: number, maxDepth: number): QuadNode | null {
+function findDropNode(
+  node: QuadNode,
+  pos: Point,
+  targetDepth: number,
+  maxDepth: number,
+): QuadNode | null {
   if (node.occupantId) return null;
 
   if (node.depth === targetDepth || node.depth >= maxDepth) {
@@ -108,7 +121,10 @@ function findDropNode(node: QuadNode, pos: Point, targetDepth: number, maxDepth:
       const cx = candidate.x + candidate.w / 2;
       const cy = candidate.y + candidate.h / 2;
       const d = (cx - pos.x) ** 2 + (cy - pos.y) ** 2;
-      if (d < bestDist) { bestDist = d; best = candidate; }
+      if (d < bestDist) {
+        bestDist = d;
+        best = candidate;
+      }
     }
   }
   return best;
@@ -116,7 +132,12 @@ function findDropNode(node: QuadNode, pos: Point, targetDepth: number, maxDepth:
 
 /** Collect all cells that would exist if the tree were fully subdivided to targetDepth.
  *  Only emits cells that don't already exist in the tree (i.e., new splits). */
-function collectPutativeCells(node: QuadNode, targetDepth: number, maxDepth: number, out: Rect[]): void {
+function collectPutativeCells(
+  node: QuadNode,
+  targetDepth: number,
+  maxDepth: number,
+  out: Rect[],
+): void {
   if (node.occupantId) return;
   const effectiveMax = Math.min(targetDepth, maxDepth);
   if (node.depth >= effectiveMax) return;
@@ -132,7 +153,15 @@ function collectPutativeCells(node: QuadNode, targetDepth: number, maxDepth: num
 }
 
 /** Recursively enumerate all leaf cells from a hypothetical subdivision. */
-function collectAllSplits(x: number, y: number, w: number, h: number, depth: number, targetDepth: number, out: Rect[]): void {
+function collectAllSplits(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  depth: number,
+  targetDepth: number,
+  out: Rect[],
+): void {
   if (depth >= targetDepth) {
     out.push({ x, y, width: w, height: h });
     return;
@@ -181,7 +210,13 @@ function collectSplitPath(node: QuadNode, target: QuadNode, out: Rect[]): void {
 // --- Intersection detection ---
 
 /** Find all leaf nodes whose area overlaps a circle. */
-function nodesOverlappingCircle(node: QuadNode, cx: number, cy: number, r: number, out: QuadNode[]): void {
+function nodesOverlappingCircle(
+  node: QuadNode,
+  cx: number,
+  cy: number,
+  r: number,
+  out: QuadNode[],
+): void {
   // AABB vs circle test
   const nearestX = Math.max(node.x, Math.min(cx, node.x + node.w));
   const nearestY = Math.max(node.y, Math.min(cy, node.y + node.h));
@@ -312,9 +347,18 @@ export const quadtreeStrategy: LayoutStrategy = {
     const occupied = findOccupiedCells(tree, items);
     const cellCounts = countCellOccupants(bounds, effectiveDepth, items);
     const violations = findViolationCells(cellCounts);
-    const footprint = isLayerEnabled(config, 'footprint') ? findFootprintCells(bounds, effectiveDepth, items) : [];
+    const footprint = isLayerEnabled(config, 'footprint')
+      ? findFootprintCells(bounds, effectiveDepth, items)
+      : [];
     const data: LayerData = {
-      bounds, tree, items, occupied, violations, cellCounts, footprint, maxDepth: effectiveDepth,
+      bounds,
+      tree,
+      items,
+      occupied,
+      violations,
+      cellCounts,
+      footprint,
+      maxDepth: effectiveDepth,
       depthScaledBorders: config.depthScaledBorders !== false,
       opaqueBorders: config.opaqueBorders !== false,
     };
@@ -352,7 +396,7 @@ export const quadtreeStrategy: LayoutStrategy = {
 
     if (!target && putativeCells.length === 0) return null;
     return {
-      hide: snap ? 'ghost' as const : 'preview' as const,
+      hide: snap ? ('ghost' as const) : ('preview' as const),
       render(ctx: CanvasRenderingContext2D) {
         // When snapping, draw the dragged circle at the target center so the
         // user sees what they're placing (the renderer hides its own ghost).
@@ -401,8 +445,12 @@ export const quadtreeStrategy: LayoutStrategy = {
     const targetDepth = depthForRadius(item.radiusFt, bounds, maxDepth);
     const target = findDropNode(tree, pos, targetDepth, maxDepth);
     if (!target) return { item: { ...item, x: pos.x, y: pos.y }, state: {} };
-    const dropX = snap ? target.x + target.w / 2 : Math.max(target.x, Math.min(target.x + target.w, pos.x));
-    const dropY = snap ? target.y + target.h / 2 : Math.max(target.y, Math.min(target.y + target.h, pos.y));
+    const dropX = snap
+      ? target.x + target.w / 2
+      : Math.max(target.x, Math.min(target.x + target.w, pos.x));
+    const dropY = snap
+      ? target.y + target.h / 2
+      : Math.max(target.y, Math.min(target.y + target.h, pos.y));
     return {
       item: { ...item, x: dropX, y: dropY },
       state: {},
@@ -415,9 +463,27 @@ export const quadtreeStrategy: LayoutStrategy = {
 
   configSchema(): ConfigField[] {
     return [
-      { key: 'maxDepth', label: 'Resolution', type: 'slider' as const, min: 1, max: 8, step: 1, default: 4 },
-      { key: 'limitToResolved', label: 'Limit to resolved depth', type: 'checkbox' as const, default: true },
-      { key: 'snapToCenter', label: 'Snap to area center', type: 'checkbox' as const, default: true },
+      {
+        key: 'maxDepth',
+        label: 'Resolution',
+        type: 'slider' as const,
+        min: 1,
+        max: 8,
+        step: 1,
+        default: 4,
+      },
+      {
+        key: 'limitToResolved',
+        label: 'Limit to resolved depth',
+        type: 'checkbox' as const,
+        default: true,
+      },
+      {
+        key: 'snapToCenter',
+        label: 'Snap to area center',
+        type: 'checkbox' as const,
+        default: true,
+      },
     ];
   },
 };

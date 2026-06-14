@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getCultivar } from '../../model/cultivars';
+import { defaultActionsForCultivar } from '../../model/defaultActions';
+import { buildSchedule, type Schedule } from '../../model/scheduler';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { defaultTargetDate } from '../schedule/scheduleViewModel';
 import styles from './PlantsListView.module.css';
 import { buildPlantRows, type PlantRow } from './plantsViewModel';
-import { buildSchedule, type Schedule } from '../../model/scheduler';
-import { defaultActionsForCultivar } from '../../model/defaultActions';
-import { getCultivar } from '../../model/cultivars';
-import { defaultTargetDate } from '../schedule/scheduleViewModel';
 
 interface ColumnDef {
   id: string;
@@ -18,8 +18,12 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { id: 'icon', label: '●', defaultVisible: true,
-    render: (r) => r.iconImage ? <img src={r.iconImage} alt="" /> : null },
+  {
+    id: 'icon',
+    label: '●',
+    defaultVisible: true,
+    render: (r) => (r.iconImage ? <img src={r.iconImage} alt="" /> : null),
+  },
   { id: 'name', label: 'Name', defaultVisible: true, render: (r) => r.name },
   { id: 'variety', label: 'Variety', defaultVisible: true, render: (r) => r.variety ?? '—' },
   { id: 'category', label: 'Category', defaultVisible: true, render: (r) => r.category ?? '—' },
@@ -102,25 +106,42 @@ function readVisibleColumns(): string[] {
 function compareRows(a: PlantRow, b: PlantRow, columnId: string): number {
   const valueFor = (r: PlantRow): string | number | undefined => {
     switch (columnId) {
-      case 'name': return r.name;
-      case 'variety': return r.variety ?? '';
-      case 'category': return r.category ?? '';
-      case 'location': return r.location;
-      case 'stage': return r.stage;
-      case 'spacing': return r.spacingFt;
-      case 'height': return r.heightFt;
-      case 'footprint': return r.footprintFt;
-      case 'nextAction': return r.nextAction?.earliest ?? '';
-      case 'rowId': return r.id;
-      case 'cultivarId': return r.cultivarId;
-      case 'speciesId': return r.speciesId;
-      case 'parentId': return r.parentId ?? '';
+      case 'name':
+        return r.name;
+      case 'variety':
+        return r.variety ?? '';
+      case 'category':
+        return r.category ?? '';
+      case 'location':
+        return r.location;
+      case 'stage':
+        return r.stage;
+      case 'spacing':
+        return r.spacingFt;
+      case 'height':
+        return r.heightFt;
+      case 'footprint':
+        return r.footprintFt;
+      case 'nextAction':
+        return r.nextAction?.earliest ?? '';
+      case 'rowId':
+        return r.id;
+      case 'cultivarId':
+        return r.cultivarId;
+      case 'speciesId':
+        return r.speciesId;
+      case 'parentId':
+        return r.parentId ?? '';
       case 'position':
         return r.x == null || r.y == null ? Number.POSITIVE_INFINITY : r.x * 10000 + r.y;
-      case 'climber': return r.climber ? 1 : 0;
-      case 'iconPath': return r.iconImage ?? '';
-      case 'allActions': return r.allActions.length;
-      default: return r.name;
+      case 'climber':
+        return r.climber ? 1 : 0;
+      case 'iconPath':
+        return r.iconImage ?? '';
+      case 'allActions':
+        return r.allActions.length;
+      default:
+        return r.name;
     }
   };
   const av = valueFor(a);
@@ -145,7 +166,9 @@ export function PlantsListView() {
     const plants = [
       ...garden.plantings.map((p) => ({ id: p.id, cultivarId: p.cultivarId, label: p.label })),
       ...garden.nursery.seedlings.map((s) => ({
-        id: s.id, cultivarId: s.cultivarId, label: undefined as string | undefined,
+        id: s.id,
+        cultivarId: s.cultivarId,
+        label: undefined as string | undefined,
       })),
     ]
       .map((p) => {
@@ -166,10 +189,7 @@ export function PlantsListView() {
     });
   }, [garden, almanacLastFrost]);
 
-  const rows: PlantRow[] = useMemo(
-    () => buildPlantRows(garden, schedule),
-    [garden, schedule],
-  );
+  const rows: PlantRow[] = useMemo(() => buildPlantRows(garden, schedule), [garden, schedule]);
 
   const [sortColumn, setSortColumn] = useState<string>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -199,7 +219,9 @@ export function PlantsListView() {
   function toggleColumn(id: string) {
     setVisibleIds((prev) => {
       const next = prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id];
-      try { window.localStorage.setItem(LS_KEY, JSON.stringify(next)); } catch {}
+      try {
+        window.localStorage.setItem(LS_KEY, JSON.stringify(next));
+      } catch {}
       return next;
     });
   }
@@ -211,7 +233,8 @@ export function PlantsListView() {
       if (stageFilter === 'seedling' && r.kind !== 'seedling') return false;
       if (!q) return true;
       const haystack = [r.name, r.variety ?? '', r.location, r.cultivarId, r.id]
-        .join(' ').toLowerCase();
+        .join(' ')
+        .toLowerCase();
       return haystack.includes(q);
     });
   }, [rows, searchText, stageFilter]);
@@ -266,7 +289,11 @@ export function PlantsListView() {
           ))}
         </div>
         <div ref={colEditorRef} className={styles.colEditor}>
-          <button type="button" aria-expanded={columnEditorOpen} onClick={() => setColumnEditorOpen((v) => !v)}>
+          <button
+            type="button"
+            aria-expanded={columnEditorOpen}
+            onClick={() => setColumnEditorOpen((v) => !v)}
+          >
             Columns ▾
           </button>
           {columnEditorOpen && (
@@ -291,7 +318,8 @@ export function PlantsListView() {
             <tr>
               {visibleColumns.map((col) => (
                 <th key={col.id} onClick={() => onHeaderClick(col.id)}>
-                  {col.label}{sortColumn === col.id ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  {col.label}
+                  {sortColumn === col.id ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                 </th>
               ))}
             </tr>
@@ -307,7 +335,9 @@ export function PlantsListView() {
                 {visibleColumns.map((col) => (
                   <td
                     key={col.id}
-                    className={col.numeric ? styles.numeric : (col.id === 'icon' ? styles.iconCell : undefined)}
+                    className={
+                      col.numeric ? styles.numeric : col.id === 'icon' ? styles.iconCell : undefined
+                    }
                   >
                     {col.render(row)}
                   </td>
@@ -321,7 +351,10 @@ export function PlantsListView() {
             No plants match these filters.{' '}
             <button
               type="button"
-              onClick={() => { setSearchText(''); setStageFilter('all'); }}
+              onClick={() => {
+                setSearchText('');
+                setStageFilter('all');
+              }}
             >
               Clear filters
             </button>

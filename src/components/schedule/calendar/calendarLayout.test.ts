@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ResolvedAction } from '../../../model/scheduler';
-import { layoutMonth, monthsCoveringActions, MAX_VISIBLE_BARS } from './calendarLayout';
+import { layoutMonth, MAX_VISIBLE_BARS, monthsCoveringActions } from './calendarLayout';
 
 function mkAction(partial: Partial<ResolvedAction>): ResolvedAction {
   return {
@@ -25,7 +25,7 @@ describe('layoutMonth', () => {
     const m = layoutMonth(2026, 4, [], '2026-05-15');
     // May 1 2026 is a Friday; Sun→Thu before it are April pad days
     expect(m.weeks[0][0].inMonth).toBe(false); // Apr 26 Sun
-    expect(m.weeks[0][5].inMonth).toBe(true);  // May 1 Fri
+    expect(m.weeks[0][5].inMonth).toBe(true); // May 1 Fri
     expect(m.weeks[0][5].date).toBe('2026-05-01');
   });
 
@@ -77,7 +77,14 @@ describe('layoutMonth', () => {
   it('caps visible bars and records hiddenCount', () => {
     const actions: ResolvedAction[] = [];
     for (let i = 0; i < MAX_VISIBLE_BARS + 2; i++) {
-      actions.push(mkAction({ plantId: `p${i}`, actionId: `a${i}`, earliest: '2026-05-13', latest: '2026-05-13' }));
+      actions.push(
+        mkAction({
+          plantId: `p${i}`,
+          actionId: `a${i}`,
+          earliest: '2026-05-13',
+          latest: '2026-05-13',
+        }),
+      );
     }
     const m = layoutMonth(2026, 4, actions, '2026-05-01');
     const cell = findCell(m, '2026-05-13');
@@ -87,7 +94,12 @@ describe('layoutMonth', () => {
 
   it('hasConflict is true iff at least one action has conflicts', () => {
     const a = mkAction({ earliest: '2026-05-14', conflicts: ['some warning'] });
-    const m = layoutMonth(2026, 4, [a, mkAction({ earliest: '2026-05-14', plantId: 'p2' })], '2026-05-01');
+    const m = layoutMonth(
+      2026,
+      4,
+      [a, mkAction({ earliest: '2026-05-14', plantId: 'p2' })],
+      '2026-05-01',
+    );
     expect(findCell(m, '2026-05-14').hasConflict).toBe(true);
     expect(findCell(m, '2026-05-15').hasConflict).toBe(false);
   });

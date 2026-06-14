@@ -43,7 +43,12 @@ export function cellCenterInches(tray: Tray, row: number, col: number): { x: num
  *  imports and keeps no view-transform dependency. */
 export type TrayOriginFn = (tray: Tray) => { x: number; y: number };
 
-export interface WorldRect { x: number; y: number; width: number; height: number }
+export interface WorldRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
  * World-coord cell hit-test across every tray. Searches each tray's grid

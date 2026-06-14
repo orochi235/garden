@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createTray } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray } from '../../model/nursery';
 import {
   createSeedlingMoveDrag,
   SEEDLING_MOVE_DRAG_KIND,
   type SeedlingMovePutative,
 } from './seedlingMoveDrag';
-
 
 function seedTray(): string {
   const garden = blankGarden();

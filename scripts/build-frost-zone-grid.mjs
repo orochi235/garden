@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 // Build a packed binary grid of USDA hardiness zone + last-spring-frost date.
 //
 // Two data sources, fused into one 0.5 deg lat/lon grid covering CONUS + AK + HI + PR:
@@ -25,11 +26,19 @@
 //
 // Idempotent: downloaded archives are cached under .cache/.
 
-import { mkdirSync, existsSync, readFileSync, writeFileSync, createWriteStream, readdirSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { get } from 'node:https';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -38,7 +47,8 @@ const OUT_PATH = join(ROOT, 'public', 'data', 'frost-zone-grid.bin');
 
 // ---------- NOAA last-frost source ----------
 
-const NOAA_TAR_URL = 'https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/archive/us-climate-normals_1991-2020_v1.0.1_annualseasonal_multivariate_by-station_c20230404.tar.gz';
+const NOAA_TAR_URL =
+  'https://www.ncei.noaa.gov/data/normals-annualseasonal/1991-2020/archive/us-climate-normals_1991-2020_v1.0.1_annualseasonal_multivariate_by-station_c20230404.tar.gz';
 const NOAA_TAR_PATH = join(CACHE_DIR, 'noaa-normals-annualseasonal.tar.gz');
 const NOAA_EXTRACT_DIR = join(CACHE_DIR, 'noaa-normals-annualseasonal');
 
@@ -55,11 +65,11 @@ const PHZM_DIR = join(CACHE_DIR, 'phzm');
 //   AK:    up to ~71.5 N, AK reaches west to ~172E (we cut at -172)
 //   HI:    ~19..22 N, ~-160..-155 E
 //   PR:    ~17.5..18.7 N, ~-67.5..-65.2 E
-const LAT0 = 17.0;       // southernmost row's south edge (PR)
-const LAT1 = 72.0;       // northernmost row's north edge (AK)
-const LON0 = -172.0;     // westernmost (AK Aleutians cutoff)
-const LON1 = -65.0;      // easternmost (PR)
-const STEP = 0.5;        // degrees
+const LAT0 = 17.0; // southernmost row's south edge (PR)
+const LAT1 = 72.0; // northernmost row's north edge (AK)
+const LON0 = -172.0; // westernmost (AK Aleutians cutoff)
+const LON1 = -65.0; // easternmost (PR)
+const STEP = 0.5; // degrees
 const N_LAT = Math.round((LAT1 - LAT0) / STEP); // 110
 const N_LON = Math.round((LON1 - LON0) / STEP); // 214
 
@@ -112,7 +122,9 @@ async function ensureNoaaTarball() {
   if (existsSync(NOAA_TAR_PATH) && statSync(NOAA_TAR_PATH).size > 1_000_000) return;
   console.log(`[noaa] fetch ${NOAA_TAR_URL}`);
   await downloadFollow(NOAA_TAR_URL, NOAA_TAR_PATH);
-  console.log(`[noaa] wrote ${NOAA_TAR_PATH} (${(statSync(NOAA_TAR_PATH).size / 1e6).toFixed(1)} MB)`);
+  console.log(
+    `[noaa] wrote ${NOAA_TAR_PATH} (${(statSync(NOAA_TAR_PATH).size / 1e6).toFixed(1)} MB)`,
+  );
 }
 
 function ensureNoaaExtracted() {
@@ -133,8 +145,10 @@ function parseCsvLine(line) {
       else cur += c;
     } else {
       if (c === '"') inQuotes = true;
-      else if (c === ',') { out.push(cur); cur = ''; }
-      else cur += c;
+      else if (c === ',') {
+        out.push(cur);
+        cur = '';
+      } else cur += c;
     }
   }
   out.push(cur);
@@ -223,7 +237,10 @@ function buildLastFrostGrid(stations) {
     const oi = Math.floor((s.lon - LON0) / BUCKET);
     const key = bkey(li, oi);
     let arr = buckets.get(key);
-    if (!arr) { arr = []; buckets.set(key, arr); }
+    if (!arr) {
+      arr = [];
+      buckets.set(key, arr);
+    }
     arr.push(s);
   }
 
@@ -253,10 +270,12 @@ function buildLastFrostGrid(stations) {
       scored.sort((a, b) => a.dist - b.dist);
       const top = scored.slice(0, 4);
       if (top.length === 0) continue;
-      let sw = 0, sv = 0;
+      let sw = 0,
+        sv = 0;
       for (const { s, dist } of top) {
         const w = 1 / Math.max(0.05, dist);
-        sw += w; sv += w * s.doy;
+        sw += w;
+        sv += w * s.doy;
       }
       if (sw > 0) {
         doyAvg[k] = Math.round(sv / sw);
@@ -301,8 +320,8 @@ function parsePhzmHeader(hdrPath) {
   return {
     nrows: parseInt(fields.NROWS, 10),
     ncols: parseInt(fields.NCOLS, 10),
-    ulx: parseFloat(fields.ULXMAP),     // longitude of center of upper-left pixel
-    uly: parseFloat(fields.ULYMAP),     // latitude of center of upper-left pixel
+    ulx: parseFloat(fields.ULXMAP), // longitude of center of upper-left pixel
+    uly: parseFloat(fields.ULYMAP), // latitude of center of upper-left pixel
     xdim: parseFloat(fields.XDIM),
     ydim: parseFloat(fields.YDIM),
     nodata: parseFloat(fields.NODATA),
@@ -319,18 +338,29 @@ function accumulatePhzmRegion({ bilPath, hdrPath }, sumF, countN) {
     throw new Error(`bil truncated: ${bilPath}`);
   }
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-  let added = 0, nodata = 0, oob = 0;
+  let added = 0,
+    nodata = 0,
+    oob = 0;
   for (let r = 0; r < hdr.nrows; r++) {
     const lat = hdr.uly - r * hdr.ydim;
     const li = Math.floor((lat - LAT0) / STEP);
-    if (li < 0 || li >= N_LAT) { oob += hdr.ncols; continue; }
+    if (li < 0 || li >= N_LAT) {
+      oob += hdr.ncols;
+      continue;
+    }
     const rowOff = r * hdr.ncols * 4;
     for (let c = 0; c < hdr.ncols; c++) {
       const lon = hdr.ulx + c * hdr.xdim;
       const oi = Math.floor((lon - LON0) / STEP);
-      if (oi < 0 || oi >= N_LON) { oob++; continue; }
+      if (oi < 0 || oi >= N_LON) {
+        oob++;
+        continue;
+      }
       const v = view.getFloat32(rowOff + c * 4, true);
-      if (!Number.isFinite(v) || v === hdr.nodata || v < -200) { nodata++; continue; }
+      if (!Number.isFinite(v) || v === hdr.nodata || v < -200) {
+        nodata++;
+        continue;
+      }
       const k = li * N_LON + oi;
       sumF[k] += v;
       countN[k] += 1;
@@ -386,7 +416,10 @@ async function buildZoneGrid() {
           }
         }
       }
-      if (best) { zoneIdx[k] = best.idx; backfilled++; }
+      if (best) {
+        zoneIdx[k] = best.idx;
+        backfilled++;
+      }
     }
   }
   console.log(`[phzm] nn-backfilled cells: ${backfilled}`);
@@ -399,8 +432,8 @@ function pack(zoneIdx, doyAvg) {
   const total = HEADER_BYTES + N_LAT * N_LON * BYTES_PER_CELL;
   const buf = Buffer.alloc(total);
   buf.write('FZGR', 0, 'ascii');
-  buf.writeUInt8(1, 4);          // version
-  buf.writeUInt8(0, 5);          // reserved
+  buf.writeUInt8(1, 4); // version
+  buf.writeUInt8(0, 5); // reserved
   buf.writeInt16LE(Math.round(LAT0 * 100), 6);
   buf.writeInt16LE(Math.round(LON0 * 100), 8);
   buf.writeUInt16LE(Math.round(STEP * 1000), 10);

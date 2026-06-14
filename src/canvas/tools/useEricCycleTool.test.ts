@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
-import { useEricCycleTool, type CycleScratch } from './useEricCycleTool';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createStructure } from '../../model/types';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
 import { createGardenSceneAdapter } from '../adapters/gardenScene';
 import { createInsertAdapter } from '../adapters/insert';
-import { useGardenStore, blankGarden } from '../../store/gardenStore';
-import { useUiStore } from '../../store/uiStore';
-import { createStructure } from '../../model/types';
+import { type CycleScratch, useEricCycleTool } from './useEricCycleTool';
 
 function makeCtx(
   worldX: number,
@@ -32,9 +32,17 @@ function makeCtx(
 function pointer(init: Partial<PointerEventInit> & { altKey?: boolean } = {}): PointerEvent {
   const e = new Event('pointerdown') as PointerEvent;
   Object.assign(e, {
-    button: 0, buttons: 1, clientX: 0, clientY: 0,
-    altKey: true, shiftKey: false, metaKey: false, ctrlKey: false,
-    pointerId: 1, pointerType: 'mouse', isPrimary: true,
+    button: 0,
+    buttons: 1,
+    clientX: 0,
+    clientY: 0,
+    altKey: true,
+    shiftKey: false,
+    metaKey: false,
+    ctrlKey: false,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
     preventDefault: vi.fn(),
     ...init,
   });
@@ -193,9 +201,30 @@ describe('useEricCycleTool — alt+drag clone', () => {
   });
 
   it('alt+drag clone auto-expands to group siblings: 3 structures cloned from a group of 3', async () => {
-    const a = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4, groupId: 'g1' });
-    const b = createStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4, groupId: 'g1' });
-    const c = createStructure({ type: 'raised-bed', x: 20, y: 0, width: 4, length: 4, groupId: 'g1' });
+    const a = createStructure({
+      type: 'raised-bed',
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
+    const b = createStructure({
+      type: 'raised-bed',
+      x: 10,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
+    const c = createStructure({
+      type: 'raised-bed',
+      x: 20,
+      y: 0,
+      width: 4,
+      length: 4,
+      groupId: 'g1',
+    });
     useGardenStore.setState((s) => ({ garden: { ...s.garden, structures: [a, b, c] } }));
 
     const adapter = createGardenSceneAdapter();
@@ -205,14 +234,22 @@ describe('useEricCycleTool — alt+drag clone', () => {
     // alt+click on `a` only.
     const scratch: CycleScratch = { cycled: false };
     const downCtx = makeCtx(2, 2, scratch);
-    act(() => { result.current.pointer!.onDown!(pointer(), downCtx); });
+    act(() => {
+      result.current.pointer!.onDown!(pointer(), downCtx);
+    });
     expect(useUiStore.getState().selectedIds).toEqual([a.id]);
 
     // Drag → clone.
-    act(() => { result.current.drag!.onStart!(pointer(), downCtx); });
+    act(() => {
+      result.current.drag!.onStart!(pointer(), downCtx);
+    });
     const moveCtx = makeCtx(50, 50, scratch);
-    act(() => { result.current.drag!.onMove!(pointer(), moveCtx); });
-    act(() => { result.current.drag!.onEnd!(pointer(), moveCtx); });
+    act(() => {
+      result.current.drag!.onMove!(pointer(), moveCtx);
+    });
+    act(() => {
+      result.current.drag!.onEnd!(pointer(), moveCtx);
+    });
 
     // Originals still there + 3 clones (one per group member).
     const final = useGardenStore.getState().garden.structures;

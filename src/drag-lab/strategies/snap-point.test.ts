@@ -1,7 +1,7 @@
 // src/drag-lab/strategies/snap-point.test.ts
-import { describe, it, expect } from 'vitest';
-import { snapPointStrategy } from './snap-point';
+import { describe, expect, it } from 'vitest';
 import type { LabItem, Rect } from '../types';
+import { snapPointStrategy } from './snap-point';
 
 const bounds: Rect = { x: 0, y: 0, width: 4, height: 4 };
 
@@ -15,14 +15,33 @@ describe('snapPointStrategy', () => {
   });
 
   it('snaps to nearest point within threshold', () => {
-    const config = { ...snapPointStrategy.defaultConfig(), pattern: 'grid', gridSpacing: 1, snapThreshold: 0.5 };
-    const result = snapPointStrategy.onDrop(bounds, 'rectangle', { x: 0.6, y: 0.6 }, makeItem(), [], config);
+    const config = {
+      ...snapPointStrategy.defaultConfig(),
+      pattern: 'grid',
+      gridSpacing: 1,
+      snapThreshold: 0.5,
+    };
+    const result = snapPointStrategy.onDrop(
+      bounds,
+      'rectangle',
+      { x: 0.6, y: 0.6 },
+      makeItem(),
+      [],
+      config,
+    );
     expect(Math.abs(result.item.x - 0.6)).toBeLessThanOrEqual(0.5);
   });
 
   it('drops at cursor when outside snap threshold', () => {
     const config = { ...snapPointStrategy.defaultConfig(), pattern: 'corners', snapThreshold: 0.1 };
-    const result = snapPointStrategy.onDrop(bounds, 'rectangle', { x: 2, y: 2 }, makeItem(), [], config);
+    const result = snapPointStrategy.onDrop(
+      bounds,
+      'rectangle',
+      { x: 2, y: 2 },
+      makeItem(),
+      [],
+      config,
+    );
     expect(result.item.x).toBe(2);
     expect(result.item.y).toBe(2);
   });

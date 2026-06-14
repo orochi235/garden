@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import type { ResolvedAction } from '../../../model/scheduler';
 import { getCultivar } from '../../../model/cultivars';
-import { formatDate, formatWindow } from '../scheduleViewModel';
+import type { ResolvedAction } from '../../../model/scheduler';
 import type { SchedulePlantInput } from '../ScheduleView';
+import { formatDate, formatWindow } from '../scheduleViewModel';
 import styles from './CellPopover.module.css';
 
 export type Selection =
@@ -25,15 +25,15 @@ export function CellPopover({ selection, plantsById, onClose }: CellPopoverProps
   }, [onClose]);
 
   const actions = selection.kind === 'day' ? selection.actions : [selection.action];
-  const title = selection.kind === 'day'
-    ? formatDate(selection.date)
-    : `${selection.action.label}`;
+  const title = selection.kind === 'day' ? formatDate(selection.date) : `${selection.action.label}`;
 
   return (
     <aside className={styles.panel} role="dialog" aria-label="Schedule details">
       <div className={styles.header}>
         <div className={styles.title}>{title}</div>
-        <button type="button" className={styles.close} onClick={onClose} aria-label="Close">×</button>
+        <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
+          ×
+        </button>
       </div>
       <div className={styles.body}>
         {actions.length === 0 ? (

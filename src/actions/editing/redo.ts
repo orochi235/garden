@@ -1,5 +1,5 @@
-import type { ActionDescriptor } from '../types';
 import { useGardenStore } from '../../store/gardenStore';
+import type { ActionDescriptor } from '../types';
 
 export const redoAction: ActionDescriptor = {
   id: 'editing.redo',
@@ -9,5 +9,7 @@ export const redoAction: ActionDescriptor = {
   targets: ['none'],
   transient: true,
   canExecute: () => useGardenStore.getState().canRedo(),
-  execute: () => { useGardenStore.getState().redo(); },
+  execute: () => {
+    useGardenStore.getState().redo();
+  },
 };

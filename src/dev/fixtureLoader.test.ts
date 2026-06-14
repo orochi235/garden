@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadFixtureFromUrl } from './fixtureLoader';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGardenStore } from '../store/gardenStore';
+import { loadFixtureFromUrl } from './fixtureLoader';
 
 describe('loadFixtureFromUrl', () => {
-  beforeEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns false when no ?fixture param', async () => {
     const r = await loadFixtureFromUrl(new URL('http://localhost/'));

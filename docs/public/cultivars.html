@@ -297,7 +297,7 @@
       }
 
       // Sort species groups
-      let speciesIds = Object.keys(groups);
+      const speciesIds = Object.keys(groups);
       speciesIds.sort((a, b) => {
         const sa = speciesMap[a] || {};
         const sb = speciesMap[b] || {};

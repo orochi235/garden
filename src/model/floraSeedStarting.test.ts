@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_SEED_STARTING_FIELDS,
-  resolveSeedStarting,
-} from './floraSeedStarting';
+import { DEFAULT_SEED_STARTING_FIELDS, resolveSeedStarting } from './floraSeedStarting';
 
 describe('resolveSeedStarting', () => {
   it('returns defaults when neither side has fields', () => {
@@ -16,10 +13,7 @@ describe('resolveSeedStarting', () => {
   });
 
   it('cultivar overrides species', () => {
-    const r = resolveSeedStarting(
-      { startable: true, cellSize: 'small' },
-      { cellSize: 'large' },
-    );
+    const r = resolveSeedStarting({ startable: true, cellSize: 'small' }, { cellSize: 'large' });
     expect(r.startable).toBe(true);
     expect(r.cellSize).toBe('large');
   });
@@ -28,7 +22,10 @@ describe('resolveSeedStarting', () => {
     expect(resolveSeedStarting(undefined, undefined).weeksBeforeLastFrost).toBeNull();
     const fromSpecies = resolveSeedStarting({ weeksBeforeLastFrost: [8, 4] }, undefined);
     expect(fromSpecies.weeksBeforeLastFrost).toEqual([8, 4]);
-    const fromCultivar = resolveSeedStarting({ weeksBeforeLastFrost: [8, 4] }, { weeksBeforeLastFrost: [6, 2] });
+    const fromCultivar = resolveSeedStarting(
+      { weeksBeforeLastFrost: [8, 4] },
+      { weeksBeforeLastFrost: [6, 2] },
+    );
     expect(fromCultivar.weeksBeforeLastFrost).toEqual([6, 2]);
   });
 });

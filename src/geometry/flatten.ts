@@ -19,10 +19,14 @@ export function flattenPath(path: ShapePath, tolerance = 0.25): Point2D[] {
     } else {
       // Adaptive subdivision of cubic Bezier
       subdivideCubic(
-        cur.x, cur.y,
-        seg.cp1x, seg.cp1y,
-        seg.cp2x, seg.cp2y,
-        seg.x, seg.y,
+        cur.x,
+        cur.y,
+        seg.cp1x,
+        seg.cp1y,
+        seg.cp2x,
+        seg.cp2y,
+        seg.x,
+        seg.y,
         tolerance * tolerance,
         pts,
       );
@@ -39,10 +43,14 @@ export function flattenPath(path: ShapePath, tolerance = 0.25): Point2D[] {
  * tolerance of the line from start to end, output the endpoint directly.
  */
 function subdivideCubic(
-  x0: number, y0: number,
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
   tolSq: number,
   out: Point2D[],
 ): void {
@@ -53,12 +61,18 @@ function subdivideCubic(
   }
 
   // De Casteljau split at t=0.5
-  const mx01 = (x0 + x1) / 2, my01 = (y0 + y1) / 2;
-  const mx12 = (x1 + x2) / 2, my12 = (y1 + y2) / 2;
-  const mx23 = (x2 + x3) / 2, my23 = (y2 + y3) / 2;
-  const mx012 = (mx01 + mx12) / 2, my012 = (my01 + my12) / 2;
-  const mx123 = (mx12 + mx23) / 2, my123 = (my12 + my23) / 2;
-  const mx0123 = (mx012 + mx123) / 2, my0123 = (my012 + my123) / 2;
+  const mx01 = (x0 + x1) / 2,
+    my01 = (y0 + y1) / 2;
+  const mx12 = (x1 + x2) / 2,
+    my12 = (y1 + y2) / 2;
+  const mx23 = (x2 + x3) / 2,
+    my23 = (y2 + y3) / 2;
+  const mx012 = (mx01 + mx12) / 2,
+    my012 = (my01 + my12) / 2;
+  const mx123 = (mx12 + mx23) / 2,
+    my123 = (my12 + my23) / 2;
+  const mx0123 = (mx012 + mx123) / 2,
+    my0123 = (my012 + my123) / 2;
 
   subdivideCubic(x0, y0, mx01, my01, mx012, my012, mx0123, my0123, tolSq, out);
   subdivideCubic(mx0123, my0123, mx123, my123, mx23, my23, x3, y3, tolSq, out);
@@ -66,10 +80,14 @@ function subdivideCubic(
 
 /** Check if a cubic Bezier is flat enough to approximate with a line. */
 function isFlat(
-  x0: number, y0: number,
-  x1: number, y1: number,
-  x2: number, y2: number,
-  x3: number, y3: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
   tolSq: number,
 ): boolean {
   // Use distance of control points from the chord (start→end)
@@ -81,14 +99,19 @@ function isFlat(
 
 /** Squared distance from point (px,py) to line segment (ax,ay)-(bx,by). */
 function pointToSegmentDistSq(
-  px: number, py: number,
-  ax: number, ay: number,
-  bx: number, by: number,
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
 ): number {
-  const dx = bx - ax, dy = by - ay;
+  const dx = bx - ax,
+    dy = by - ay;
   const lenSq = dx * dx + dy * dy;
   if (lenSq === 0) return (px - ax) ** 2 + (py - ay) ** 2;
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
-  const cx = ax + t * dx, cy = ay + t * dy;
+  const cx = ax + t * dx,
+    cy = ay + t * dy;
   return (px - cx) ** 2 + (py - cy) ** 2;
 }

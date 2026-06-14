@@ -9,12 +9,12 @@ export type Anchor =
   | { kind: 'target-transplant' }
   | { kind: 'last-frost' }
   | { kind: 'first-frost' }
-  | { kind: 'absolute'; date: string }       // ISO 'YYYY-MM-DD'
+  | { kind: 'absolute'; date: string } // ISO 'YYYY-MM-DD'
   | { kind: 'today' }
-  | { kind: 'action'; actionId: string };    // ref to another action in the same plant
+  | { kind: 'action'; actionId: string }; // ref to another action in the same plant
 
 export interface Offset {
-  amount: number;                             // signed: positive = after, negative = before
+  amount: number; // signed: positive = after, negative = before
   unit: Unit;
 }
 
@@ -37,10 +37,10 @@ export interface ScheduleInputs {
     label?: string;
     actions: ActionDef[];
   }>;
-  targetTransplantDate: string;        // 'YYYY-MM-DD' — required
+  targetTransplantDate: string; // 'YYYY-MM-DD' — required
   lastFrostDate?: string;
   firstFrostDate?: string;
-  today?: string;                      // defaults to current date
+  today?: string; // defaults to current date
 }
 
 export interface ResolvedAction {
@@ -48,13 +48,13 @@ export interface ResolvedAction {
   cultivarId: string;
   actionId: string;
   label: string;
-  earliest: string;                    // 'YYYY-MM-DD'
-  latest: string;                      // == earliest when single-point
-  conflicts: string[];                 // empty when ok
+  earliest: string; // 'YYYY-MM-DD'
+  latest: string; // == earliest when single-point
+  conflicts: string[]; // empty when ok
 }
 
 export interface Schedule {
-  actions: ResolvedAction[];           // sorted by earliest, then by plantId
+  actions: ResolvedAction[]; // sorted by earliest, then by plantId
   warnings: string[];
 }
 
@@ -74,9 +74,9 @@ export function addOffset(isoDate: string, offset: Offset): string {
     return formatISO(dt);
   }
   // months: target month/year, clamp day to last valid day of that month
-  const totalMonths = (y * 12 + (m - 1)) + offset.amount;
+  const totalMonths = y * 12 + (m - 1) + offset.amount;
   const newY = Math.floor(totalMonths / 12);
-  const newM = totalMonths - newY * 12;                // 0..11
+  const newM = totalMonths - newY * 12; // 0..11
   const lastDay = new Date(Date.UTC(newY, newM + 1, 0)).getUTCDate();
   const newD = Math.min(d, lastDay);
   return `${pad4(newY)}-${pad2(newM + 1)}-${pad2(newD)}`;
@@ -87,7 +87,7 @@ export interface AnchorContext {
   lastFrostDate?: string;
   firstFrostDate?: string;
   today?: string;
-  actionDates: Map<string, string>;     // actionId → already-resolved earliest date
+  actionDates: Map<string, string>; // actionId → already-resolved earliest date
 }
 
 /**
@@ -98,12 +98,18 @@ export interface AnchorContext {
  */
 export function resolveAnchor(anchor: Anchor, ctx: AnchorContext): string | null {
   switch (anchor.kind) {
-    case 'target-transplant': return ctx.targetTransplantDate;
-    case 'last-frost':        return ctx.lastFrostDate ?? null;
-    case 'first-frost':       return ctx.firstFrostDate ?? null;
-    case 'absolute':          return anchor.date;
-    case 'today':             return ctx.today ?? null;
-    case 'action':            return ctx.actionDates.get(anchor.actionId) ?? null;
+    case 'target-transplant':
+      return ctx.targetTransplantDate;
+    case 'last-frost':
+      return ctx.lastFrostDate ?? null;
+    case 'first-frost':
+      return ctx.firstFrostDate ?? null;
+    case 'absolute':
+      return anchor.date;
+    case 'today':
+      return ctx.today ?? null;
+    case 'action':
+      return ctx.actionDates.get(anchor.actionId) ?? null;
   }
 }
 
@@ -137,9 +143,7 @@ export function buildSchedule(inputs: ScheduleInputs): Schedule {
     const sorted = topoSortActions(plant.actions);
     if (sorted.cycles.length > 0) {
       for (const cycleIds of sorted.cycles) {
-        warnings.push(
-          `Cycle in actions for plant ${plant.id}: ${cycleIds.join(' → ')}`,
-        );
+        warnings.push(`Cycle in actions for plant ${plant.id}: ${cycleIds.join(' → ')}`);
       }
     }
     const actionDates = new Map<string, string>();
@@ -169,9 +173,7 @@ export function buildSchedule(inputs: ScheduleInputs): Schedule {
         }
       }
       if (missing !== null) {
-        warnings.push(
-          `Plant ${plant.id} action "${a.id}" dropped: missing anchor ${missing}`,
-        );
+        warnings.push(`Plant ${plant.id} action "${a.id}" dropped: missing anchor ${missing}`);
         continue;
       }
       if (lower === null || upper === null) {
@@ -256,8 +258,10 @@ function describeAnchor(a: Anchor): string {
     case 'first-frost':
     case 'today':
       return a.kind;
-    case 'absolute': return `absolute(${a.date})`;
-    case 'action':   return `action(${a.actionId})`;
+    case 'absolute':
+      return `absolute(${a.date})`;
+    case 'action':
+      return `action(${a.actionId})`;
   }
 }
 
@@ -279,5 +283,9 @@ function formatToday(): string {
 function formatISO(dt: Date): string {
   return `${pad4(dt.getUTCFullYear())}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
 }
-function pad2(n: number): string { return n < 10 ? `0${n}` : `${n}`; }
-function pad4(n: number): string { return n.toString().padStart(4, '0'); }
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`;
+}
+function pad4(n: number): string {
+  return n.toString().padStart(4, '0');
+}

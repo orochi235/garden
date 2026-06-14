@@ -24,11 +24,13 @@ export function defaultActionsForCultivar(cultivar: Cultivar): ActionDef[] {
     actions.push({
       id: 'harden-off',
       label: 'Harden off',
-      constraints: [{
-        kind: 'exact',
-        anchor: { kind: 'action', actionId: 'transplant' },
-        offset: { amount: -7, unit: 'days' },
-      }],
+      constraints: [
+        {
+          kind: 'exact',
+          anchor: { kind: 'action', actionId: 'transplant' },
+          offset: { amount: -7, unit: 'days' },
+        },
+      ],
     });
   }
 

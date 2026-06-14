@@ -1,14 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createTray } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createTray } from '../../model/nursery';
-import { createSeedFillTrayDrag, SEED_FILL_TRAY_DRAG_KIND } from './seedFillTrayDrag';
 import type { DragViewport } from './putativeDrag';
+import { createSeedFillTrayDrag, SEED_FILL_TRAY_DRAG_KIND } from './seedFillTrayDrag';
 
 function fakeViewport(): DragViewport {
   const container = document.createElement('div');
   Object.defineProperty(container, 'getBoundingClientRect', {
-    value: () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0, toJSON: () => ({}) }),
+    value: () => ({
+      left: 0,
+      top: 0,
+      right: 800,
+      bottom: 600,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }),
   });
   return { container, view: { x: 0, y: 0, scale: 50 } };
 }
@@ -30,14 +40,28 @@ describe('seedFillTrayDrag', () => {
 
   it('compute returns null when no cultivar is armed', () => {
     const drag = createSeedFillTrayDrag({ getCultivarId: () => null });
-    const input = drag.read({ clientX: 100, clientY: 100, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }, fakeViewport());
+    const input = drag.read(
+      {
+        clientX: 100,
+        clientY: 100,
+        modifiers: { shift: false, alt: false, ctrl: false, meta: false },
+      },
+      fakeViewport(),
+    );
     expect(drag.compute(input)).toBeNull();
   });
 
   it('compute returns null when no tray is at world coords', () => {
     const drag = createSeedFillTrayDrag({ getCultivarId: () => 'tomato' });
     // Garden has no trays in blank state ⇒ pickTrayAtWorld returns null.
-    const input = drag.read({ clientX: 100, clientY: 100, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }, fakeViewport());
+    const input = drag.read(
+      {
+        clientX: 100,
+        clientY: 100,
+        modifiers: { shift: false, alt: false, ctrl: false, meta: false },
+      },
+      fakeViewport(),
+    );
     expect(drag.compute(input)).toBeNull();
   });
 
@@ -50,7 +74,14 @@ describe('seedFillTrayDrag', () => {
     // Aim at world (1.05, 1.05) which is roughly the center of cell (0,0)
     // for a medium-cell tray (interior offset ~0.4, pitch ~1.3).
     // clientX/clientY at scale=50, view origin (0,0): client = world * 50.
-    const input = drag.read({ clientX: 52, clientY: 52, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }, fakeViewport());
+    const input = drag.read(
+      {
+        clientX: 52,
+        clientY: 52,
+        modifiers: { shift: false, alt: false, ctrl: false, meta: false },
+      },
+      fakeViewport(),
+    );
     const putative = drag.compute(input);
     // Either we hit a cell, a row/col target band, or fall through to null.
     // What matters: if we hit a cell scope, commit must sow; otherwise no
@@ -69,8 +100,26 @@ describe('seedFillTrayDrag', () => {
     useUiStore.getState().setCurrentTrayId(tray.id);
 
     const drag = createSeedFillTrayDrag({ getCultivarId: () => 'tomato' });
-    const noShift = drag.compute(drag.read({ clientX: 52, clientY: 52, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }, fakeViewport()));
-    const withShift = drag.compute(drag.read({ clientX: 52, clientY: 52, modifiers: { shift: true, alt: false, ctrl: false, meta: false } }, fakeViewport()));
+    const noShift = drag.compute(
+      drag.read(
+        {
+          clientX: 52,
+          clientY: 52,
+          modifiers: { shift: false, alt: false, ctrl: false, meta: false },
+        },
+        fakeViewport(),
+      ),
+    );
+    const withShift = drag.compute(
+      drag.read(
+        {
+          clientX: 52,
+          clientY: 52,
+          modifiers: { shift: true, alt: false, ctrl: false, meta: false },
+        },
+        fakeViewport(),
+      ),
+    );
     if (noShift && withShift) {
       expect(noShift.replace).toBe(false);
       expect(withShift.replace).toBe(true);

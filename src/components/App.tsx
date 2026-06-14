@@ -1,35 +1,34 @@
+import { asNodeId, useClipboard } from '@orochi235/weasel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
-import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
 import { createInsertAdapter } from '../canvas/adapters/insert';
-import { asNodeId, useClipboard } from '@orochi235/weasel';
+import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
+import { loadFixtureFromUrl } from '../dev/fixtureLoader';
 import { useActiveTheme } from '../hooks/useActiveTheme';
+import type { Cultivar } from '../model/cultivars';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
 import { enterNursery } from '../utils/enterNursery';
 import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/file';
-import type { Cultivar } from '../model/cultivars';
-import { WelcomeModal } from './WelcomeModal';
-import { ScheduleModal } from './schedule/ScheduleModal';
-import { PlantsModal } from './plants/PlantsModal';
+import { LayerSelector } from './LayerSelector';
 import { MenuBar } from './MenuBar';
+import { NurseryPalette } from './palette/NurseryPalette';
 import { ObjectPalette } from './palette/ObjectPalette';
 import type { PaletteEntry } from './palette/paletteData';
-import { NurseryPalette } from './palette/NurseryPalette';
+import { PlantsModal } from './plants/PlantsModal';
 import { StatusBar } from './StatusBar';
+import { ScheduleModal } from './schedule/ScheduleModal';
 import { Sidebar } from './sidebar/Sidebar';
 import { ViewToolbar } from './ViewToolbar';
-import { LayerSelector } from './LayerSelector';
-import { loadFixtureFromUrl } from '../dev/fixtureLoader';
+import { WelcomeModal } from './WelcomeModal';
 
 const MIN_PANEL = 160;
 const MIN_LEFT_PANEL = 200;
 const MAX_PANEL = 400;
 const DEFAULT_PANEL = 240;
 
-const INITIAL_SEARCH =
-  typeof window === 'undefined' ? '' : window.location.search;
+const INITIAL_SEARCH = typeof window === 'undefined' ? '' : window.location.search;
 const INITIAL_PARAMS = new URLSearchParams(INITIAL_SEARCH);
 const INITIAL_MODE_PARAM = INITIAL_PARAMS.get('mode');
 
@@ -59,9 +58,11 @@ export function App() {
   const fixtureLoadedRef = useRef(false);
   useEffect(() => {
     if (import.meta.env.PROD) return;
-    loadFixtureFromUrl().then((loaded) => {
-      fixtureLoadedRef.current = loaded;
-    }).finally(() => setFixtureReady(true));
+    loadFixtureFromUrl()
+      .then((loaded) => {
+        fixtureLoadedRef.current = loaded;
+      })
+      .finally(() => setFixtureReady(true));
   }, []);
 
   useEffect(() => {
@@ -156,31 +157,25 @@ export function App() {
   // `palettePointerPayload`, owns ghost + threshold drag + commit, and reads
   // the canvas-owned local view (via `viewRef`) for screen→world math. App
   // doesn't read view here.
-  const handlePaletteDragBegin = useCallback(
-    (entry: PaletteEntry, e: React.PointerEvent) => {
-      useUiStore.getState().setPalettePointerPayload({
-        entry,
-        pointerEvent: e.nativeEvent,
-      });
-    },
-    [],
-  );
+  const handlePaletteDragBegin = useCallback((entry: PaletteEntry, e: React.PointerEvent) => {
+    useUiStore.getState().setPalettePointerPayload({
+      entry,
+      pointerEvent: e.nativeEvent,
+    });
+  }, []);
 
   // Seed-starting palette drag: hand the gesture off to the canvas via a
   // transient ui slot. The canvas's `usePaletteDropTool` watches
   // `palettePointerPayload`, owns ghost + threshold drag + commit, and reads
   // its own local view to compute world coordinates. App doesn't read the
   // canvas's view here.
-  const handleSeedDragBegin = useCallback(
-    (entry: PaletteEntry, e: React.PointerEvent) => {
-      if (entry.category !== 'plantings') return;
-      useUiStore.getState().setPalettePointerPayload({
-        entry,
-        pointerEvent: e.nativeEvent,
-      });
-    },
-    [],
-  );
+  const handleSeedDragBegin = useCallback((entry: PaletteEntry, e: React.PointerEvent) => {
+    if (entry.category !== 'plantings') return;
+    useUiStore.getState().setPalettePointerPayload({
+      entry,
+      pointerEvent: e.nativeEvent,
+    });
+  }, []);
 
   const handleResizeStart = useCallback(
     (side: 'left' | 'right', e: React.MouseEvent) => {
@@ -196,7 +191,8 @@ export function App() {
     function handleMouseMove(e: MouseEvent) {
       if (!dragging.current) return;
       const dx = e.clientX - dragStartX.current;
-      const raw = dragging.current === 'left' ? dragStartWidth.current + dx : dragStartWidth.current - dx;
+      const raw =
+        dragging.current === 'left' ? dragStartWidth.current + dx : dragStartWidth.current - dx;
       if (dragging.current === 'left') {
         setLeftWidth(Math.min(MAX_PANEL, Math.max(MIN_LEFT_PANEL, raw)));
       } else {

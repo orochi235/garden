@@ -1,8 +1,13 @@
-import { useGardenStore } from '../../store/gardenStore';
-import type { Zone } from '../../model/types';
 import type { ResizeAdapter } from '@orochi235/weasel';
+import type { Zone } from '../../model/types';
+import { useGardenStore } from '../../store/gardenStore';
 
-export interface ZoneResizePose { x: number; y: number; width: number; length: number }
+export interface ZoneResizePose {
+  x: number;
+  y: number;
+  width: number;
+  length: number;
+}
 
 export function createZoneResizeAdapter(): ResizeAdapter<Zone, ZoneResizePose> {
   function getZone(id: string): Zone | undefined {

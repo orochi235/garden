@@ -1,10 +1,10 @@
 import { create } from 'zustand';
+import type { ActiveDragPreview } from '../canvas/drag/putativeDrag';
+import type { PaletteEntry } from '../components/palette/paletteData';
+import type { CellSize } from '../model/nursery';
+import type { Season } from '../model/species';
 import type { LayerId } from '../model/types';
 import type { TimePeriod } from '../utils/timeTheme';
-import type { Season } from '../model/species';
-import type { CellSize } from '../model/nursery';
-import type { PaletteEntry } from '../components/palette/paletteData';
-import type { ActiveDragPreview } from '../canvas/drag/putativeDrag';
 
 export interface AlmanacFilters {
   /** When non-empty, only seedables with one of these cell sizes are shown. */
@@ -323,10 +323,11 @@ export const useUiStore = create<UiStore>((set) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
   setPlottingTool: (tool) => set({ plottingTool: tool }),
   setThemeOverride: (period) => set({ themeOverride: period }),
-  setActiveLayer: (layer, flash) => set((s) => ({
-    activeLayer: layer,
-    layerFlashCounter: flash ? s.layerFlashCounter + 1 : s.layerFlashCounter,
-  })),
+  setActiveLayer: (layer, flash) =>
+    set((s) => ({
+      activeLayer: layer,
+      layerFlashCounter: flash ? s.layerFlashCounter + 1 : s.layerFlashCounter,
+    })),
   setLayerVisible: (layer, visible) =>
     set((state) => {
       if (!visible && state.activeLayer === layer) return state;
@@ -354,13 +355,13 @@ export const useUiStore = create<UiStore>((set) => ({
   setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),
   setCurrentTrayId: (id) => set({ currentTrayId: id }),
   setPalettePointerPayload: (payload) => set({ palettePointerPayload: payload }),
-  bumpNurseryViewResetTick: () => set((s) => ({ nurseryViewResetTick: s.nurseryViewResetTick + 1 })),
+  bumpNurseryViewResetTick: () =>
+    set((s) => ({ nurseryViewResetTick: s.nurseryViewResetTick + 1 })),
   setSeedDragCultivarId: (id) => set({ seedDragCultivarId: id }),
   setArmedCultivarId: (id) => set({ armedCultivarId: id }),
   setDragPreview: (preview) => set({ dragPreview: preview }),
   setHiddenSeedlingIds: (ids) => set({ hiddenSeedlingIds: ids }),
-  setAlmanacFilters: (patch) =>
-    set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),
+  setAlmanacFilters: (patch) => set((s) => ({ almanacFilters: { ...s.almanacFilters, ...patch } })),
   resetAlmanacFilters: () =>
     set({
       almanacFilters: { cellSizes: [], seasons: [], usdaZone: null, lastFrostDate: null },

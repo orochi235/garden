@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlantRows } from './plantsViewModel';
-import { createGarden, createStructure, createPlanting } from '../../model/types';
 import { getAllCultivars } from '../../model/cultivars';
+import { createGarden, createPlanting, createStructure } from '../../model/types';
+import { buildPlantRows } from './plantsViewModel';
 
 function gardenWithOnePlanting() {
   const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
@@ -36,8 +36,13 @@ describe('buildPlantRows', () => {
     const bed = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     garden.structures.push(bed);
     garden.plantings.push({
-      id: 'p1', parentId: bed.id, cultivarId: 'does-not-exist',
-      x: 0, y: 0, label: 'x', icon: null,
+      id: 'p1',
+      parentId: bed.id,
+      cultivarId: 'does-not-exist',
+      x: 0,
+      y: 0,
+      label: 'x',
+      icon: null,
     });
     const rows = buildPlantRows(garden, { actions: [] });
     expect(rows).toHaveLength(1);
@@ -47,9 +52,21 @@ describe('buildPlantRows', () => {
 
   it('resolves zone label as location when parent is a zone', () => {
     const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
-    const zone = { id: 'z1', x: 0, y: 0, width: 5, length: 5, color: '#fff',
-      label: 'Zone X', zIndex: 0, parentId: null, soilType: null, sunExposure: null,
-      layout: null, pattern: null };
+    const zone = {
+      id: 'z1',
+      x: 0,
+      y: 0,
+      width: 5,
+      length: 5,
+      color: '#fff',
+      label: 'Zone X',
+      zIndex: 0,
+      parentId: null,
+      soilType: null,
+      sunExposure: null,
+      layout: null,
+      pattern: null,
+    };
     garden.zones.push(zone);
     const cv = getAllCultivars()[0];
     garden.plantings.push(createPlanting({ parentId: 'z1', x: 0, y: 0, cultivarId: cv.id }));
@@ -69,8 +86,14 @@ describe('buildPlantRows', () => {
     const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
     const cv = getAllCultivars()[0];
     garden.nursery.trays.push({
-      id: 'tray1', label: 'Tray North', rows: 2, cols: 2,
-      cellSize: 'medium', cellPitchIn: 1.5, widthIn: 10, heightIn: 10,
+      id: 'tray1',
+      label: 'Tray North',
+      rows: 2,
+      cols: 2,
+      cellSize: 'medium',
+      cellPitchIn: 1.5,
+      widthIn: 10,
+      heightIn: 10,
       slots: [
         { state: 'sown', seedlingId: 's1' },
         { state: 'empty', seedlingId: null },
@@ -79,8 +102,12 @@ describe('buildPlantRows', () => {
       ],
     });
     garden.nursery.seedlings.push({
-      id: 's1', cultivarId: cv.id, trayId: 'tray1',
-      row: 0, col: 0, labelOverride: null,
+      id: 's1',
+      cultivarId: cv.id,
+      trayId: 'tray1',
+      row: 0,
+      col: 0,
+      labelOverride: null,
     });
     const rows = buildPlantRows(garden, { actions: [] });
     expect(rows).toHaveLength(1);
@@ -96,8 +123,12 @@ describe('buildPlantRows', () => {
     const garden = createGarden({ name: 't', widthFt: 10, lengthFt: 10 });
     const cv = getAllCultivars()[0];
     garden.nursery.seedlings.push({
-      id: 's1', cultivarId: cv.id, trayId: null,
-      row: null, col: null, labelOverride: null,
+      id: 's1',
+      cultivarId: cv.id,
+      trayId: null,
+      row: null,
+      col: null,
+      labelOverride: null,
     });
     const rows = buildPlantRows(garden, { actions: [] });
     expect(rows[0].location).toBe('—');

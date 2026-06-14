@@ -1,18 +1,19 @@
-import {
-  type RenderLayer,
-  PathBuilder,
-  rectPath,
-  textCommand,
-} from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
-import type { Garden } from '../../model/types';
+import { PathBuilder, type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
 import { trayInteriorOffsetIn } from '../../model/nursery';
+import type { Garden } from '../../model/types';
 import { isDebugEnabled } from '../debug';
+import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 
 type Mode = 'garden' | 'nursery';
 
-interface Bbox { x: number; y: number; w: number; h: number; label?: string }
+interface Bbox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label?: string;
+}
 
 function bboxesGarden(g: Garden): Bbox[] {
   const out: Bbox[] = [];
@@ -46,7 +47,6 @@ function bboxesNursery(g: Garden): Bbox[] {
   return out;
 }
 
-
 function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown> {
   return {
     id: 'debug-hitboxes',
@@ -76,11 +76,17 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
       const g = getGarden();
       let x: number, y: number, w: number, h: number;
       if (mode === 'garden') {
-        x = 0; y = 0; w = g.widthFt; h = g.lengthFt;
+        x = 0;
+        y = 0;
+        w = g.widthFt;
+        h = g.lengthFt;
       } else {
         const t = g.nursery.trays[0];
         if (!t) return [];
-        x = 0; y = 0; w = t.widthIn; h = t.heightIn;
+        x = 0;
+        y = 0;
+        w = t.widthIn;
+        h = t.heightIn;
       }
       const lw = 2 / Math.max(0.0001, view.scale);
       const dashSize = 4 / view.scale;
@@ -113,21 +119,33 @@ function makeAxesLayer(): RenderLayer<unknown> {
       const dot = circlePolygon(0, 0, px(4));
       const children: DrawCommand[] = [
         {
-          kind: 'path', path: xAxis,
+          kind: 'path',
+          path: xAxis,
           stroke: { paint: { fill: 'solid', color: '#ff4040' }, width: lw },
         },
         {
-          kind: 'path', path: yAxis,
+          kind: 'path',
+          path: yAxis,
           stroke: { paint: { fill: 'solid', color: '#40ff40' }, width: lw },
         },
         {
-          kind: 'path', path: dot,
+          kind: 'path',
+          path: dot,
           fill: { fill: 'solid', color: '#ffffff' },
         },
         // Labels — flagged: text rendering requires registerFont() wired at app boot.
-        textCommand(100 - px(20), -px(4), '+x', { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } }),
-        textCommand(px(4), 100 - px(4), '+y', { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } }),
-        textCommand(px(6), -px(6), '(0,0)', { fontSize: px(12), fill: { fill: 'solid', color: '#ffffff' } }),
+        textCommand(100 - px(20), -px(4), '+x', {
+          fontSize: px(12),
+          fill: { fill: 'solid', color: '#ffffff' },
+        }),
+        textCommand(px(4), 100 - px(4), '+y', {
+          fontSize: px(12),
+          fill: { fill: 'solid', color: '#ffffff' },
+        }),
+        textCommand(px(6), -px(6), '(0,0)', {
+          fontSize: px(12),
+          fill: { fill: 'solid', color: '#ffffff' },
+        }),
       ];
       return [{ kind: 'group', transform: viewToMat3(view), children }];
     },
@@ -143,11 +161,15 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
       const g = getGarden();
       let step: number, w: number, h: number;
       if (mode === 'garden') {
-        step = g.gridCellSizeFt; w = g.widthFt; h = g.lengthFt;
+        step = g.gridCellSizeFt;
+        w = g.widthFt;
+        h = g.lengthFt;
       } else {
         const t = g.nursery.trays[0];
         if (!t) return [];
-        step = t.cellPitchIn; w = t.widthIn; h = t.heightIn;
+        step = t.cellPitchIn;
+        w = t.widthIn;
+        h = t.heightIn;
       }
       const lw = 1 / Math.max(0.0001, view.scale);
       const stroke = { paint: { fill: 'solid' as const, color: 'rgba(255,255,0,0.3)' }, width: lw };

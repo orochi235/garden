@@ -1,19 +1,13 @@
-import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand, circlePolygon } from '../util/weaselLocal';
+import { getCultivar } from '../../model/cultivars';
+import { type Tray, trayInteriorOffsetIn } from '../../model/nursery';
+import { cultivarHasTrayWarning, SEEDLING_WARNING_COLOR } from '../../model/seedlingWarnings';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import {
-  getTrayDropTargets,
-  hitTrayDropTarget,
-} from '../layouts/trayDropTargets';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
-import { trayInteriorOffsetIn, type Tray } from '../../model/nursery';
-import { getCultivar } from '../../model/cultivars';
-import {
-  cultivarHasTrayWarning,
-  SEEDLING_WARNING_COLOR,
-} from '../../model/seedlingWarnings';
+import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
 import { plantDrawCommands } from '../plantRenderers';
+import { circlePolygon, type DrawCommand } from '../util/weaselLocal';
+import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Palette → nursery tray drag (sow cell / fill row / fill column / fill tray).
@@ -32,7 +26,14 @@ export type SeedFillPutative =
   | { trayId: string; cultivarId: string; scope: 'all'; replace?: boolean }
   | { trayId: string; cultivarId: string; scope: 'row'; index: number; replace?: boolean }
   | { trayId: string; cultivarId: string; scope: 'col'; index: number; replace?: boolean }
-  | { trayId: string; cultivarId: string; scope: 'cell'; row: number; col: number; replace?: boolean };
+  | {
+      trayId: string;
+      cultivarId: string;
+      scope: 'cell';
+      row: number;
+      col: number;
+      replace?: boolean;
+    };
 
 export const SEED_FILL_TRAY_DRAG_KIND = 'seed-fill-tray';
 
@@ -148,10 +149,7 @@ function pickTrayAtWorld(world: { x: number; y: number }): Tray | null {
   return ss.trays.find((t) => t.id === currentTrayId) ?? null;
 }
 
-function worldToTrayLocal(
-  world: { x: number; y: number },
-  tray: Tray,
-): { x: number; y: number } {
+function worldToTrayLocal(world: { x: number; y: number }, tray: Tray): { x: number; y: number } {
   const ss = useGardenStore.getState().garden.nursery;
   const o = trayWorldOrigin(tray, ss);
   return { x: world.x - o.x, y: world.y - o.y };

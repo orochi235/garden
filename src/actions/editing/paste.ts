@@ -8,5 +8,7 @@ export const pasteAction: ActionDescriptor = {
   targets: ['none'],
   transient: true,
   canExecute: (ctx) => !ctx.clipboard.isEmpty(),
-  execute: (ctx) => { ctx.clipboard.paste(); },
+  execute: (ctx) => {
+    ctx.clipboard.paste();
+  },
 };

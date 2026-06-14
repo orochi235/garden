@@ -1,8 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import {
-  createSelectionHandlesLayer,
-  createAllHandlesLayer,
-} from './selectionLayersWorld';
+import { describe, expect, it } from 'vitest';
+import { createAllHandlesLayer, createSelectionHandlesLayer } from './selectionLayersWorld';
 import type { GetUi } from './worldLayerData';
 
 function ui(over: Partial<ReturnType<GetUi>> = {}): ReturnType<GetUi> {
@@ -21,7 +18,11 @@ function ui(over: Partial<ReturnType<GetUi>> = {}): ReturnType<GetUi> {
 
 describe('createSelectionHandlesLayer', () => {
   it('declares space=screen so handles stay sharp at any zoom', () => {
-    const layer = createSelectionHandlesLayer(() => [], () => [], () => ui());
+    const layer = createSelectionHandlesLayer(
+      () => [],
+      () => [],
+      () => ui(),
+    );
     expect(layer.space).toBe('screen');
   });
 });

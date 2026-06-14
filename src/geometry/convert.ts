@@ -1,6 +1,6 @@
 import type { Structure, Zone } from '../model/types';
+import { ellipsePath, rectPath } from './shapes';
 import type { ShapePath } from './types';
-import { rectPath, ellipsePath } from './shapes';
 
 /** Convert a Structure to a ShapePath based on its shape property. */
 export function structureToShape(s: Structure): ShapePath {

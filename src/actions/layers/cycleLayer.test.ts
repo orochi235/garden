@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useUiStore } from '../../store/uiStore';
-import { cycleLayerDownAction, cycleLayerUpAction } from './cycleLayer';
 import type { ActionContext } from '../types';
+import { cycleLayerDownAction, cycleLayerUpAction } from './cycleLayer';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
+const ctx: ActionContext = {
+  clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true },
+};
 
 describe('cycleLayerDownAction', () => {
-  beforeEach(() => { useUiStore.getState().reset(); });
+  beforeEach(() => {
+    useUiStore.getState().reset();
+  });
 
   it('cycles down from structures to zones', () => {
     useUiStore.getState().setActiveLayer('structures');
@@ -23,7 +27,9 @@ describe('cycleLayerDownAction', () => {
 });
 
 describe('cycleLayerUpAction', () => {
-  beforeEach(() => { useUiStore.getState().reset(); });
+  beforeEach(() => {
+    useUiStore.getState().reset();
+  });
 
   it('cycles up from zones to structures', () => {
     useUiStore.getState().setActiveLayer('zones');

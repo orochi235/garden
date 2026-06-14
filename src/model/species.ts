@@ -1,6 +1,6 @@
+import speciesData from '../data/species.json';
 import type { CultivarCategory } from './cultivars';
 import type { SeedStartingFields } from './floraSeedStarting';
-import speciesData from '../data/species.json';
 
 export type Season = 'cool' | 'warm';
 

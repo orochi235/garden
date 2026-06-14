@@ -1,8 +1,8 @@
+import { asNodeId, createSetSelectionOp } from '@orochi235/weasel';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createAreaSelectAdapter } from './areaSelect';
-import { asNodeId, createSetSelectionOp } from '@orochi235/weasel';
 
 describe('createAreaSelectAdapter', () => {
   beforeEach(() => {

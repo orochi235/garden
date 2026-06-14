@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
-import { useEricWheelZoomTool } from './useEricWheelZoomTool';
+import { renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import type { View } from '../layers/worldLayerData';
+import { useEricWheelZoomTool } from './useEricWheelZoomTool';
 
 function makeCtx(
   view: View,
@@ -27,9 +27,16 @@ function makeCtx(
 function wheel(init: Partial<WheelEventInit>): WheelEvent {
   const e = new Event('wheel') as WheelEvent;
   Object.assign(e, {
-    deltaX: 0, deltaY: 0, deltaZ: 0, deltaMode: 0,
-    clientX: 0, clientY: 0,
-    ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
+    deltaX: 0,
+    deltaY: 0,
+    deltaZ: 0,
+    deltaMode: 0,
+    clientX: 0,
+    clientY: 0,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    altKey: false,
     preventDefault: vi.fn(),
     ...init,
   });
@@ -49,11 +56,12 @@ describe('useEricWheelZoomTool', () => {
   it('zooms about the cursor, keeping the world point under the cursor invariant', () => {
     const { result } = renderHook(() => useEricWheelZoomTool());
     const setView = vi.fn();
-    const ctx = makeCtx(
-      { x: 0, y: 0, scale: 50 },
-      setView,
-      { x: 10, y: 5, width: 400, height: 300 } as Partial<DOMRect>,
-    );
+    const ctx = makeCtx({ x: 0, y: 0, scale: 50 }, setView, {
+      x: 10,
+      y: 5,
+      width: 400,
+      height: 300,
+    } as Partial<DOMRect>);
     const e = wheel({ deltaY: -100, clientX: 110, clientY: 105 });
     result.current.wheel!.onWheel!(e, ctx);
     const next = setView.mock.calls[0][0] as View;

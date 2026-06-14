@@ -7,5 +7,7 @@ export const copyAction: ActionDescriptor = {
   scope: 'canvas',
   targets: ['selection'],
   transient: true,
-  execute: (ctx) => { ctx.clipboard.copy(); },
+  execute: (ctx) => {
+    ctx.clipboard.copy();
+  },
 };

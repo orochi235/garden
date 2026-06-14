@@ -9,9 +9,9 @@
  * Gated on `import.meta.env.DEV` so the production bundle short-circuits.
  */
 
-import { deserializeGarden } from '../utils/file';
 import { useGardenStore } from '../store/gardenStore';
-import { useUiStore, type AppMode } from '../store/uiStore';
+import { type AppMode, useUiStore } from '../store/uiStore';
+import { deserializeGarden } from '../utils/file';
 
 const VALID_MODES: ReadonlySet<AppMode> = new Set(['garden', 'nursery']);
 // Legacy URL value (pre-rename) — coerced to `nursery` if present.

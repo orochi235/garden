@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createStructureMoveAdapter } from './structureMove';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { createStructureMoveAdapter } from './structureMove';
 
 describe('structureMoveAdapter', () => {
   beforeEach(() => {

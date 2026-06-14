@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createGardenSceneAdapter } from './gardenScene';
-import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import type { Op } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { createGardenSceneAdapter } from './gardenScene';
 
 describe('gardenSceneAdapter', () => {
   beforeEach(() => {
@@ -11,7 +11,9 @@ describe('gardenSceneAdapter', () => {
 
   function setup() {
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 5, y: 5, width: 4, length: 4 });
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, length: 4 });
+    useGardenStore
+      .getState()
+      .addStructure({ type: 'raised-bed', x: 20, y: 20, width: 4, length: 4 });
     useGardenStore.getState().addZone({ x: 30, y: 30, width: 6, length: 6 });
     const [bed, bed2] = useGardenStore.getState().garden.structures;
     const [zone] = useGardenStore.getState().garden.zones;
@@ -126,7 +128,9 @@ describe('gardenSceneAdapter', () => {
 
     const noopOp: Op = {
       apply() {},
-      invert() { return noopOp; },
+      invert() {
+        return noopOp;
+      },
     };
     a.applyBatch!([noopOp, noopOp, noopOp], 'Multi');
     expect(checkpoints).toBe(1);
@@ -134,8 +138,12 @@ describe('gardenSceneAdapter', () => {
     // And applies all ops (verify with a real mutating op).
     let applies = 0;
     const countingOp: Op = {
-      apply() { applies += 1; },
-      invert() { return countingOp; },
+      apply() {
+        applies += 1;
+      },
+      invert() {
+        return countingOp;
+      },
     };
     a.applyBatch!([countingOp, countingOp, countingOp, countingOp], 'Multi2');
     expect(applies).toBe(4);
@@ -164,8 +172,18 @@ describe('gardenSceneAdapter', () => {
   it('getBounds returns world AABB for each kind', () => {
     const { bed, zone, planting } = setup();
     const a = createGardenSceneAdapter();
-    expect(a.getBounds(bed.id)).toEqual({ x: bed.x, y: bed.y, width: bed.width, length: bed.length });
-    expect(a.getBounds(zone.id)).toEqual({ x: zone.x, y: zone.y, width: zone.width, length: zone.length });
+    expect(a.getBounds(bed.id)).toEqual({
+      x: bed.x,
+      y: bed.y,
+      width: bed.width,
+      length: bed.length,
+    });
+    expect(a.getBounds(zone.id)).toEqual({
+      x: zone.x,
+      y: zone.y,
+      width: zone.width,
+      length: zone.length,
+    });
     const pb = a.getBounds(planting.id);
     expect(pb).not.toBeNull();
     expect(pb!.width).toBeGreaterThan(0);

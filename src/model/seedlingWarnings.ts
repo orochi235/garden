@@ -1,5 +1,5 @@
-import type { Seedling, Tray } from './nursery';
 import { getCultivar } from './cultivars';
+import type { Seedling, Tray } from './nursery';
 
 export type SeedlingWarningKind = 'wrong-cell-size';
 

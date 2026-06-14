@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { NurseryState, Seedling } from '../model/nursery';
 import { createTray, trayInteriorOffsetIn } from '../model/nursery';
+import { trayWorldOrigin } from './adapters/nurseryScene';
 import {
   cellCenterInches,
   findSeedlingsInRect,
   hitTestCellAcrossTrays,
   hitTestCellInches,
 } from './nurseryHitTest';
-import { trayWorldOrigin } from './adapters/nurseryScene';
-import type { Seedling, NurseryState } from '../model/nursery';
 
 const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
 
@@ -20,8 +20,10 @@ describe('hitTestCellInches', () => {
   });
 
   it('hits cell (1,2)', () => {
-    expect(hitTestCellInches(tray, off.x + 2 * p + 0.1, off.y + 1 * p + 0.1))
-      .toEqual({ row: 1, col: 2 });
+    expect(hitTestCellInches(tray, off.x + 2 * p + 0.1, off.y + 1 * p + 0.1)).toEqual({
+      row: 1,
+      col: 2,
+    });
   });
 
   it('returns null outside the grid', () => {
@@ -66,14 +68,23 @@ describe('findSeedlingsInRect', () => {
   });
 
   it('returns empty when no centers are inside', () => {
-    expect(findSeedlingsInRect([tray], seedlings, { x: -10, y: -10, width: 1, height: 1 }))
-      .toEqual([]);
+    expect(findSeedlingsInRect([tray], seedlings, { x: -10, y: -10, width: 1, height: 1 })).toEqual(
+      [],
+    );
   });
 
   it('skips seedlings without tray placement', () => {
-    const orphan: Seedling = { id: 'x', cultivarId: 'c', trayId: null, row: null, col: null, labelOverride: null };
-    expect(findSeedlingsInRect([tray], [orphan], { x: -1000, y: -1000, width: 9999, height: 9999 }))
-      .toEqual([]);
+    const orphan: Seedling = {
+      id: 'x',
+      cultivarId: 'c',
+      trayId: null,
+      row: null,
+      col: null,
+      labelOverride: null,
+    };
+    expect(
+      findSeedlingsInRect([tray], [orphan], { x: -1000, y: -1000, width: 9999, height: 9999 }),
+    ).toEqual([]);
   });
 });
 
@@ -105,8 +116,7 @@ describe('world-coord conversion', () => {
     const off = trayInteriorOffsetIn(t2);
     const worldX = o2.x + off.x + 0.001; // just past origin → col 0
     const worldY = o2.y + off.y + 0.001; // just past origin → row 0
-    expect(hitTestCellInches(t2, worldX - o2.x, worldY - o2.y))
-      .toEqual({ row: 0, col: 0 });
+    expect(hitTestCellInches(t2, worldX - o2.x, worldY - o2.y)).toEqual({ row: 0, col: 0 });
   });
 
   it('miss in the gutter between t1 and t2', () => {
@@ -145,8 +155,9 @@ describe('world-coord conversion', () => {
     const p = t2.cellPitchIn;
     const worldX = o2.x + off.x + 1.5 * p;
     const worldY = o2.y + off.y + 0.5 * p;
-    expect(hitTestCellAcrossTrays([t1, t2], worldX, worldY, (t) => trayWorldOrigin(t, ss)))
-      .toEqual({ trayId: t2.id, row: 0, col: 1 });
+    expect(hitTestCellAcrossTrays([t1, t2], worldX, worldY, (t) => trayWorldOrigin(t, ss))).toEqual(
+      { trayId: t2.id, row: 0, col: 1 },
+    );
   });
 
   it('hitTestCellAcrossTrays returns t1 when point is on t1', () => {
@@ -154,13 +165,15 @@ describe('world-coord conversion', () => {
     const p = t1.cellPitchIn;
     const worldX = off.x + 0.5 * p;
     const worldY = off.y + 0.5 * p;
-    expect(hitTestCellAcrossTrays([t1, t2], worldX, worldY, (t) => trayWorldOrigin(t, ss)))
-      .toEqual({ trayId: t1.id, row: 0, col: 0 });
+    expect(hitTestCellAcrossTrays([t1, t2], worldX, worldY, (t) => trayWorldOrigin(t, ss))).toEqual(
+      { trayId: t1.id, row: 0, col: 0 },
+    );
   });
 
   it('hitTestCellAcrossTrays returns null in inter-tray gutter', () => {
-    expect(hitTestCellAcrossTrays([t1, t2], 0, t1.heightIn + 0.5, (t) => trayWorldOrigin(t, ss)))
-      .toBeNull();
+    expect(
+      hitTestCellAcrossTrays([t1, t2], 0, t1.heightIn + 0.5, (t) => trayWorldOrigin(t, ss)),
+    ).toBeNull();
   });
 
   it('findSeedlingsInRect without origin fn: legacy single-tray behavior treats all trays at (0,0)', () => {

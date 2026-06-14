@@ -1,5 +1,5 @@
-import { useUiStore } from '../store/uiStore';
 import { useGardenStore } from '../store/gardenStore';
+import { useUiStore } from '../store/uiStore';
 
 /** Returns true when the entire garden is outside the visible canvas area. */
 export function useGardenOffscreen(canvasWidth: number, canvasHeight: number): boolean {

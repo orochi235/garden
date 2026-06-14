@@ -1,4 +1,4 @@
-import { type RenderLayer, PathBuilder } from '@orochi235/weasel';
+import { PathBuilder, type RenderLayer } from '@orochi235/weasel';
 import type { DrawCommand } from '../util/weaselLocal';
 import type { LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
@@ -29,8 +29,14 @@ function createOriginLayer(meta: LayerDescriptor): RenderLayer<unknown> {
       const oy = (0 - view.y) * view.scale;
       const r = 4;
       const stroke = { paint: { fill: 'solid' as const, color: 'rgba(0,0,0,0.3)' }, width: 1 };
-      const horiz = new PathBuilder().moveTo(ox - r, oy).lineTo(ox + r, oy).build();
-      const vert = new PathBuilder().moveTo(ox, oy - r).lineTo(ox, oy + r).build();
+      const horiz = new PathBuilder()
+        .moveTo(ox - r, oy)
+        .lineTo(ox + r, oy)
+        .build();
+      const vert = new PathBuilder()
+        .moveTo(ox, oy - r)
+        .lineTo(ox, oy + r)
+        .build();
       return [
         { kind: 'path', path: horiz, stroke },
         { kind: 'path', path: vert, stroke },

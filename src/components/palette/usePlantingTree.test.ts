@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlantingTree } from './usePlantingTree';
 import type { PaletteEntry } from './paletteData';
+import { buildPlantingTree } from './usePlantingTree';
 
-const makeEntry = (id: string, speciesId: string, speciesName: string, varietyLabel: string, color = '#000'): PaletteEntry => ({
+const makeEntry = (
+  id: string,
+  speciesId: string,
+  speciesName: string,
+  varietyLabel: string,
+  color = '#000',
+): PaletteEntry => ({
   id,
   name: `${speciesName}${varietyLabel !== speciesName ? ', ' + varietyLabel : ''}`,
   category: 'plantings',
@@ -62,9 +68,7 @@ describe('buildPlantingTree', () => {
     const tree = buildPlantingTree(entries);
     expect(tree[0].kind).toBe('group');
     if (tree[0].kind === 'group') {
-      expect(tree[0].children.map((c) => c.entry.id)).toEqual([
-        'black-krim', 'cherokee',
-      ]);
+      expect(tree[0].children.map((c) => c.entry.id)).toEqual(['black-krim', 'cherokee']);
     }
   });
 

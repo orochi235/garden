@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { CanvasNewPrototype } from './CanvasNewPrototype';
 
 beforeAll(() => {

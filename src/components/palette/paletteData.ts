@@ -1,4 +1,4 @@
-import { getAllCultivars, type Cultivar } from '../../model/cultivars';
+import { type Cultivar, getAllCultivars } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 
 export interface PaletteEntry {
@@ -141,4 +141,3 @@ export const categories = [
   { id: 'zones', label: 'Zones' },
   { id: 'plantings', label: 'Plantings' },
 ] as const;
-

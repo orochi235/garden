@@ -2,17 +2,8 @@ import { useMemo, useState } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/ObjectPalette.module.css';
-import {
-  PaletteItem,
-  PlantingLeafRow,
-  PlantingParentRow,
-  PlantingChildRow,
-} from './PaletteItem';
-import {
-  buildPaletteItems,
-  categories,
-  type PaletteEntry,
-} from './paletteData';
+import { PaletteItem, PlantingChildRow, PlantingLeafRow, PlantingParentRow } from './PaletteItem';
+import { buildPaletteItems, categories, type PaletteEntry } from './paletteData';
 import { usePlantingTree } from './usePlantingTree';
 
 interface Props {
@@ -55,7 +46,15 @@ export function ObjectPalette({ onDragBegin }: Props) {
                   <div className={styles.categoryLabel}>{cat.label}</div>
                   <div className={styles.emptyMessage}>
                     Your collection is empty.{' '}
-                    <a href="#" onClick={(e) => { e.preventDefault(); setEditorOpen(true); }}>Edit Collection</a>
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setEditorOpen(true);
+                      }}
+                    >
+                      Edit Collection
+                    </a>
                   </div>
                 </div>
               );
@@ -110,11 +109,7 @@ export function ObjectPalette({ onDragBegin }: Props) {
               <div className={styles.categoryLabel}>{cat.label}</div>
               <div className={styles.itemGrid}>
                 {items.map((item) => (
-                  <PaletteItem
-                    key={item.id}
-                    entry={item}
-                    onDragBegin={onDragBegin}
-                  />
+                  <PaletteItem key={item.id} entry={item} onDragBegin={onDragBegin} />
                 ))}
               </div>
             </div>

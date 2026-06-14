@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createZoneMoveAdapter } from './zoneMove';
-import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createTransformOp } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { createZoneMoveAdapter } from './zoneMove';
 
 describe('zoneMoveAdapter', () => {
   beforeEach(() => {
@@ -36,7 +36,13 @@ describe('zoneMoveAdapter', () => {
     const a = createZoneMoveAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     a.applyBatch!(
-      [createTransformOp({ id: z.id, from: { x: 0, y: 0, widthFt: 5, lengthFt: 5 }, to: { x: 3, y: 3, widthFt: 5, lengthFt: 5 } })],
+      [
+        createTransformOp({
+          id: z.id,
+          from: { x: 0, y: 0, widthFt: 5, lengthFt: 5 },
+          to: { x: 3, y: 3, widthFt: 5, lengthFt: 5 },
+        }),
+      ],
       'Move',
     );
     expect(useGardenStore.getState().canUndo()).toBe(true);

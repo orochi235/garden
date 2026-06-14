@@ -1,5 +1,5 @@
-import { getSlots, getGridCells } from '../model/layout';
 import { getCultivar } from '../model/cultivars';
+import { getGridCells, getSlots } from '../model/layout';
 import type { Garden, Planting } from '../model/types';
 import { getPlantableBounds } from '../model/types';
 import { plantingWorldPose } from '../utils/plantingPose';
@@ -44,14 +44,16 @@ export function findSnapContainer(
   // - 'cell-grid': internal drops are the whole point — the user picks any
   //   cell. Don't exclude.
   const excludeParentId = (() => {
-    const parent = garden.structures.find((s) => s.id === planting.parentId)
-      ?? garden.zones.find((z) => z.id === planting.parentId);
+    const parent =
+      garden.structures.find((s) => s.id === planting.parentId) ??
+      garden.zones.find((z) => z.id === planting.parentId);
     if (!parent) return planting.parentId;
     if (parent.layout?.type === 'cell-grid') return null;
     const { x: pw, y: ph } = plantingWorldPose(garden, planting);
-    const inside = 'shape' in parent && parent.shape === 'circle'
-      ? pointInEllipse(pw, ph, parent.x, parent.y, parent.width, parent.length)
-      : pointInRect(pw, ph, parent.x, parent.y, parent.width, parent.length);
+    const inside =
+      'shape' in parent && parent.shape === 'circle'
+        ? pointInEllipse(pw, ph, parent.x, parent.y, parent.width, parent.length)
+        : pointInRect(pw, ph, parent.x, parent.y, parent.width, parent.length);
     return inside ? planting.parentId : null;
   })();
 
@@ -119,9 +121,10 @@ export function findSnapContainer(
   // Check capacity and find first available slot for each candidate
   for (const c of candidates) {
     // Is the cursor within the container bounds or within attraction radius of center?
-    const insideBounds = c.shape === 'circle'
-      ? pointInEllipse(worldX, worldY, c.x, c.y, c.width, c.length)
-      : pointInRect(worldX, worldY, c.x, c.y, c.width, c.length);
+    const insideBounds =
+      c.shape === 'circle'
+        ? pointInEllipse(worldX, worldY, c.x, c.y, c.width, c.length)
+        : pointInRect(worldX, worldY, c.x, c.y, c.width, c.length);
     if (!insideBounds && c.distance > Math.max(c.width, c.length) / 2 + attractionRadius) {
       continue;
     }
@@ -147,7 +150,14 @@ export function findSnapContainer(
 }
 
 /** True if a circle (cx,cy,r) overlaps an AABB cell centered at (cellCx,cellCy) with half-width halfCell. */
-function circleIntersectsCell(cx: number, cy: number, r: number, cellCx: number, cellCy: number, halfCell: number): boolean {
+function circleIntersectsCell(
+  cx: number,
+  cy: number,
+  r: number,
+  cellCx: number,
+  cellCy: number,
+  halfCell: number,
+): boolean {
   const nearX = Math.max(cellCx - halfCell, Math.min(cx, cellCx + halfCell));
   const nearY = Math.max(cellCy - halfCell, Math.min(cy, cellCy + halfCell));
   const dx = cx - nearX;
@@ -233,7 +243,14 @@ function pointInRect(px: number, py: number, x: number, y: number, w: number, h:
   return px >= x && px <= x + w && py >= y && py <= y + h;
 }
 
-function pointInEllipse(px: number, py: number, x: number, y: number, w: number, h: number): boolean {
+function pointInEllipse(
+  px: number,
+  py: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): boolean {
   const cx = x + w / 2;
   const cy = y + h / 2;
   const rx = w / 2;

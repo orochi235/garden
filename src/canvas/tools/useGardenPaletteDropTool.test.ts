@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useRef } from 'react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { PaletteEntry } from '../../components/palette/paletteData';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { PaletteEntry } from '../../components/palette/paletteData';
 import { useGardenPaletteDropTool } from './useGardenPaletteDropTool';
 
 /**
@@ -17,8 +17,14 @@ import { useGardenPaletteDropTool } from './useGardenPaletteDropTool';
 function dispatchPointer(type: string, init: PointerEventInit) {
   const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
   Object.assign(ev, {
-    clientX: 0, clientY: 0, pointerId: 1, button: 0,
-    shiftKey: false, ctrlKey: false, altKey: false, metaKey: false,
+    clientX: 0,
+    clientY: 0,
+    pointerId: 1,
+    button: 0,
+    shiftKey: false,
+    ctrlKey: false,
+    altKey: false,
+    metaKey: false,
     ...init,
   });
   document.dispatchEvent(ev);
@@ -29,10 +35,15 @@ function makeContainer(rect: { left: number; top: number; width: number; height:
   const el = document.createElement('div');
   Object.defineProperty(el, 'getBoundingClientRect', {
     value: () => ({
-      left: rect.left, top: rect.top,
-      right: rect.left + rect.width, bottom: rect.top + rect.height,
-      width: rect.width, height: rect.height,
-      x: rect.left, y: rect.top, toJSON: () => ({}),
+      left: rect.left,
+      top: rect.top,
+      right: rect.left + rect.width,
+      bottom: rect.top + rect.height,
+      width: rect.width,
+      height: rect.height,
+      x: rect.left,
+      y: rect.top,
+      toJSON: () => ({}),
     }),
   });
   document.body.appendChild(el);

@@ -1,17 +1,11 @@
-import { useMemo } from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
+import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { hitTestCellInches } from '../nurseryHitTest';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
-import {
-  getTrayDropTargets,
-  hitTrayDropTarget,
-} from '../layouts/trayDropTargets';
-import {
-  SEED_FILL_TRAY_DRAG_KIND,
-  type SeedFillPutative,
-} from '../drag/seedFillTrayDrag';
+import { SEED_FILL_TRAY_DRAG_KIND, type SeedFillPutative } from '../drag/seedFillTrayDrag';
+import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
+import { hitTestCellInches } from '../nurseryHitTest';
 
 export interface FillTrayScratch {
   active: boolean;
@@ -54,12 +48,16 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
         drag: {
           onStart: (_e, ctx) => (ctx.scratch.active ? 'claim' : 'pass'),
           onMove: (_e, ctx) => {
-            if (!ctx.scratch.active || !ctx.scratch.trayId || !ctx.scratch.cultivarId) return 'pass';
-            const tray = useGardenStore.getState().garden.nursery.trays.find(
-              (t) => t.id === ctx.scratch.trayId,
-            );
+            if (!ctx.scratch.active || !ctx.scratch.trayId || !ctx.scratch.cultivarId)
+              return 'pass';
+            const tray = useGardenStore
+              .getState()
+              .garden.nursery.trays.find((t) => t.id === ctx.scratch.trayId);
             if (!tray) return 'claim';
-            const hit = hitTrayDropTarget(getTrayDropTargets(tray), { x: ctx.worldX, y: ctx.worldY });
+            const hit = hitTrayDropTarget(getTrayDropTargets(tray), {
+              x: ctx.worldX,
+              y: ctx.worldY,
+            });
             if (!hit) {
               ctx.scratch.putative = null;
               useUiStore.getState().setDragPreview(null);
@@ -99,7 +97,9 @@ export function useFillTrayTool(): Tool<FillTrayScratch> {
                 gs.fillColumn(putative.trayId, putative.index, putative.cultivarId, { replace });
                 break;
               case 'cell':
-                gs.sowCell(putative.trayId, putative.row, putative.col, putative.cultivarId, { replace });
+                gs.sowCell(putative.trayId, putative.row, putative.col, putative.cultivarId, {
+                  replace,
+                });
                 break;
             }
             return 'claim';

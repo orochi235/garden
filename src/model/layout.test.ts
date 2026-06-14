@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { getSlots, getGridCells, type ParentBounds } from './layout';
+import { describe, expect, it } from 'vitest';
+import { getGridCells, getSlots, type ParentBounds } from './layout';
 
 const rect: ParentBounds = { x: 0, y: 0, width: 4, length: 4, shape: 'rectangle' };
 
@@ -17,10 +17,19 @@ describe('getSlots – single', () => {
 describe('getSlots – snap-points', () => {
   it('returns stored points offset by bounds origin', () => {
     const result = getSlots(
-      { type: 'snap-points', points: [{ x: 1, y: 1 }, { x: 3, y: 3 }] },
+      {
+        type: 'snap-points',
+        points: [
+          { x: 1, y: 1 },
+          { x: 3, y: 3 },
+        ],
+      },
       rect,
     );
-    expect(result).toEqual([{ x: 1, y: 1 }, { x: 3, y: 3 }]);
+    expect(result).toEqual([
+      { x: 1, y: 1 },
+      { x: 3, y: 3 },
+    ]);
   });
 
   it('returns empty list for no points', () => {

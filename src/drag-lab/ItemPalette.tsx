@@ -1,7 +1,7 @@
+import { type DragPayload, useDragHandle } from '@orochi235/weasel';
 import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';
-import { useDragHandle, type DragPayload } from '@orochi235/weasel';
 
 function makeCircleGhost(radiusFt: number, color: string): HTMLElement {
   const diamPx = Math.max(Math.round(radiusFt * 2 * 40), 16);
@@ -35,10 +35,18 @@ export function ItemPalette({ mode, onSetMode }: ItemPaletteProps) {
   return (
     <div className="dl-palette">
       <div className="dl-palette-tabs">
-        <button type="button" className={mode === 'generic' ? 'active' : ''} onClick={() => onSetMode('generic')}>
+        <button
+          type="button"
+          className={mode === 'generic' ? 'active' : ''}
+          onClick={() => onSetMode('generic')}
+        >
           Generic
         </button>
-        <button type="button" className={mode === 'cultivar' ? 'active' : ''} onClick={() => onSetMode('cultivar')}>
+        <button
+          type="button"
+          className={mode === 'cultivar' ? 'active' : ''}
+          onClick={() => onSetMode('cultivar')}
+        >
           Cultivars
         </button>
       </div>
@@ -47,13 +55,7 @@ export function ItemPalette({ mode, onSetMode }: ItemPaletteProps) {
         <div className="dl-palette-circles">
           {GENERIC_ITEMS.map((gi) => {
             const sizePx = Math.max(16, gi.radiusFt * 2 * 40);
-            return (
-              <GenericPaletteItem
-                key={gi.color}
-                gi={gi}
-                sizePx={sizePx}
-              />
-            );
+            return <GenericPaletteItem key={gi.color} gi={gi} sizePx={sizePx} />;
           })}
         </div>
       )}
@@ -69,7 +71,13 @@ export function ItemPalette({ mode, onSetMode }: ItemPaletteProps) {
   );
 }
 
-function GenericPaletteItem({ gi, sizePx }: { gi: { color: string; radiusFt: number }; sizePx: number }) {
+function GenericPaletteItem({
+  gi,
+  sizePx,
+}: {
+  gi: { color: string; radiusFt: number };
+  sizePx: number;
+}) {
   const getPayload = useCallback((): DragPayload => {
     const item: LabItem = {
       id: crypto.randomUUID(),
@@ -101,7 +109,11 @@ function GenericPaletteItem({ gi, sizePx }: { gi: { color: string; radiusFt: num
   );
 }
 
-function CultivarPaletteItem({ cultivar }: { cultivar: ReturnType<typeof getAllCultivars>[number] }) {
+function CultivarPaletteItem({
+  cultivar,
+}: {
+  cultivar: ReturnType<typeof getAllCultivars>[number];
+}) {
   const getPayload = useCallback((): DragPayload => {
     const item: LabItem = {
       id: crypto.randomUUID(),
@@ -120,11 +132,7 @@ function CultivarPaletteItem({ cultivar }: { cultivar: ReturnType<typeof getAllC
   });
 
   return (
-    <div
-      className="dl-palette-cultivar"
-      style={handle.style}
-      onPointerDown={handle.onPointerDown}
-    >
+    <div className="dl-palette-cultivar" style={handle.style} onPointerDown={handle.onPointerDown}>
       <span className="dl-cultivar-dot" style={{ background: cultivar.color }} />
       <span className="dl-cultivar-name">{cultivar.name}</span>
       <span className="dl-cultivar-spacing">{cultivar.spacingFt}ft</span>

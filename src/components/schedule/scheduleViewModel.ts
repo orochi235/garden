@@ -45,7 +45,20 @@ export function groupByPlant(actions: ResolvedAction[]): PlantGroup[] {
   return [...byId.values()];
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 /** Format an ISO date as "Mon D" (year omitted; the schedule UI carries year context). */
 export function formatDate(iso: string): string {

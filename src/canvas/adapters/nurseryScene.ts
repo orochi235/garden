@@ -1,14 +1,25 @@
 import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
+import type { NurseryState, Seedling, Tray } from '../../model/nursery';
+import { getCell } from '../../model/nursery';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { Seedling, NurseryState, Tray } from '../../model/nursery';
-import { getCell } from '../../model/nursery';
 import { cellCenterInches, hitTestCellInches } from '../nurseryHitTest';
 
-export interface ScenePose { x: number; y: number }
+export interface ScenePose {
+  x: number;
+  y: number;
+}
 
-export interface TrayNode { kind: 'tray'; id: string; data: Tray }
-export interface SeedlingNode { kind: 'seedling'; id: string; data: Seedling }
+export interface TrayNode {
+  kind: 'tray';
+  id: string;
+  data: Tray;
+}
+export interface SeedlingNode {
+  kind: 'seedling';
+  id: string;
+  data: Seedling;
+}
 export type SeedNode = TrayNode | SeedlingNode;
 
 export type NurserySceneAdapter = MoveAdapter<SeedNode, ScenePose> & {

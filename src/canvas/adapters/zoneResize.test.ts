@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { createTransformOp } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createZoneResizeAdapter } from './zoneResize';
-import { createTransformOp } from '@orochi235/weasel';
 
 describe('createZoneResizeAdapter', () => {
   beforeEach(() => {
@@ -28,7 +28,13 @@ describe('createZoneResizeAdapter', () => {
     const a = createZoneResizeAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     a.applyBatch!(
-      [createTransformOp({ id: z.id, from: { x: z.x, y: z.y, width: z.width, length: z.length }, to: { x: z.x, y: z.y, width: 10, length: 10 } })],
+      [
+        createTransformOp({
+          id: z.id,
+          from: { x: z.x, y: z.y, width: z.width, length: z.length },
+          to: { x: z.x, y: z.y, width: 10, length: 10 },
+        }),
+      ],
       'Resize',
     );
     expect(useGardenStore.getState().garden.zones[0].width).toBe(10);

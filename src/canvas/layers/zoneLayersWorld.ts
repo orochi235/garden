@@ -1,12 +1,8 @@
-import {
-  type RenderLayer,
-  rectPath,
-  textCommand,
-} from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
-import { paintFor, type PatternId } from '../patterns';
 import type { Dims, View } from '@orochi235/weasel';
+import { type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
 import type { Zone } from '../../model/types';
+import { type PatternId, paintFor } from '../patterns';
+import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -103,16 +99,13 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
         // Flagged: text rendering requires registerFont() wired at app boot.
         const children: DrawCommand[] = sorted
           .filter((z) => !!z.label)
-          .map((z) => textCommand(
-            z.x + z.width / 2,
-            z.y + z.length + px(view, 4),
-            z.label!,
-            {
+          .map((z) =>
+            textCommand(z.x + z.width / 2, z.y + z.length + px(view, 4), z.label!, {
               fontSize: fontPx,
               align: 'center',
               fill: { fill: 'solid', color: '#ffffff' },
-            },
-          ));
+            }),
+          );
         return [{ kind: 'group', transform: viewToMat3(view), children }];
       },
     },

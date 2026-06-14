@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { CultivarCategory } from './cultivars';
-import { getCultivar, getAllCultivars } from './cultivars';
+import { getAllCultivars, getCultivar } from './cultivars';
 
 const VALID_CATEGORIES: CultivarCategory[] = [
-  'herbs', 'vegetables', 'greens', 'fruits', 'squash', 'flowers', 'root-vegetables', 'legumes',
+  'herbs',
+  'vegetables',
+  'greens',
+  'fruits',
+  'squash',
+  'flowers',
+  'root-vegetables',
+  'legumes',
 ];
 
 describe('cultivar registry', () => {

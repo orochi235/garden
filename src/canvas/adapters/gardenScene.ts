@@ -1,22 +1,45 @@
-import { findSnapContainer } from '../findSnapContainer';
+import type { LayoutStrategy, MoveAdapter, Op, SnapTarget } from '@orochi235/weasel';
+import { getCultivar } from '../../model/cultivars';
+import type { Planting, Structure, Zone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import type { Planting, Structure, Zone } from '../../model/types';
-import { getPlantingParent, plantingWorldPose, worldToLocalForParent } from '../../utils/plantingPose';
-import { hitTestStack, hitTestArea, type HitResult, type WorldRect } from '../hitTest';
-import { getCultivar } from '../../model/cultivars';
+import {
+  getPlantingParent,
+  plantingWorldPose,
+  worldToLocalForParent,
+} from '../../utils/plantingPose';
+import { findSnapContainer } from '../findSnapContainer';
+import { type HitResult, hitTestArea, hitTestStack, type WorldRect } from '../hitTest';
 import { plantingLayoutFor } from './plantingLayout';
-import type { Op } from '@orochi235/weasel';
-import type { MoveAdapter, SnapTarget, LayoutStrategy } from '@orochi235/weasel';
 
-export interface ScenePose { x: number; y: number }
+export interface ScenePose {
+  x: number;
+  y: number;
+}
 
-export interface StructureNode { kind: 'structure'; id: string; data: Structure }
-export interface ZoneNode { kind: 'zone'; id: string; data: Zone }
-export interface PlantingNode { kind: 'planting'; id: string; data: Planting }
+export interface StructureNode {
+  kind: 'structure';
+  id: string;
+  data: Structure;
+}
+export interface ZoneNode {
+  kind: 'zone';
+  id: string;
+  data: Zone;
+}
+export interface PlantingNode {
+  kind: 'planting';
+  id: string;
+  data: Planting;
+}
 export type SceneNode = StructureNode | ZoneNode | PlantingNode;
 
-export interface SceneBounds { x: number; y: number; width: number; length: number }
+export interface SceneBounds {
+  x: number;
+  y: number;
+  width: number;
+  length: number;
+}
 
 export type GardenSceneAdapter = MoveAdapter<SceneNode, ScenePose> & {
   /** Layout strategy for a container id, or null for non-containers. */
@@ -100,7 +123,9 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
       const store = useGardenStore.getState();
       switch (node.kind) {
         case 'planting': {
-          const parent = node.data.parentId ? getPlantingParent(store.garden, node.data.parentId) : undefined;
+          const parent = node.data.parentId
+            ? getPlantingParent(store.garden, node.data.parentId)
+            : undefined;
           const local = worldToLocalForParent(parent ?? { x: 0, y: 0 }, pose.x, pose.y);
           store.updatePlanting(id, { x: local.x, y: local.y });
           return;
@@ -125,7 +150,11 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
           const local = worldToLocalForParent(newParent ?? { x: 0, y: 0 }, world.x, world.y);
           // skipRearrange: the user dragged to a specific world point; preserve
           // those local coords instead of letting rearrangePlantings overwrite them.
-          store.updatePlanting(id, { parentId: parentId ?? '', x: local.x, y: local.y }, { skipRearrange: true });
+          store.updatePlanting(
+            id,
+            { parentId: parentId ?? '', x: local.x, y: local.y },
+            { skipRearrange: true },
+          );
           return;
         }
         case 'structure':
@@ -153,7 +182,12 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
       return {
         parentId: snap.id,
         slotPose: { x: parent.x + snap.slotX, y: parent.y + snap.slotY },
-        metadata: { instant: snap.cursorInside && snap.empty, kind: snap.kind, slotX: snap.slotX, slotY: snap.slotY },
+        metadata: {
+          instant: snap.cursorInside && snap.empty,
+          kind: snap.kind,
+          slotX: snap.slotX,
+          slotY: snap.slotY,
+        },
       };
     },
     applyBatch(ops, label) {
@@ -181,7 +215,12 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
       switch (node.kind) {
         case 'structure':
         case 'zone':
-          return { x: node.data.x, y: node.data.y, width: node.data.width, length: node.data.length };
+          return {
+            x: node.data.x,
+            y: node.data.y,
+            width: node.data.width,
+            length: node.data.length,
+          };
         case 'planting': {
           const cult = getCultivar(node.data.cultivarId);
           const half = (cult?.footprintFt ?? 0.5) / 2;

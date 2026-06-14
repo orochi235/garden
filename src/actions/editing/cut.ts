@@ -7,5 +7,7 @@ export const cutAction: ActionDescriptor = {
   scope: 'canvas',
   targets: ['selection'],
   transient: true,
-  execute: (ctx) => { ctx.clipboard.cut(); },
+  execute: (ctx) => {
+    ctx.clipboard.cut();
+  },
 };

@@ -1,6 +1,6 @@
-import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
-import { type DrawCommand } from '../util/weaselLocal';
 import { rectPath } from '@orochi235/weasel';
+import type { DrawCommand } from '../util/weaselLocal';
+import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Phase-2-migrated drag: area-select marquee — the rubber-band rectangle drawn
@@ -99,7 +99,15 @@ export function createAreaSelectDrag(): Drag<AreaSelectInput, AreaSelectPutative
       const path = rectPath(x, y, w, h);
       return [
         { kind: 'path', path, fill: { fill: 'solid', color: 'rgba(91, 164, 207, 0.15)' } },
-        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: invScale, dash: [dash, dash] } },
+        {
+          kind: 'path',
+          path,
+          stroke: {
+            paint: { fill: 'solid', color: '#5BA4CF' },
+            width: invScale,
+            dash: [dash, dash],
+          },
+        },
       ];
     },
 

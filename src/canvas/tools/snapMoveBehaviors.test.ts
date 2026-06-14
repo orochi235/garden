@@ -1,15 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  snapStructureZoneToGrid,
-  requirePlantingDrop,
-} from './snapMoveBehaviors';
-import { blankGarden, useGardenStore } from '../../store/gardenStore';
-import {
-  createGardenSceneAdapter,
-  type ScenePose,
-  type SceneNode,
-} from '../adapters/gardenScene';
 import type { GestureContext, SnapTarget } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { createGardenSceneAdapter, type SceneNode, type ScenePose } from '../adapters/gardenScene';
+import { requirePlantingDrop, snapStructureZoneToGrid } from './snapMoveBehaviors';
 
 function makeCtx(
   draggedIds: string[],
@@ -153,7 +146,9 @@ describe('snapToContainer (via gardenScene findSnapTarget)', () => {
   it('returns a snap target when a planting drag pointer enters a different bed', () => {
     // Source bed (1,1)-(5,5) hosts the planting; destination bed (10,10)-(14,14) is the snap target.
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 1, y: 1, width: 4, length: 4 });
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 10, y: 10, width: 4, length: 4 });
+    useGardenStore
+      .getState()
+      .addStructure({ type: 'raised-bed', x: 10, y: 10, width: 4, length: 4 });
     const [src, dst] = useGardenStore.getState().garden.structures;
     useGardenStore.getState().addPlanting({ cultivarId: 'tomato', parentId: src.id, x: 1, y: 1 });
     const p = useGardenStore.getState().garden.plantings[0];

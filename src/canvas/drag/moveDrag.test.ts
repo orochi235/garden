@@ -1,11 +1,11 @@
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { createGarden, createStructure, createZone } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createGarden, createStructure, createZone } from '../../model/types';
-import { createMoveDrag, MOVE_DRAG_KIND, type MovePutative } from './moveDrag';
-import { useEricSelectTool } from '../tools/useEricSelectTool';
 import { createGardenSceneAdapter } from '../adapters/gardenScene';
+import { useEricSelectTool } from '../tools/useEricSelectTool';
+import { createMoveDrag, MOVE_DRAG_KIND, type MovePutative } from './moveDrag';
 
 describe('moveDrag', () => {
   beforeEach(() => {
@@ -78,7 +78,9 @@ describe('moveDrag', () => {
 
 describe('useEricSelectTool — move → dragPreview integration', () => {
   beforeEach(() => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useGardenStore
+      .getState()
+      .loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     useUiStore.getState().clearSelection();
     useUiStore.getState().setDragPreview(null);
   });

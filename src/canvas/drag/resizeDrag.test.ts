@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createGarden, createStructure, createZone } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createGarden, createStructure, createZone } from '../../model/types';
 import { createResizeDrag, RESIZE_DRAG_KIND, type ResizePutative } from './resizeDrag';
 
 describe('resizeDrag', () => {
@@ -45,7 +45,9 @@ describe('resizeDrag', () => {
   });
 
   it('renderPreview emits DrawCommands for a structure ghost (rect)', () => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useGardenStore
+      .getState()
+      .loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     const s = createStructure({ type: 'bed', x: 0, y: 0, width: 4, length: 4 });
     useGardenStore.setState((g) => ({ garden: { ...g.garden, structures: [s] } }));
 
@@ -61,7 +63,9 @@ describe('resizeDrag', () => {
   });
 
   it('renderPreview emits DrawCommands for a zone ghost', () => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useGardenStore
+      .getState()
+      .loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     const z = createZone({ x: 0, y: 0, width: 4, length: 4, color: '#7FB069' });
     useGardenStore.setState((g) => ({ garden: { ...g.garden, zones: [z] } }));
 

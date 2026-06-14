@@ -1,13 +1,16 @@
-import { test, expect } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { PNG } from 'pngjs';
+import { expect, test } from '@playwright/test';
 import pixelmatch from 'pixelmatch';
+import { PNG } from 'pngjs';
 
 // Deferred — require selection/view-state serializer extensions:
 // - 'garden-mixed-selected'
 // - 'garden-zoomed-in'
-interface Fixture { name: string; mode?: 'garden' | 'nursery'; }
+interface Fixture {
+  name: string;
+  mode?: 'garden' | 'nursery';
+}
 const FIXTURES: Fixture[] = [
   { name: 'garden-empty' },
   { name: 'garden-mixed' },
@@ -43,8 +46,11 @@ for (const { name, mode } of FIXTURES) {
 
     const diff = new PNG({ width: baseline.width, height: baseline.height });
     const numDiff = pixelmatch(
-      baseline.data, actual.data, diff.data,
-      baseline.width, baseline.height,
+      baseline.data,
+      actual.data,
+      diff.data,
+      baseline.width,
+      baseline.height,
       { threshold: PIXEL_THRESHOLD },
     );
     const ratio = numDiff / (baseline.width * baseline.height);

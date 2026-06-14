@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { freeFormStrategy } from './free-form';
+import { describe, expect, it } from 'vitest';
 import type { LabItem, Rect } from '../types';
+import { freeFormStrategy } from './free-form';
 
 const bounds: Rect = { x: 0, y: 0, width: 4, height: 4 };
 
@@ -14,7 +14,14 @@ describe('freeFormStrategy', () => {
   });
 
   it('drops item at exact cursor position', () => {
-    const result = freeFormStrategy.onDrop(bounds, 'rectangle', { x: 1.5, y: 2.3 }, makeItem(), [], {});
+    const result = freeFormStrategy.onDrop(
+      bounds,
+      'rectangle',
+      { x: 1.5, y: 2.3 },
+      makeItem(),
+      [],
+      {},
+    );
     expect(result.item.x).toBe(1.5);
     expect(result.item.y).toBe(2.3);
   });

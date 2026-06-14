@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { ParentBounds } from './layout';
 import {
+  cellKey,
   cellsTouchingCircle,
   computeOccupancy,
   resolveFootprint,
   validCellsForContainer,
-  cellKey,
 } from './cellOccupancy';
+import type { ParentBounds } from './layout';
 
 const RECT_4x8: ParentBounds = { x: 0, y: 0, width: 4, length: 8, shape: 'rectangle' };
 const CIRCLE_2: ParentBounds = { x: 0, y: 0, width: 2, length: 2, shape: 'circle' };
@@ -36,11 +36,17 @@ describe('validCellsForContainer', () => {
     expect(cells.length).toBeLessThan(16);
     // The 4 cells closest to center (corners at 0.5, 1.0, 1.5) are entirely
     // inside the radius-1 inscribed circle and MUST be present.
-    expect(cells.find((c) => Math.abs(c.x - 0.75) < 0.01 && Math.abs(c.y - 0.75) < 0.01)).toBeDefined();
-    expect(cells.find((c) => Math.abs(c.x - 1.25) < 0.01 && Math.abs(c.y - 1.25) < 0.01)).toBeDefined();
+    expect(
+      cells.find((c) => Math.abs(c.x - 0.75) < 0.01 && Math.abs(c.y - 0.75) < 0.01),
+    ).toBeDefined();
+    expect(
+      cells.find((c) => Math.abs(c.x - 1.25) < 0.01 && Math.abs(c.y - 1.25) < 0.01),
+    ).toBeDefined();
     // The 4 corner cells (centers at 0.25, 1.75) are outside or have corners
     // outside the inscribed circle — must be excluded.
-    expect(cells.find((c) => Math.abs(c.x - 0.25) < 0.01 && Math.abs(c.y - 0.25) < 0.01)).toBeUndefined();
+    expect(
+      cells.find((c) => Math.abs(c.x - 0.25) < 0.01 && Math.abs(c.y - 0.25) < 0.01),
+    ).toBeUndefined();
   });
 
   it('returns empty when cellSizeFt ≤ 0', () => {
@@ -59,7 +65,12 @@ describe('cellsTouchingCircle', () => {
     // cells around (1, 1) plus 4 corner cells if the disk extends to them.
     expect(touched.size).toBeGreaterThan(0);
     // Must include the cell containing (1, 1)
-    expect(touched.has(cellKey(1, 1)) || touched.has(cellKey(2, 1)) || touched.has(cellKey(1, 2)) || touched.has(cellKey(2, 2))).toBe(true);
+    expect(
+      touched.has(cellKey(1, 1)) ||
+        touched.has(cellKey(2, 1)) ||
+        touched.has(cellKey(1, 2)) ||
+        touched.has(cellKey(2, 2)),
+    ).toBe(true);
   });
 
   it('returns empty when radius is 0', () => {
@@ -69,7 +80,7 @@ describe('cellsTouchingCircle', () => {
 });
 
 describe('computeOccupancy', () => {
-  it('marks a single plant\'s footprint cells as occupied', () => {
+  it("marks a single plant's footprint cells as occupied", () => {
     const fp = resolveFootprint({ cultivarId: 'cabbage.red', x: 1, y: 1 });
     if (!fp) throw new Error('cabbage.red missing from fixtures');
     const result = computeOccupancy({
@@ -97,7 +108,7 @@ describe('computeOccupancy', () => {
     expect(result.footprintConflict.size).toBe(result.occupied.size);
   });
 
-  it('marks spacing conflict cells when one plant\'s spacing covers another\'s footprint', () => {
+  it("marks spacing conflict cells when one plant's spacing covers another's footprint", () => {
     // Cabbage spacing is 1.5ft, footprint 1ft. Two cabbages 1.2 ft apart:
     // footprints (radius 0.5) DON'T overlap (centers 1.2ft apart > 1ft);
     // but spacing (radius 0.75) DOES touch the other's footprint.

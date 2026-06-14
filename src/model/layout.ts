@@ -18,10 +18,7 @@ export type LayoutType = Layout['type'];
  * Returns slot positions (world space) for single and snap-points modes.
  * Grid mode is handled by the canvas adapter (weasel grid snap).
  */
-export function getSlots(
-  layout: Layout,
-  bounds: ParentBounds,
-): { x: number; y: number }[] {
+export function getSlots(layout: Layout, bounds: ParentBounds): { x: number; y: number }[] {
   switch (layout.type) {
     case 'single':
       return [{ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.length / 2 }];
@@ -37,10 +34,7 @@ export function getSlots(
 }
 
 /** Cell centers tiling the bounds at cellSizeFt pitch. */
-export function getGridCells(
-  cellSizeFt: number,
-  bounds: ParentBounds,
-): { x: number; y: number }[] {
+export function getGridCells(cellSizeFt: number, bounds: ParentBounds): { x: number; y: number }[] {
   if (cellSizeFt <= 0) return [];
   const cols = Math.floor(bounds.width / cellSizeFt);
   const rows = Math.floor(bounds.length / cellSizeFt);

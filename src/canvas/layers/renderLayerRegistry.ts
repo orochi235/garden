@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from 'react';
 import type { RenderLayer } from '@orochi235/weasel';
+import { useSyncExternalStore } from 'react';
 
 /**
  * Lightweight registry the canvas prototypes publish into so the sidebar
@@ -25,7 +25,7 @@ export type RegistryMode = 'garden' | 'nursery';
 
 const registries: Record<RegistryMode, RegisteredLayer[]> = {
   garden: [],
-  'nursery': [],
+  nursery: [],
 };
 
 const listeners = new Set<() => void>();
@@ -44,7 +44,12 @@ function shallowSameMeta(a: RegisteredLayer[], b: RegisteredLayer[]): boolean {
   for (let i = 0; i < a.length; i++) {
     const x = a[i];
     const y = b[i];
-    if (x.id !== y.id || x.label !== y.label || x.defaultVisible !== y.defaultVisible || x.alwaysOn !== y.alwaysOn) {
+    if (
+      x.id !== y.id ||
+      x.label !== y.label ||
+      x.defaultVisible !== y.defaultVisible ||
+      x.alwaysOn !== y.alwaysOn
+    ) {
       return false;
     }
   }

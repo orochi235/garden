@@ -77,7 +77,15 @@ describe('hitTestPlantings', () => {
 
   it('returns null when planting has no matching parent', () => {
     const orphan: Planting[] = [
-      { id: 'p2', parentId: 'nonexistent', cultivarId: 'tomato', x: 1, y: 1, label: '', icon: null },
+      {
+        id: 'p2',
+        parentId: 'nonexistent',
+        cultivarId: 'tomato',
+        x: 1,
+        y: 1,
+        label: '',
+        icon: null,
+      },
     ];
     const result = hitTestPlantings(1, 1, orphan, structures, zones);
     expect(result).toBeNull();
@@ -86,9 +94,19 @@ describe('hitTestPlantings', () => {
   it('hits planting in a zone parent', () => {
     const zoneParent: Zone[] = [
       {
-        id: 'z1', x: 5, y: 5, width: 4, length: 4, color: '#fff',
-        label: '', zIndex: 0, parentId: null, soilType: null,
-        sunExposure: null, layout: null, pattern: null,
+        id: 'z1',
+        x: 5,
+        y: 5,
+        width: 4,
+        length: 4,
+        color: '#fff',
+        label: '',
+        zIndex: 0,
+        parentId: null,
+        soilType: null,
+        sunExposure: null,
+        layout: null,
+        pattern: null,
       },
     ];
     const zonePlanting: Planting[] = [

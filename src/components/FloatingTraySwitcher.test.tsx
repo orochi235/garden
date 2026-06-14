@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEvent, fireEvent, render } from '@testing-library/react';
-import { FloatingTraySwitcher } from './FloatingTraySwitcher';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { instantiatePreset } from '../model/trayCatalog';
-import { useGardenStore, blankGarden } from '../store/gardenStore';
+import { blankGarden, useGardenStore } from '../store/gardenStore';
+import { FloatingTraySwitcher } from './FloatingTraySwitcher';
 
 vi.mock('../actions/view/resetView', () => ({
   zoomToTray: vi.fn(),
@@ -57,7 +57,17 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
 
     // Drop in lower half of C => insertion slot 3 (end). Mock getBoundingClientRect.
     target.getBoundingClientRect = () =>
-      ({ top: 0, left: 0, right: 100, bottom: 20, width: 100, height: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      ({
+        top: 0,
+        left: 0,
+        right: 100,
+        bottom: 20,
+        width: 100,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
 
     fireDragOver(target, 18);
     fireEvent.drop(target, { dataTransfer: makeDT() });
@@ -75,7 +85,17 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
 
     fireEvent.dragStart(source, { dataTransfer: makeDT() });
     target.getBoundingClientRect = () =>
-      ({ top: 0, left: 0, right: 100, bottom: 20, width: 100, height: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      ({
+        top: 0,
+        left: 0,
+        right: 100,
+        bottom: 20,
+        width: 100,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
     console.log('rect:', target.getBoundingClientRect());
     fireDragOver(target, 2);
     fireEvent.drop(target, { dataTransfer: makeDT() });
@@ -105,7 +125,17 @@ describe('FloatingTraySwitcher drag-to-reorder', () => {
 
     fireEvent.dragStart(source, { dataTransfer: makeDT() });
     source.getBoundingClientRect = () =>
-      ({ top: 0, left: 0, right: 100, bottom: 20, width: 100, height: 20, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      ({
+        top: 0,
+        left: 0,
+        right: 100,
+        bottom: 20,
+        width: 100,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
     fireDragOver(source, 2);
     fireEvent.drop(source, { dataTransfer: makeDT() });
 

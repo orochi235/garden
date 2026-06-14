@@ -1,8 +1,8 @@
 // Layer-based rendering for the quadtree strategy.
 // Separated from quadtree.ts to keep tree operations and rendering distinct.
 
-import type { LabItem, Rect, QuadNode } from '../types';
 import { PX_PER_FT } from '../constants';
+import type { LabItem, QuadNode, Rect } from '../types';
 
 /** Ordered layer IDs — this is the default render order (bottom to top). */
 export const QUADTREE_LAYER_IDS = [
@@ -16,7 +16,7 @@ export const QUADTREE_LAYER_IDS = [
   'objects',
 ] as const;
 
-export type QuadtreeLayerId = typeof QUADTREE_LAYER_IDS[number];
+export type QuadtreeLayerId = (typeof QUADTREE_LAYER_IDS)[number];
 
 export const QUADTREE_LAYER_LABELS: Record<QuadtreeLayerId, string> = {
   microgrid: 'Microgrid',
@@ -76,7 +76,15 @@ export function getLayerOrder(config: Record<string, unknown>): QuadtreeLayerId[
  *  @param rotation 0–1 representing a full turn (default 1/8 = 45deg)
  *  @param tileGlobal when true (default), lines align to global origin for seamless tiling */
 /** Render parallel hatch lines inside a rect, aligned to the global origin for seamless tiling. */
-function renderHatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, rotation = 1 / 8): void {
+function renderHatch(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: string,
+  rotation = 1 / 8,
+): void {
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
@@ -88,7 +96,10 @@ function renderHatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   const sin = Math.sin(angle);
   const step = 0.1;
 
-  const cx0 = x, cx1 = x + w, cy0 = y, cy1 = y + h;
+  const cx0 = x,
+    cx1 = x + w,
+    cy0 = y,
+    cy1 = y + h;
   const normProj = [
     cx0 * cos + cy0 * sin,
     cx1 * cos + cy0 * sin,
@@ -116,13 +127,27 @@ function renderHatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   ctx.restore();
 }
 
-function renderCrosshatch(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, rotation = 1 / 8): void {
+function renderCrosshatch(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: string,
+  rotation = 1 / 8,
+): void {
   renderHatch(ctx, x, y, w, h, color, rotation);
   renderHatch(ctx, x, y, w, h, color, rotation + 0.25);
 }
 
 /** Stroke a rect inset so the border is drawn entirely inside the cell. */
-function strokeRectInset(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+function strokeRectInset(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
   const half = ctx.lineWidth / 2;
   ctx.strokeRect(x + half, y + half, w - ctx.lineWidth, h - ctx.lineWidth);
 }
@@ -148,13 +173,23 @@ function borderWidthFt(depth: number, data: LayerData): number {
   return px / PX_PER_FT;
 }
 
-function borderColor(r: number, g: number, b: number, data: LayerData, alphaWhenNotOpaque = 0.4): string {
+function borderColor(
+  r: number,
+  g: number,
+  b: number,
+  data: LayerData,
+  alphaWhenNotOpaque = 0.4,
+): string {
   return data.opaqueBorders ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${alphaWhenNotOpaque})`;
 }
 
 // --- Individual layer renderers ---
 
-function renderCellBordersNode(ctx: CanvasRenderingContext2D, node: QuadNode, data: LayerData): void {
+function renderCellBordersNode(
+  ctx: CanvasRenderingContext2D,
+  node: QuadNode,
+  data: LayerData,
+): void {
   ctx.strokeStyle = borderColor(127, 176, 105, data, 0.3);
   ctx.lineWidth = borderWidthFt(node.depth, data);
   strokeRectInset(ctx, node.x, node.y, node.w, node.h);
@@ -202,7 +237,11 @@ function renderViolationsLayer(ctx: CanvasRenderingContext2D, data: LayerData): 
   }
 }
 
-function renderViolationZoneNode(ctx: CanvasRenderingContext2D, node: QuadNode, data: LayerData): void {
+function renderViolationZoneNode(
+  ctx: CanvasRenderingContext2D,
+  node: QuadNode,
+  data: LayerData,
+): void {
   if (!node.children) return;
   if (hasViolationInBounds(node, data.violations, data)) {
     ctx.strokeStyle = borderColor(224, 80, 80, data, 0.4);
@@ -285,7 +324,10 @@ function renderObjectsLayer(ctx: CanvasRenderingContext2D, data: LayerData): voi
   }
 }
 
-const LAYER_RENDERERS: Record<QuadtreeLayerId, (ctx: CanvasRenderingContext2D, data: LayerData) => void> = {
+const LAYER_RENDERERS: Record<
+  QuadtreeLayerId,
+  (ctx: CanvasRenderingContext2D, data: LayerData) => void
+> = {
   microgrid: (ctx, d) => renderMicrogrid(ctx, d),
   footprint: (ctx, d) => renderFootprintLayer(ctx, d),
   cellBorders: (ctx, d) => renderCellBordersNode(ctx, d.tree, d),
@@ -296,7 +338,11 @@ const LAYER_RENDERERS: Record<QuadtreeLayerId, (ctx: CanvasRenderingContext2D, d
   objects: (ctx, d) => renderObjectsLayer(ctx, d),
 };
 
-export function renderLayers(ctx: CanvasRenderingContext2D, data: LayerData, config: Record<string, unknown>): void {
+export function renderLayers(
+  ctx: CanvasRenderingContext2D,
+  data: LayerData,
+  config: Record<string, unknown>,
+): void {
   const order = getLayerOrder(config);
   for (const layer of order) {
     if (layerEnabled(config, layer)) {

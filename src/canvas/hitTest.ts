@@ -11,11 +11,12 @@
  * No function in this module reads `useUiStore.zoom`/`panX`/`panY` — only layer
  * locks. View-transform plumbing stays at the gesture/view boundary.
  */
+
+import type { ViewTransform } from '@orochi235/weasel';
 import { getCultivar } from '../model/cultivars';
 import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import { plantingWorldPose } from '../utils/plantingPose';
-import type { ViewTransform } from '@orochi235/weasel';
 
 export interface HitResult {
   id: string;
@@ -231,15 +232,27 @@ export interface WorldRect {
 }
 
 function rectsOverlap(
-  ax: number, ay: number, aw: number, ah: number,
-  bx: number, by: number, bw: number, bh: number,
+  ax: number,
+  ay: number,
+  aw: number,
+  ah: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
 ): boolean {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
 function ellipseOverlapsRect(
-  ex: number, ey: number, ew: number, eh: number,
-  rx: number, ry: number, rw: number, rh: number,
+  ex: number,
+  ey: number,
+  ew: number,
+  eh: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
 ): boolean {
   // Quick AABB rejection
   if (!rectsOverlap(ex, ey, ew, eh, rx, ry, rw, rh)) return false;
@@ -262,9 +275,19 @@ export function hitTestArea(
 
   if (!locked.structures) {
     for (const s of structures) {
-      const hit = s.shape === 'circle'
-        ? ellipseOverlapsRect(s.x, s.y, s.width, s.length, rect.x, rect.y, rect.width, rect.height)
-        : rectsOverlap(s.x, s.y, s.width, s.length, rect.x, rect.y, rect.width, rect.height);
+      const hit =
+        s.shape === 'circle'
+          ? ellipseOverlapsRect(
+              s.x,
+              s.y,
+              s.width,
+              s.length,
+              rect.x,
+              rect.y,
+              rect.width,
+              rect.height,
+            )
+          : rectsOverlap(s.x, s.y, s.width, s.length, rect.x, rect.y, rect.width, rect.height);
       if (hit) results.push({ id: s.id, layer: 'structures' });
     }
   }
@@ -287,8 +310,7 @@ export function hitTestArea(
       const parent = parentMap.get(p.parentId);
       if (!parent) continue;
       const { x: cx, y: cy } = plantingWorldPose({ structures, zones }, p);
-      if (cx >= rect.x && cx <= rect.x + rect.width &&
-          cy >= rect.y && cy <= rect.y + rect.height) {
+      if (cx >= rect.x && cx <= rect.x + rect.width && cy >= rect.y && cy <= rect.y + rect.height) {
         results.push({ id: p.id, layer: 'plantings' });
       }
     }
@@ -352,9 +374,10 @@ export function hitTestStack(
   if (!locked.structures) {
     const sorted = [...structures].sort((a, b) => b.zIndex - a.zIndex);
     for (const s of sorted) {
-      const hit = s.shape === 'circle'
-        ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.length)
-        : pointInRect(worldX, worldY, s.x, s.y, s.width, s.length);
+      const hit =
+        s.shape === 'circle'
+          ? pointInEllipse(worldX, worldY, s.x, s.y, s.width, s.length)
+          : pointInRect(worldX, worldY, s.x, s.y, s.width, s.length);
       if (hit) out.push({ id: s.id, layer: 'structures' });
     }
   }

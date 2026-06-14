@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { plantingLayoutFor } from './plantingLayout';
+import { describe, expect, it } from 'vitest';
 import type { Garden } from '../../model/types';
+import { plantingLayoutFor } from './plantingLayout';
 
 function makeGarden(): Garden {
   return {
@@ -10,30 +10,69 @@ function makeGarden(): Garden {
     groundColor: '#000',
     structures: [
       {
-        id: 'pot-1', type: 'pot', shape: 'circle',
-        x: 10, y: 10, width: 4, length: 4,
-        color: '#888', zIndex: 0, label: '',
-        surface: false, fill: null, wallThicknessFt: 0.25,
-        groupId: null, parentId: null, container: true,
-        rotation: 0, snapToGrid: true, clipChildren: true,
+        id: 'pot-1',
+        type: 'pot',
+        shape: 'circle',
+        x: 10,
+        y: 10,
+        width: 4,
+        length: 4,
+        color: '#888',
+        zIndex: 0,
+        label: '',
+        surface: false,
+        fill: null,
+        wallThicknessFt: 0.25,
+        groupId: null,
+        parentId: null,
+        container: true,
+        rotation: 0,
+        snapToGrid: true,
+        clipChildren: true,
         layout: { type: 'single' },
       },
       {
-        id: 'bed-1', type: 'raised-bed', shape: 'rectangle',
-        x: 20, y: 20, width: 6, length: 4,
-        color: '#888', zIndex: 0, label: '',
-        surface: false, fill: null, wallThicknessFt: 0.5,
-        groupId: null, parentId: null, container: true,
-        rotation: 0, snapToGrid: true, clipChildren: true,
+        id: 'bed-1',
+        type: 'raised-bed',
+        shape: 'rectangle',
+        x: 20,
+        y: 20,
+        width: 6,
+        length: 4,
+        color: '#888',
+        zIndex: 0,
+        label: '',
+        surface: false,
+        fill: null,
+        wallThicknessFt: 0.5,
+        groupId: null,
+        parentId: null,
+        container: true,
+        rotation: 0,
+        snapToGrid: true,
+        clipChildren: true,
         layout: { type: 'grid', cellSizeFt: 1 },
       },
       {
-        id: 'free-1', type: 'raised-bed', shape: 'rectangle',
-        x: 30, y: 30, width: 4, length: 4,
-        color: '#888', zIndex: 0, label: '',
-        surface: false, fill: null, wallThicknessFt: 0,
-        groupId: null, parentId: null, container: true,
-        rotation: 0, snapToGrid: true, clipChildren: true,
+        id: 'free-1',
+        type: 'raised-bed',
+        shape: 'rectangle',
+        x: 30,
+        y: 30,
+        width: 4,
+        length: 4,
+        color: '#888',
+        zIndex: 0,
+        label: '',
+        surface: false,
+        fill: null,
+        wallThicknessFt: 0,
+        groupId: null,
+        parentId: null,
+        container: true,
+        rotation: 0,
+        snapToGrid: true,
+        clipChildren: true,
         layout: null,
       },
     ],
@@ -69,8 +108,12 @@ describe('plantingLayoutFor', () => {
     const garden = makeGarden();
     const layout = plantingLayoutFor(() => garden, 'pot-1')!;
     // Center is inside; corner of bounding box is outside the ellipse.
-    expect(layout.contains!({ x: 10, y: 10, width: 4, height: 4 } as never, { x: 12, y: 12 })).toBe(true);
-    expect(layout.contains!({ x: 10, y: 10, width: 4, height: 4 } as never, { x: 10.05, y: 10.05 })).toBe(false);
+    expect(layout.contains!({ x: 10, y: 10, width: 4, height: 4 } as never, { x: 12, y: 12 })).toBe(
+      true,
+    );
+    expect(
+      layout.contains!({ x: 10, y: 10, width: 4, height: 4 } as never, { x: 10.05, y: 10.05 }),
+    ).toBe(false);
   });
 
   it('grid layout: drop targets are free slots only', () => {

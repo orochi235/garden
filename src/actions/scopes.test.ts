@@ -1,7 +1,7 @@
 // src/actions/scopes.test.ts
-import { describe, expect, it, beforeEach } from 'vitest';
-import { getActiveScopePath } from './scopes';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useUiStore } from '../store/uiStore';
+import { getActiveScopePath } from './scopes';
 
 describe('getActiveScopePath', () => {
   beforeEach(() => {

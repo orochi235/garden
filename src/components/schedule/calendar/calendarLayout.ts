@@ -64,8 +64,13 @@ export function layoutMonth(
       const inMonth = cellDate.getMonth() === month && cellDate.getFullYear() === year;
       if (!inMonth) {
         row.push({
-          date: iso, inMonth: false, visible: [], hiddenCount: 0,
-          hasConflict: false, isToday: iso === today, isOverdue: false,
+          date: iso,
+          inMonth: false,
+          visible: [],
+          hiddenCount: 0,
+          hasConflict: false,
+          isToday: iso === today,
+          isOverdue: false,
         });
         continue;
       }
@@ -80,8 +85,13 @@ export function layoutMonth(
       const hasConflict = dayActions.some((a) => a.conflicts.length > 0);
       const isOverdue = dayActions.some((a) => a.latest < today);
       row.push({
-        date: iso, inMonth: true, visible, hiddenCount,
-        hasConflict, isToday: iso === today, isOverdue,
+        date: iso,
+        inMonth: true,
+        visible,
+        hiddenCount,
+        hasConflict,
+        isToday: iso === today,
+        isOverdue,
       });
     }
     weeks.push(row);
@@ -94,7 +104,9 @@ export function layoutMonth(
  * action in the schedule, then enumerate every month in that range. Used by
  * `viewScope === 'season'`.
  */
-export function monthsCoveringActions(actions: readonly ResolvedAction[]): Array<{ year: number; month: number }> {
+export function monthsCoveringActions(
+  actions: readonly ResolvedAction[],
+): Array<{ year: number; month: number }> {
   if (actions.length === 0) return [];
   let minIso = actions[0].earliest;
   let maxIso = actions[0].latest;
@@ -116,7 +128,10 @@ export function monthsCoveringActions(actions: readonly ResolvedAction[]): Array
   while ((y < endY || (y === endY && m <= endM)) && out.length < MAX_MONTHS) {
     out.push({ year: y, month: m });
     m++;
-    if (m > 11) { m = 0; y++; }
+    if (m > 11) {
+      m = 0;
+      y++;
+    }
   }
   return out;
 }

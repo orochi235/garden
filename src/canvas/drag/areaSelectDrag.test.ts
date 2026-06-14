@@ -2,11 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import {
-  createAreaSelectDrag,
   AREA_SELECT_DRAG_KIND,
   type AreaSelectPutative,
+  createAreaSelectDrag,
 } from './areaSelectDrag';
-
 
 describe('areaSelectDrag', () => {
   beforeEach(() => {

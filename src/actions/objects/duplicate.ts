@@ -1,6 +1,6 @@
-import type { ActionDescriptor } from '../types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import type { ActionDescriptor } from '../types';
 
 export const duplicateAction: ActionDescriptor = {
   id: 'objects.duplicate',
@@ -20,7 +20,13 @@ export const duplicateAction: ActionDescriptor = {
       if (s) {
         const offsetX = Math.max(cellSize, s.width);
         const offsetY = Math.max(cellSize, s.length);
-        addStructure({ type: s.type, x: s.x + offsetX, y: s.y + offsetY, width: s.width, length: s.length });
+        addStructure({
+          type: s.type,
+          x: s.x + offsetX,
+          y: s.y + offsetY,
+          width: s.width,
+          length: s.length,
+        });
         const newStructures = useGardenStore.getState().garden.structures;
         pastedIds.push(newStructures[newStructures.length - 1].id);
         continue;

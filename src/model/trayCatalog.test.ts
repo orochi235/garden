@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TRAY_CATALOG, getTrayPreset, instantiatePreset } from './trayCatalog';
+import { getTrayPreset, instantiatePreset, TRAY_CATALOG } from './trayCatalog';
 
 describe('trayCatalog', () => {
   it('catalog includes 1020-36 and 1020-72', () => {

@@ -1,9 +1,5 @@
 import { useCallback, useState } from 'react';
-import {
-  loadFrostZoneGrid,
-  lookupFrostZone,
-  type FrostZoneLookup,
-} from '../utils/frostZone';
+import { type FrostZoneLookup, loadFrostZoneGrid, lookupFrostZone } from '../utils/frostZone';
 
 export interface FrostZoneResult extends FrostZoneLookup {
   lat: number;

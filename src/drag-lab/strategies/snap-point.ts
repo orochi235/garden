@@ -1,5 +1,5 @@
 // src/drag-lab/strategies/snap-point.ts
-import type { LayoutStrategy, Rect, Point, ConfigField, DragFeedback, DropResult } from '../types';
+import type { ConfigField, DragFeedback, DropResult, LayoutStrategy, Point, Rect } from '../types';
 
 type PatternType = 'corners' | 'edges' | 'center' | 'grid';
 
@@ -7,12 +7,23 @@ function generatePoints(bounds: Rect, pattern: PatternType, gridSpacing: number)
   const { x, y, width: w, height: h } = bounds;
   switch (pattern) {
     case 'corners':
-      return [{ x, y }, { x: x + w, y }, { x, y: y + h }, { x: x + w, y: y + h }];
+      return [
+        { x, y },
+        { x: x + w, y },
+        { x, y: y + h },
+        { x: x + w, y: y + h },
+      ];
     case 'edges': {
       const pts: Point[] = [];
       const step = gridSpacing || 0.5;
-      for (let px = x; px <= x + w; px += step) { pts.push({ x: px, y }); pts.push({ x: px, y: y + h }); }
-      for (let py = y + step; py < y + h; py += step) { pts.push({ x, y: py }); pts.push({ x: x + w, y: py }); }
+      for (let px = x; px <= x + w; px += step) {
+        pts.push({ x: px, y });
+        pts.push({ x: px, y: y + h });
+      }
+      for (let py = y + step; py < y + h; py += step) {
+        pts.push({ x, y: py });
+        pts.push({ x: x + w, y: py });
+      }
       return pts;
     }
     case 'center':
@@ -35,7 +46,10 @@ function nearestPoint(points: Point[], pos: Point): { point: Point; dist: number
   let bestDist = Infinity;
   for (const p of points) {
     const d = Math.sqrt((p.x - pos.x) ** 2 + (p.y - pos.y) ** 2);
-    if (d < bestDist) { bestDist = d; best = p; }
+    if (d < bestDist) {
+      bestDist = d;
+      best = p;
+    }
   }
   return best ? { point: best, dist: bestDist } : null;
 }
@@ -118,8 +132,24 @@ export const snapPointStrategy: LayoutStrategy = {
         ],
         default: 'grid',
       },
-      { key: 'gridSpacing', label: 'Grid Spacing (ft)', type: 'slider' as const, min: 0.1, max: 2, step: 0.05, default: 0.5 },
-      { key: 'snapThreshold', label: 'Snap Threshold (ft)', type: 'slider' as const, min: 0.05, max: 1, step: 0.05, default: 0.3 },
+      {
+        key: 'gridSpacing',
+        label: 'Grid Spacing (ft)',
+        type: 'slider' as const,
+        min: 0.1,
+        max: 2,
+        step: 0.05,
+        default: 0.5,
+      },
+      {
+        key: 'snapThreshold',
+        label: 'Snap Threshold (ft)',
+        type: 'slider' as const,
+        min: 0.05,
+        max: 1,
+        step: 0.05,
+        default: 0.3,
+      },
     ];
   },
 };

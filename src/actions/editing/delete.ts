@@ -1,7 +1,7 @@
-import type { ActionDescriptor } from '../types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { expandToGroups } from '../../utils/groups';
+import type { ActionDescriptor } from '../types';
 
 export const deleteAction: ActionDescriptor = {
   id: 'editing.delete',
@@ -26,19 +26,24 @@ export const deleteAction: ActionDescriptor = {
     const removedParents = new Set<string>();
     for (const s of garden.structures) if (ids.has(s.id)) removedParents.add(s.id);
     for (const z of garden.zones) if (ids.has(z.id)) removedParents.add(z.id);
-    const plantings = garden.plantings.filter((p) => !ids.has(p.id) && !removedParents.has(p.parentId));
+    const plantings = garden.plantings.filter(
+      (p) => !ids.has(p.id) && !removedParents.has(p.parentId),
+    );
     // Seedlings (nursery mode): remove selected seedlings and clear their tray cells.
     const ss = garden.nursery;
     const remainingSeedlings = ss.seedlings.filter((s) => !ids.has(s.id));
     const removedSeedlingIds = new Set(ss.seedlings.filter((s) => ids.has(s.id)).map((s) => s.id));
-    const trays = removedSeedlingIds.size === 0 ? ss.trays : ss.trays.map((tray) => {
-      const slots = tray.slots.map((slot) =>
-        slot.seedlingId && removedSeedlingIds.has(slot.seedlingId)
-          ? { ...slot, state: 'empty' as const, seedlingId: null }
-          : slot,
-      );
-      return { ...tray, slots };
-    });
+    const trays =
+      removedSeedlingIds.size === 0
+        ? ss.trays
+        : ss.trays.map((tray) => {
+            const slots = tray.slots.map((slot) =>
+              slot.seedlingId && removedSeedlingIds.has(slot.seedlingId)
+                ? { ...slot, state: 'empty' as const, seedlingId: null }
+                : slot,
+            );
+            return { ...tray, slots };
+          });
     useGardenStore.getState().applyGardenPatch({
       structures,
       zones,

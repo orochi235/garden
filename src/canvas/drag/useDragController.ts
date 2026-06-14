@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useUiStore } from '../../store/uiStore';
-import type {
-  Drag,
-  DragModifiers,
-  DragPointerSample,
-  DragViewport,
-} from './putativeDrag';
+import type { Drag, DragModifiers, DragPointerSample, DragViewport } from './putativeDrag';
 
 /**
  * Phase 1 putative-drag controller.
@@ -73,7 +68,9 @@ export function useDragController(
   // Pin the registry in a ref so callers can pass an inline object without
   // re-running effects.
   const registryRef = useRef(registry);
-  useEffect(() => { registryRef.current = registry; }, [registry]);
+  useEffect(() => {
+    registryRef.current = registry;
+  }, [registry]);
 
   const stateRef = useRef<{ stop: (() => void) | null }>({ stop: null });
 
@@ -85,153 +82,162 @@ export function useDragController(
     };
   }, []);
 
-  return useMemo<DragController>(() => ({
-    isActive: () => stateRef.current.stop != null,
-    start: <TInput, TPutative>(
-      kind: string,
-      seedEvent: PointerEvent,
-      viewport: () => DragViewport | null,
-      options?: StartOptions<TInput, TPutative>,
-    ): (() => void) => {
-      // Cancel any prior gesture without committing.
-      stateRef.current.stop?.();
-      stateRef.current.stop = null;
-
-      const drag = registryRef.current[kind] as Drag<TInput, TPutative> | undefined;
-      if (!drag) {
-        // Unknown kind — quietly no-op rather than throw, so a stray
-        // payload can't crash the canvas.
-        return () => {};
-      }
-
-      const startX = seedEvent.clientX;
-      const startY = seedEvent.clientY;
-      const threshold = options?.threshold ?? 0;
-      let activated = threshold === 0;
-      let lastSample: DragPointerSample = sampleFrom(seedEvent);
-      let lastPutative: TPutative | null = null;
-
-      function recompute() {
-        const vp = viewport();
-        if (!vp) return;
-        const input = drag!.read(lastSample, vp);
-        const putative = drag!.compute(input);
-        lastPutative = putative;
-        if (putative == null) {
-          useUiStore.getState().setDragPreview(null);
-        } else {
-          useUiStore.getState().setDragPreview({ kind: drag!.kind, putative });
-        }
-        drag!.onPutativeChange?.(putative);
-        options?.onPutativeChange?.(putative);
-      }
-
-      function maybeActivate() {
-        if (activated) return;
-        const dx = lastSample.clientX - startX;
-        const dy = lastSample.clientY - startY;
-        if (dx * dx + dy * dy < threshold * threshold) return;
-        activated = true;
-        options?.onActivate?.();
-        recompute();
-      }
-
-      function onMove(ev: PointerEvent) {
-        lastSample = sampleFrom(ev);
-        if (!activated) {
-          maybeActivate();
-          return;
-        }
-        recompute();
-      }
-
-      function onKey(ev: KeyboardEvent) {
-        // Update modifiers in `lastSample` and recompute. We only care about
-        // the modifier-bearing keys; other key events are ignored (escape is
-        // handled below).
-        if (
-          ev.key !== 'Shift' &&
-          ev.key !== 'Alt' &&
-          ev.key !== 'Control' &&
-          ev.key !== 'Meta'
-        ) {
-          if (ev.type === 'keydown' && ev.key === 'Escape') {
-            cancel();
-          }
-          return;
-        }
-        lastSample = {
-          ...lastSample,
-          modifiers: {
-            shift: ev.shiftKey,
-            alt: ev.altKey,
-            ctrl: ev.ctrlKey,
-            meta: ev.metaKey,
-          },
-        };
-        if (activated) recompute();
-      }
-
-      function teardown() {
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-        document.removeEventListener('pointercancel', onCancel);
-        document.removeEventListener('keydown', onKey);
-        document.removeEventListener('keyup', onKey);
+  return useMemo<DragController>(
+    () => ({
+      isActive: () => stateRef.current.stop != null,
+      start: <TInput, TPutative>(
+        kind: string,
+        seedEvent: PointerEvent,
+        viewport: () => DragViewport | null,
+        options?: StartOptions<TInput, TPutative>,
+      ): (() => void) => {
+        // Cancel any prior gesture without committing.
+        stateRef.current.stop?.();
         stateRef.current.stop = null;
-        options?.onTeardown?.();
-      }
 
-      function commitAndTeardown() {
-        if (lastPutative != null) drag!.commit(lastPutative);
-        useUiStore.getState().setDragPreview(null);
-        drag!.onPutativeChange?.(null);
-        options?.onPutativeChange?.(null);
-        teardown();
-      }
-
-      function cancel() {
-        useUiStore.getState().setDragPreview(null);
-        drag!.onPutativeChange?.(null);
-        options?.onPutativeChange?.(null);
-        teardown();
-      }
-
-      function onUp(ev: PointerEvent) {
-        if (!activated) {
-          options?.onSubThresholdRelease?.(ev);
-          // No putative was ever written — just tear down.
-          teardown();
-          return;
+        const drag = registryRef.current[kind] as Drag<TInput, TPutative> | undefined;
+        if (!drag) {
+          // Unknown kind — quietly no-op rather than throw, so a stray
+          // payload can't crash the canvas.
+          return () => {};
         }
-        // Fold final pointer position into the sample so commit reflects it.
-        lastSample = sampleFrom(ev);
-        recompute();
-        commitAndTeardown();
-      }
 
-      function onCancel() {
-        cancel();
-      }
+        const startX = seedEvent.clientX;
+        const startY = seedEvent.clientY;
+        const threshold = options?.threshold ?? 0;
+        let activated = threshold === 0;
+        let lastSample: DragPointerSample = sampleFrom(seedEvent);
+        let lastPutative: TPutative | null = null;
 
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-      document.addEventListener('pointercancel', onCancel);
-      document.addEventListener('keydown', onKey);
-      document.addEventListener('keyup', onKey);
+        function recompute() {
+          const vp = viewport();
+          if (!vp) return;
+          const input = drag!.read(lastSample, vp);
+          const putative = drag!.compute(input);
+          lastPutative = putative;
+          if (putative == null) {
+            useUiStore.getState().setDragPreview(null);
+          } else {
+            useUiStore.getState().setDragPreview({ kind: drag!.kind, putative });
+          }
+          drag!.onPutativeChange?.(putative);
+          options?.onPutativeChange?.(putative);
+        }
 
-      stateRef.current.stop = cancel;
+        function maybeActivate() {
+          if (activated) return;
+          const dx = lastSample.clientX - startX;
+          const dy = lastSample.clientY - startY;
+          if (dx * dx + dy * dy < threshold * threshold) return;
+          activated = true;
+          options?.onActivate?.();
+          recompute();
+        }
 
-      // If the gesture starts already activated (threshold=0), do an initial
-      // compute so callers see a putative right away.
-      if (activated) recompute();
+        function onMove(ev: PointerEvent) {
+          lastSample = sampleFrom(ev);
+          if (!activated) {
+            maybeActivate();
+            return;
+          }
+          recompute();
+        }
 
-      return cancel;
-    },
-  }), []);
+        function onKey(ev: KeyboardEvent) {
+          // Update modifiers in `lastSample` and recompute. We only care about
+          // the modifier-bearing keys; other key events are ignored (escape is
+          // handled below).
+          if (ev.key !== 'Shift' && ev.key !== 'Alt' && ev.key !== 'Control' && ev.key !== 'Meta') {
+            if (ev.type === 'keydown' && ev.key === 'Escape') {
+              cancel();
+            }
+            return;
+          }
+          lastSample = {
+            ...lastSample,
+            modifiers: {
+              shift: ev.shiftKey,
+              alt: ev.altKey,
+              ctrl: ev.ctrlKey,
+              meta: ev.metaKey,
+            },
+          };
+          if (activated) recompute();
+        }
+
+        function teardown() {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onCancel);
+          document.removeEventListener('keydown', onKey);
+          document.removeEventListener('keyup', onKey);
+          stateRef.current.stop = null;
+          options?.onTeardown?.();
+        }
+
+        function commitAndTeardown() {
+          if (lastPutative != null) drag!.commit(lastPutative);
+          useUiStore.getState().setDragPreview(null);
+          drag!.onPutativeChange?.(null);
+          options?.onPutativeChange?.(null);
+          teardown();
+        }
+
+        function cancel() {
+          useUiStore.getState().setDragPreview(null);
+          drag!.onPutativeChange?.(null);
+          options?.onPutativeChange?.(null);
+          teardown();
+        }
+
+        function onUp(ev: PointerEvent) {
+          if (!activated) {
+            options?.onSubThresholdRelease?.(ev);
+            // No putative was ever written — just tear down.
+            teardown();
+            return;
+          }
+          // Fold final pointer position into the sample so commit reflects it.
+          lastSample = sampleFrom(ev);
+          recompute();
+          commitAndTeardown();
+        }
+
+        function onCancel() {
+          cancel();
+        }
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onCancel);
+        document.addEventListener('keydown', onKey);
+        document.addEventListener('keyup', onKey);
+
+        stateRef.current.stop = cancel;
+
+        // If the gesture starts already activated (threshold=0), do an initial
+        // compute so callers see a putative right away.
+        if (activated) recompute();
+
+        return cancel;
+      },
+    }),
+    [],
+  );
 }
 
-function sampleFrom(ev: PointerEvent | { clientX: number; clientY: number; shiftKey: boolean; altKey: boolean; ctrlKey: boolean; metaKey: boolean }): DragPointerSample {
+function sampleFrom(
+  ev:
+    | PointerEvent
+    | {
+        clientX: number;
+        clientY: number;
+        shiftKey: boolean;
+        altKey: boolean;
+        ctrlKey: boolean;
+        metaKey: boolean;
+      },
+): DragPointerSample {
   const modifiers: DragModifiers = {
     shift: !!ev.shiftKey,
     alt: !!ev.altKey,

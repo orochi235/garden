@@ -86,16 +86,10 @@ export function DebugThemePanel() {
         ))}
       </fieldset>
       <hr className={styles.themeDivider} />
-      <button
-        className={styles.resetButton}
-        onClick={handleResetGarden}
-      >
+      <button className={styles.resetButton} onClick={handleResetGarden}>
         Reset to Default Garden
       </button>
-      <button
-        className={styles.resetButton}
-        onClick={handleResetCollection}
-      >
+      <button className={styles.resetButton} onClick={handleResetCollection}>
         Reset Collection
       </button>
     </LayerSection>

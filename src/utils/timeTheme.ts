@@ -209,7 +209,18 @@ const cellar: TimeTheme = {
   listHover: 'rgba(255, 255, 255, 0.10)',
 };
 
-const themes = { sunrise, morning, noon, afternoon, sunset, twilight, night, midnight, basement, cellar };
+const themes = {
+  sunrise,
+  morning,
+  noon,
+  afternoon,
+  sunset,
+  twilight,
+  night,
+  midnight,
+  basement,
+  cellar,
+};
 
 export type TimePeriod = keyof typeof themes;
 
@@ -257,4 +268,3 @@ export const CYCLE_PERIODS: TimePeriod[] = [
   'night',
   'midnight',
 ];
-

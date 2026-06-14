@@ -5,13 +5,9 @@ import { resolveSeedStarting } from '../../model/floraSeedStarting';
 import { getSpecies } from '../../model/species';
 import { instantiatePreset, TRAY_CATALOG } from '../../model/trayCatalog';
 import { useGardenStore } from '../../store/gardenStore';
-import { useUiStore, type AlmanacFilters } from '../../store/uiStore';
+import { type AlmanacFilters, useUiStore } from '../../store/uiStore';
 import styles from '../../styles/ObjectPalette.module.css';
-import {
-  PlantingChildRow,
-  PlantingLeafRow,
-  PlantingParentRow,
-} from './PaletteItem';
+import { PlantingChildRow, PlantingLeafRow, PlantingParentRow } from './PaletteItem';
 import type { PaletteEntry } from './paletteData';
 import { usePlantingTree } from './usePlantingTree';
 
@@ -103,9 +99,10 @@ export function NurseryPalette({ onDragBegin }: Props) {
       list.push(node);
       groups.set(cat, list);
     }
-    return CATEGORY_ORDER
-      .filter((cat) => groups.has(cat))
-      .map((cat) => ({ category: cat, nodes: groups.get(cat)! }));
+    return CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => ({
+      category: cat,
+      nodes: groups.get(cat)!,
+    }));
   }, [tree]);
 
   function handleAddTray(presetId: string) {
@@ -152,11 +149,7 @@ export function NurseryPalette({ onDragBegin }: Props) {
             cursor: 'pointer',
           }}
         >
-          <input
-            type="checkbox"
-            checked={showAll}
-            onChange={(e) => setShowAll(e.target.checked)}
-          />
+          <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
           Show all cultivars
         </label>
       </div>
@@ -167,7 +160,15 @@ export function NurseryPalette({ onDragBegin }: Props) {
               {collection.length === 0 ? (
                 <>
                   Your collection is empty.{' '}
-                  <a href="#" onClick={(e) => { e.preventDefault(); setEditorOpen(true); }}>Edit Collection</a>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setEditorOpen(true);
+                    }}
+                  >
+                    Edit Collection
+                  </a>
                 </>
               ) : (
                 'No seedable cultivars in your collection'

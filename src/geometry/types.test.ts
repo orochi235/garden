@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  lineTo,
-  cubicTo,
-  closedPath,
-  type LineSeg,
-  type CubicSeg,
-} from './types';
+import { type CubicSeg, closedPath, cubicTo, type LineSeg, lineTo } from './types';
 
 describe('geometry types', () => {
   it('creates a line segment', () => {
@@ -17,17 +11,17 @@ describe('geometry types', () => {
     const seg = cubicTo(1, 2, 3, 4, 5, 6);
     expect(seg).toEqual({
       kind: 'cubic',
-      cp1x: 1, cp1y: 2,
-      cp2x: 3, cp2y: 4,
-      x: 5, y: 6,
+      cp1x: 1,
+      cp1y: 2,
+      cp2x: 3,
+      cp2y: 4,
+      x: 5,
+      y: 6,
     });
   });
 
   it('creates a closed path', () => {
-    const path = closedPath(
-      { x: 0, y: 0 },
-      [lineTo(4, 0), lineTo(4, 3), lineTo(0, 3)],
-    );
+    const path = closedPath({ x: 0, y: 0 }, [lineTo(4, 0), lineTo(4, 3), lineTo(0, 3)]);
     expect(path.start).toEqual({ x: 0, y: 0 });
     expect(path.segments).toHaveLength(3);
   });

@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
 import type { ToolCtx } from '@orochi235/weasel';
-import { useEricSelectTool, type SelectScratch } from './useEricSelectTool';
-import { createGardenSceneAdapter } from '../adapters/gardenScene';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createGarden, createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createGarden, createStructure } from '../../model/types';
 import { expandToGroups } from '../../utils/groups';
+import { createGardenSceneAdapter } from '../adapters/gardenScene';
 import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
+import { type SelectScratch, useEricSelectTool } from './useEricSelectTool';
 
 function makeCtx(
   worldX: number,
@@ -43,9 +43,17 @@ function makePointerEvt(): PointerEvent {
 function pointer(init: Partial<PointerEventInit> = {}): PointerEvent {
   const e = new Event('pointerdown') as PointerEvent;
   Object.assign(e, {
-    button: 0, buttons: 1, clientX: 0, clientY: 0,
-    altKey: false, shiftKey: false, metaKey: false, ctrlKey: false,
-    pointerId: 1, pointerType: 'mouse', isPrimary: true,
+    button: 0,
+    buttons: 1,
+    clientX: 0,
+    clientY: 0,
+    altKey: false,
+    shiftKey: false,
+    metaKey: false,
+    ctrlKey: false,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
     ...init,
   });
   return e;
@@ -53,7 +61,9 @@ function pointer(init: Partial<PointerEventInit> = {}): PointerEvent {
 
 describe('useEricSelectTool group expansion', () => {
   beforeEach(() => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useGardenStore
+      .getState()
+      .loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     useUiStore.getState().clearSelection();
   });
 
@@ -127,7 +137,10 @@ describe('useEricSelectTool — forceMarquee (select-area)', () => {
   it('drag started on a structure body produces a marquee, not a move', () => {
     useGardenStore.getState().addStructure({
       type: 'raised-bed',
-      x: 0, y: 0, width: 4, length: 4,
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 4,
     });
     const adapter = createGardenSceneAdapter();
     expect(adapter.hitTest(2, 2)).not.toBeNull();
@@ -147,7 +160,10 @@ describe('useEricSelectTool — forceMarquee (select-area)', () => {
   it('regular select tool (no forceMarquee) still initiates move on body drag', () => {
     useGardenStore.getState().addStructure({
       type: 'raised-bed',
-      x: 0, y: 0, width: 4, length: 4,
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 4,
     });
     const adapter = createGardenSceneAdapter();
 
@@ -162,7 +178,9 @@ describe('useEricSelectTool — forceMarquee (select-area)', () => {
   it('forceMarquee tool exposes a distinct id when toolId is given', () => {
     const adapter = createGardenSceneAdapter();
     const { result: a } = renderHook(() => useEricSelectTool(adapter));
-    const { result: b } = renderHook(() => useEricSelectTool(adapter, { forceMarquee: true, toolId: 'eric-select-area' }));
+    const { result: b } = renderHook(() =>
+      useEricSelectTool(adapter, { forceMarquee: true, toolId: 'eric-select-area' }),
+    );
     expect(a.current.id).toBe('eric-select');
     expect(b.current.id).toBe('eric-select-area');
   });
@@ -269,7 +287,9 @@ describe('useEricSelectTool — click-on-empty modifier matrix (A)', () => {
 
 describe('useEricSelectTool — click on group-sibling outline promotes selection', () => {
   beforeEach(() => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useGardenStore
+      .getState()
+      .loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     useUiStore.getState().clearSelection();
   });
 
@@ -357,7 +377,9 @@ describe('useEricSelectTool — click on group-sibling outline promotes selectio
 
 describe('useEricSelectTool marquee → dragPreview mirror', () => {
   beforeEach(() => {
-    useGardenStore.getState().loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
+    useGardenStore
+      .getState()
+      .loadGarden(createGarden({ name: 'test', widthFt: 100, lengthFt: 100 }));
     useUiStore.getState().clearSelection();
     useUiStore.getState().setDragPreview(null);
   });
@@ -388,7 +410,10 @@ describe('useEricSelectTool marquee → dragPreview mirror', () => {
 
     const preview = useUiStore.getState().dragPreview;
     expect(preview?.kind).toBe(AREA_SELECT_DRAG_KIND);
-    const putative = preview?.putative as { start: { x: number; y: number }; current: { x: number; y: number } };
+    const putative = preview?.putative as {
+      start: { x: number; y: number };
+      current: { x: number; y: number };
+    };
     expect(putative.start).toEqual({ x: 5, y: 5 });
     expect(putative.current).toEqual({ x: 12, y: 9 });
 

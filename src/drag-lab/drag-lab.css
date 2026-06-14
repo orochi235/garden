@@ -300,11 +300,13 @@
   transition: background 0.1s;
 }
 
-.dl-legend-draggable:active { cursor: grabbing; }
+.dl-legend-draggable:active {
+  cursor: grabbing;
+}
 
 .dl-legend-drop-target {
-  background: rgba(127,176,105,0.15);
-  outline: 1px dashed rgba(127,176,105,0.5);
+  background: rgba(127, 176, 105, 0.15);
+  outline: 1px dashed rgba(127, 176, 105, 0.5);
 }
 
 .dl-legend-handle {
@@ -322,15 +324,15 @@
       90deg,
       transparent,
       transparent 4px,
-      rgba(180,180,180,0.3) 4px,
-      rgba(180,180,180,0.3) 5px
+      rgba(180, 180, 180, 0.3) 4px,
+      rgba(180, 180, 180, 0.3) 5px
     ),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 4px,
-      rgba(180,180,180,0.3) 4px,
-      rgba(180,180,180,0.3) 5px
+      rgba(180, 180, 180, 0.3) 4px,
+      rgba(180, 180, 180, 0.3) 5px
     );
 }
 
@@ -339,67 +341,68 @@
     -45deg,
     transparent,
     transparent 2px,
-    rgba(255,255,255,0.4) 2px,
-    rgba(255,255,255,0.4) 3px
+    rgba(255, 255, 255, 0.4) 2px,
+    rgba(255, 255, 255, 0.4) 3px
   );
-  border: 1px solid rgba(127,176,105,0.3);
+  border: 1px solid rgba(127, 176, 105, 0.3);
 }
 
 .dl-legend-violation {
-  background: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 2px,
-    rgba(224,80,80,0.5) 2px,
-    rgba(224,80,80,0.5) 3px
-  ),
-  repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 2px,
-    rgba(224,80,80,0.5) 2px,
-    rgba(224,80,80,0.5) 3px
-  );
-  border: 1px solid rgba(224,123,155,0.4);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 2px,
+      rgba(224, 80, 80, 0.5) 2px,
+      rgba(224, 80, 80, 0.5) 3px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(224, 80, 80, 0.5) 2px,
+      rgba(224, 80, 80, 0.5) 3px
+    );
+  border: 1px solid rgba(224, 123, 155, 0.4);
 }
 
 .dl-legend-borders {
   background: transparent;
-  border-left: 3px solid rgb(127,176,105);
-  border-right: 1px solid rgb(127,176,105);
-  border-top: 2px solid rgb(127,176,105);
-  border-bottom: 1px solid rgb(127,176,105);
+  border-left: 3px solid rgb(127, 176, 105);
+  border-right: 1px solid rgb(127, 176, 105);
+  border-top: 2px solid rgb(127, 176, 105);
+  border-bottom: 1px solid rgb(127, 176, 105);
 }
 
 .dl-legend-violation-zone {
   background: transparent;
-  border: 2px solid rgb(224,80,80);
+  border: 2px solid rgb(224, 80, 80);
 }
 
 .dl-legend-target {
-  background: rgba(127,176,105,0.2);
-  border: 2px solid rgba(127,176,105,0.6);
+  background: rgba(127, 176, 105, 0.2);
+  border: 2px solid rgba(127, 176, 105, 0.6);
 }
 
 .dl-legend-split {
-  border: 2px solid rgba(0,220,240,0.7);
+  border: 2px solid rgba(0, 220, 240, 0.7);
 }
 
 .dl-legend-putative {
-  border: 1px solid rgba(180,180,180,0.5);
+  border: 1px solid rgba(180, 180, 180, 0.5);
 }
 
 .dl-legend-footprint {
-  background: rgba(180,140,255,0.5);
-  border: 1px solid rgba(180,140,255,0.8);
+  background: rgba(180, 140, 255, 0.5);
+  border: 1px solid rgba(180, 140, 255, 0.8);
 }
 
 .dl-legend-cell-counts {
   background: #2a2018;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   font-size: 9px;
   font-weight: bold;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -407,7 +410,7 @@
 }
 
 .dl-legend-cell-counts::after {
-  content: '2';
+  content: "2";
 }
 
 .dl-legend-objects {

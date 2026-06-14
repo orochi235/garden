@@ -1,7 +1,7 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
-import type { LabItem, Point, Rect, ContainerShape, LayoutStrategy, DragFeedback } from './types';
-import { PX_PER_FT, DISPLAY_PX_PER_FT } from './constants';
 import { useDropZone } from '@orochi235/weasel';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DISPLAY_PX_PER_FT, PX_PER_FT } from './constants';
+import type { ContainerShape, DragFeedback, LabItem, LayoutStrategy, Point, Rect } from './types';
 
 interface CanvasRendererProps {
   width: number;
@@ -27,7 +27,16 @@ function hitTestItem(items: LabItem[], pos: Point): LabItem | null {
   return nearest;
 }
 
-export function CanvasRenderer({ width, height, shape, items, strategy, config, onDrop, onPickUpItem }: CanvasRendererProps) {
+export function CanvasRenderer({
+  width,
+  height,
+  shape,
+  items,
+  strategy,
+  config,
+  onDrop,
+  onPickUpItem,
+}: CanvasRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point | null>(null);
   const [feedback, setFeedback] = useState<DragFeedback | null>(null);
@@ -79,7 +88,9 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       if (pointerDrag.current) {
         setMousePos(pos);
         const item = pointerDrag.current.item;
-        setFeedback(strategy.onDragOver(bounds, shape, pos, items, { ...config, _dragRadius: item.radiusFt }));
+        setFeedback(
+          strategy.onDragOver(bounds, shape, pos, items, { ...config, _dragRadius: item.radiusFt }),
+        );
       } else {
         const hit = hitTestItem(items, pos);
         setHoveredItemId(hit?.id ?? null);
@@ -114,7 +125,9 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       setPaletteDragItem(item);
       const pos = pxToFt(x, y);
       setMousePos(pos);
-      setFeedback(strategy.onDragOver(bounds, shape, pos, items, { ...config, _dragRadius: item.radiusFt }));
+      setFeedback(
+        strategy.onDragOver(bounds, shape, pos, items, { ...config, _dragRadius: item.radiusFt }),
+      );
     },
     onDrop: (payload, x, y) => {
       const item = payload.data as LabItem;
@@ -126,10 +139,13 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
     },
   });
 
-  const setRefs = useCallback((el: HTMLCanvasElement | null) => {
-    canvasRef.current = el;
-    dropRef(el);
-  }, [dropRef]);
+  const setRefs = useCallback(
+    (el: HTMLCanvasElement | null) => {
+      canvasRef.current = el;
+      dropRef(el);
+    },
+    [dropRef],
+  );
 
   const handlePointerLeave = useCallback(() => {
     if (!pointerDrag.current) {
@@ -202,7 +218,21 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
     }
 
     ctx.restore();
-  }, [canvasW, canvasH, width, height, shape, items, strategy, config, feedback, activeDragItem, mousePos, bounds, hoveredItemId]);
+  }, [
+    canvasW,
+    canvasH,
+    width,
+    height,
+    shape,
+    items,
+    strategy,
+    config,
+    feedback,
+    activeDragItem,
+    mousePos,
+    bounds,
+    hoveredItemId,
+  ]);
 
   const cursor = pointerDrag.current ? 'grabbing' : hoveredItemId ? 'grab' : 'default';
 
@@ -211,7 +241,12 @@ export function CanvasRenderer({ width, height, shape, items, strategy, config, 
       ref={setRefs}
       width={canvasW}
       height={canvasH}
-      style={{ width: width * DISPLAY_PX_PER_FT, height: height * DISPLAY_PX_PER_FT, cursor, touchAction: 'none' }}
+      style={{
+        width: width * DISPLAY_PX_PER_FT,
+        height: height * DISPLAY_PX_PER_FT,
+        cursor,
+        touchAction: 'none',
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

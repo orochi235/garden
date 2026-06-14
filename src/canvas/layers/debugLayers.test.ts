@@ -1,9 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { createDebugLayers } from './debugLayers';
-import { createGarden } from '../../model/types';
-
 // vi.mock('../debug') is provided in vitest.setup or inline:
-import { vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { createGarden } from '../../model/types';
+import { createDebugLayers } from './debugLayers';
 
 vi.mock('../debug', () => ({
   isDebugEnabled: (token: string) => ['hitboxes', 'axes'].includes(token),

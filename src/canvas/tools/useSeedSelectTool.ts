@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
-import type React from 'react';
 import { defineTool, type Tool } from '@orochi235/weasel';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { findSeedlingsInRect, hitTestCellInches } from '../nurseryHitTest';
-import { trayWorldOrigin, type NurserySceneAdapter } from '../adapters/nurseryScene';
+import { type NurserySceneAdapter, trayWorldOrigin } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 import { hitTestTrayLabel } from '../layers/trayLayersWorld';
 import type { View } from '../layers/worldLayerData';
+import { findSeedlingsInRect, hitTestCellInches } from '../nurseryHitTest';
 
 /**
  * Dedicated marquee/area-select tool for the nursery view.

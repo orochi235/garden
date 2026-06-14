@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { groupByDate, groupByPlant, formatWindow } from './scheduleViewModel';
 import type { ResolvedAction } from '../../model/scheduler';
+import { formatWindow, groupByDate, groupByPlant } from './scheduleViewModel';
 
 const ACTIONS: ResolvedAction[] = [
-  { plantId: 'p1', cultivarId: 'tomato', actionId: 'sow', label: 'Sow', earliest: '2026-03-19', latest: '2026-04-02', conflicts: [] },
-  { plantId: 'p2', cultivarId: 'basil', actionId: 'sow', label: 'Sow', earliest: '2026-03-19', latest: '2026-03-19', conflicts: [] },
-  { plantId: 'p1', cultivarId: 'tomato', actionId: 'transplant', label: 'Transplant', earliest: '2026-05-15', latest: '2026-05-15', conflicts: [] },
+  {
+    plantId: 'p1',
+    cultivarId: 'tomato',
+    actionId: 'sow',
+    label: 'Sow',
+    earliest: '2026-03-19',
+    latest: '2026-04-02',
+    conflicts: [],
+  },
+  {
+    plantId: 'p2',
+    cultivarId: 'basil',
+    actionId: 'sow',
+    label: 'Sow',
+    earliest: '2026-03-19',
+    latest: '2026-03-19',
+    conflicts: [],
+  },
+  {
+    plantId: 'p1',
+    cultivarId: 'tomato',
+    actionId: 'transplant',
+    label: 'Transplant',
+    earliest: '2026-05-15',
+    latest: '2026-05-15',
+    conflicts: [],
+  },
 ];
 
 describe('groupByDate', () => {

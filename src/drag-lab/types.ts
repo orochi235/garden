@@ -48,9 +48,28 @@ export interface ConfigField {
 
 export interface LayoutStrategy {
   name: string;
-  render(ctx: CanvasRenderingContext2D, bounds: Rect, shape: ContainerShape, items: LabItem[], config: Record<string, unknown>): void;
-  onDragOver(bounds: Rect, shape: ContainerShape, pos: Point, items: LabItem[], config: Record<string, unknown>): DragFeedback | null;
-  onDrop(bounds: Rect, shape: ContainerShape, pos: Point, item: LabItem, items: LabItem[], config: Record<string, unknown>): DropResult;
+  render(
+    ctx: CanvasRenderingContext2D,
+    bounds: Rect,
+    shape: ContainerShape,
+    items: LabItem[],
+    config: Record<string, unknown>,
+  ): void;
+  onDragOver(
+    bounds: Rect,
+    shape: ContainerShape,
+    pos: Point,
+    items: LabItem[],
+    config: Record<string, unknown>,
+  ): DragFeedback | null;
+  onDrop(
+    bounds: Rect,
+    shape: ContainerShape,
+    pos: Point,
+    item: LabItem,
+    items: LabItem[],
+    config: Record<string, unknown>,
+  ): DropResult;
   defaultConfig(): Record<string, unknown>;
   configSchema(): ConfigField[];
 }

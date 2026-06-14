@@ -7,8 +7,8 @@
  * tile is registered exactly once with the renderer.
  */
 
-import { hatch, crosshatch, dots, chunks } from '@orochi235/weasel/patterns-builtin';
 import type { Paint } from '@orochi235/weasel';
+import { chunks, crosshatch, dots, hatch } from '@orochi235/weasel/patterns-builtin';
 import type { TextureHandle } from './util/weaselLocal';
 
 export type PatternId = 'hatch' | 'crosshatch' | 'dots' | 'chunks';
@@ -17,7 +17,14 @@ export interface PatternParamMap {
   hatch: { color?: string; size?: number; lineWidth?: number };
   crosshatch: { color?: string; size?: number; lineWidth?: number };
   dots: { color?: string; size?: number; radius?: number };
-  chunks: { color?: string; bg?: string; size?: number; density?: number; chunkSize?: number; seed?: number };
+  chunks: {
+    color?: string;
+    bg?: string;
+    size?: number;
+    density?: number;
+    chunkSize?: number;
+    seed?: number;
+  };
 }
 
 const DEFAULTS = {
@@ -30,7 +37,10 @@ const DEFAULTS = {
 const cache = new Map<string, TextureHandle | null>();
 
 function keyOf(id: PatternId, p: Record<string, unknown>): string {
-  return `${id}:${Object.keys(p).sort().map((k) => `${k}=${String(p[k])}`).join(',')}`;
+  return `${id}:${Object.keys(p)
+    .sort()
+    .map((k) => `${k}=${String(p[k])}`)
+    .join(',')}`;
 }
 
 function build(id: PatternId, params: Record<string, unknown>): TextureHandle | null {
@@ -39,10 +49,18 @@ function build(id: PatternId, params: Record<string, unknown>): TextureHandle | 
   if (hit !== undefined) return hit;
   let pat: TextureHandle | null;
   switch (id) {
-    case 'hatch': pat = hatch(params as PatternParamMap['hatch'] & { color: string }); break;
-    case 'crosshatch': pat = crosshatch(params as PatternParamMap['crosshatch'] & { color: string }); break;
-    case 'dots': pat = dots(params as PatternParamMap['dots'] & { color: string }); break;
-    case 'chunks': pat = chunks(params as PatternParamMap['chunks'] & { color: string }); break;
+    case 'hatch':
+      pat = hatch(params as PatternParamMap['hatch'] & { color: string });
+      break;
+    case 'crosshatch':
+      pat = crosshatch(params as PatternParamMap['crosshatch'] & { color: string });
+      break;
+    case 'dots':
+      pat = dots(params as PatternParamMap['dots'] & { color: string });
+      break;
+    case 'chunks':
+      pat = chunks(params as PatternParamMap['chunks'] & { color: string });
+      break;
   }
   cache.set(k, pat);
   return pat;

@@ -14,11 +14,12 @@ const dims = { width: 800, height: 600 };
 
 describe('createSeedlingLayers (world)', () => {
   it('returns 2 layers in canonical order', () => {
-    const layers = createSeedlingLayers(() => [], () => [], () => baseUi);
-    expect(layers.map((l) => l.id)).toEqual([
-      'seedlings',
-      'seedling-labels',
-    ]);
+    const layers = createSeedlingLayers(
+      () => [],
+      () => [],
+      () => baseUi,
+    );
+    expect(layers.map((l) => l.id)).toEqual(['seedlings', 'seedling-labels']);
   });
 
   it('per-id getHighlight is invoked with each sown seedling id', () => {

@@ -1,19 +1,13 @@
-import {
-  type RenderLayer,
-  textCommand,
-} from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
+import { type RenderLayer, textCommand } from '@orochi235/weasel';
+import { getCultivar } from '../../model/cultivars';
 import type { Seedling, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
-import { getCultivar } from '../../model/cultivars';
-import {
-  hasSeedlingWarnings,
-  SEEDLING_WARNING_COLOR,
-} from '../../model/seedlingWarnings';
-import { trayWorldOrigin } from '../adapters/nurseryScene';
+import { hasSeedlingWarnings, SEEDLING_WARNING_COLOR } from '../../model/seedlingWarnings';
 import { useGardenStore } from '../../store/gardenStore';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { plantDrawCommands } from '../plantRenderers';
+import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 
 export interface SeedlingLayerUi {
   showWarnings: boolean;
@@ -35,8 +29,11 @@ function translateMat3(tx: number, ty: number): Float32Array {
   return new Float32Array([1, 0, 0, 0, 1, 0, tx, ty, 1]);
 }
 
-
-interface SownCellEntry { row: number; col: number; seedling: Seedling }
+interface SownCellEntry {
+  row: number;
+  col: number;
+  seedling: Seedling;
+}
 
 function collectSownCells(
   tray: Tray,
@@ -62,11 +59,7 @@ function collectSownCells(
  * Render a plant glyph as DrawCommands at local origin (0, 0).
  * The caller wraps in a translated group to position in world space.
  */
-function plantGlyphCommands(
-  cultivarId: string,
-  radius: number,
-  alpha: number,
-): DrawCommand[] {
+function plantGlyphCommands(cultivarId: string, radius: number, alpha: number): DrawCommand[] {
   const cultivar = getCultivar(cultivarId);
   const color = cultivar?.color ?? '#4A7C59';
   const iconBgColor = cultivar?.iconBgColor ?? null;
@@ -156,11 +149,13 @@ function seedlingLabelCommandsForTray(
     const cy = off.y + row * p + p / 2;
     const label = seedling.labelOverride ?? cultivar.name.slice(0, 4);
     // Flagged: text commands require registerFont() wired at app boot.
-    cmds.push(textCommand(cx, cy, label, {
-      fontSize: fontPx,
-      align: 'center',
-      fill: { fill: 'solid', color: '#ffffff' },
-    }));
+    cmds.push(
+      textCommand(cx, cy, label, {
+        fontSize: fontPx,
+        align: 'center',
+        fill: { fill: 'solid', color: '#ffffff' },
+      }),
+    );
   }
   return cmds;
 }

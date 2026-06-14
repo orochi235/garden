@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { cycleSelectionNextAction, cycleSelectionPrevAction } from './cycleSelection';
 import type { ActionContext } from '../types';
+import { cycleSelectionNextAction, cycleSelectionPrevAction } from './cycleSelection';
 
-const ctx: ActionContext = { clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true } };
+const ctx: ActionContext = {
+  clipboard: { copy: () => {}, cut: () => {}, paste: () => {}, isEmpty: () => true },
+};
 
 describe('cycleSelection actions', () => {
   beforeEach(() => {

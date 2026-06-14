@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { CELL_PITCH_IN, type CellSize, createTray } from '../model/nursery';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { type CellSize, CELL_PITCH_IN, createTray } from '../model/nursery';
 import styles from '../styles/CustomTrayBuilder.module.css';
 
 interface Props {
@@ -34,13 +34,23 @@ export function CustomTrayBuilder({ onClose }: Props) {
         <div className={styles.row}>
           <label className={styles.field}>
             Rows
-            <input type="number" min={1} max={20} value={rows}
-              onChange={(e) => setRows(Math.max(1, +e.target.value))} />
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={rows}
+              onChange={(e) => setRows(Math.max(1, +e.target.value))}
+            />
           </label>
           <label className={styles.field}>
             Cols
-            <input type="number" min={1} max={20} value={cols}
-              onChange={(e) => setCols(Math.max(1, +e.target.value))} />
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={cols}
+              onChange={(e) => setCols(Math.max(1, +e.target.value))}
+            />
           </label>
         </div>
         <label className={styles.field}>
@@ -52,7 +62,8 @@ export function CustomTrayBuilder({ onClose }: Props) {
           </select>
         </label>
         <div className={styles.preview}>
-          {rows} × {cols} = {rows * cols} cells, {(cols * CELL_PITCH_IN[cellSize]).toFixed(1)}" × {(rows * CELL_PITCH_IN[cellSize]).toFixed(1)}"
+          {rows} × {cols} = {rows * cols} cells, {(cols * CELL_PITCH_IN[cellSize]).toFixed(1)}" ×{' '}
+          {(rows * CELL_PITCH_IN[cellSize]).toFixed(1)}"
         </div>
         <div className={styles.actions}>
           <button onClick={onClose}>Cancel</button>

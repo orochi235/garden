@@ -195,7 +195,9 @@ describe('gardenStore', () => {
   });
 
   it('adds a zone with pattern', () => {
-    useGardenStore.getState().addZone({ x: 0, y: 0, width: 3, length: 3, color: 'transparent', pattern: 'crosshatch' });
+    useGardenStore
+      .getState()
+      .addZone({ x: 0, y: 0, width: 3, length: 3, color: 'transparent', pattern: 'crosshatch' });
     const zone = useGardenStore.getState().garden.zones[0];
     expect(zone.pattern).toBe('crosshatch');
     expect(zone.color).toBe('transparent');
@@ -486,9 +488,11 @@ describe('nursery actions', () => {
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
       const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
 
-      useGardenStore.getState().moveSeedlingsAcrossTrays([
-        { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 1, toCol: 2 },
-      ]);
+      useGardenStore
+        .getState()
+        .moveSeedlingsAcrossTrays([
+          { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 1, toCol: 2 },
+        ]);
 
       const ss = useGardenStore.getState().garden.nursery;
       const trayA = ss.trays.find((t) => t.id === a.id)!;
@@ -516,14 +520,16 @@ describe('nursery actions', () => {
       const [a, b] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
       useGardenStore.getState().sowCell(b.id, 1, 2, 'basil-genovese'); // occupies dest
-      const sId = useGardenStore.getState().garden.nursery.seedlings.find(
-        (s) => s.trayId === a.id,
-      )!.id;
+      const sId = useGardenStore
+        .getState()
+        .garden.nursery.seedlings.find((s) => s.trayId === a.id)!.id;
       const before = useGardenStore.getState().garden.nursery;
 
-      useGardenStore.getState().moveSeedlingsAcrossTrays([
-        { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 1, toCol: 2 },
-      ]);
+      useGardenStore
+        .getState()
+        .moveSeedlingsAcrossTrays([
+          { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 1, toCol: 2 },
+        ]);
 
       // Whole batch rejected — state unchanged.
       const after = useGardenStore.getState().garden.nursery;
@@ -534,9 +540,11 @@ describe('nursery actions', () => {
       const [a] = setupTwoTrays();
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
       const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
-      useGardenStore.getState().moveSeedlingsAcrossTrays([
-        { seedlingId: sId, fromTrayId: a.id, toTrayId: a.id, toRow: 1, toCol: 1 },
-      ]);
+      useGardenStore
+        .getState()
+        .moveSeedlingsAcrossTrays([
+          { seedlingId: sId, fromTrayId: a.id, toTrayId: a.id, toRow: 1, toCol: 1 },
+        ]);
       const trayA = useGardenStore.getState().garden.nursery.trays.find((t) => t.id === a.id)!;
       expect(trayA.slots[0].state).toBe('empty');
       expect(trayA.slots[1 * trayA.cols + 1].seedlingId).toBe(sId);
@@ -547,9 +555,11 @@ describe('nursery actions', () => {
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
       const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
       const before = useGardenStore.getState().garden.nursery;
-      useGardenStore.getState().moveSeedlingsAcrossTrays([
-        { seedlingId: sId, fromTrayId: a.id, toTrayId: a.id, toRow: 0, toCol: 0 },
-      ]);
+      useGardenStore
+        .getState()
+        .moveSeedlingsAcrossTrays([
+          { seedlingId: sId, fromTrayId: a.id, toTrayId: a.id, toRow: 0, toCol: 0 },
+        ]);
       void b;
       // No change → no commit.
       expect(useGardenStore.getState().garden.nursery).toBe(before);
@@ -560,9 +570,11 @@ describe('nursery actions', () => {
       useGardenStore.getState().sowCell(a.id, 0, 0, 'basil-genovese');
       const sId = useGardenStore.getState().garden.nursery.seedlings[0].id;
       const before = useGardenStore.getState().garden.nursery;
-      useGardenStore.getState().moveSeedlingsAcrossTrays([
-        { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 99, toCol: 99 },
-      ]);
+      useGardenStore
+        .getState()
+        .moveSeedlingsAcrossTrays([
+          { seedlingId: sId, fromTrayId: a.id, toTrayId: b.id, toRow: 99, toCol: 99 },
+        ]);
       expect(useGardenStore.getState().garden.nursery).toBe(before);
     });
   });
@@ -675,7 +687,10 @@ describe('selection rides on history', () => {
     const snap = adapter.snapshotSelection([z1]);
     const [pasted] = adapter.commitPaste(snap, { dx: 1, dy: 1 });
     adapter.applyBatch!(
-      [createInsertOp({ node: pasted }), createSetSelectionOp({ from: [asNodeId(z1)], to: [asNodeId(pasted.id)] })],
+      [
+        createInsertOp({ node: pasted }),
+        createSetSelectionOp({ from: [asNodeId(z1)], to: [asNodeId(pasted.id)] }),
+      ],
       'Paste',
     );
     expect(useGardenStore.getState().garden.zones).toHaveLength(2);
@@ -688,7 +703,6 @@ describe('selection rides on history', () => {
     expect(useUiStore.getState().selectedIds).not.toContain(pasted.id);
     expect(useUiStore.getState().selectedIds).toEqual([z1]);
   });
-
 });
 
 describe('collection orphan tolerance', () => {
@@ -698,7 +712,9 @@ describe('collection orphan tolerance', () => {
     useGardenStore.setState((s) => ({
       garden: {
         ...s.garden,
-        plantings: [{ id: 'p1', parentId: 'parent', cultivarId: a.id, x: 0, y: 0, label: '', icon: null }],
+        plantings: [
+          { id: 'p1', parentId: 'parent', cultivarId: a.id, x: 0, y: 0, label: '', icon: null },
+        ],
         collection: [],
       },
     }));

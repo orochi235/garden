@@ -1,48 +1,41 @@
+import type { GridSlotConfig, RenderLayer } from '@orochi235/weasel';
+import { Canvas, computeFitView, useCanvasSize, useInsertTool, useTools } from '@orochi235/weasel';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { onIconLoad } from './plantRenderers';
-import {
-  Canvas,
-  computeFitView,
-  useCanvasSize,
-  useInsertTool,
-  useTools,
-} from '@orochi235/weasel';
-import type { GridSlotConfig } from '@orochi235/weasel';
-import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
-import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
-import type { RenderLayer } from '@orochi235/weasel';
-import { createInsertAdapter } from './adapters/insert';
 import { useGardenStore } from '../store/gardenStore';
-import { useUiStore } from '../store/uiStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
+import { useUiStore } from '../store/uiStore';
 import { createGardenSceneAdapter, type SceneNode, type ScenePose } from './adapters/gardenScene';
-import { createStructureLayers } from './layers/structureLayersWorld';
-import { createZoneLayers } from './layers/zoneLayersWorld';
-import { createPlantingLayers } from './layers/plantingLayersWorld';
-import {
-  createSelectionOutlineLayer,
-  createSelectionHandlesLayer,
-  createGroupOutlineLayer,
-  createAllHandlesLayer,
-} from './layers/selectionLayersWorld';
+import { createInsertAdapter } from './adapters/insert';
 import { isDebugEnabled } from './debug';
-import { createSystemLayers } from './layers/systemLayersWorld';
-import type { GetUi, View } from './layers/worldLayerData';
-import { useEricSelectTool } from './tools/useEricSelectTool';
-import { useEricCycleTool } from './tools/useEricCycleTool';
-import { useEricRightDragPan } from './tools/useEricRightDragPan';
-import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
-import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
+import { AREA_SELECT_DRAG_KIND, createAreaSelectDrag } from './drag/areaSelectDrag';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
 import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
-import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
 import { createPlotDrag, PLOT_DRAG_KIND, type PlotPutative } from './drag/plotDrag';
-import { createAreaSelectDrag, AREA_SELECT_DRAG_KIND } from './drag/areaSelectDrag';
-import { NurseryCanvas } from './NurseryCanvas';
-import { wrapLayersWithVisibility } from './layers/visibilityWrap';
+import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
 import { createDebugLayers } from './layers/debugLayers';
+import { createPlantingLayers } from './layers/plantingLayersWorld';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
+import {
+  createAllHandlesLayer,
+  createGroupOutlineLayer,
+  createSelectionHandlesLayer,
+  createSelectionOutlineLayer,
+} from './layers/selectionLayersWorld';
+import { createStructureLayers } from './layers/structureLayersWorld';
+import { createSystemLayers } from './layers/systemLayersWorld';
+import { wrapLayersWithVisibility } from './layers/visibilityWrap';
+import type { GetUi, View } from './layers/worldLayerData';
+import { createZoneLayers } from './layers/zoneLayersWorld';
+import { NurseryCanvas } from './NurseryCanvas';
+import { onIconLoad } from './plantRenderers';
+import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
+import { useEricCycleTool } from './tools/useEricCycleTool';
+import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
+import { useEricRightDragPan } from './tools/useEricRightDragPan';
+import { useEricSelectTool } from './tools/useEricSelectTool';
+import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
+import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
@@ -112,9 +105,7 @@ function GardenCanvasNewPrototype() {
   const viewRef = useRef<View>({ x: 0, y: 0, scale: 1 });
   useEffect(() => {
     viewRef.current =
-      zoom > 0
-        ? { x: -panX / zoom, y: -panY / zoom, scale: zoom }
-        : { x: 0, y: 0, scale: 1 };
+      zoom > 0 ? { x: -panX / zoom, y: -panY / zoom, scale: zoom } : { x: 0, y: 0, scale: 1 };
   }, [zoom, panX, panY]);
 
   const BASE_GARDEN_ZOOM = 64; // px/ft at "100%"
@@ -151,7 +142,12 @@ function GardenCanvasNewPrototype() {
           const w = containerRef.current?.clientWidth ?? width;
           const h = containerRef.current?.clientHeight ?? height;
           if (w > 0 && h > 0) {
-            const fit = computeFitView(w, h, useGardenStore.getState().garden.widthFt, useGardenStore.getState().garden.lengthFt);
+            const fit = computeFitView(
+              w,
+              h,
+              useGardenStore.getState().garden.widthFt,
+              useGardenStore.getState().garden.lengthFt,
+            );
             setZoomState(clampZoom(fit.zoom));
             setPanXState(fit.panX);
             setPanYState(fit.panY);
@@ -171,7 +167,12 @@ function GardenCanvasNewPrototype() {
           const w = containerRef.current?.clientWidth ?? width;
           const h = containerRef.current?.clientHeight ?? height;
           if (w > 0 && h > 0) {
-            const fit = computeFitView(w, h, useGardenStore.getState().garden.widthFt, useGardenStore.getState().garden.lengthFt);
+            const fit = computeFitView(
+              w,
+              h,
+              useGardenStore.getState().garden.widthFt,
+              useGardenStore.getState().garden.lengthFt,
+            );
             setZoomState(clampZoom(fit.zoom));
             setPanXState(fit.panX);
             setPanYState(fit.panY);
@@ -200,10 +201,22 @@ function GardenCanvasNewPrototype() {
       const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
       // Surface the palette-drop drag putative so the conflict overlay can
       // include the ghost in its occupancy compute (red/yellow before commit).
-      let dragPlantingGhost: { parentId: string; cultivarId: string; x: number; y: number } | null = null;
+      let dragPlantingGhost: { parentId: string; cultivarId: string; x: number; y: number } | null =
+        null;
       if (u.dragPreview && u.dragPreview.kind === 'garden-palette-plant') {
-        const put = u.dragPreview.putative as { parentId?: string; cultivarId?: string; x?: number; y?: number };
-        if (put && put.parentId && put.cultivarId && typeof put.x === 'number' && typeof put.y === 'number') {
+        const put = u.dragPreview.putative as {
+          parentId?: string;
+          cultivarId?: string;
+          x?: number;
+          y?: number;
+        };
+        if (
+          put &&
+          put.parentId &&
+          put.cultivarId &&
+          typeof put.x === 'number' &&
+          typeof put.y === 'number'
+        ) {
           // putative.{x,y} are WORLD coords; the conflict overlay's resolveFootprint
           // expects parent-LOCAL plus parent.x/y as origin, so convert back here.
           const parent =
@@ -237,8 +250,9 @@ function GardenCanvasNewPrototype() {
     // garden plantings drop) and the eric-move drag (per-id ghost layout +
     // snap-target outline during structure / zone / planting moves).
     const dragPreviewRegistry = {
-      [createGardenPaletteDrag({ getEntry: () => null }).kind]:
-        createGardenPaletteDrag({ getEntry: () => null }),
+      [createGardenPaletteDrag({ getEntry: () => null }).kind]: createGardenPaletteDrag({
+        getEntry: () => null,
+      }),
       [MOVE_DRAG_KIND]: createMoveDrag(),
       [RESIZE_DRAG_KIND]: createResizeDrag(),
       [PLOT_DRAG_KIND]: createPlotDrag(),
@@ -256,11 +270,13 @@ function GardenCanvasNewPrototype() {
     ];
     const debugLayers = createDebugLayers('garden', () => useGardenStore.getState().garden);
     if (isDebugEnabled('handles')) {
-      debugLayers.push(createAllHandlesLayer({
-        getStructures,
-        getZones,
-        getPlantings,
-      }));
+      debugLayers.push(
+        createAllHandlesLayer({
+          getStructures,
+          getZones,
+          getPlantings,
+        }),
+      );
     }
     // Publish the full set (base + debug) so the sidebar Render Layers panel
     // can list whatever's actually being drawn. Done before wrapping so the
@@ -282,7 +298,9 @@ function GardenCanvasNewPrototype() {
       },
     };
     map.grid = gridConfig;
-    list.forEach((l) => { map[l.id] = { layer: l }; });
+    list.forEach((l) => {
+      map[l.id] = { layer: l };
+    });
     return map;
     // iconTick is intentional — bumps when an icon bitmap finishes decoding
     // so the layers map gets a fresh reference and weasel re-paints. The
@@ -416,7 +434,15 @@ function GardenCanvasNewPrototype() {
       default:
         return selectTool.id;
     }
-  }, [viewMode, plottingTool, leftDragPan.id, selectTool.id, selectAreaTool.id, insertTool.id, clickZoom.id]);
+  }, [
+    viewMode,
+    plottingTool,
+    leftDragPan.id,
+    selectTool.id,
+    selectAreaTool.id,
+    insertTool.id,
+    clickZoom.id,
+  ]);
 
   const tools = useTools({
     active: activeToolId,

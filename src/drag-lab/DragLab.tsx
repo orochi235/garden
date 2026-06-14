@@ -38,11 +38,18 @@ export function DragLab() {
       <div className="dl-header">
         <h1>Drag Lab</h1>
         <div className="dl-header-actions">
-          <button type="button" onClick={addWorkspace}>+ Add Workspace</button>
-          <button type="button" onClick={resetAll} className="dl-danger">Reset All</button>
+          <button type="button" onClick={addWorkspace}>
+            + Add Workspace
+          </button>
+          <button type="button" onClick={resetAll} className="dl-danger">
+            Reset All
+          </button>
         </div>
       </div>
-      <div className="dl-grid" style={{ '--dl-cols': dims.cols, '--dl-rows': dims.rows } as React.CSSProperties}>
+      <div
+        className="dl-grid"
+        style={{ '--dl-cols': dims.cols, '--dl-rows': dims.rows } as React.CSSProperties}
+      >
         {workspaces.map((ws) => (
           <Workspace
             key={ws.id}

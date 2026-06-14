@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { getCultivar } from '../model/cultivars';
 import { emptyNurseryState } from '../model/nursery';
 import { createGarden } from '../model/types';
-import { getCultivar } from '../model/cultivars';
 import { deserializeGarden, serializeGarden } from './file';
 
 describe('serializeGarden', () => {
@@ -46,10 +46,12 @@ describe('deserializeGarden', () => {
     parsed.seedStarting.trays.push({
       id: 'legacy-tray',
       label: 't',
-      rows: 1, cols: 1,
+      rows: 1,
+      cols: 1,
       cellSize: 'small',
       cellPitchIn: 1.1,
-      widthIn: 1.8, heightIn: 1.8,
+      widthIn: 1.8,
+      heightIn: 1.8,
       slots: [{ state: 'empty', seedlingId: null }],
     });
     const result = deserializeGarden(JSON.stringify(parsed));
@@ -87,11 +89,24 @@ describe('deserializeGarden', () => {
       taxonomicName: 'Solanum lycopersicum',
       variety: 'My Special',
       color: '#abcdef',
-      footprintFt: 1, spacingFt: 2, heightFt: 6,
+      footprintFt: 1,
+      spacingFt: 2,
+      heightFt: 6,
       heightFtOverride: undefined,
       climber: false,
-      iconImage: null, iconBgColor: null,
-      seedStarting: { startable: false, cellSize: 'medium' as const, daysToGerminate: null, weeksToTransplant: null, weeksBeforeLastFrost: null, sowDepthIn: null, lightOnGermination: null, bottomHeat: null, notes: null },
+      iconImage: null,
+      iconBgColor: null,
+      seedStarting: {
+        startable: false,
+        cellSize: 'medium' as const,
+        daysToGerminate: null,
+        weeksToTransplant: null,
+        weeksBeforeLastFrost: null,
+        sowDepthIn: null,
+        lightOnGermination: null,
+        bottomHeat: null,
+        notes: null,
+      },
     };
     garden.collection = [custom];
     const json = serializeGarden(garden);
@@ -106,7 +121,7 @@ describe('deserializeGarden', () => {
     const garden = createGarden({ name: 'T', widthFt: 10, lengthFt: 10 });
     const cabbage = getCultivar('cabbage.red')!;
     const legacy = JSON.parse(serializeGarden(garden));
-    legacy.collection = [cabbage];  // pre-projection shape
+    legacy.collection = [cabbage]; // pre-projection shape
     const restored = deserializeGarden(JSON.stringify(legacy));
     expect(restored.collection.map((c) => c.id)).toEqual(['cabbage.red']);
     expect(restored.collection[0].iconBgColor).toBe(cabbage.iconBgColor);
@@ -119,8 +134,10 @@ describe('deserializeGarden', () => {
     raw.structures.push({
       id: 'legacy-s',
       type: 'raised-bed',
-      x: 0, y: 0,
-      width: 4, length: 8,
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 8,
       rotation: 0,
       color: '#888',
       label: null,
@@ -143,8 +160,10 @@ describe('deserializeGarden', () => {
     // and a dead `arrangement` field that must be stripped.
     raw.zones.push({
       id: 'zone-z',
-      x: 0, y: 0,
-      width: 4, length: 4,
+      x: 0,
+      y: 0,
+      width: 4,
+      length: 4,
       color: '#aaa',
       label: null,
       zIndex: 0,

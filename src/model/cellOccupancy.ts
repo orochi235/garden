@@ -41,10 +41,7 @@ export function cellKey(col: number, row: number): CellKey {
  * Cells are anchored so the grid is centered on the container, with any
  * leftover space split evenly into a margin on each side.
  */
-export function validCellsForContainer(
-  bounds: ParentBounds,
-  cellSizeFt: number,
-): CellRef[] {
+export function validCellsForContainer(bounds: ParentBounds, cellSizeFt: number): CellRef[] {
   if (cellSizeFt <= 0) return [];
   const cols = Math.floor(bounds.width / cellSizeFt);
   const rows = Math.floor(bounds.length / cellSizeFt);
@@ -65,12 +62,20 @@ export function validCellsForContainer(
       const y1 = y0 + cellSizeFt;
       if (isCircle) {
         // All four corners must be inside the inscribed circle.
-        const corners = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
+        const corners = [
+          [x0, y0],
+          [x1, y0],
+          [x0, y1],
+          [x1, y1],
+        ];
         let allInside = true;
         for (const [px, py] of corners) {
           const dx = px - cx;
           const dy = py - cy;
-          if (dx * dx + dy * dy > r2) { allInside = false; break; }
+          if (dx * dx + dy * dy > r2) {
+            allInside = false;
+            break;
+          }
         }
         if (!allInside) continue;
       }
@@ -262,7 +267,10 @@ export function nearestFreeCellCenter(
     const wanted = cellsTouchingCircle(cell.x, cell.y, rFootprint, cellSizeFt, validCells);
     let clear = true;
     for (const k of wanted) {
-      if (occupied.has(k)) { clear = false; break; }
+      if (occupied.has(k)) {
+        clear = false;
+        break;
+      }
     }
     if (clear) return { x: cell.x, y: cell.y };
   }

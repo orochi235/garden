@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createPlantingLayers } from './plantingLayersWorld';
 import type { GetUi } from './worldLayerData';
 
@@ -17,7 +17,12 @@ const baseUi: ReturnType<GetUi> = {
 
 describe('createPlantingLayers (world)', () => {
   it('returns 8 layers in canonical order', () => {
-    const layers = createPlantingLayers(() => [], () => [], () => [], () => baseUi);
+    const layers = createPlantingLayers(
+      () => [],
+      () => [],
+      () => [],
+      () => baseUi,
+    );
     expect(layers.map((l) => l.id)).toEqual([
       'container-overlays',
       'planting-conflicts',
@@ -31,17 +36,32 @@ describe('createPlantingLayers (world)', () => {
   });
 
   it('planting-icons is alwaysOn', () => {
-    const layers = createPlantingLayers(() => [], () => [], () => [], () => baseUi);
+    const layers = createPlantingLayers(
+      () => [],
+      () => [],
+      () => [],
+      () => baseUi,
+    );
     expect(layers.find((l) => l.id === 'planting-icons')?.alwaysOn).toBe(true);
   });
 
   it('planting-measurements has defaultVisible=false', () => {
-    const layers = createPlantingLayers(() => [], () => [], () => [], () => baseUi);
+    const layers = createPlantingLayers(
+      () => [],
+      () => [],
+      () => [],
+      () => baseUi,
+    );
     expect(layers.find((l) => l.id === 'planting-measurements')?.defaultVisible).toBe(false);
   });
 
   it('renders no-op cleanly with empty inputs', () => {
-    const layers = createPlantingLayers(() => [], () => [], () => [], () => baseUi);
+    const layers = createPlantingLayers(
+      () => [],
+      () => [],
+      () => [],
+      () => baseUi,
+    );
     for (const layer of layers) {
       expect(() => layer.draw({}, view, dims)).not.toThrow();
     }

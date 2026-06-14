@@ -1,10 +1,9 @@
+import { createMarkdownRenderer, type DragPayload, useDragHandle } from '@orochi235/weasel';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createMarkdownRenderer } from '@orochi235/weasel';
 import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
-import { useDragHandle, type DragPayload } from '@orochi235/weasel';
 
 interface Props {
   visibleCultivars: Cultivar[];
@@ -138,7 +137,9 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
       let formatted = taxonomicName;
       for (let i = 2; i < words.length; i++) {
         if (words[i].includes('.')) {
-          formatted = [...words.slice(0, i), '\n' + words.slice(i).join(' ')].join(' ').replace(' \n', '\n');
+          formatted = [...words.slice(0, i), '\n' + words.slice(i).join(' ')]
+            .join(' ')
+            .replace(' \n', '\n');
           break;
         }
       }
@@ -172,16 +173,17 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
       tax.renderer(ctx, taxMd, lozX + padX, lozY + padY + 2);
       ctx.restore();
     }
-  }, [cultivar.id, cultivar.color, cultivar.iconBgColor, speciesName, taxonomicName, variety, tick]);
+  }, [
+    cultivar.id,
+    cultivar.color,
+    cultivar.iconBgColor,
+    speciesName,
+    taxonomicName,
+    variety,
+    tick,
+  ]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className={styles.packetCanvas}
-      width={TILE_W}
-      height={TILE_H}
-    />
-  );
+  return <canvas ref={canvasRef} className={styles.packetCanvas} width={TILE_W} height={TILE_H} />;
 }
 
 function PacketTile({
@@ -221,7 +223,7 @@ export function CultivarIconView(props: Props) {
       const bn = b.variety ?? b.name;
       const sa = getSpecies(a.speciesId)?.name ?? '';
       const sb = getSpecies(b.speciesId)?.name ?? '';
-      return (sa.localeCompare(sb)) || an.localeCompare(bn);
+      return sa.localeCompare(sb) || an.localeCompare(bn);
     });
   }, [props.visibleCultivars]);
 

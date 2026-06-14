@@ -1,23 +1,23 @@
 import {
-  type RenderLayer,
   type Dims,
   type Path,
-  type View,
   PathBuilder,
+  type RenderLayer,
   rectPath,
   textCommand,
+  type View,
 } from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3, circlePolygon } from '../util/weaselLocal';
-import { computeContainerOverlay } from '../../model/containerOverlay';
 import { computeOccupancy, resolveFootprint } from '../../model/cellOccupancy';
+import { computeContainerOverlay } from '../../model/containerOverlay';
 import { getCultivar } from '../../model/cultivars';
+import { getSpecies } from '../../model/species';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
-import { getSpecies } from '../../model/species';
-import type { GetUi, LayerDescriptor } from './worldLayerData';
-import { descriptorById } from './worldLayerData';
 import { plantingWorldPose } from '../../utils/plantingPose';
 import { plantDrawCommands } from '../plantRenderers';
+import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import type { GetUi, LayerDescriptor } from './worldLayerData';
+import { descriptorById } from './worldLayerData';
 
 /**
  * Single source of truth for planting/container-layer metadata. Order = draw
@@ -35,7 +35,12 @@ export const PLANTING_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
   { id: 'container-walls', label: 'Container Walls' },
 ];
 
-interface RenderedRect { x: number; y: number; w: number; h: number }
+interface RenderedRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 interface PlantingParent {
   x: number;
@@ -61,7 +66,11 @@ interface ParentLookup {
   plantingsByParent: Map<string, Planting[]>;
 }
 
-function buildParentLookup(plantings: Planting[], zones: Zone[], structures: Structure[]): ParentLookup {
+function buildParentLookup(
+  plantings: Planting[],
+  zones: Zone[],
+  structures: Structure[],
+): ParentLookup {
   const parentMap = new Map<string, PlantingParent>();
   for (const z of zones) parentMap.set(z.id, z as PlantingParent);
   for (const s of structures) {
@@ -103,7 +112,12 @@ function buildContainerClipPath(s: Structure | undefined): Path | null {
   return rectPath(s.x + wallWidth, s.y + wallWidth, innerW, innerH);
 }
 
-function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<string, number>, plantIconScale: number): number {
+function plantingRadius(
+  p: Planting,
+  parent: PlantingParent,
+  childCount: Map<string, number>,
+  plantIconScale: number,
+): number {
   const cultivar = getCultivar(p.cultivarId);
   const footprint = cultivar?.footprintFt ?? 0.5;
   const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
@@ -111,7 +125,6 @@ function plantingRadius(p: Planting, parent: PlantingParent, childCount: Map<str
     ? (Math.min(parent.width, parent.length) / 2) * plantIconScale
     : (footprint / 2) * plantIconScale;
 }
-
 
 /**
  * Render a plant glyph as DrawCommands, translated to (wx, wy).
@@ -125,9 +138,7 @@ function plantGlyphAt(
 ): DrawCommand[] {
   const cultivar = getCultivar(cultivarId);
   const color = cultivar?.color ?? '#4A7C59';
-  const iconBgColor = showFootprintCircles
-    ? (cultivar?.iconBgColor ?? null)
-    : 'transparent';
+  const iconBgColor = showFootprintCircles ? (cultivar?.iconBgColor ?? null) : 'transparent';
   return plantDrawCommands(cultivarId, wx, wy, radius, color, iconBgColor);
 }
 
@@ -150,7 +161,10 @@ export function createPlantingLayers(
         const occupied = new Map<string, Set<string>>();
         for (const p of plantings) {
           let set = occupied.get(p.parentId);
-          if (!set) { set = new Set(); occupied.set(p.parentId, set); }
+          if (!set) {
+            set = new Set();
+            occupied.set(p.parentId, set);
+          }
           set.add(`${p.x},${p.y}`);
         }
 
@@ -185,7 +199,10 @@ export function createPlantingLayers(
               children.push({
                 kind: 'path',
                 path: circlePolygon(item.x, item.y, r),
-                stroke: { paint: { fill: 'solid', color: 'rgba(127,176,105,0.8)' }, width: px(view, 2) },
+                stroke: {
+                  paint: { fill: 'solid', color: 'rgba(127,176,105,0.8)' },
+                  width: px(view, 2),
+                },
               });
             } else if (item.type === 'grid-line') {
               const path = new PathBuilder()
@@ -229,17 +246,22 @@ export function createPlantingLayers(
           const cellSize = parent.layout.cellSizeFt;
           const group = plantingsByParent.get(parentId) ?? [];
           const footprints = group
-            .map((p) => resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y))
+            .map((p) =>
+              resolveFootprint({ cultivarId: p.cultivarId, x: p.x, y: p.y }, parent.x, parent.y),
+            )
             .filter((f): f is NonNullable<typeof f> => f !== null);
           if (ghost && ghost.parentId === parentId) {
             const ghostFp = resolveFootprint(
               { cultivarId: ghost.cultivarId, x: ghost.x, y: ghost.y },
-              parent.x, parent.y,
+              parent.x,
+              parent.y,
             );
             if (ghostFp) footprints.push(ghostFp);
           }
           const { validCells, footprintConflict, spacingConflict } = computeOccupancy({
-            bounds, cellSizeFt: cellSize, plantings: footprints,
+            bounds,
+            cellSizeFt: cellSize,
+            plantings: footprints,
           });
           if (footprintConflict.size === 0 && spacingConflict.size === 0) continue;
           const cellByKey = new Map(validCells.map((c) => [`${c.col},${c.row}`, c]));
@@ -274,7 +296,11 @@ export function createPlantingLayers(
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
+        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
+          plantings,
+          zones,
+          structures,
+        );
 
         const children: DrawCommand[] = [];
         for (const [parentId, group] of plantingsByParent) {
@@ -284,14 +310,16 @@ export function createPlantingLayers(
           for (const p of group) {
             const cultivar = getCultivar(p.cultivarId);
             const spacing = cultivar?.spacingFt ?? 0.5;
-            const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
+            const isSingleFill =
+              parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
             if (isSingleFill) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const spacingHalf = (spacing / 2) * data.plantIconScale;
 
-            const path = parent.shape === 'circle'
-              ? circlePolygon(wx, wy, spacingHalf)
-              : rectPath(wx - spacingHalf, wy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
+            const path =
+              parent.shape === 'circle'
+                ? circlePolygon(wx, wy, spacingHalf)
+                : rectPath(wx - spacingHalf, wy - spacingHalf, spacingHalf * 2, spacingHalf * 2);
             children.push({
               kind: 'path',
               path,
@@ -315,7 +343,11 @@ export function createPlantingLayers(
         const zones = getZones();
         const structures = getStructures();
         const structureById = new Map(structures.map((s) => [s.id, s]));
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
+        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
+          plantings,
+          zones,
+          structures,
+        );
 
         const children: DrawCommand[] = [];
         for (const [parentId, group] of plantingsByParent) {
@@ -325,7 +357,10 @@ export function createPlantingLayers(
           const cmds: DrawCommand[] = [];
           for (const p of group) {
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
-            const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
+            const radius = Math.max(
+              px(view, 3),
+              plantingRadius(p, parent, childCount, data.plantIconScale),
+            );
             cmds.push(...plantGlyphAt(p.cultivarId, wx, wy, radius, data.showFootprintCircles));
           }
 
@@ -348,7 +383,11 @@ export function createPlantingLayers(
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
+        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
+          plantings,
+          zones,
+          structures,
+        );
 
         const fontPx = 9 / Math.max(0.0001, view.scale);
         const children: DrawCommand[] = [];
@@ -360,21 +399,26 @@ export function createPlantingLayers(
             if (!cultivar) continue;
             const footprint = cultivar.footprintFt ?? 0.5;
             const spacing = cultivar.spacingFt ?? 0.5;
-            const isSingleFill = parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
+            const isSingleFill =
+              parent.layout?.type === 'single' && childCount.get(p.parentId) === 1;
             if (isSingleFill) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
             const radius = Math.max(px(view, 3), (footprint / 2) * data.plantIconScale);
             const labelX = wx + radius + px(view, 3);
-            children.push(textCommand(labelX, wy - px(view, 2), `${footprint.toFixed(1)}ft`, {
-              fontSize: fontPx,
-              align: 'left',
-              fill: { fill: 'solid', color: 'rgba(255, 255, 255, 0.7)' },
-            }));
-            children.push(textCommand(labelX, wy + px(view, 8), `${spacing.toFixed(1)}ft`, {
-              fontSize: fontPx,
-              align: 'left',
-              fill: { fill: 'solid', color: 'rgba(255, 255, 200, 0.5)' },
-            }));
+            children.push(
+              textCommand(labelX, wy - px(view, 2), `${footprint.toFixed(1)}ft`, {
+                fontSize: fontPx,
+                align: 'left',
+                fill: { fill: 'solid', color: 'rgba(255, 255, 255, 0.7)' },
+              }),
+            );
+            children.push(
+              textCommand(labelX, wy + px(view, 8), `${spacing.toFixed(1)}ft`, {
+                fontSize: fontPx,
+                align: 'left',
+                fill: { fill: 'solid', color: 'rgba(255, 255, 200, 0.5)' },
+              }),
+            );
           }
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];
@@ -388,7 +432,11 @@ export function createPlantingLayers(
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
+        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
+          plantings,
+          zones,
+          structures,
+        );
 
         const children: DrawCommand[] = [];
         for (const [, group] of plantingsByParent) {
@@ -398,15 +446,20 @@ export function createPlantingLayers(
             const opacity = data.getHighlight(p.id);
             if (opacity <= 0) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
-            const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
+            const radius = Math.max(
+              px(view, 3),
+              plantingRadius(p, parent, childCount, data.plantIconScale),
+            );
             children.push({
               kind: 'group',
               alpha: opacity,
-              children: [{
-                kind: 'path',
-                path: circlePolygon(wx, wy, radius + px(view, 1)),
-                stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
-              }],
+              children: [
+                {
+                  kind: 'path',
+                  path: circlePolygon(wx, wy, radius + px(view, 1)),
+                  stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
+                },
+              ],
             });
           }
         }
@@ -428,7 +481,11 @@ export function createPlantingLayers(
         const plantings = getPlantings();
         const zones = getZones();
         const structures = getStructures();
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(plantings, zones, structures);
+        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
+          plantings,
+          zones,
+          structures,
+        );
 
         const fontPx = data.labelFontSize / Math.max(0.0001, view.scale);
 
@@ -442,11 +499,16 @@ export function createPlantingLayers(
             const cultivar = getCultivar(p.cultivarId);
             if (!cultivar) continue;
             const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
-            const radius = Math.max(px(view, 3), plantingRadius(p, parent, childCount, data.plantIconScale));
+            const radius = Math.max(
+              px(view, 3),
+              plantingRadius(p, parent, childCount, data.plantIconScale),
+            );
             const isSelected = data.selectedIds.includes(p.id);
-            const showThis = data.labelMode === 'all' || data.labelMode === 'active-layer'
-              || (data.labelMode === 'selection' && isSelected)
-              || data.getHighlight(p.id) > 0;
+            const showThis =
+              data.labelMode === 'all' ||
+              data.labelMode === 'active-layer' ||
+              (data.labelMode === 'selection' && isSelected) ||
+              data.getHighlight(p.id) > 0;
             if (!showThis) continue;
 
             const species = getSpecies(cultivar.speciesId);
@@ -483,11 +545,13 @@ export function createPlantingLayers(
             ),
             fill: { fill: 'solid', color: 'rgba(0, 0, 0, 0.6)' },
           });
-          children.push(textCommand(label.rect.x + label.rect.w / 2, label.rect.y, label.text, {
-            fontSize: fontPx,
-            align: 'center',
-            fill: { fill: 'solid', color: '#ffffff' },
-          }));
+          children.push(
+            textCommand(label.rect.x + label.rect.w / 2, label.rect.y, label.text, {
+              fontSize: fontPx,
+              align: 'center',
+              fill: { fill: 'solid', color: '#ffffff' },
+            }),
+          );
           labelOccluders.push(label.rect);
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];
@@ -537,4 +601,3 @@ export function createPlantingLayers(
     },
   ];
 }
-

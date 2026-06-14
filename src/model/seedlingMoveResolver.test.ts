@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createTray } from './nursery';
-import { resolveGroupMoves, type PendingMove } from './seedlingMoveResolver';
+import { type PendingMove, resolveGroupMoves } from './seedlingMoveResolver';
 
-function withSlot(tray: ReturnType<typeof createTray>, row: number, col: number, seedlingId: string) {
+function withSlot(
+  tray: ReturnType<typeof createTray>,
+  row: number,
+  col: number,
+  seedlingId: string,
+) {
   const slots = tray.slots.slice();
   slots[row * tray.cols + col] = { state: 'sown', seedlingId };
   return { ...tray, slots };

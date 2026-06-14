@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { defineTool, zoomAt } from '@orochi235/weasel';
 import type { Tool } from '@orochi235/weasel';
+import { defineTool, zoomAt } from '@orochi235/weasel';
+import { useMemo } from 'react';
 
 export interface EricClickZoomOpts {
   min?: number;

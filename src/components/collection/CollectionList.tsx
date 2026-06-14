@@ -1,8 +1,8 @@
+import { useDropZone } from '@orochi235/weasel';
 import { useMemo, useState } from 'react';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
-import { useDropZone } from '@orochi235/weasel';
 
 interface Props {
   collection: Cultivar[];
@@ -24,7 +24,9 @@ export function CollectionList({ collection, onRemove, onDropFromOther }: Props)
       .map(([speciesId, children]) => ({
         speciesId,
         speciesName: getSpecies(speciesId)?.name ?? speciesId,
-        children: [...children].sort((a, b) => (a.variety ?? a.name).localeCompare(b.variety ?? b.name)),
+        children: [...children].sort((a, b) =>
+          (a.variety ?? a.name).localeCompare(b.variety ?? b.name),
+        ),
       }))
       .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
   }, [collection]);
@@ -42,9 +44,7 @@ export function CollectionList({ collection, onRemove, onDropFromOther }: Props)
       ref={dropRef}
       className={`${styles.collectionList} ${dropActive ? styles.dropTarget : ''}`}
     >
-      {collection.length === 0 && (
-        <div className={styles.emptyMessage}>Empty</div>
-      )}
+      {collection.length === 0 && <div className={styles.emptyMessage}>Empty</div>}
       {groups.map((g) => (
         <div key={g.speciesId} className={styles.collectionGroup}>
           <div className={styles.collectionGroupTitle}>{g.speciesName}</div>
@@ -57,7 +57,9 @@ export function CollectionList({ collection, onRemove, onDropFromOther }: Props)
                 className={styles.removeButton}
                 onClick={() => onRemove(c.id)}
                 title="Remove from collection"
-              >×</button>
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>

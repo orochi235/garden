@@ -1,17 +1,17 @@
-import type { ActionDescriptor } from './types';
-import { undoAction } from './editing/undo';
-import { redoAction } from './editing/redo';
-import { deleteAction } from './editing/delete';
 import { copyAction } from './editing/copy';
 import { cutAction } from './editing/cut';
-import { pasteAction } from './editing/paste';
-import { selectAllAction } from './editing/selectAll';
 import { cycleSelectionNextAction, cycleSelectionPrevAction } from './editing/cycleSelection';
+import { deleteAction } from './editing/delete';
+import { pasteAction } from './editing/paste';
+import { redoAction } from './editing/redo';
+import { selectAllAction } from './editing/selectAll';
+import { undoAction } from './editing/undo';
+import { cycleLayerDownAction, cycleLayerUpAction } from './layers/cycleLayer';
+import { duplicateAction } from './objects/duplicate';
+import { rotateCcwAction, rotateCwAction } from './objects/rotate';
+import type { ActionDescriptor } from './types';
 import { cycleViewModeAction } from './view/cycleViewMode';
 import { resetViewAction } from './view/resetView';
-import { cycleLayerDownAction, cycleLayerUpAction } from './layers/cycleLayer';
-import { rotateCwAction, rotateCcwAction } from './objects/rotate';
-import { duplicateAction } from './objects/duplicate';
 
 export const allActions: ActionDescriptor[] = [
   undoAction,

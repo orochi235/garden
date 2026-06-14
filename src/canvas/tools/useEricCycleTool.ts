@@ -1,23 +1,25 @@
-import { useMemo, useRef, useState } from 'react';
 import {
-  defineTool,
-  useClone,
   cloneByAltDrag,
   type Dims,
-  type Tool,
+  defineTool,
   type RenderLayer,
+  type Tool,
+  useClone,
   type View,
 } from '@orochi235/weasel';
-import { type DrawCommand } from '../util/weaselLocal';
-import { useUiStore } from '../../store/uiStore';
-import { useGardenStore } from '../../store/gardenStore';
+import { useMemo, useRef, useState } from 'react';
 import { getCultivar } from '../../model/cultivars';
+import { useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
+import { expandToGroups } from '../../utils/groups';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
 import type { GardenInsertAdapter } from '../adapters/insert';
-import { expandToGroups } from '../../utils/groups';
 import { plantDrawCommands } from '../plantRenderers';
+import type { DrawCommand } from '../util/weaselLocal';
 
-export interface CycleScratch { cycled: boolean }
+export interface CycleScratch {
+  cycled: boolean;
+}
 
 interface CycleMemo {
   worldX: number;
@@ -27,7 +29,11 @@ interface CycleMemo {
   index: number;
 }
 
-interface CloneOverlayItem { id: string; x: number; y: number }
+interface CloneOverlayItem {
+  id: string;
+  x: number;
+  y: number;
+}
 
 /** Alt+click cycles through overlapping objects at the cursor. The first
  *  alt-click selects the top-most hit; each subsequent alt-click at the same
@@ -50,18 +56,21 @@ export function useEricCycleTool(
   // Stub adapter keeps `useClone` hook-count stable even when no real adapter
   // is provided. Behaviours won't activate (alt check passes, but
   // snapshotSelection returns nothing → end is a no-op).
-  const stubAdapter = useMemo<GardenInsertAdapter>(() => ({
-    commitInsert: () => null,
-    commitPaste: () => [],
-    getPasteOffset: () => ({ dx: 0, dy: 0 }),
-    snapshotSelection: () => ({ items: [] }),
-    insertNode: () => {},
-    removeNode: () => {},
-    getNode: () => undefined,
-    setSelection: () => {},
-    getSelection: () => [],
-    applyBatch: () => {},
-  }), []);
+  const stubAdapter = useMemo<GardenInsertAdapter>(
+    () => ({
+      commitInsert: () => null,
+      commitPaste: () => [],
+      getPasteOffset: () => ({ dx: 0, dy: 0 }),
+      snapshotSelection: () => ({ items: [] }),
+      insertNode: () => {},
+      removeNode: () => {},
+      getNode: () => undefined,
+      setSelection: () => {},
+      getSelection: () => [],
+      applyBatch: () => {},
+    }),
+    [],
+  );
 
   const clone = useClone<{ id: string }>(insertAdapter ?? stubAdapter, {
     behaviors: [cloneByAltDrag()],
@@ -90,7 +99,9 @@ export function useEricCycleTool(
           const radiusPx = (footprintFt / 2) * view.scale;
           const color = cultivar.color ?? '#4A7C59';
           const iconBgColor = cultivar.iconBgColor ?? null;
-          children.push(...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor));
+          children.push(
+            ...plantDrawCommands(planting.cultivarId, sx, sy, radiusPx, color, iconBgColor),
+          );
         }
         return [{ kind: 'group', alpha: 0.5, children }];
       },
@@ -110,11 +121,12 @@ export function useEricCycleTool(
             const ids = adapter.hitAll(ctx.worldX, ctx.worldY).map((n) => n.id);
             if (ids.length === 0) return 'pass';
             const memo = memoRef.current;
-            const same = memo
-              && Math.abs(memo.worldX - ctx.worldX) < 0.001
-              && Math.abs(memo.worldY - ctx.worldY) < 0.001
-              && memo.ids.length === ids.length
-              && memo.ids.every((v, i) => v === ids[i]);
+            const same =
+              memo &&
+              Math.abs(memo.worldX - ctx.worldX) < 0.001 &&
+              Math.abs(memo.worldY - ctx.worldY) < 0.001 &&
+              memo.ids.length === ids.length &&
+              memo.ids.every((v, i) => v === ids[i]);
             const nextIndex = same ? (memo!.index + 1) % ids.length : 0;
             memoRef.current = { worldX: ctx.worldX, worldY: ctx.worldY, ids, index: nextIndex };
             useUiStore.getState().setSelection([ids[nextIndex]]);

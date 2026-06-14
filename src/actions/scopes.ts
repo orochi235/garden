@@ -1,6 +1,7 @@
 // src/actions/scopes.ts
-import type { ScopeNode } from './types';
+
 import { useUiStore } from '../store/uiStore';
+import type { ScopeNode } from './types';
 
 function isInputFocused(): boolean {
   const tag = document.activeElement?.tagName;
@@ -10,11 +11,23 @@ function isInputFocused(): boolean {
 const SCOPE_TREE: ScopeNode[] = [
   { id: 'global', parent: null, active: () => true },
   { id: 'canvas', parent: 'global', active: () => !isInputFocused() },
-  { id: 'structures', parent: 'canvas', active: () => useUiStore.getState().activeLayer === 'structures' },
+  {
+    id: 'structures',
+    parent: 'canvas',
+    active: () => useUiStore.getState().activeLayer === 'structures',
+  },
   { id: 'zones', parent: 'canvas', active: () => useUiStore.getState().activeLayer === 'zones' },
-  { id: 'plantings', parent: 'canvas', active: () => useUiStore.getState().activeLayer === 'plantings' },
+  {
+    id: 'plantings',
+    parent: 'canvas',
+    active: () => useUiStore.getState().activeLayer === 'plantings',
+  },
   { id: 'sidebar', parent: 'global', active: () => true },
-  { id: 'properties', parent: 'sidebar', active: () => useUiStore.getState().selectedIds.length > 0 },
+  {
+    id: 'properties',
+    parent: 'sidebar',
+    active: () => useUiStore.getState().selectedIds.length > 0,
+  },
 ];
 
 const scopeMap = new Map(SCOPE_TREE.map((s) => [s.id, s]));

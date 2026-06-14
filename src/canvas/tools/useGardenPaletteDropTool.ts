@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { screenToWorld, roundToCell } from '@orochi235/weasel';
-import { createDragGhost } from '../drag/dragGhost';
-import { onIconLoad, renderPlant } from '../plantRenderers';
+import { roundToCell, screenToWorld } from '@orochi235/weasel';
+import { type RefObject, useEffect, useMemo, useRef } from 'react';
+import type { PaletteEntry } from '../../components/palette/paletteData';
+import { getCultivar } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { getCultivar } from '../../model/cultivars';
-import type { PaletteEntry } from '../../components/palette/paletteData';
-import { useDragController } from '../drag/useDragController';
+import { createDragGhost } from '../drag/dragGhost';
 import {
   createGardenPaletteDrag,
   GARDEN_PALETTE_DRAG_KIND,
@@ -14,7 +12,9 @@ import {
   type GardenPalettePutative,
 } from '../drag/gardenPaletteDrag';
 import type { DragViewport } from '../drag/putativeDrag';
+import { useDragController } from '../drag/useDragController';
 import type { View } from '../layers/worldLayerData';
+import { onIconLoad, renderPlant } from '../plantRenderers';
 
 interface Options {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -44,10 +44,7 @@ interface Options {
  */
 export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): void {
   const entryRef = useRef<PaletteEntry | null>(null);
-  const drag = useMemo(
-    () => createGardenPaletteDrag({ getEntry: () => entryRef.current }),
-    [],
-  );
+  const drag = useMemo(() => createGardenPaletteDrag({ getEntry: () => entryRef.current }), []);
   const registry = useMemo(() => ({ [drag.kind]: drag as never }), [drag]);
   const controller = useDragController(registry);
 
@@ -100,7 +97,8 @@ export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): vo
         const radius = Math.max(8, (footprintFt / 2) * iconScale * zoom);
         ghost = createDragGhost({
           sizeCss: radius * 2,
-          paint: (ctx: CanvasRenderingContext2D) => renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
+          paint: (ctx: CanvasRenderingContext2D) =>
+            renderPlant(ctx, entry.id, radius, entry.color ?? '#888'),
         });
         unsubIcon = onIconLoad(() => ghost?.repaint());
         return ghost;

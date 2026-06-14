@@ -2,29 +2,30 @@
  * Geometry module interactive demos.
  * Four canvas-based demos showcasing boolean ops, offset, Bezier curves, and garden scenarios.
  */
+
+import { JoinType } from 'clipper2-ts';
 import {
-  rectPath,
-  ellipsePath,
-  polygonPath,
-  shapeUnion,
-  shapeDifference,
-  shapeIntersection,
-  shapeXor,
-  shapeOffset,
-  shapeArea,
-  shapeBounds,
-  isHole,
-  minkowskiSum,
-  triangulate,
-  flattenPath,
-  traceShapePath,
-  tracePolyline,
   closedPath,
   cubicTo,
-  type ShapePath,
+  ellipsePath,
+  flattenPath,
+  isHole,
+  minkowskiSum,
   type Point2D,
+  polygonPath,
+  rectPath,
+  type ShapePath,
+  shapeArea,
+  shapeBounds,
+  shapeDifference,
+  shapeIntersection,
+  shapeOffset,
+  shapeUnion,
+  shapeXor,
+  tracePolyline,
+  traceShapePath,
+  triangulate,
 } from './geometry';
-import { JoinType } from 'clipper2-ts';
 
 // ── Layout ──────────────────────────────────────────────────────────────
 
@@ -85,10 +86,10 @@ root.innerHTML = `
 `;
 
 // Tab switching
-document.querySelectorAll('.tab').forEach(tab => {
+document.querySelectorAll('.tab').forEach((tab) => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('.demo-panel').forEach((p) => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(`panel-${(tab as HTMLElement).dataset.tab}`)!.classList.add('active');
   });
@@ -96,7 +97,13 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function drawShape(ctx: CanvasRenderingContext2D, shape: ShapePath, fill: string, stroke: string, lineWidth = 1.5) {
+function drawShape(
+  ctx: CanvasRenderingContext2D,
+  shape: ShapePath,
+  fill: string,
+  stroke: string,
+  lineWidth = 1.5,
+) {
   ctx.beginPath();
   traceShapePath(ctx, shape);
   ctx.fillStyle = fill;
@@ -106,7 +113,13 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: ShapePath, fill: string
   ctx.stroke();
 }
 
-function drawPolyShape(ctx: CanvasRenderingContext2D, shape: ShapePath, fill: string, stroke: string, lineWidth = 1.5) {
+function drawPolyShape(
+  ctx: CanvasRenderingContext2D,
+  shape: ShapePath,
+  fill: string,
+  stroke: string,
+  lineWidth = 1.5,
+) {
   const pts = flattenPath(shape, 0.3);
   ctx.beginPath();
   tracePolyline(ctx, pts);
@@ -117,7 +130,13 @@ function drawPolyShape(ctx: CanvasRenderingContext2D, shape: ShapePath, fill: st
   ctx.stroke();
 }
 
-function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: string, stroke: string, lineWidth = 1.5) {
+function drawShapes(
+  ctx: CanvasRenderingContext2D,
+  shapes: ShapePath[],
+  fill: string,
+  stroke: string,
+  lineWidth = 1.5,
+) {
   for (const s of shapes) drawPolyShape(ctx, s, fill, stroke, lineWidth);
 }
 
@@ -148,18 +167,22 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
   const shapeASelect = document.getElementById('bool-shape-a') as HTMLSelectElement;
   const shapeBSelect = document.getElementById('bool-shape-b') as HTMLSelectElement;
 
-  let bx = 130, by = 90;
+  let bx = 130,
+    by = 90;
   let dragging = false;
 
   function makeShape(type: string, x: number, y: number, size: number): ShapePath {
     switch (type) {
-      case 'circle': return ellipsePath(x + size / 2, y + size / 2, size / 2, size / 2);
-      case 'triangle': return polygonPath([
-        { x: x + size / 2, y },
-        { x: x + size, y: y + size },
-        { x, y: y + size },
-      ]);
-      default: return rectPath(x, y, size, size);
+      case 'circle':
+        return ellipsePath(x + size / 2, y + size / 2, size / 2, size / 2);
+      case 'triangle':
+        return polygonPath([
+          { x: x + size / 2, y },
+          { x: x + size, y: y + size },
+          { x, y: y + size },
+        ]);
+      default:
+        return rectPath(x, y, size, size);
     }
   }
 
@@ -200,13 +223,16 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
     const uArea = shapeUnion([a, b]).reduce((s, p) => s + shapeArea(p), 0);
     const iArea = shapeIntersection([a], [b]).reduce((s, p) => s + shapeArea(p), 0);
-    infoEl.textContent = `Union area: ${Math.abs(uArea).toFixed(1)}  |  Intersection area: ${Math.abs(iArea).toFixed(1)}  |  Overlap: ${(Math.abs(iArea) > 0.1 ? 'yes' : 'no')}`;
+    infoEl.textContent = `Union area: ${Math.abs(uArea).toFixed(1)}  |  Intersection area: ${Math.abs(iArea).toFixed(1)}  |  Overlap: ${Math.abs(iArea) > 0.1 ? 'yes' : 'no'}`;
 
     const shapeCall = (type: string, label: string) => {
       switch (type) {
-        case 'circle': return `<span class="kw">const</span> ${label} = <span class="fn">ellipsePath</span>(<span class="num">cx</span>, <span class="num">cy</span>, <span class="num">60</span>, <span class="num">60</span>);`;
-        case 'triangle': return `<span class="kw">const</span> ${label} = <span class="fn">polygonPath</span>([...trianglePoints]);`;
-        default: return `<span class="kw">const</span> ${label} = <span class="fn">rectPath</span>(<span class="num">x</span>, <span class="num">y</span>, <span class="num">120</span>, <span class="num">120</span>);`;
+        case 'circle':
+          return `<span class="kw">const</span> ${label} = <span class="fn">ellipsePath</span>(<span class="num">cx</span>, <span class="num">cy</span>, <span class="num">60</span>, <span class="num">60</span>);`;
+        case 'triangle':
+          return `<span class="kw">const</span> ${label} = <span class="fn">polygonPath</span>([...trianglePoints]);`;
+        default:
+          return `<span class="kw">const</span> ${label} = <span class="fn">rectPath</span>(<span class="num">x</span>, <span class="num">y</span>, <span class="num">120</span>, <span class="num">120</span>);`;
       }
     };
     codeEl.innerHTML = [
@@ -226,7 +252,8 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
   canvas.addEventListener('mousedown', (e) => {
     const r = canvas.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const mx = e.clientX - r.left,
+      my = e.clientY - r.top;
     // Check if click is near shape B in any column (use first column coords)
     if (mx >= bx && mx <= bx + 120 && my >= by && my <= by + 120) dragging = true;
   });
@@ -237,8 +264,12 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     by = e.clientY - r.top - 60;
     drawBoolDemo();
   });
-  canvas.addEventListener('mouseup', () => { dragging = false; });
-  canvas.addEventListener('mouseleave', () => { dragging = false; });
+  canvas.addEventListener('mouseup', () => {
+    dragging = false;
+  });
+  canvas.addEventListener('mouseleave', () => {
+    dragging = false;
+  });
   shapeASelect.addEventListener('change', drawBoolDemo);
   shapeBSelect.addEventListener('change', drawBoolDemo);
   drawBoolDemo();
@@ -277,7 +308,13 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
   const infoEl = document.getElementById('offset-info')!;
   const offsetCodeEl = document.getElementById('offset-code')!;
 
-  function makeStar(cx: number, cy: number, outer: number, inner: number, points: number): ShapePath {
+  function makeStar(
+    cx: number,
+    cy: number,
+    outer: number,
+    inner: number,
+    points: number,
+  ): ShapePath {
     const pts: Point2D[] = [];
     for (let i = 0; i < points * 2; i++) {
       const angle = (Math.PI * i) / points - Math.PI / 2;
@@ -305,10 +342,18 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
     let base: ShapePath;
     switch (shapeSelect.value) {
-      case 'circle': base = ellipsePath(300, 180, 70, 70); break;
-      case 'star': base = makeStar(300, 180, 80, 35, 5); break;
-      case 'L': base = makeLShape(); break;
-      default: base = rectPath(220, 100, 160, 160); break;
+      case 'circle':
+        base = ellipsePath(300, 180, 70, 70);
+        break;
+      case 'star':
+        base = makeStar(300, 180, 80, 35, 5);
+        break;
+      case 'L':
+        base = makeLShape();
+        break;
+      default:
+        base = rectPath(220, 100, 160, 160);
+        break;
     }
 
     const joins: { name: string; type: JoinType; col: number }[] = [
@@ -349,10 +394,14 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
     const shapeCode = (() => {
       switch (shapeSelect.value) {
-        case 'circle': return `<span class="kw">const</span> shape = <span class="fn">ellipsePath</span>(<span class="num">300</span>, <span class="num">180</span>, <span class="num">70</span>, <span class="num">70</span>);`;
-        case 'star': return `<span class="kw">const</span> shape = <span class="fn">polygonPath</span>([...starPoints]);`;
-        case 'L': return `<span class="kw">const</span> shape = <span class="fn">polygonPath</span>([...lShapePoints]);`;
-        default: return `<span class="kw">const</span> shape = <span class="fn">rectPath</span>(<span class="num">220</span>, <span class="num">100</span>, <span class="num">160</span>, <span class="num">160</span>);`;
+        case 'circle':
+          return `<span class="kw">const</span> shape = <span class="fn">ellipsePath</span>(<span class="num">300</span>, <span class="num">180</span>, <span class="num">70</span>, <span class="num">70</span>);`;
+        case 'star':
+          return `<span class="kw">const</span> shape = <span class="fn">polygonPath</span>([...starPoints]);`;
+        case 'L':
+          return `<span class="kw">const</span> shape = <span class="fn">polygonPath</span>([...lShapePoints]);`;
+        default:
+          return `<span class="kw">const</span> shape = <span class="fn">rectPath</span>(<span class="num">220</span>, <span class="num">100</span>, <span class="num">160</span>, <span class="num">160</span>);`;
       }
     })();
     offsetCodeEl.innerHTML = [
@@ -458,7 +507,10 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
     // Draw control point handles
     const handlePairs: [keyof typeof points, keyof typeof points][] = [
-      ['start', 'cp1'], ['cp2', 'mid'], ['mid', 'cp3'], ['cp4', 'end'],
+      ['start', 'cp1'],
+      ['cp2', 'mid'],
+      ['mid', 'cp3'],
+      ['cp4', 'end'],
     ];
     ctx.setLineDash([4, 4]);
     ctx.strokeStyle = 'rgba(255,200,50,0.4)';
@@ -511,7 +563,8 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
   canvas.addEventListener('mousedown', (e) => {
     const r = canvas.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const mx = e.clientX - r.left,
+      my = e.clientY - r.top;
     for (const [key, pt] of Object.entries(points)) {
       if (Math.hypot(mx - pt.x, my - pt.y) < 12) {
         dragTarget = key as keyof typeof points;
@@ -525,14 +578,22 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     points[dragTarget] = { x: e.clientX - r.left, y: e.clientY - r.top };
     drawBezierDemo();
   });
-  canvas.addEventListener('mouseup', () => { dragTarget = null; });
-  canvas.addEventListener('mouseleave', () => { dragTarget = null; });
+  canvas.addEventListener('mouseup', () => {
+    dragTarget = null;
+  });
+  canvas.addEventListener('mouseleave', () => {
+    dragTarget = null;
+  });
   tolSlider.addEventListener('input', drawBezierDemo);
   resetBtn.addEventListener('click', () => {
-    points = { ...defaultPoints,
-      start: { ...defaultPoints.start }, cp1: { ...defaultPoints.cp1 },
-      cp2: { ...defaultPoints.cp2 }, mid: { ...defaultPoints.mid },
-      cp3: { ...defaultPoints.cp3 }, cp4: { ...defaultPoints.cp4 },
+    points = {
+      ...defaultPoints,
+      start: { ...defaultPoints.start },
+      cp1: { ...defaultPoints.cp1 },
+      cp2: { ...defaultPoints.cp2 },
+      mid: { ...defaultPoints.mid },
+      cp3: { ...defaultPoints.cp3 },
+      cp4: { ...defaultPoints.cp4 },
       end: { ...defaultPoints.end },
     };
     drawBezierDemo();
@@ -571,9 +632,12 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
   // Scale: 1 ft = 30px
   const S = 30;
-  const OX = 50, OY = 50;
+  const OX = 50,
+    OY = 50;
 
-  function ft(v: number) { return v * S; }
+  function ft(v: number) {
+    return v * S;
+  }
   function drawGround(w: number, h: number) {
     ctx.fillStyle = '#2d5a27';
     ctx.fillRect(OX, OY, ft(w), ft(h));
@@ -581,16 +645,22 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.lineWidth = 0.5;
     for (let x = 0; x <= w; x++) {
-      ctx.beginPath(); ctx.moveTo(OX + ft(x), OY); ctx.lineTo(OX + ft(x), OY + ft(h)); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(OX + ft(x), OY);
+      ctx.lineTo(OX + ft(x), OY + ft(h));
+      ctx.stroke();
     }
     for (let y = 0; y <= h; y++) {
-      ctx.beginPath(); ctx.moveTo(OX, OY + ft(y)); ctx.lineTo(OX + ft(w), OY + ft(y)); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(OX, OY + ft(y));
+      ctx.lineTo(OX + ft(w), OY + ft(y));
+      ctx.stroke();
     }
   }
 
   function scaleShape(shape: ShapePath): ShapePath {
     const pts = flattenPath(shape, 0.05);
-    return polygonPath(pts.map(p => ({ x: OX + p.x * S, y: OY + p.y * S })));
+    return polygonPath(pts.map((p) => ({ x: OX + p.x * S, y: OY + p.y * S })));
   }
 
   function drawScenarioMerge() {
@@ -619,7 +689,7 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     ctx.fillText('3 beds → 1 merged outline', OX + ft(6), OY + ft(12));
 
     const area = merged.reduce((s, p) => s + Math.abs(shapeArea(p)), 0);
-    infoEl.textContent = `3 beds (6×4, 6×4, 5×4) merged into ${merged.length} shape(s)  |  Total area: ${area.toFixed(1)} sq ft  |  Original sum: ${6*4 + 6*4 + 5*4} sq ft`;
+    infoEl.textContent = `3 beds (6×4, 6×4, 5×4) merged into ${merged.length} shape(s)  |  Total area: ${area.toFixed(1)} sq ft  |  Original sum: ${6 * 4 + 6 * 4 + 5 * 4} sq ft`;
 
     // Right side: pot union
     const pot1 = ellipsePath(18, 4, 2, 2);
@@ -643,7 +713,8 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     const bed = rectPath(2, 2, 8, 6);
     const bedInset = shapeOffset(bed, -wallThickness);
     drawPolyShape(ctx, scaleShape(bed), 'rgba(139,105,20,0.7)', '#8B6914', 2);
-    for (const s of bedInset) drawPolyShape(ctx, scaleShape(s), 'rgba(92,64,51,0.8)', '#5C4033', 1.5);
+    for (const s of bedInset)
+      drawPolyShape(ctx, scaleShape(s), 'rgba(92,64,51,0.8)', '#5C4033', 1.5);
 
     ctx.fillStyle = '#aaa';
     ctx.font = '11px system-ui';
@@ -657,7 +728,8 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     const pot = ellipsePath(17, 5, 3, 3);
     const potInset = shapeOffset(pot, -0.3, JoinType.Round);
     drawPolyShape(ctx, scaleShape(pot), 'rgba(199,91,57,0.7)', '#C75B39', 2);
-    for (const s of potInset) drawPolyShape(ctx, scaleShape(s), 'rgba(92,64,51,0.8)', '#5C4033', 1.5);
+    for (const s of potInset)
+      drawPolyShape(ctx, scaleShape(s), 'rgba(92,64,51,0.8)', '#5C4033', 1.5);
 
     ctx.fillText('Pot: r=3 ft', OX + ft(17), OY + ft(9.5));
     ctx.fillText('Wall: 0.3 ft', OX + ft(17), OY + ft(10.5));
@@ -675,7 +747,10 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
       ctx.strokeStyle = 'rgba(100,200,100,0.3)';
       ctx.lineWidth = 0.5;
       for (let y = b.y; y < b.y + b.height; y += 6) {
-        ctx.beginPath(); ctx.moveTo(b.x, y); ctx.lineTo(b.x + b.width, y); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(b.x, y);
+        ctx.lineTo(b.x + b.width, y);
+        ctx.stroke();
       }
       ctx.restore();
     }
@@ -759,7 +834,8 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
     // Pot
     drawPolyShape(ctx, scaleShape(pot1), 'rgba(199,91,57,0.6)', '#C75B39', 2);
     const pot1Inset = shapeOffset(pot1, -0.2, JoinType.Round);
-    for (const i of pot1Inset) drawPolyShape(ctx, scaleShape(i), 'rgba(92,64,51,0.7)', '#5C4033', 1);
+    for (const i of pot1Inset)
+      drawPolyShape(ctx, scaleShape(i), 'rgba(92,64,51,0.7)', '#5C4033', 1);
 
     // Bottom beds
     drawPolyShape(ctx, scaleShape(bed3), 'rgba(139,105,20,0.6)', '#8B6914', 2);
@@ -771,16 +847,17 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
     drawPolyShape(ctx, scaleShape(pot2), 'rgba(199,91,57,0.6)', '#C75B39', 2);
     const pot2Inset = shapeOffset(pot2, -0.2, JoinType.Round);
-    for (const i of pot2Inset) drawPolyShape(ctx, scaleShape(i), 'rgba(92,64,51,0.7)', '#5C4033', 1);
+    for (const i of pot2Inset)
+      drawPolyShape(ctx, scaleShape(i), 'rgba(92,64,51,0.7)', '#5C4033', 1);
 
     // Compute total plantable
     const allBeds = [bed1, bed2, bed3, bed4];
     const allPots = [pot1, pot2];
-    const bedAreas = allBeds.map(b => {
+    const bedAreas = allBeds.map((b) => {
       const inset = shapeOffset(b, -0.3);
       return inset.reduce((s, p) => s + Math.abs(shapeArea(p)), 0);
     });
-    const potAreas = allPots.map(p => {
+    const potAreas = allPots.map((p) => {
       const inset = shapeOffset(p, -0.2, JoinType.Round);
       return inset.reduce((s, pp) => s + Math.abs(shapeArea(pp)), 0);
     });
@@ -836,10 +913,18 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
   function drawGardenDemo() {
     switch (scenarioSelect.value) {
-      case 'merge': drawScenarioMerge(); break;
-      case 'inset': drawScenarioInset(); break;
-      case 'walkway': drawScenarioWalkway(); break;
-      case 'combined': drawScenarioCombined(); break;
+      case 'merge':
+        drawScenarioMerge();
+        break;
+      case 'inset':
+        drawScenarioInset();
+        break;
+      case 'walkway':
+        drawScenarioWalkway();
+        break;
+      case 'combined':
+        drawScenarioCombined();
+        break;
     }
     gardenCodeEl.innerHTML = gardenCodeSnippets[scenarioSelect.value] ?? '';
   }
@@ -890,19 +975,28 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
 
   function makePatternShape(type: string, r: number): ShapePath {
     switch (type) {
-      case 'square': return rectPath(-r, -r, r * 2, r * 2);
-      case 'diamond': return polygonPath([
-        { x: 0, y: -r }, { x: r, y: 0 }, { x: 0, y: r }, { x: -r, y: 0 },
-      ]);
-      default: return ellipsePath(0, 0, r, r);
+      case 'square':
+        return rectPath(-r, -r, r * 2, r * 2);
+      case 'diamond':
+        return polygonPath([
+          { x: 0, y: -r },
+          { x: r, y: 0 },
+          { x: 0, y: r },
+          { x: -r, y: 0 },
+        ]);
+      default:
+        return ellipsePath(0, 0, r, r);
     }
   }
 
   function makeBaseShape(type: string): ShapePath {
     switch (type) {
-      case 'triangle': return polygonPath([
-        { x: 450, y: 100 }, { x: 600, y: 320 }, { x: 300, y: 320 },
-      ]);
+      case 'triangle':
+        return polygonPath([
+          { x: 450, y: 100 },
+          { x: 600, y: 320 },
+          { x: 300, y: 320 },
+        ]);
       case 'star': {
         const pts: Point2D[] = [];
         for (let i = 0; i < 10; i++) {
@@ -912,11 +1006,17 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
         }
         return polygonPath(pts);
       }
-      case 'L': return polygonPath([
-        { x: 350, y: 100 }, { x: 500, y: 100 }, { x: 500, y: 200 },
-        { x: 420, y: 200 }, { x: 420, y: 330 }, { x: 350, y: 330 },
-      ]);
-      default: return rectPath(350, 120, 200, 180);
+      case 'L':
+        return polygonPath([
+          { x: 350, y: 100 },
+          { x: 500, y: 100 },
+          { x: 500, y: 200 },
+          { x: 420, y: 200 },
+          { x: 420, y: 330 },
+          { x: 350, y: 330 },
+        ]);
+      default:
+        return rectPath(350, 120, 200, 180);
     }
   }
 
@@ -961,7 +1061,7 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
       patternSelect.value === 'circle'
         ? `<span class="kw">const</span> pattern = <span class="fn">ellipsePath</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">${r}</span>, <span class="num">${r}</span>);`
         : patternSelect.value === 'square'
-          ? `<span class="kw">const</span> pattern = <span class="fn">rectPath</span>(<span class="num">${-r}</span>, <span class="num">${-r}</span>, <span class="num">${r*2}</span>, <span class="num">${r*2}</span>);`
+          ? `<span class="kw">const</span> pattern = <span class="fn">rectPath</span>(<span class="num">${-r}</span>, <span class="num">${-r}</span>, <span class="num">${r * 2}</span>, <span class="num">${r * 2}</span>);`
           : `<span class="kw">const</span> pattern = <span class="fn">polygonPath</span>([...diamondPoints]);`,
       ``,
       `<span class="cm">// Sweep pattern around the base shape's boundary</span>`,
@@ -1159,14 +1259,20 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
   let showColors = true;
 
   const triColors = [
-    'rgba(230,80,80,0.4)', 'rgba(80,180,230,0.4)', 'rgba(100,220,150,0.4)',
-    'rgba(220,180,50,0.4)', 'rgba(180,100,220,0.4)', 'rgba(220,120,80,0.4)',
-    'rgba(80,220,200,0.4)', 'rgba(200,80,180,0.4)',
+    'rgba(230,80,80,0.4)',
+    'rgba(80,180,230,0.4)',
+    'rgba(100,220,150,0.4)',
+    'rgba(220,180,50,0.4)',
+    'rgba(180,100,220,0.4)',
+    'rgba(220,120,80,0.4)',
+    'rgba(80,220,200,0.4)',
+    'rgba(200,80,180,0.4)',
   ];
 
   function makeTriShape(type: string): ShapePath {
     switch (type) {
-      case 'circle': return ellipsePath(450, 210, 140, 140);
+      case 'circle':
+        return ellipsePath(450, 210, 140, 140);
       case 'star': {
         const pts: Point2D[] = [];
         for (let i = 0; i < 10; i++) {
@@ -1176,16 +1282,27 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ShapePath[], fill: st
         }
         return polygonPath(pts);
       }
-      case 'L': return polygonPath([
-        { x: 280, y: 60 }, { x: 430, y: 60 }, { x: 430, y: 180 },
-        { x: 350, y: 180 }, { x: 350, y: 360 }, { x: 280, y: 360 },
-      ]);
-      case 'arrow': return polygonPath([
-        { x: 450, y: 50 }, { x: 600, y: 210 }, { x: 520, y: 210 },
-        { x: 520, y: 370 }, { x: 380, y: 370 }, { x: 380, y: 210 },
-        { x: 300, y: 210 },
-      ]);
-      default: return rectPath(280, 80, 340, 260);
+      case 'L':
+        return polygonPath([
+          { x: 280, y: 60 },
+          { x: 430, y: 60 },
+          { x: 430, y: 180 },
+          { x: 350, y: 180 },
+          { x: 350, y: 360 },
+          { x: 280, y: 360 },
+        ]);
+      case 'arrow':
+        return polygonPath([
+          { x: 450, y: 50 },
+          { x: 600, y: 210 },
+          { x: 520, y: 210 },
+          { x: 520, y: 370 },
+          { x: 380, y: 370 },
+          { x: 380, y: 210 },
+          { x: 300, y: 210 },
+        ]);
+      default:
+        return rectPath(280, 80, 340, 260);
     }
   }
 

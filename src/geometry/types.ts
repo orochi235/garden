@@ -41,9 +41,12 @@ export function lineTo(x: number, y: number): LineSeg {
 
 /** Create a cubic Bezier segment. */
 export function cubicTo(
-  cp1x: number, cp1y: number,
-  cp2x: number, cp2y: number,
-  x: number, y: number,
+  cp1x: number,
+  cp1y: number,
+  cp2x: number,
+  cp2y: number,
+  x: number,
+  y: number,
 ): CubicSeg {
   return { kind: 'cubic', cp1x, cp1y, cp2x, cp2y, x, y };
 }

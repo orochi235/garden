@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { zoomToTray } from '../actions/view/resetView';
+import { instantiatePreset, TRAY_CATALOG } from '../model/trayCatalog';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import { TRAY_CATALOG, instantiatePreset } from '../model/trayCatalog';
-import { zoomToTray } from '../actions/view/resetView';
 import styles from '../styles/TraySwitcher.module.css';
 import { ScheduleView } from './schedule/ScheduleView';
 
@@ -98,7 +98,9 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
             className={styles.scheduleClose}
             onClick={() => setScheduleOpen(false)}
             aria-label="Close"
-          >×</button>
+          >
+            ×
+          </button>
           <ScheduleView plants={trayPlants} />
         </div>
       )}

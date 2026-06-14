@@ -1,18 +1,14 @@
-import {
-  type RenderLayer,
-  rectPath,
-  textCommand,
-} from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
 import type { Dims, View } from '@orochi235/weasel';
+import { type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
 import { getCultivar } from '../../model/cultivars';
-import { plantingWorldPose } from '../../utils/plantingPose';
-import type { Planting, Structure, Zone } from '../../model/types';
 import type { Seedling, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
+import type { Planting, Structure, Zone } from '../../model/types';
+import { expandToGroups } from '../../utils/groups';
+import { plantingWorldPose } from '../../utils/plantingPose';
+import { circlePolygon, type DrawCommand, ellipsePolygon, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
-import { expandToGroups } from '../../utils/groups';
 
 /**
  * Single source of truth for selection-related layer metadata. Order here
@@ -33,7 +29,6 @@ const SELECTION_META = descriptorById(SELECTION_LAYER_DESCRIPTORS);
 function px(view: View, p: number): number {
   return p / Math.max(0.0001, view.scale);
 }
-
 
 /**
  * World-space dashed selection outlines + planting selection rings + bottom
@@ -61,7 +56,10 @@ export function createSelectionOutlineLayer(
       const explicitSet = new Set(selectedIds);
       const implicitSet = new Set(expanded.filter((id) => !explicitSet.has(id)));
 
-      const parentMap = new Map<string, { x: number; y: number; width: number; length: number; shape?: string }>();
+      const parentMap = new Map<
+        string,
+        { x: number; y: number; width: number; length: number; shape?: string }
+      >();
       for (const z of zones) parentMap.set(z.id, z);
       for (const s of structures) {
         if (s.container) parentMap.set(s.id, s);
@@ -88,7 +86,15 @@ export function createSelectionOutlineLayer(
         });
       }
 
-      const allObjects: Array<{ id: string; x: number; y: number; width: number; length: number; label?: string; shape?: string }> = [...structures, ...zones];
+      const allObjects: Array<{
+        id: string;
+        x: number;
+        y: number;
+        width: number;
+        length: number;
+        label?: string;
+        shape?: string;
+      }> = [...structures, ...zones];
 
       // Pass 1 — implicit (group-sibling) outlines: solid stroke at 0.6 alpha
       const implicitObjs = allObjects.filter((obj) => implicitSet.has(obj.id));
@@ -98,8 +104,10 @@ export function createSelectionOutlineLayer(
           const inset = px(view, 1);
           const path = isCircle
             ? ellipsePolygon(
-                obj.x + obj.width / 2, obj.y + obj.length / 2,
-                obj.width / 2 + inset, obj.length / 2 + inset,
+                obj.x + obj.width / 2,
+                obj.y + obj.length / 2,
+                obj.width / 2 + inset,
+                obj.length / 2 + inset,
               )
             : rectPath(obj.x - inset, obj.y - inset, obj.width + inset * 2, obj.length + inset * 2);
           return {
@@ -118,8 +126,10 @@ export function createSelectionOutlineLayer(
         const inset = px(view, 1);
         const path = isCircle
           ? ellipsePolygon(
-              obj.x + obj.width / 2, obj.y + obj.length / 2,
-              obj.width / 2 + inset, obj.length / 2 + inset,
+              obj.x + obj.width / 2,
+              obj.y + obj.length / 2,
+              obj.width / 2 + inset,
+              obj.length / 2 + inset,
             )
           : rectPath(obj.x - inset, obj.y - inset, obj.width + inset * 2, obj.length + inset * 2);
         children.push({
@@ -131,16 +141,13 @@ export function createSelectionOutlineLayer(
         // Flagged: text commands require registerFont() wired at app boot.
         if (obj.label) {
           const fontPx = (labelFontSize ?? 10) / Math.max(0.0001, view.scale);
-          children.push(textCommand(
-            obj.x + obj.width / 2,
-            obj.y + obj.length + px(view, 8),
-            obj.label,
-            {
+          children.push(
+            textCommand(obj.x + obj.width / 2, obj.y + obj.length + px(view, 8), obj.label, {
               fontSize: fontPx,
               align: 'center',
               fill: { fill: 'solid', color: '#ffffff' },
-            },
-          ));
+            }),
+          );
         }
       }
 
@@ -174,7 +181,10 @@ export function createGroupOutlineLayer(
         drawnGroups.add(s.groupId);
         const members = structures.filter((m) => m.groupId === s.groupId);
         if (members.length < 2) continue;
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity;
         for (const m of members) {
           if (m.x < minX) minX = m.x;
           if (m.y < minY) minY = m.y;
@@ -184,7 +194,12 @@ export function createGroupOutlineLayer(
         const inset = px(view, 4);
         children.push({
           kind: 'path',
-          path: rectPath(minX - inset, minY - inset, maxX - minX + inset * 2, maxY - minY + inset * 2),
+          path: rectPath(
+            minX - inset,
+            minY - inset,
+            maxX - minX + inset * 2,
+            maxY - minY + inset * 2,
+          ),
           stroke: {
             paint: { fill: 'solid', color: 'rgba(91, 164, 207, 0.55)' },
             width: px(view, 1),
@@ -282,9 +297,14 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
         const sw = ww * view.scale;
         const sh = wh * view.scale;
         const corners: [number, number][] = [
-          [sx, sy], [sx + sw / 2, sy], [sx + sw, sy],
-          [sx + sw, sy + sh / 2], [sx + sw, sy + sh],
-          [sx + sw / 2, sy + sh], [sx, sy + sh], [sx, sy + sh / 2],
+          [sx, sy],
+          [sx + sw / 2, sy],
+          [sx + sw, sy],
+          [sx + sw, sy + sh / 2],
+          [sx + sw, sy + sh],
+          [sx + sw / 2, sy + sh],
+          [sx, sy + sh],
+          [sx, sy + sh / 2],
         ];
         return corners.map(([hx, hy]) => ({
           kind: 'path' as const,

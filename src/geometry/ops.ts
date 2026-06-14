@@ -1,25 +1,25 @@
 import {
-  unionD,
-  differenceD,
-  intersectD,
-  xorD,
-  inflatePathsD,
   areaD,
-  getBoundsD,
-  pointInPolygonD,
-  minkowskiSumD,
-  triangulateD,
-  TriangulateResult,
-  FillRule,
-  JoinType,
+  differenceD,
   EndType,
-  PointInPolygonResult,
+  FillRule,
+  getBoundsD,
+  inflatePathsD,
+  intersectD,
+  JoinType,
+  minkowskiSumD,
   type PathD,
   type PathsD,
+  PointInPolygonResult,
+  pointInPolygonD,
+  TriangulateResult,
+  triangulateD,
+  unionD,
+  xorD,
 } from 'clipper2-ts';
-import type { ShapePath } from './types';
-import { polygonPath } from './shapes';
 import { flattenPath } from './flatten';
+import { polygonPath } from './shapes';
+import type { ShapePath } from './types';
 
 /** Default tessellation tolerance for Bezier flattening (in world units). */
 const DEFAULT_TOLERANCE = 0.05;
@@ -29,7 +29,7 @@ const PRECISION = 4;
 
 /** Convert a ShapePath to a Clipper2 PathD by flattening curves (preserves winding). */
 function toPathDRaw(shape: ShapePath, tolerance = DEFAULT_TOLERANCE): PathD {
-  return flattenPath(shape, tolerance).map(p => ({ x: p.x, y: p.y }));
+  return flattenPath(shape, tolerance).map((p) => ({ x: p.x, y: p.y }));
 }
 
 /** Convert a ShapePath to a Clipper2 PathD, normalizing to clockwise winding
@@ -43,14 +43,14 @@ function toPathD(shape: ShapePath, tolerance = DEFAULT_TOLERANCE): PathD {
 
 /** Convert multiple ShapePaths to Clipper2 PathsD. */
 function toPathsD(shapes: ShapePath[], tolerance = DEFAULT_TOLERANCE): PathsD {
-  return shapes.map(s => toPathD(s, tolerance));
+  return shapes.map((s) => toPathD(s, tolerance));
 }
 
 /** Convert Clipper2 PathsD result back to ShapePaths (polygon-only, no curves). */
 function fromPathsD(paths: PathsD): ShapePath[] {
   return paths
-    .filter(p => p.length >= 3)
-    .map(p => polygonPath(p.map(pt => ({ x: pt.x, y: pt.y }))));
+    .filter((p) => p.length >= 3)
+    .map((p) => polygonPath(p.map((pt) => ({ x: pt.x, y: pt.y }))));
 }
 
 /** Union multiple shapes into one or more result shapes. */
@@ -60,23 +60,17 @@ export function shapeUnion(shapes: ShapePath[]): ShapePath[] {
 
 /** Subtract clip shapes from a subject shape. */
 export function shapeDifference(subject: ShapePath, clips: ShapePath[]): ShapePath[] {
-  return fromPathsD(
-    differenceD(toPathsD([subject]), toPathsD(clips), FillRule.NonZero, PRECISION),
-  );
+  return fromPathsD(differenceD(toPathsD([subject]), toPathsD(clips), FillRule.NonZero, PRECISION));
 }
 
 /** Intersect subject shapes with clip shapes. */
 export function shapeIntersection(subjects: ShapePath[], clips: ShapePath[]): ShapePath[] {
-  return fromPathsD(
-    intersectD(toPathsD(subjects), toPathsD(clips), FillRule.NonZero, PRECISION),
-  );
+  return fromPathsD(intersectD(toPathsD(subjects), toPathsD(clips), FillRule.NonZero, PRECISION));
 }
 
 /** XOR subject shapes with clip shapes. */
 export function shapeXor(subjects: ShapePath[], clips: ShapePath[]): ShapePath[] {
-  return fromPathsD(
-    xorD(toPathsD(subjects), toPathsD(clips), FillRule.NonZero, PRECISION),
-  );
+  return fromPathsD(xorD(toPathsD(subjects), toPathsD(clips), FillRule.NonZero, PRECISION));
 }
 
 /**
@@ -90,14 +84,7 @@ export function shapeOffset(
   joinType: JoinType = JoinType.Miter,
 ): ShapePath[] {
   return fromPathsD(
-    inflatePathsD(
-      toPathsD([shape]),
-      delta,
-      joinType,
-      EndType.Polygon,
-      2.0,
-      PRECISION,
-    ),
+    inflatePathsD(toPathsD([shape]), delta, joinType, EndType.Polygon, 2.0, PRECISION),
   );
 }
 
@@ -108,7 +95,12 @@ export function shapeArea(shape: ShapePath): number {
 }
 
 /** Compute the axis-aligned bounding box of a shape. */
-export function shapeBounds(shape: ShapePath): { x: number; y: number; width: number; height: number } {
+export function shapeBounds(shape: ShapePath): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
   const b = getBoundsD(toPathDRaw(shape));
   return {
     x: b.left,
@@ -134,11 +126,7 @@ export function isHole(shape: ShapePath): boolean {
  * Pattern is typically a small shape (e.g., a circle approximation for clearance zones).
  */
 export function minkowskiSum(shape: ShapePath, pattern: ShapePath): ShapePath[] {
-  const result = minkowskiSumD(
-    toPathD(pattern),
-    toPathD(shape),
-    true,
-  );
+  const result = minkowskiSumD(toPathD(pattern), toPathD(shape), true);
   return fromPathsD(result);
 }
 

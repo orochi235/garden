@@ -1,16 +1,9 @@
 import type { Point2D, ShapePath } from './types';
-import { lineTo, cubicTo, closedPath } from './types';
+import { closedPath, cubicTo, lineTo } from './types';
 
 /** Create a rectangle ShapePath from origin (x,y) and size (w,h). */
 export function rectPath(x: number, y: number, w: number, h: number): ShapePath {
-  return closedPath(
-    { x, y },
-    [
-      lineTo(x + w, y),
-      lineTo(x + w, y + h),
-      lineTo(x, y + h),
-    ],
-  );
+  return closedPath({ x, y }, [lineTo(x + w, y), lineTo(x + w, y + h), lineTo(x, y + h)]);
 }
 
 /**
@@ -22,19 +15,16 @@ export function ellipsePath(cx: number, cy: number, rx: number, ry: number): Sha
   const kx = rx * k;
   const ky = ry * k;
 
-  return closedPath(
-    { x: cx + rx, y: cy },
-    [
-      // Bottom-right arc (clockwise in screen space, Y-down)
-      cubicTo(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry),
-      // Bottom-left arc
-      cubicTo(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy),
-      // Top-left arc
-      cubicTo(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry),
-      // Top-right arc
-      cubicTo(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy),
-    ],
-  );
+  return closedPath({ x: cx + rx, y: cy }, [
+    // Bottom-right arc (clockwise in screen space, Y-down)
+    cubicTo(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry),
+    // Bottom-left arc
+    cubicTo(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy),
+    // Top-left arc
+    cubicTo(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry),
+    // Top-right arc
+    cubicTo(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy),
+  ]);
 }
 
 /** Create a ShapePath from an array of vertices (all line segments). */
@@ -44,6 +34,6 @@ export function polygonPath(points: Point2D[]): ShapePath {
   }
   return closedPath(
     { x: points[0].x, y: points[0].y },
-    points.slice(1).map(p => lineTo(p.x, p.y)),
+    points.slice(1).map((p) => lineTo(p.x, p.y)),
   );
 }

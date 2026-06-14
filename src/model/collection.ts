@@ -33,8 +33,8 @@ export function getCollectionCultivar(collection: Collection, id: string): Culti
   return collection.find((c) => c.id === id);
 }
 
-import type { Planting } from './types';
 import type { Seedling } from './nursery';
+import type { Planting } from './types';
 
 /** Of the cultivar ids being removed, return those still referenced by any planting or seedling. */
 export function findInUseRemovals(

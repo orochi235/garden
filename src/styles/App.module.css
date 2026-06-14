@@ -59,7 +59,7 @@
 }
 
 .resizeHandle::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -69,7 +69,9 @@
   border-radius: 1px;
   background: var(--color-panel-border);
   opacity: 0.6;
-  transition: opacity 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
 }
 
 .resizeHandle:hover,

@@ -1,14 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  clampStructureZoneToGardenBounds,
-  detectStructureClash,
-} from './structureMoveBehaviors';
-import { blankGarden, useGardenStore } from '../../store/gardenStore';
-import { createStructure } from '../../model/types';
-import { useUiStore } from '../../store/uiStore';
-import { createGardenSceneAdapter, type ScenePose } from '../adapters/gardenScene';
 import type { GestureContext } from '@orochi235/weasel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createStructure } from '../../model/types';
+import { blankGarden, useGardenStore } from '../../store/gardenStore';
+import { useUiStore } from '../../store/uiStore';
 import type { SceneNode } from '../adapters/gardenScene';
+import { createGardenSceneAdapter, type ScenePose } from '../adapters/gardenScene';
+import { clampStructureZoneToGardenBounds, detectStructureClash } from './structureMoveBehaviors';
 
 function makeCtx(
   draggedIds: string[],

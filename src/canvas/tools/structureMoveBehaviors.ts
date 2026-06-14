@@ -1,7 +1,7 @@
 import type { MoveBehavior } from '@orochi235/weasel';
-import type { GardenSceneAdapter, ScenePose, SceneNode } from '../adapters/gardenScene';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
 
 /**
  * Compute the union AABB (in world coordinates) of every dragged id, applying
@@ -101,12 +101,7 @@ function aabbIntersect(
   a: { x: number; y: number; width: number; height: number },
   b: { x: number; y: number; width: number; height: number },
 ): boolean {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  );
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 /**
@@ -120,9 +115,7 @@ function aabbIntersect(
  * Computed against the proposed pose for the primary id (post-clamp,
  * post-snap), with secondaries sharing the same delta.
  */
-export function detectStructureClash(
-  adapter: GardenSceneAdapter,
-): MoveBehavior<ScenePose> {
+export function detectStructureClash(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
   return {
     onMove(ctx, proposed) {
       const primary = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;

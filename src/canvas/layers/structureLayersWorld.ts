@@ -1,13 +1,9 @@
-import {
-  type RenderLayer,
-  rectPath,
-  textCommand,
-} from '@orochi235/weasel';
-import { type DrawCommand, viewToMat3, circlePolygon, ellipsePolygon } from '../util/weaselLocal';
-import { paintFor } from '../patterns';
 import type { Dims, View } from '@orochi235/weasel';
-import { FILL_COLORS } from '../../model/types';
+import { type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
 import type { Structure } from '../../model/types';
+import { FILL_COLORS } from '../../model/types';
+import { paintFor } from '../patterns';
+import { circlePolygon, type DrawCommand, ellipsePolygon, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -43,14 +39,19 @@ function buildStructureRenderQueue(structures: Structure[]): {
     if (s.groupId) {
       const members = groups.get(s.groupId);
       if (members) members.push(s);
-      else { groups.set(s.groupId, [s]); groupOrder.set(s.groupId, i); }
+      else {
+        groups.set(s.groupId, [s]);
+        groupOrder.set(s.groupId, i);
+      }
     } else {
       ungrouped.push(s);
     }
   }
   const renderQueue: StructureRenderItem[] = [];
-  for (const s of ungrouped) renderQueue.push({ type: 'single', structure: s, order: sorted.indexOf(s) });
-  for (const [groupId, members] of groups) renderQueue.push({ type: 'group', members, order: groupOrder.get(groupId)! });
+  for (const s of ungrouped)
+    renderQueue.push({ type: 'single', structure: s, order: sorted.indexOf(s) });
+  for (const [groupId, members] of groups)
+    renderQueue.push({ type: 'group', members, order: groupOrder.get(groupId)! });
   renderQueue.sort((a, b) => a.order - b.order);
   return { renderQueue, groups };
 }
@@ -58,7 +59,6 @@ function buildStructureRenderQueue(structures: Structure[]): {
 function pxToWorld(view: View, px: number): number {
   return px / Math.max(0.0001, view.scale);
 }
-
 
 function getQueue(getStructures: () => Structure[]): { queue: StructureRenderItem[] } {
   const { renderQueue } = buildStructureRenderQueue(getStructures());
@@ -108,7 +108,12 @@ export function createStructureLayers(
                     kind: 'path',
                     path: circlePolygon(cx, cy, r),
                     fill: paintFor('chunks', {
-                      bg: s.color, color: '#1a1a1a', density: 0.35, chunkSize: 1, size: 24, seed: 7,
+                      bg: s.color,
+                      color: '#1a1a1a',
+                      density: 0.35,
+                      chunkSize: 1,
+                      size: 24,
+                      seed: 7,
                     }),
                   });
                 }
@@ -136,7 +141,10 @@ export function createStructureLayers(
         for (const item of queue) {
           if (item.type === 'single') {
             const s = item.structure;
-            const x = s.x, y = s.y, w = s.width, h = s.length;
+            const x = s.x,
+              y = s.y,
+              w = s.width,
+              h = s.length;
 
             if (s.type === 'pot' || s.type === 'felt-planter') {
               const cx = x + w / 2;
@@ -161,7 +169,10 @@ export function createStructureLayers(
                 }
               }
             } else if (s.type === 'raised-bed') {
-              const wallWidth = Math.min(Math.min(w, h) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
+              const wallWidth = Math.min(
+                Math.min(w, h) / 2,
+                Math.max(pxToWorld(view, 2), s.wallThicknessFt),
+              );
               const soilColor = s.fill ? FILL_COLORS[s.fill] : '#5C4033';
               children.push({
                 kind: 'path',
@@ -186,14 +197,18 @@ export function createStructureLayers(
                 kind: 'path',
                 path: ellipsePolygon(cx, cy, w / 2, h / 2),
                 fill: { fill: 'solid', color: s.color },
-                ...(s.surface ? {} : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
+                ...(s.surface
+                  ? {}
+                  : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
               });
             } else {
               children.push({
                 kind: 'path',
                 path: rectPath(x, y, w, h),
                 fill: { fill: 'solid', color: s.color },
-                ...(s.surface ? {} : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
+                ...(s.surface
+                  ? {}
+                  : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
               });
             }
           } else {
@@ -202,14 +217,22 @@ export function createStructureLayers(
             const color = item.members[0].color;
             const allSurfaces = item.members.every((m) => m.surface);
             for (const s of item.members) {
-              const path = s.shape === 'circle'
-                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
-                : rectPath(s.x, s.y, s.width, s.length);
+              const path =
+                s.shape === 'circle'
+                  ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                  : rectPath(s.x, s.y, s.width, s.length);
               children.push({
                 kind: 'path',
                 path,
                 fill: { fill: 'solid', color },
-                ...(!allSurfaces ? { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: pxToWorld(view, 2) } } : {}),
+                ...(!allSurfaces
+                  ? {
+                      stroke: {
+                        paint: { fill: 'solid' as const, color: '#333333' },
+                        width: pxToWorld(view, 2),
+                      },
+                    }
+                  : {}),
               });
             }
           }
@@ -226,9 +249,10 @@ export function createStructureLayers(
           const members = item.type === 'single' ? [item.structure] : item.members;
           for (const s of members) {
             if (!s.surface) continue;
-            const path = s.shape === 'circle'
-              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
-              : rectPath(s.x, s.y, s.width, s.length);
+            const path =
+              s.shape === 'circle'
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                : rectPath(s.x, s.y, s.width, s.length);
             children.push({
               kind: 'path',
               path,
@@ -263,7 +287,10 @@ export function createStructureLayers(
                 });
               }
             } else {
-              const wallWidth = Math.min(Math.min(s.width, s.length) / 2, Math.max(pxToWorld(view, 2), s.wallThicknessFt));
+              const wallWidth = Math.min(
+                Math.min(s.width, s.length) / 2,
+                Math.max(pxToWorld(view, 2), s.wallThicknessFt),
+              );
               const iw = s.width - wallWidth * 2;
               const ih = s.length - wallWidth * 2;
               if (iw > 4 && ih > 4) {
@@ -298,9 +325,10 @@ export function createStructureLayers(
           for (const id of clashIds) {
             const s = byId.get(id);
             if (!s) continue;
-            const path = s.shape === 'circle'
-              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
-              : rectPath(s.x, s.y, s.width, s.length);
+            const path =
+              s.shape === 'circle'
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                : rectPath(s.x, s.y, s.width, s.length);
             clashChildren.push({
               kind: 'path',
               path,
@@ -318,30 +346,37 @@ export function createStructureLayers(
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
           for (const s of members) {
-            if (getHighlight(s.id) > 0) { any = true; break; }
+            if (getHighlight(s.id) > 0) {
+              any = true;
+              break;
+            }
           }
           if (any) break;
         }
-        if (!any) return children.length > 0
-          ? [{ kind: 'group', transform: viewToMat3(view), children }]
-          : [];
+        if (!any)
+          return children.length > 0
+            ? [{ kind: 'group', transform: viewToMat3(view), children }]
+            : [];
 
         for (const item of queue) {
           if (item.type === 'single') {
             const s = item.structure;
             const op = getHighlight(s.id);
             if (op <= 0) continue;
-            const path = s.shape === 'circle'
-              ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
-              : rectPath(s.x, s.y, s.width, s.length);
+            const path =
+              s.shape === 'circle'
+                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                : rectPath(s.x, s.y, s.width, s.length);
             children.push({
               kind: 'group',
               alpha: op,
-              children: [{
-                kind: 'path',
-                path,
-                stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: pxToWorld(view, 2) },
-              }],
+              children: [
+                {
+                  kind: 'path',
+                  path,
+                  stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: pxToWorld(view, 2) },
+                },
+              ],
             });
           } else {
             // Group highlight: take max opacity over members.
@@ -353,10 +388,14 @@ export function createStructureLayers(
             if (groupOp <= 0) continue;
             const memberCmds: DrawCommand[] = item.members.map((s) => ({
               kind: 'path' as const,
-              path: s.shape === 'circle'
-                ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
-                : rectPath(s.x, s.y, s.width, s.length),
-              stroke: { paint: { fill: 'solid' as const, color: '#FFD700' }, width: pxToWorld(view, 4) },
+              path:
+                s.shape === 'circle'
+                  ? ellipsePolygon(s.x + s.width / 2, s.y + s.length / 2, s.width / 2, s.length / 2)
+                  : rectPath(s.x, s.y, s.width, s.length),
+              stroke: {
+                paint: { fill: 'solid' as const, color: '#FFD700' },
+                width: pxToWorld(view, 4),
+              },
             }));
             children.push({ kind: 'group', alpha: groupOp, children: memberCmds });
           }
@@ -376,7 +415,13 @@ export function createStructureLayers(
         const padX = pxToWorld(view, 4);
         const padY = pxToWorld(view, 1);
 
-        interface Entry { label: string; x: number; y: number; w: number; h: number }
+        interface Entry {
+          label: string;
+          x: number;
+          y: number;
+          w: number;
+          h: number;
+        }
         // Approximate text width: ~0.6× fontPx per character (no canvas.measureText available).
         const approxTextWidth = (text: string) => text.length * fontPx * 0.6;
         const entries: Entry[] = [];

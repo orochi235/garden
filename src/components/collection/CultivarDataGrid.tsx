@@ -1,9 +1,9 @@
+import { type DragPayload, useDragHandle } from '@orochi235/weasel';
 import { useEffect, useMemo, useRef } from 'react';
+import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
 import type { Cultivar, CultivarCategory } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
-import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
-import { useDragHandle, type DragPayload } from '@orochi235/weasel';
 
 interface Props {
   visibleCultivars: Cultivar[];
@@ -61,7 +61,9 @@ export function CultivarDataGrid(props: Props) {
     }
     const out: Group[] = [];
     for (const [speciesId, children] of bySpecies) {
-      const sorted = [...children].sort((a, b) => compareCultivars(a, b, props.sortColumn, props.sortDir));
+      const sorted = [...children].sort((a, b) =>
+        compareCultivars(a, b, props.sortColumn, props.sortDir),
+      );
       out.push({
         speciesId,
         speciesName: getSpecies(speciesId)?.name ?? speciesId,
@@ -139,10 +141,7 @@ function SpeciesBlock(props: BlockProps) {
     const taxonomic = getSpecies(c.speciesId)?.taxonomicName ?? '';
     const label = c.variety ? `${props.group.speciesName} — ${c.variety}` : props.group.speciesName;
     return (
-      <CultivarRow
-        cultivar={c}
-        getDragPayload={props.getDragPayload}
-      >
+      <CultivarRow cultivar={c} getDragPayload={props.getDragPayload}>
         <div />
         <div>
           <input
@@ -168,9 +167,7 @@ function SpeciesBlock(props: BlockProps) {
   const countLabel = checkedCount === total ? `${total}` : `${checkedCount}/${total}`;
   const taxonomic = getSpecies(props.group.children[0]?.speciesId ?? '')?.taxonomicName ?? '';
   const categories = new Set(props.group.children.map((c) => c.category));
-  const categoryLabel = categories.size === 1
-    ? CATEGORY_LABELS[[...categories][0]]
-    : '';
+  const categoryLabel = categories.size === 1 ? CATEGORY_LABELS[[...categories][0]] : '';
 
   return (
     <>
@@ -196,11 +193,7 @@ function SpeciesBlock(props: BlockProps) {
       </div>
       {props.expanded &&
         props.group.children.map((c) => (
-          <CultivarRow
-            key={c.id}
-            cultivar={c}
-            getDragPayload={props.getDragPayload}
-          >
+          <CultivarRow key={c.id} cultivar={c} getDragPayload={props.getDragPayload}>
             <div />
             <div />
             <div>
@@ -234,11 +227,7 @@ function CultivarRow({
 }) {
   const handle = useDragHandle(() => getDragPayload(cultivar.id));
   return (
-    <div
-      className={styles.cultivarRow}
-      style={handle.style}
-      onPointerDown={handle.onPointerDown}
-    >
+    <div className={styles.cultivarRow} style={handle.style} onPointerDown={handle.onPointerDown}>
       {children}
     </div>
   );

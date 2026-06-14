@@ -1,6 +1,6 @@
-import type { Garden } from '../../model/types';
-import { getCultivar, type CultivarCategory } from '../../model/cultivars';
+import { type CultivarCategory, getCultivar } from '../../model/cultivars';
 import type { ResolvedAction, Schedule } from '../../model/scheduler';
+import type { Garden } from '../../model/types';
 
 export interface PlantRow {
   id: string;
@@ -44,10 +44,7 @@ function nextActionFor(actions: ResolvedAction[]): { name: string; earliest: str
   return { name: a.label, earliest: a.earliest };
 }
 
-export function buildPlantRows(
-  garden: Garden,
-  schedule: Pick<Schedule, 'actions'>,
-): PlantRow[] {
+export function buildPlantRows(garden: Garden, schedule: Pick<Schedule, 'actions'>): PlantRow[] {
   const rows: PlantRow[] = [];
 
   for (const p of garden.plantings) {

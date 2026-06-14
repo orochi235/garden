@@ -149,7 +149,12 @@ function interpolateLayouts(from: TileState[], to: TileState[], t: number): Tile
   }));
 }
 
-function renderSvgContent(tileStates: TileState[], activeIdx: number, layers: LayerDef[], hiddenIndices: Set<number> = new Set()): string {
+function renderSvgContent(
+  tileStates: TileState[],
+  activeIdx: number,
+  layers: LayerDef[],
+  hiddenIndices: Set<number> = new Set(),
+): string {
   const labelSpace = 58;
   const svgW = HALF_W * 2 + labelSpace + 10;
   const cx = labelSpace + HALF_W;
@@ -165,7 +170,6 @@ function renderSvgContent(tileStates: TileState[], activeIdx: number, layers: La
   }
   const svgH = maxY - minY + margin * 2;
   const yOffset = -minY + margin;
-
 
   const sorted = [...tileStates].sort((a, b) => {
     if (a.index === activeIdx) return 1;
@@ -277,10 +281,13 @@ export function LayerSelector() {
     return set;
   }, [layerVisibility, layers]);
 
-  const renderWidget = useCallback((tiles: TileState[], idx: number) => {
-    setSvgHtml(renderSvgContent(tiles, idx, layers, hiddenIndices));
-    layoutRef.current = tiles;
-  }, [hiddenIndices, layers]);
+  const renderWidget = useCallback(
+    (tiles: TileState[], idx: number) => {
+      setSvgHtml(renderSvgContent(tiles, idx, layers, hiddenIndices));
+      layoutRef.current = tiles;
+    },
+    [hiddenIndices, layers],
+  );
 
   // Initial render and animate on activeLayer change
   useEffect(() => {

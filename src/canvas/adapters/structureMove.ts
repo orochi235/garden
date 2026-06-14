@@ -1,8 +1,13 @@
-import { useGardenStore } from '../../store/gardenStore';
-import type { Structure } from '../../model/types';
 import type { MoveAdapter } from '@orochi235/weasel';
+import type { Structure } from '../../model/types';
+import { useGardenStore } from '../../store/gardenStore';
 
-export interface StructurePose { x: number; y: number; widthFt: number; lengthFt: number }
+export interface StructurePose {
+  x: number;
+  y: number;
+  widthFt: number;
+  lengthFt: number;
+}
 
 export type StructureMoveAdapter = MoveAdapter<Structure, StructurePose> & {
   insertNode(s: Structure): void;
@@ -38,7 +43,9 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
     },
     removeNode(id) {
       const g = useGardenStore.getState().garden;
-      useGardenStore.getState().applyGardenPatch({ structures: g.structures.filter((s) => s.id !== id) });
+      useGardenStore
+        .getState()
+        .applyGardenPatch({ structures: g.structures.filter((s) => s.id !== id) });
     },
     applyBatch(ops, label) {
       useGardenStore.getState().checkpoint();

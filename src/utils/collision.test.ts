@@ -3,7 +3,15 @@ import type { Structure } from '../model/types';
 import { createStructure } from '../model/types';
 import { structuresCollide } from './collision';
 
-function makeStructure(overrides: Partial<Structure> & { type: string; x: number; y: number; width: number; length: number }): Structure {
+function makeStructure(
+  overrides: Partial<Structure> & {
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    length: number;
+  },
+): Structure {
   const { groupId, ...createOpts } = overrides;
   return { ...createStructure({ ...createOpts, groupId: groupId ?? undefined }), ...overrides };
 }
