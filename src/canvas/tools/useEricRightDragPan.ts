@@ -38,8 +38,8 @@ export function useEricRightDragPan(): Tool<RightDragPanScratch> {
             const dxScreen = e.clientX - ctx.scratch.startClient.x;
             const dyScreen = e.clientY - ctx.scratch.startClient.y;
             ctx.setView({
-              x: ctx.scratch.startView.x - dxScreen / ctx.view.scale,
-              y: ctx.scratch.startView.y - dyScreen / ctx.view.scale,
+              x: ctx.scratch.startView.x - dxScreen / ctx.view.scale.x,
+              y: ctx.scratch.startView.y - dyScreen / ctx.view.scale.x,
               scale: ctx.view.scale,
             });
             return 'claim';

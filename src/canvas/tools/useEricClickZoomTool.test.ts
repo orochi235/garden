@@ -1,12 +1,12 @@
-import type { ToolCtx } from '@orochi235/weasel';
+import type { View as KitView, ToolCtx } from '@orochi235/weasel';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { View } from '../layers/worldLayerData';
+import { type View, toKitView } from '../layers/worldLayerData';
 import { useEricClickZoomTool } from './useEricClickZoomTool';
 
 function makeCtx(
   view: View,
-  setView: (v: View) => void,
+  setView: (v: KitView) => void,
   rect: Partial<DOMRect> = {},
   modifiers: Partial<ToolCtx<null>['modifiers']> = {},
 ): ToolCtx<null> {
@@ -24,8 +24,8 @@ function makeCtx(
     },
     selection: {} as never,
     adapter: null,
-    applyBatch: () => {},
-    view,
+    applyOps: () => {},
+    view: toKitView(view),
     setView,
     canvasRect: r,
     scratch: null,
@@ -85,11 +85,11 @@ describe('useEricClickZoomTool', () => {
       height: 300,
     } as Partial<DOMRect>);
     result.current.pointer!.onDown!(pointer({ button: 0, clientX: 110, clientY: 105 }), ctx);
-    const next = setView.mock.calls[0][0] as View;
+    const next = setView.mock.calls[0][0] as KitView;
     // anchor in canvas coords: (100, 100); world point = (2, 2).
-    expect(100 / next.scale + next.x).toBeCloseTo(2);
-    expect(100 / next.scale + next.y).toBeCloseTo(2);
-    expect(next.scale).toBeCloseTo(50 * 1.5);
+    expect(100 / next.scale.x + next.x).toBeCloseTo(2);
+    expect(100 / next.scale.x + next.y).toBeCloseTo(2);
+    expect(next.scale.x).toBeCloseTo(50 * 1.5);
   });
 
   it('shift-click inverts to zoom out (1/factor)', () => {
@@ -97,8 +97,8 @@ describe('useEricClickZoomTool', () => {
     const setView = vi.fn();
     const ctx = makeCtx({ x: 0, y: 0, scale: 60 }, setView);
     result.current.pointer!.onDown!(pointer({ button: 0, shiftKey: true }), ctx);
-    const next = setView.mock.calls[0][0] as View;
-    expect(next.scale).toBeCloseTo(60 / 1.5);
+    const next = setView.mock.calls[0][0] as KitView;
+    expect(next.scale.x).toBeCloseTo(60 / 1.5);
   });
 
   it('clamps to eric-tuned min/max (5 and 500)', () => {
@@ -109,20 +109,20 @@ describe('useEricClickZoomTool', () => {
     for (let i = 0; i < 20; i++) {
       result.current.pointer!.onDown!(pointer({ button: 0 }), {
         ...ctx,
-        view: (setView.mock.calls[setView.mock.calls.length - 1]?.[0] as View) ?? ctx.view,
+        view: (setView.mock.calls[setView.mock.calls.length - 1]?.[0] as KitView) ?? ctx.view,
       });
     }
-    expect((setView.mock.calls[setView.mock.calls.length - 1][0] as View).scale).toBe(500);
+    expect((setView.mock.calls[setView.mock.calls.length - 1][0] as KitView).scale.x).toBe(500);
 
     setView.mockClear();
     const ctx2 = makeCtx({ x: 0, y: 0, scale: 10 }, setView);
     for (let i = 0; i < 20; i++) {
       result.current.pointer!.onDown!(pointer({ button: 0, shiftKey: true }), {
         ...ctx2,
-        view: (setView.mock.calls[setView.mock.calls.length - 1]?.[0] as View) ?? ctx2.view,
+        view: (setView.mock.calls[setView.mock.calls.length - 1]?.[0] as KitView) ?? ctx2.view,
       });
     }
-    expect((setView.mock.calls[setView.mock.calls.length - 1][0] as View).scale).toBe(5);
+    expect((setView.mock.calls[setView.mock.calls.length - 1][0] as KitView).scale.x).toBe(5);
   });
 
   it('calls preventDefault when claiming (suppresses native context menu / browser zoom passthrough)', () => {

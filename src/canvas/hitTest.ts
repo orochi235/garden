@@ -56,10 +56,10 @@ function getHandleScreenPositions(
   obj: { x: number; y: number; width: number; length: number },
   view: ViewTransform,
 ) {
-  const sx = view.panX + obj.x * view.zoom;
-  const sy = view.panY + obj.y * view.zoom;
-  const sw = obj.width * view.zoom;
-  const sh = obj.length * view.zoom;
+  const sx = view.panX + obj.x * view.zoom.x;
+  const sy = view.panY + obj.y * view.zoom.x;
+  const sw = obj.width * view.zoom.x;
+  const sh = obj.length * view.zoom.x;
   return [
     { pos: 'nw' as const, cx: sx, cy: sy },
     { pos: 'n' as const, cx: sx + sw / 2, cy: sy },

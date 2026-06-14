@@ -639,7 +639,7 @@ describe('selection rides on history', () => {
   });
 
   it('cut via insert adapter removes originals and is a single undoable batch', async () => {
-    // TDD: cut = snapshot + delete in one applyBatch call (single history entry).
+    // TDD: cut = snapshot + delete in one applyOps call (single history entry).
     // Undoing cut restores both the zone and the prior selection.
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
     const { asNodeId, createDeleteOp, createSetSelectionOp } = await import('@orochi235/weasel');
@@ -652,13 +652,19 @@ describe('selection rides on history', () => {
     // Snapshot the zone before deleting it (mirrors weasel useClipboard.cut).
     // The snapshot would normally be stored in clipboard state; here we only
     // test the delete side of the cut (the undo behavior).
-    adapter.snapshotSelection([z1]);
+    adapter.snapshotSelection!([z1]);
     const ids = [z1];
     const cutOps = [
-      ...ids.map((id) => createDeleteOp({ node: adapter.getNode(id)! })),
+      ...ids.map((id) => {
+        const zones = useGardenStore.getState().garden.zones;
+        return createDeleteOp({
+          node: adapter.getNode(id)!,
+          index: zones.findIndex((z) => z.id === id),
+        });
+      }),
       createSetSelectionOp({ from: ids.map(asNodeId), to: [] }),
     ];
-    adapter.applyBatch!(cutOps, 'Cut');
+    adapter.applyOps!(cutOps, 'Cut');
 
     // Zone is gone, selection cleared.
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);
@@ -673,7 +679,7 @@ describe('selection rides on history', () => {
 
   it('paste-then-undo via insert adapter does not leave stale ids selected', async () => {
     // End-to-end coverage of the original bug: undoing a paste leaves the
-    // (now-deleted) pasted ids selected. Routes through the same applyBatch
+    // (now-deleted) pasted ids selected. Routes through the same applyOps
     // path the weasel clipboard uses.
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
     const { asNodeId, createInsertOp, createSetSelectionOp } = await import('@orochi235/weasel');
@@ -685,9 +691,9 @@ describe('selection rides on history', () => {
     // Simulate a paste: snapshot z1, materialize a sibling, then setSelection
     // to the new id — exactly what the weasel clipboard hook emits.
     const adapter = createInsertAdapter();
-    const snap = adapter.snapshotSelection([z1]);
-    const [pasted] = adapter.commitPaste(snap, { dx: 1, dy: 1 });
-    adapter.applyBatch!(
+    const snap = adapter.snapshotSelection!([z1]);
+    const [pasted] = adapter.commitPaste!(snap, { dx: 1, dy: 1 });
+    adapter.applyOps!(
       [
         createInsertOp({ node: pasted }),
         createSetSelectionOp({ from: [asNodeId(z1)], to: [asNodeId(pasted.id)] }),

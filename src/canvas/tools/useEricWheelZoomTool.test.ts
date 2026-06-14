@@ -1,12 +1,12 @@
-import type { ToolCtx } from '@orochi235/weasel';
+import type { View as KitView, ToolCtx } from '@orochi235/weasel';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { View } from '../layers/worldLayerData';
+import { type View, toKitView } from '../layers/worldLayerData';
 import { useEricWheelZoomTool } from './useEricWheelZoomTool';
 
 function makeCtx(
   view: View,
-  setView: (v: View) => void,
+  setView: (v: KitView) => void,
   rect: Partial<DOMRect> = {},
 ): ToolCtx<null> {
   const r = new DOMRect(rect.x ?? 0, rect.y ?? 0, rect.width ?? 200, rect.height ?? 200);
@@ -16,8 +16,8 @@ function makeCtx(
     modifiers: { alt: false, shift: false, meta: false, ctrl: false, space: false },
     selection: {} as never,
     adapter: null,
-    applyBatch: () => {},
-    view,
+    applyOps: () => {},
+    view: toKitView(view),
     setView,
     canvasRect: r,
     scratch: null,
@@ -64,12 +64,12 @@ describe('useEricWheelZoomTool', () => {
     } as Partial<DOMRect>);
     const e = wheel({ deltaY: -100, clientX: 110, clientY: 105 });
     result.current.wheel!.onWheel!(e, ctx);
-    const next = setView.mock.calls[0][0] as View;
+    const next = setView.mock.calls[0][0] as KitView;
     // anchor in canvas coords: (100, 100); world point = (100/50 + 0, 100/50 + 0) = (2, 2)
     // After zoom, screen point (100, 100) must still map to world (2, 2):
-    expect(100 / next.scale + next.x).toBeCloseTo(2);
-    expect(100 / next.scale + next.y).toBeCloseTo(2);
-    expect(next.scale).toBeCloseTo(50 * 1.1);
+    expect(100 / next.scale.x + next.x).toBeCloseTo(2);
+    expect(100 / next.scale.x + next.y).toBeCloseTo(2);
+    expect(next.scale.x).toBeCloseTo(50 * 1.1);
   });
 
   it('clamps to eric-tuned min/max defaults (5 and 500)', () => {
@@ -77,9 +77,9 @@ describe('useEricWheelZoomTool', () => {
     const setView = vi.fn();
     const ctx = makeCtx({ x: 0, y: 0, scale: 50 }, setView);
     result.current.wheel!.onWheel!(wheel({ deltaY: -10000 }), ctx);
-    expect((setView.mock.calls[0][0] as View).scale).toBe(500);
+    expect((setView.mock.calls[0][0] as KitView).scale.x).toBe(500);
     result.current.wheel!.onWheel!(wheel({ deltaY: 10000 }), ctx);
-    expect((setView.mock.calls[1][0] as View).scale).toBe(5);
+    expect((setView.mock.calls[1][0] as KitView).scale.x).toBe(5);
   });
 
   it('calls preventDefault when claiming', () => {

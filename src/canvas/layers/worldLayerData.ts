@@ -1,11 +1,27 @@
+import type { View as KitView } from '@orochi235/weasel';
 import type { LabelMode } from '../../store/uiStore';
 
-/** Camera-coords viewport. Mirrors `@orochi235/weasel`'s internal `View` (not
- *  exported from the package index). */
+/** Camera-coords viewport. eric uses **uniform** zoom, so its viewport state
+ *  keeps a scalar `scale` (mirrored to `uiStore`, consumed across the drag/
+ *  nursery/palette paths). weasel HEAD's `View` instead carries a per-axis
+ *  `scale: { x, y }` vector; convert at the kit boundary with
+ *  {@link toKitView} / {@link fromKitView} rather than threading the 2-vector
+ *  through eric's uniform-zoom code. */
 export interface View {
   x: number;
   y: number;
   scale: number;
+}
+
+/** eric scalar `View` → weasel HEAD `View` (uniform zoom → equal x/y axes). */
+export function toKitView(v: View): KitView {
+  return { x: v.x, y: v.y, scale: { x: v.scale, y: v.scale } };
+}
+
+/** weasel HEAD `View` → eric scalar `View` (collapse the per-axis zoom; eric is
+ *  always uniform so `scale.x === scale.y`). */
+export function fromKitView(v: KitView): View {
+  return { x: v.x, y: v.y, scale: v.scale.x };
 }
 
 /**

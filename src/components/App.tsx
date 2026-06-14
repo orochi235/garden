@@ -1,4 +1,4 @@
-import { asNodeId, useClipboard } from '@orochi235/weasel';
+import { asNodeId, type NodeId, useClipboardOps } from '@orochi235/weasel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { createInsertAdapter } from '../canvas/adapters/insert';
@@ -145,10 +145,31 @@ export function App() {
   }, [garden]);
 
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
-  const clipboard = useClipboard(insertAdapter, {
+  const clipboardOps = useClipboardOps(insertAdapter, {
     getSelection: () => useUiStore.getState().selectedIds.map(asNodeId),
-    onPaste: (newIds) => useUiStore.getState().setSelection(newIds),
+    onPaste: (newIds: NodeId[]) => useUiStore.getState().setSelection(newIds),
   });
+  // HEAD's `useClipboardOps` no longer provides `cut` (the old `useClipboard`
+  // did). Bridge it locally so the action dispatcher still gets the
+  // `{ copy, cut, paste, isEmpty }` shape it expects: cut = copy the selection,
+  // then delete the originals under a single undo checkpoint. The faithful
+  // group-expansion / nursery-aware cut is part of the H4 clipboard port.
+  const clipboard = useMemo(
+    () => ({
+      copy: clipboardOps.copy,
+      paste: clipboardOps.paste,
+      isEmpty: clipboardOps.isEmpty,
+      cut: () => {
+        const ids = useUiStore.getState().selectedIds;
+        if (ids.length === 0) return;
+        clipboardOps.copy();
+        useGardenStore.getState().checkpoint();
+        for (const id of ids) insertAdapter.removeNode(id);
+        useUiStore.getState().clearSelection();
+      },
+    }),
+    [clipboardOps, insertAdapter],
+  );
   const actionCtx = useMemo(() => ({ clipboard }), [clipboard]);
   useKeyboardActionDispatch(actionCtx);
 

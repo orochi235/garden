@@ -155,7 +155,11 @@ export function useGardenPaletteDropTool({ containerRef, viewRef }: Options): vo
       const zoom = view.scale;
       const panX = -view.x * zoom;
       const panY = -view.y * zoom;
-      return screenToWorld(clientX - rect.left, clientY - rect.top, { panX, panY, zoom });
+      return screenToWorld(clientX - rect.left, clientY - rect.top, {
+        panX,
+        panY,
+        zoom: { x: zoom, y: zoom },
+      });
     }
 
     function startStructureZoneGesture(entry: PaletteEntry, pe: PointerEvent): () => void {

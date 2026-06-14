@@ -1,5 +1,6 @@
 import type { RenderLayer } from '@orochi235/weasel';
 import { useUiStore } from '../../store/uiStore';
+import { fromKitView } from '../layers/worldLayerData';
 import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import type { Drag } from './putativeDrag';
 
@@ -22,7 +23,7 @@ export function createDragPreviewLayer(
       if (!slot) return [];
       const drag = registry[slot.kind];
       if (!drag) return [];
-      const children = drag.renderPreview(slot.putative, view);
+      const children = drag.renderPreview(slot.putative, fromKitView(view));
       return [{ kind: 'group', transform: viewToMat3(view), children }];
     },
   };
