@@ -7,8 +7,8 @@ describe('gardenStore — Phase 4 in-place undo/redo', () => {
   beforeEach(() => {
     useUiStore.getState().setAppMode('garden');
     useGardenStore.getState().reset();
-    // Seed one structure so structures[0] always exists.
-    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
+    // reset() loads defaultGarden(), which already seeds structures (paths +
+    // raised-beds), so structures[0] exists without any extra setup.
   });
 
   it('undo restores a structure position, redo re-applies it', () => {
@@ -27,7 +27,6 @@ describe('gardenStore — Phase 4 in-place undo/redo', () => {
   });
 
   it('undo reverts a base field (name) but NOT live nursery edits (overlay trick)', () => {
-    // Record state after structure is added (beforeEach already added one).
     useGardenStore.getState().updateGarden({ name: 'After' });
     const id = useGardenStore.getState().garden.structures[0].id;
     const x0 = useGardenStore.getState().garden.structures[0].x;
