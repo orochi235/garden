@@ -1,9 +1,9 @@
 import {
   type Dims,
+  measureTextBounds,
   type Path,
   PathBuilder,
   type RenderLayer,
-  measureTextBounds,
   rectPath,
   textCommand,
   type View,

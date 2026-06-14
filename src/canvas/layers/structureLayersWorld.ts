@@ -1,5 +1,5 @@
 import type { Dims, View } from '@orochi235/weasel';
-import { type RenderLayer, measureTextBounds, rectPath, textCommand } from '@orochi235/weasel';
+import { measureTextBounds, type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
 import type { Structure } from '../../model/types';
 import { FILL_COLORS } from '../../model/types';
 import { paintFor } from '../patterns';
