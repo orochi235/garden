@@ -6,6 +6,56 @@ describe('gardenStore — Phase 3 in-place mutation', () => {
     useGardenStore.getState().reset();
   });
 
+  // Guards the differ's subtree-removal path end-to-end through the real store:
+  // removeStructure must cascade to remove child plantings from garden.plantings.
+  it('removeStructure cascades to delete child plantings (subtree-removal path)', () => {
+    const store = useGardenStore.getState();
+    // The default garden seeds several raised-bed structures; grab the first one.
+    const bed = store.garden.structures.find((s) => s.type === 'raised-bed')!;
+    expect(bed).toBeDefined();
+
+    // Add a planting under this bed. Cell-grid parents snap to nearest free cell —
+    // the exact x/y may shift, but parentId is always set correctly.
+    store.addPlanting({ parentId: bed.id, x: 1, y: 1, cultivarId: 'tomato' });
+
+    const planting = useGardenStore.getState().garden.plantings.find((p) => p.parentId === bed.id);
+    expect(planting).toBeDefined();
+    const plantingId = planting!.id;
+
+    // Now remove the parent structure — cascade must purge its child planting.
+    useGardenStore.getState().removeStructure(bed.id);
+
+    const after = useGardenStore.getState().garden;
+    expect(after.structures.find((s) => s.id === bed.id)).toBeUndefined();
+    expect(after.plantings.find((p) => p.id === plantingId)).toBeUndefined();
+  });
+
+  // Guards the differ's reparent path end-to-end through the real store:
+  // updatePlanting({ parentId }) must reassign the planting to the new parent.
+  it('updatePlanting reparents a planting across structures (reparent path)', () => {
+    const store = useGardenStore.getState();
+    const beds = store.garden.structures.filter((s) => s.type === 'raised-bed');
+    // Default garden seeds six raised-beds; we need at least two.
+    expect(beds.length).toBeGreaterThanOrEqual(2);
+    const bedA = beds[0];
+    const bedB = beds[1];
+
+    // Add a planting under bedA. Cell-grid parents snap coordinates — parentId
+    // is deterministic regardless of the snap.
+    store.addPlanting({ parentId: bedA.id, x: 1, y: 1, cultivarId: 'tomato' });
+
+    const planting = useGardenStore.getState().garden.plantings.find((p) => p.parentId === bedA.id);
+    expect(planting).toBeDefined();
+    const plantingId = planting!.id;
+
+    // Reparent to bedB — drives the differ's move/rebuild path.
+    useGardenStore.getState().updatePlanting(plantingId, { parentId: bedB.id });
+
+    const after = useGardenStore.getState().garden.plantings.find((p) => p.id === plantingId);
+    expect(after).toBeDefined();
+    expect(after!.parentId).toBe(bedB.id);
+  });
+
   it('does not lose structure edits and keeps the garden a Scene projection', () => {
     const store = useGardenStore.getState();
     const firstId = store.garden.structures[0].id;
