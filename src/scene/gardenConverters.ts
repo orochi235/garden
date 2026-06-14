@@ -1,4 +1,4 @@
-import { asNodeId } from '@orochi235/weasel';
+import { asNodeId, composeRectPose, decomposeRectPose } from '@orochi235/weasel';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
 import type { GardenAddNodeSpec, GardenBase, GardenScene } from './gardenScene';
@@ -45,7 +45,7 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
       id: asNodeId(s.id),
       kind: isSceneContainer(s) ? 'container' : 'leaf',
       layer: 'structures',
-      pose: structurePose(s),
+      pose: parent ? decomposeRectPose(structurePose(parent), structurePose(s)) : structurePose(s),
       parent: s.parentId ? asNodeId(s.parentId) : null,
       data: {
         kind: 'structure',
@@ -83,7 +83,7 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
       id: asNodeId(z.id),
       kind: 'container',
       layer: 'zones',
-      pose: zonePose(z),
+      pose: parent ? decomposeRectPose(zonePose(parent), zonePose(z)) : zonePose(z),
       parent: z.parentId ? asNodeId(z.parentId) : null,
       data: {
         kind: 'zone',

@@ -1,4 +1,4 @@
-import { asNodeId } from '@orochi235/weasel';
+import { asNodeId, composeRectPose } from '@orochi235/weasel';
 import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
@@ -163,5 +163,49 @@ describe('sceneToGarden round-trip', () => {
       id: asNodeId('orphan'),
     });
     expect(() => sceneToGarden(scene, splitBase(g))).toThrow(/no parent/);
+  });
+});
+
+// Helper: kit world pose of a node by composing local poses up the parent chain.
+function kitWorld(scene: ReturnType<typeof createGardenScene>, id: string): { x: number; y: number; width: number; height: number } {
+  const n = scene.get(id as never)!;
+  return n.parent
+    ? (composeRectPose(kitWorld(scene, String(n.parent)) as never, n.pose as never) as never)
+    : (n.pose as never);
+}
+
+describe('gardenToScene nested frame (parent-local poses)', () => {
+  it('stores a nested structure pose parent-local and composes back to the garden world pose', () => {
+    const g = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 2, width: 10, length: 10, container: true }),
+      struct({ id: 's2', x: 5, y: 6, width: 3, length: 3, parentId: 's1', container: true }),
+    ];
+    const scene = createGardenScene(gardenToScene(g));
+    expect(scene.get('s2' as never)!.pose).toMatchObject({ x: 4, y: 4 });
+    expect(kitWorld(scene, 's2')).toMatchObject({ x: 5, y: 6 });
+  });
+
+  it('stores a nested zone pose parent-local', () => {
+    const g = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    g.zones = [
+      zone({ id: 'z1', x: 2, y: 3 }),
+      zone({ id: 'z2', x: 7, y: 8, parentId: 'z1' }),
+    ];
+    const scene = createGardenScene(gardenToScene(g));
+    expect(scene.get('z2' as never)!.pose).toMatchObject({ x: 5, y: 5 });
+    expect(kitWorld(scene, 'z2')).toMatchObject({ x: 7, y: 8 });
+  });
+
+  it('keeps a planting under a nested structure at the correct composed world position', () => {
+    const g = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 2, container: true }),
+      struct({ id: 's2', x: 5, y: 6, parentId: 's1', container: true }),
+    ];
+    g.plantings = [plant({ id: 'p1', parentId: 's2', x: 1, y: 1 })];
+    const scene = createGardenScene(gardenToScene(g));
+    expect(scene.get('p1' as never)!.pose).toMatchObject({ x: 1, y: 1 });
+    expect(kitWorld(scene, 'p1')).toMatchObject({ x: 6, y: 7 });
   });
 });
