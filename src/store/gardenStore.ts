@@ -17,6 +17,7 @@ import {
   getPlantableBounds,
 } from '../model/types';
 import { gardenToScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
+import { reconcileScene } from '../scene/reconcileScene';
 import type { GardenBase, GardenNodeData, GardenPose, GardenScene } from '../scene/gardenScene';
 import { createGardenScene } from '../scene/gardenScene';
 import { structuresCollide } from '../utils/collision';
@@ -292,12 +293,35 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   }
 
   /**
-   * Apply a partial update to the garden — legacy bridge. Rebuilds the scene
-   * from the composed garden merged with `updates`. Coarse by design (no
-   * fine-grained scene ops yet); Task C replaces it.
+   * Apply a partial update to the garden via fine-grained, in-place scene ops
+   * (Phase 3 — seam #2). Base (non-spatial) keys mutate the `base` object;
+   * spatial keys (structures/zones/plantings) are reconciled against the
+   * existing Scene instance — the instance is never recreated here. undo/redo/
+   * loadGarden/reset still go through adoptGarden until Phase 4 (loadState).
    */
   function patch(updates: Partial<Garden>) {
-    adoptGarden({ ...composeGarden(), ...updates });
+    const spatialKeys = ['structures', 'zones', 'plantings'];
+    const baseUpdates: Record<string, unknown> = {};
+    let hasBase = false;
+    let hasSpatial = false;
+    for (const k of Object.keys(updates)) {
+      if (spatialKeys.includes(k)) {
+        hasSpatial = true;
+      } else {
+        baseUpdates[k] = (updates as Record<string, unknown>)[k];
+        hasBase = true;
+      }
+    }
+    if (hasBase) {
+      base = { ...base, ...baseUpdates } as GardenBase;
+      invalidateComposed();
+    }
+    if (hasSpatial) {
+      // Reconcile against the composed target (composeGarden already reflects
+      // any base change applied above); reconcile reads only spatial arrays.
+      reconcileScene(scene, { ...composeGarden(), ...updates });
+    }
+    set({ garden: composeGarden() });
   }
 
   /** Push current garden state to the garden undo stack, then patch. */
