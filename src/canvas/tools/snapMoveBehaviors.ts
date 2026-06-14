@@ -1,10 +1,10 @@
-import type { MoveBehavior } from '@orochi235/weasel';
-import {
-  snapBackOrDelete as weaselSnapBackOrDelete,
-  snapToGrid as weaselSnapToGrid,
-} from '@orochi235/weasel/move';
 import { useGardenStore } from '../../store/gardenStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
+import {
+  type MoveBehavior,
+  snapBackOrDelete as weaselSnapBackOrDelete,
+  snapToGrid as weaselSnapToGrid,
+} from '../gestures';
 
 /**
  * Mapping from Phase 5 deferral vocabulary → eric implementations:

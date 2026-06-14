@@ -1,10 +1,10 @@
-import type { GestureContext } from '@orochi235/weasel';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { SceneNode } from '../adapters/gardenScene';
 import { createGardenSceneAdapter, type ScenePose } from '../adapters/gardenScene';
+import type { GestureContext } from '../gestures';
 import { clampStructureZoneToGardenBounds, detectStructureClash } from './structureMoveBehaviors';
 
 function makeCtx(

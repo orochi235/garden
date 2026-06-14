@@ -1,5 +1,5 @@
 import type { GridSlotConfig, RenderLayer } from '@orochi235/weasel';
-import { Canvas, computeFitView, useCanvasSize, useInsertTool, useTools } from '@orochi235/weasel';
+import { Canvas, fitZoom, useCanvasSize, useInsertTool, useTools } from '@orochi235/weasel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
@@ -25,7 +25,7 @@ import {
 import { createStructureLayers } from './layers/structureLayersWorld';
 import { createSystemLayers } from './layers/systemLayersWorld';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
-import type { GetUi, View } from './layers/worldLayerData';
+import { fromKitView, type GetUi, toKitView, type View } from './layers/worldLayerData';
 import { createZoneLayers } from './layers/zoneLayersWorld';
 import { NurseryCanvas } from './NurseryCanvas';
 import { onIconLoad } from './plantRenderers';
@@ -51,6 +51,28 @@ const GARDEN_MAX_ZOOM = 200;
 
 function clampZoom(z: number): number {
   return Math.min(GARDEN_MAX_ZOOM, Math.max(GARDEN_MIN_ZOOM, z));
+}
+
+/**
+ * Fit `contentW × contentH` (world units) into the `viewportW × viewportH`
+ * (px) viewport, returning eric's scalar zoom/pan triple.
+ *
+ * weasel HEAD's `computeFitView` is scene-based and returns a per-axis `View`;
+ * eric keeps its own scalar zoom/pan model (mirrored into `uiStore`), so this
+ * vendors the pin's simple uniform-zoom fit (`fitZoom` is still kit-public)
+ * rather than adopting the scene-backed API.
+ */
+function computeFitView(
+  viewportW: number,
+  viewportH: number,
+  contentW: number,
+  contentH: number,
+  padRatio = 0.85,
+): { zoom: number; panX: number; panY: number } {
+  const zoom = fitZoom(viewportW * padRatio, viewportH * padRatio, contentW, contentH);
+  const cw = contentW * zoom;
+  const ch = contentH * zoom;
+  return { zoom, panX: (viewportW - cw) / 2, panY: (viewportH - ch) / 2 };
 }
 
 function GardenCanvasNewPrototype() {
@@ -338,7 +360,8 @@ function GardenCanvasNewPrototype() {
     return { x: -offX / scale, y: -offY / scale, scale };
   }, [width, height, garden.widthFt, garden.lengthFt, zoom, panX, panY]);
 
-  const handleViewChange = (next: View) => {
+  const handleViewChange = (kitNext: Parameters<typeof fromKitView>[0]) => {
+    const next: View = fromKitView(kitNext);
     const clamped = clampZoom(next.scale);
     setZoomState(clamped);
     setPanXState(-next.x * clamped);
@@ -475,11 +498,10 @@ function GardenCanvasNewPrototype() {
           width={width}
           height={height}
           adapter={adapter}
-          view={view}
+          view={toKitView(view)}
           onViewChange={handleViewChange}
           layers={layers}
           tools={tools}
-          selectionMode="none"
         />
       )}
     </div>

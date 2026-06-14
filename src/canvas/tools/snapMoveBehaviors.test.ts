@@ -1,7 +1,8 @@
-import type { GestureContext, SnapTarget } from '@orochi235/weasel';
+import type { SnapTarget } from '@orochi235/weasel';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createGardenSceneAdapter, type SceneNode, type ScenePose } from '../adapters/gardenScene';
+import type { GestureContext } from '../gestures';
 import { requirePlantingDrop, snapStructureZoneToGrid } from './snapMoveBehaviors';
 
 function makeCtx(

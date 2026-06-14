@@ -1,21 +1,11 @@
 import {
-  cloneByAltDrag,
   cornerResizeHandles,
   type Dims,
   defineTool,
   hitCornerHandle,
   type InsertAdapter,
-  type MoveBehavior,
   type RenderLayer,
-  type ResizeAnchor,
-  selectFromMarquee,
   type Tool,
-  type UseMoveOptions,
-  type UseResizeOptions,
-  useAreaSelect,
-  useClone,
-  useMove,
-  useResize,
   type View,
 } from '@orochi235/weasel';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -35,6 +25,18 @@ import { createZoneResizeAdapter } from '../adapters/zoneResize';
 import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 import { MOVE_DRAG_KIND, type MovePutative } from '../drag/moveDrag';
 import { RESIZE_DRAG_KIND, type ResizePutative } from '../drag/resizeDrag';
+import {
+  cloneByAltDrag,
+  type MoveBehavior,
+  type ResizeAnchor,
+  selectFromMarquee,
+  type UseMoveOptions,
+  type UseResizeOptions,
+  useAreaSelect,
+  useClone,
+  useMove,
+  useResize,
+} from '../gestures';
 import { plantDrawCommands } from '../plantRenderers';
 import type { DrawCommand } from '../util/weaselLocal';
 import { requirePlantingDrop, snapStructureZoneToGrid } from './snapMoveBehaviors';
@@ -358,7 +360,7 @@ export function useEricSelectTool(
       insertNode: () => {},
       setSelection: () => {},
       getSelection: () => [],
-      applyBatch: () => {},
+      applyOps: () => {},
     }),
     [],
   );
@@ -405,9 +407,9 @@ export function useEricSelectTool(
           const world = plantingWorldPose(garden, planting);
           const wx = world.x + (item.x - planting.x);
           const wy = world.y + (item.y - planting.y);
-          const sx = (wx - view.x) * view.scale;
-          const sy = (wy - view.y) * view.scale;
-          const radiusPx = (footprintFt / 2) * view.scale;
+          const sx = (wx - view.x) * view.scale.x;
+          const sy = (wy - view.y) * view.scale.x;
+          const radiusPx = (footprintFt / 2) * view.scale.x;
           const color = cultivar.color ?? '#4A7C59';
           const iconBgColor = cultivar.iconBgColor ?? null;
           children.push(
@@ -446,7 +448,7 @@ export function useEricSelectTool(
                 const expanded = expandToGroups(sel, structures);
                 if (expanded.length > sel.length) {
                   const explicitSet = new Set(sel);
-                  const tolWorld = OUTLINE_EDGE_HIT_PX / Math.max(0.0001, ctx.view.scale);
+                  const tolWorld = OUTLINE_EDGE_HIT_PX / Math.max(0.0001, ctx.view.scale.x);
                   const byId = new Map(structures.map((s) => [s.id, s] as const));
                   let hitSibling = false;
                   for (const id of expanded) {
@@ -489,7 +491,7 @@ export function useEricSelectTool(
             //    Skipped in forceMarquee mode — handles aren't actionable when the
             //    drag will be reinterpreted as a marquee.
             const sel = useUiStore.getState().selectedIds;
-            const radiusWorld = HANDLE_HIT_RADIUS_PX / Math.max(0.0001, ctx.view.scale);
+            const radiusWorld = HANDLE_HIT_RADIUS_PX / Math.max(0.0001, ctx.view.scale.x);
             if (!forceMarquee && sel.length === 1) {
               const id = sel[0];
               const s = getStructure(id);

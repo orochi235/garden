@@ -1,12 +1,4 @@
-import {
-  cloneByAltDrag,
-  type Dims,
-  defineTool,
-  type RenderLayer,
-  type Tool,
-  useClone,
-  type View,
-} from '@orochi235/weasel';
+import { type Dims, defineTool, type RenderLayer, type Tool, type View } from '@orochi235/weasel';
 import { useMemo, useRef, useState } from 'react';
 import { getCultivar } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
@@ -14,6 +6,7 @@ import { useUiStore } from '../../store/uiStore';
 import { expandToGroups } from '../../utils/groups';
 import type { GardenSceneAdapter } from '../adapters/gardenScene';
 import type { GardenInsertAdapter } from '../adapters/insert';
+import { cloneByAltDrag, useClone } from '../gestures';
 import { plantDrawCommands } from '../plantRenderers';
 import type { DrawCommand } from '../util/weaselLocal';
 
@@ -67,7 +60,7 @@ export function useEricCycleTool(
       getNode: () => undefined,
       setSelection: () => {},
       getSelection: () => [],
-      applyBatch: () => {},
+      applyOps: () => {},
     }),
     [],
   );
@@ -94,9 +87,9 @@ export function useEricCycleTool(
           const cultivar = getCultivar(planting.cultivarId);
           if (!cultivar) continue;
           const footprintFt = cultivar.footprintFt ?? 0.5;
-          const sx = (item.x - view.x) * view.scale;
-          const sy = (item.y - view.y) * view.scale;
-          const radiusPx = (footprintFt / 2) * view.scale;
+          const sx = (item.x - view.x) * view.scale.x;
+          const sy = (item.y - view.y) * view.scale.x;
+          const radiusPx = (footprintFt / 2) * view.scale.x;
           const color = cultivar.color ?? '#4A7C59';
           const iconBgColor = cultivar.iconBgColor ?? null;
           children.push(

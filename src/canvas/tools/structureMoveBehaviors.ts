@@ -1,7 +1,7 @@
-import type { MoveBehavior } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
+import type { MoveBehavior } from '../gestures';
 
 /**
  * Compute the union AABB (in world coordinates) of every dragged id, applying
