@@ -25,6 +25,7 @@ export function LayerSection({
 
   return (
     <div className={styles.section}>
+      {/* biome-ignore lint/a11y/useSemanticElements: header contains an interactive <ToggleSwitch>; nesting it in a native <button> is invalid HTML. Keyboard + role provided. */}
       <div
         className={styles.header}
         role="button"

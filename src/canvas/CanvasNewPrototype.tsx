@@ -211,8 +211,7 @@ function GardenCanvasNewPrototype() {
           y?: number;
         };
         if (
-          put &&
-          put.parentId &&
+          put?.parentId &&
           put.cultivarId &&
           typeof put.x === 'number' &&
           typeof put.y === 'number'

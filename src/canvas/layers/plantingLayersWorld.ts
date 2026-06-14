@@ -95,7 +95,7 @@ function buildParentLookup(
  * edge or onto the surrounding ground.
  */
 function buildContainerClipPath(s: Structure | undefined): Path | null {
-  if (!s || !s.container || s.clipChildren === false) return null;
+  if (!s?.container || s.clipChildren === false) return null;
   const wallWidth = s.wallThicknessFt ?? 0;
   if (wallWidth <= 0) return null;
   if (s.type === 'pot' || s.type === 'felt-planter') {

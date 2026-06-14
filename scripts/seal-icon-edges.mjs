@@ -93,7 +93,7 @@ function sampleBg(path, W, H) {
 }
 
 function rgbHex([r, g, b]) {
-  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function sealOne(inBuf, scratchDir, idx) {
@@ -150,7 +150,7 @@ function processJson(rel) {
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
-  if (!DRY) writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
+  if (!DRY) writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
   console.log(`${rel}: sealed ${touched} icons${DRY ? ' (dry-run)' : ''}`);
 }
 

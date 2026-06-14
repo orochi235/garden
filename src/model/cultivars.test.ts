@@ -90,7 +90,7 @@ describe('cultivar registry', () => {
     for (const c of all) {
       if (c.variety) {
         expect(c.id).toMatch(/^.+\..+$/);
-        expect(c.id.startsWith(c.speciesId + '.')).toBe(true);
+        expect(c.id.startsWith(`${c.speciesId}.`)).toBe(true);
       } else {
         expect(c.id).toBe(c.speciesId);
       }

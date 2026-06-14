@@ -7,6 +7,7 @@ export function ModeSwitcher() {
   const setAppMode = useUiStore((s) => s.setAppMode);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: role="group" is the correct ARIA pattern for a toggle-button container; <fieldset> would impose form-field semantics and default chrome.
     <div className={styles.switcher} role="group" aria-label="App mode">
       <button
         type="button"

@@ -74,8 +74,8 @@ function FlatList({
 }) {
   return (
     <div className={styles.list}>
-      {schedule.actions.map((a, i) => (
-        <div key={i} className={styles.row}>
+      {schedule.actions.map((a) => (
+        <div key={`${a.plantId}:${a.actionId}`} className={styles.row}>
           <span className={styles.date}>{formatWindow(a.earliest, a.latest)}</span>
           <span className={styles.action}>{a.label}</span>
           <span className={styles.plant}>· {labelFor(plantsById, a)}</span>
@@ -103,8 +103,8 @@ function ByDateList({
       {groups.map((g) => (
         <div key={g.date} className={styles.section}>
           <div className={styles.sectionTitle}>{formatWindow(g.date, g.date)}</div>
-          {g.actions.map((a, i) => (
-            <div key={i} className={styles.row}>
+          {g.actions.map((a) => (
+            <div key={`${a.plantId}:${a.actionId}`} className={styles.row}>
               <span className={styles.action}>{a.label}</span>
               <span className={styles.plant}>· {labelFor(plantsById, a)}</span>
               {a.latest !== a.earliest && (
@@ -140,8 +140,8 @@ function ByPlantList({
           <div className={styles.sectionTitle}>
             {labelForPlant(plantsById, g.plantId, g.cultivarId)}
           </div>
-          {g.actions.map((a, i) => (
-            <div key={i} className={styles.row}>
+          {g.actions.map((a) => (
+            <div key={`${a.plantId}:${a.actionId}`} className={styles.row}>
               <span className={styles.date}>{formatWindow(a.earliest, a.latest)}</span>
               <span className={styles.action}>{a.label}</span>
               {a.conflicts.length > 0 && (

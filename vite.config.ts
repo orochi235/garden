@@ -18,7 +18,7 @@ export default defineConfig({
         server.middlewares.use((req, res, next) => {
           if (!req.url?.startsWith('/tests/visual/fixtures/')) return next();
           try {
-            const filePath = resolve(__dirname, '.' + req.url);
+            const filePath = resolve(__dirname, `.${req.url}`);
             const buf = readFileSync(filePath);
             res.setHeader('Content-Type', 'application/json');
             res.end(buf);

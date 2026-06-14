@@ -137,15 +137,9 @@ export function AlmanacPanel() {
             <span className={f.label}></span>
             <span className={f.span12} style={{ fontSize: 12, color: '#c44' }}>
               {locStatus.message}{' '}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  runLocate();
-                }}
-              >
+              <button type="button" className={styles.inlineLink} onClick={runLocate}>
                 try again
-              </a>
+              </button>
             </span>
           </>
         )}

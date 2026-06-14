@@ -211,14 +211,15 @@ function buildLastFrostGrid(stations) {
     const oi = Math.floor((s.lon - LON0) / STEP);
     if (li < 0 || li >= N_LAT || oi < 0 || oi >= N_LON) continue;
     const k = li * N_LON + oi;
-    (cells[k] ??= []).push(s.doy);
+    cells[k] ??= [];
+    cells[k].push(s.doy);
   }
 
   const doyAvg = new Uint16Array(N_LAT * N_LON);
   let direct = 0;
   for (let k = 0; k < N_LAT * N_LON; k++) {
     const d = cells[k];
-    if (d && d.length) {
+    if (d?.length) {
       let sum = 0;
       for (const v of d) sum += v;
       doyAvg[k] = Math.round(sum / d.length);

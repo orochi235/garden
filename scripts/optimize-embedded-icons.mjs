@@ -100,7 +100,7 @@ function sampleEdgeColor(pngPath) {
   const r = Math.round(sum[0] / pool.length);
   const g = Math.round(sum[1] / pool.length);
   const b = Math.round(sum[2] / pool.length);
-  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function processFile(rel) {
@@ -128,7 +128,7 @@ function processFile(rel) {
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
-  writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
+  writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
   console.log(
     `${rel}: ${touched} icons, ${(beforeBytes / 1e6).toFixed(1)}MB → ${(afterBytes / 1e6).toFixed(2)}MB`,
   );

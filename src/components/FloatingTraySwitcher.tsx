@@ -148,6 +148,7 @@ export function FloatingTraySwitcher() {
             )}
             <div
               role="option"
+              tabIndex={0}
               aria-selected={active}
               data-tray-id={t.id}
               data-tray-index={index}

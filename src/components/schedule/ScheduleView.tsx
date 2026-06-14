@@ -88,8 +88,8 @@ export function ScheduleView({
 
       {schedule.warnings.length > 0 && (
         <div>
-          {schedule.warnings.map((w, i) => (
-            <div key={i} className={styles.warning}>
+          {schedule.warnings.map((w) => (
+            <div key={w} className={styles.warning}>
               {w}
             </div>
           ))}

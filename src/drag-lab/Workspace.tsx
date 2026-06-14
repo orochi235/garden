@@ -413,6 +413,7 @@ export function Workspace({
                   ? `${field.label} (${resolved})`
                   : field.label;
               return (
+                // biome-ignore lint/a11y/noLabelWithoutControl: dev-only drag-lab; the label wraps the row's control across checkbox/slider/dropdown branches.
                 <label
                   key={field.key}
                   className={`dl-control-row${field.type === 'checkbox' ? ' dl-checkbox-row' : ''}`}

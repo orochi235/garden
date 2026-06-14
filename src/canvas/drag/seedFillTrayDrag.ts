@@ -124,7 +124,7 @@ function clientToWorld(
 ): { x: number; y: number } | null {
   const rect = viewport.container.getBoundingClientRect();
   const view = viewport.view;
-  if (!view || !view.scale) return null;
+  if (!view?.scale) return null;
   return {
     x: (sample.clientX - rect.left) / view.scale + view.x,
     y: (sample.clientY - rect.top) / view.scale + view.y,

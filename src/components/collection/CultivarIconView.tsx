@@ -137,7 +137,7 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
       let formatted = taxonomicName;
       for (let i = 2; i < words.length; i++) {
         if (words[i].includes('.')) {
-          formatted = [...words.slice(0, i), '\n' + words.slice(i).join(' ')]
+          formatted = [...words.slice(0, i), `\n${words.slice(i).join(' ')}`]
             .join(' ')
             .replace(' \n', '\n');
           break;

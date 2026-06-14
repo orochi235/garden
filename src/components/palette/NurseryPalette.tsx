@@ -160,15 +160,13 @@ export function NurseryPalette({ onDragBegin }: Props) {
               {collection.length === 0 ? (
                 <>
                   Your collection is empty.{' '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setEditorOpen(true);
-                    }}
+                  <button
+                    type="button"
+                    className={styles.inlineLink}
+                    onClick={() => setEditorOpen(true)}
                   >
                     Edit Collection
-                  </a>
+                  </button>
                 </>
               ) : (
                 'No seedable cultivars in your collection'

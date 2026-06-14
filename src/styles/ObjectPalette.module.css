@@ -109,6 +109,17 @@
   text-align: center;
 }
 
+/* Inline text-link rendered as a <button> for accessibility. */
+.inlineLink {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .footer {
   flex-shrink: 0;
   padding: 10px 12px 12px;

@@ -177,7 +177,7 @@ export function createGroupOutlineLayer(
       const children: DrawCommand[] = [];
       for (const id of selectedIds) {
         const s = byId.get(id);
-        if (!s || !s.groupId || drawnGroups.has(s.groupId)) continue;
+        if (!s?.groupId || drawnGroups.has(s.groupId)) continue;
         drawnGroups.add(s.groupId);
         const members = structures.filter((m) => m.groupId === s.groupId);
         if (members.length < 2) continue;

@@ -187,8 +187,8 @@ for (const [name, def] of Object.entries(patternDefs)) {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = CANVAS_W * dpr;
   canvas.height = CANVAS_H * dpr;
-  canvas.style.width = CANVAS_W + 'px';
-  canvas.style.height = CANVAS_H + 'px';
+  canvas.style.width = `${CANVAS_W}px`;
+  canvas.style.height = `${CANVAS_H}px`;
   card.appendChild(canvas);
 
   // Current param values
@@ -198,7 +198,7 @@ for (const [name, def] of Object.entries(patternDefs)) {
   }
 
   // Render function
-  function render() {
+  const render = () => {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -218,7 +218,7 @@ for (const [name, def] of Object.entries(patternDefs)) {
     ctx.fillStyle = pat;
     ctx.globalAlpha = def.hasBg ? 1.0 : 0.9;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-  }
+  };
 
   // Controls
   const controls = document.createElement('div');

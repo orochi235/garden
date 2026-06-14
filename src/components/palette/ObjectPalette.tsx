@@ -46,15 +46,13 @@ export function ObjectPalette({ onDragBegin }: Props) {
                   <div className={styles.categoryLabel}>{cat.label}</div>
                   <div className={styles.emptyMessage}>
                     Your collection is empty.{' '}
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setEditorOpen(true);
-                      }}
+                    <button
+                      type="button"
+                      className={styles.inlineLink}
+                      onClick={() => setEditorOpen(true)}
                     >
                       Edit Collection
-                    </a>
+                    </button>
                   </div>
                 </div>
               );

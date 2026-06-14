@@ -39,8 +39,8 @@ export function CellPopover({ selection, plantsById, onClose }: CellPopoverProps
         {actions.length === 0 ? (
           <div className={styles.empty}>No actions on this day.</div>
         ) : (
-          actions.map((a, i) => (
-            <div key={i} className={styles.row}>
+          actions.map((a) => (
+            <div key={`${a.plantId}:${a.actionId}`} className={styles.row}>
               <span className={styles.action}>{a.label}</span>
               <span className={styles.plant}>{plantLabel(plantsById, a)}</span>
               <span className={styles.window}>{formatWindow(a.earliest, a.latest)}</span>

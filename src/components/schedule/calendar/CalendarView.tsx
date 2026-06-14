@@ -137,10 +137,14 @@ export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
         )}
 
         <span className={styles.encoding}>
-          <label style={{ fontSize: 12, marginRight: 4, color: 'var(--theme-text-muted, #888)' }}>
+          <label
+            htmlFor="calendar-color-encoding"
+            style={{ fontSize: 12, marginRight: 4, color: 'var(--theme-text-muted, #888)' }}
+          >
             Color:
           </label>
           <select
+            id="calendar-color-encoding"
             className={styles.encodingSelect}
             value={colorEncoding}
             onChange={(e) => setColorEncoding(e.target.value as ColorEncoding)}

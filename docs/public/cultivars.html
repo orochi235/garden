@@ -109,7 +109,7 @@
     </thead>
     <tbody id="tbody"></tbody>
   </table>
-  <div id="iconTooltip"><img></div>
+  <div id="iconTooltip"><img alt="" /></div>
   <div class="toast" id="toast"></div>
   <div class="modal-overlay" id="missingIconsModal">
     <div class="modal">
@@ -216,7 +216,7 @@
     function applyCategoryFilter(v) { categoryFilter = v; render(); }
 
     function toggleSelectAll(checked) {
-      document.querySelectorAll('[data-select]').forEach(cb => cb.checked = checked);
+      document.querySelectorAll('[data-select]').forEach(cb => { cb.checked = checked; });
     }
 
     function deleteSelected() {
@@ -229,9 +229,9 @@
         else cultivarIds.push(cb.dataset.selectId);
       });
       const parts = [];
-      if (speciesIds.length) parts.push(speciesIds.length + ' species (and their cultivars)');
-      if (cultivarIds.length) parts.push(cultivarIds.length + ' cultivars');
-      if (!confirm('Delete ' + parts.join(' and ') + '?')) return;
+      if (speciesIds.length) parts.push(`${speciesIds.length} species (and their cultivars)`);
+      if (cultivarIds.length) parts.push(`${cultivarIds.length} cultivars`);
+      if (!confirm(`Delete ${parts.join(' and ')}?`)) return;
       // Delete species and their cultivars
       const spSet = new Set(speciesIds);
       species = species.filter(s => !spSet.has(s.id));
@@ -316,9 +316,9 @@
     function esc(s) { return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
     function formatBytes(bytes) {
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }
 
     function computeFileStats() {
@@ -361,7 +361,7 @@
       computeFileStats();
 
       // Update sort indicators
-      document.querySelectorAll('th').forEach(th => th.classList.remove('sorted', 'desc'));
+      document.querySelectorAll('th').forEach(th => { th.classList.remove('sorted', 'desc'); });
       const headers = document.querySelectorAll('th');
       const fields = [null, null, 'speciesId','category','color', null, 'footprintFt','spacingFt'];
       const idx = fields.indexOf(sortField);
@@ -457,7 +457,7 @@
       const c = cultivars.find(x => x.id === id);
       if (!c) return;
       if (field === 'id') {
-        c.id = c.variety ? c.speciesId + '.' + value : value;
+        c.id = c.variety ? `${c.speciesId}.${value}` : value;
       } else if (field === 'color') {
         const sp = speciesMap[c.speciesId];
         if (sp && value === sp.color) {
@@ -492,26 +492,26 @@
       delete c.iconImage;
       save();
       render();
-      toast('Reverted overrides for ' + (resolve(c).name));
+      toast(`Reverted overrides for ${resolve(c).name}`);
     }
 
     function addRow() {
       const firstSpecies = species[0]?.id || 'tomato';
-      const newId = 'new-cultivar-' + Date.now();
+      const newId = `new-cultivar-${Date.now()}`;
       cultivars.push({ id: newId, speciesId: firstSpecies, variety: null });
       save(); render();
       toast('Added new cultivar');
     }
 
     function addCultivarToSpecies(speciesId) {
-      const newId = speciesId + '.new-var-' + Date.now();
+      const newId = `${speciesId}.new-var-${Date.now()}`;
       cultivars.push({ id: newId, speciesId, variety: 'New Variety' });
       save(); render();
-      toast('Added variety to ' + (speciesMap[speciesId]?.name || speciesId));
+      toast(`Added variety to ${speciesMap[speciesId]?.name || speciesId}`);
     }
 
     function addSpecies() {
-      const newId = 'new-species-' + Date.now();
+      const newId = `new-species-${Date.now()}`;
       species.push({ id: newId, name: 'New Species', taxonomicName: '', category: 'vegetables', icon: 'herb-sprig', color: '#888888', footprintFt: 0.5, spacingFt: 0.5, iconImage: null });
       saveSpecies();
       // Also add a base cultivar for it
@@ -527,16 +527,16 @@
       species = species.filter(s => s.id !== id);
       cultivars = cultivars.filter(c => c.speciesId !== id);
       saveSpecies(); save(); render();
-      toast('Deleted ' + (sp?.name || id));
+      toast(`Deleted ${sp?.name || id}`);
     }
 
     function duplicateRow(id) {
       const c = cultivars.find(x => x.id === id);
       if (!c) return;
-      const dup = { ...c, id: c.variety ? c.speciesId + '.' + cultivarSlug(c) + '-copy' : c.id + '-copy' };
+      const dup = { ...c, id: c.variety ? `${c.speciesId}.${cultivarSlug(c)}-copy` : `${c.id}-copy` };
       cultivars.push(dup);
       save(); render();
-      toast('Duplicated ' + resolve(c).name);
+      toast(`Duplicated ${resolve(c).name}`);
     }
 
     function deleteRow(id) {
@@ -544,7 +544,7 @@
       if (!c || !confirm(`Delete "${resolve(c).name}"?`)) return;
       cultivars = cultivars.filter(x => x.id !== id);
       save(); render();
-      toast('Deleted ' + resolve(c).name);
+      toast(`Deleted ${resolve(c).name}`);
     }
 
     function showMissingIcons() {
@@ -555,7 +555,7 @@
       for (const c of cultivars) {
         if (c.variety && !c.iconImage) {
           const sp = speciesMap[c.speciesId];
-          lines.push(sp ? sp.name + ', ' + c.variety : c.variety);
+          lines.push(sp ? `${sp.name}, ${c.variety}` : c.variety);
         }
       }
       document.getElementById('missingIconsContent').textContent = lines.join('\n');
@@ -617,9 +617,9 @@
           throw new Error('Expected array or {species, cultivars} object');
         }
         closeModal('importModal');
-        toast('Imported ' + cultivars.length + ' cultivars, ' + species.length + ' species');
+        toast(`Imported ${cultivars.length} cultivars, ${species.length} species`);
       } catch (e) {
-        alert('Invalid JSON: ' + e.message);
+        alert(`Invalid JSON: ${e.message}`);
       }
     }
 
@@ -639,7 +639,7 @@
 
     function readImageFile(file) {
       return new Promise((resolve, reject) => {
-        if (!file || !file.type.startsWith('image/')) { reject('Not an image'); return; }
+        if (!file?.type.startsWith('image/')) { reject('Not an image'); return; }
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
@@ -654,7 +654,7 @@
       if (!file) return;
       const dataUrl = await readImageFile(file);
       updateSpeciesField(speciesId, 'iconImage', dataUrl);
-      toast('Updated icon image for ' + (speciesMap[speciesId]?.name || speciesId));
+      toast(`Updated icon image for ${speciesMap[speciesId]?.name || speciesId}`);
     }
 
     async function onDropCultivar(e, cultivarId) {
@@ -664,7 +664,7 @@
       if (!file) return;
       const dataUrl = await readImageFile(file);
       updateField(cultivarId, 'iconImage', dataUrl);
-      toast('Updated icon image for ' + cultivarId);
+      toast(`Updated icon image for ${cultivarId}`);
       render();
     }
 
@@ -686,7 +686,7 @@
         if (!file) return;
         const dataUrl = await readImageFile(file);
         updateSpeciesField(speciesId, 'iconImage', dataUrl);
-        toast('Updated icon image for ' + (speciesMap[speciesId]?.name || speciesId));
+        toast(`Updated icon image for ${speciesMap[speciesId]?.name || speciesId}`);
       };
       input.click();
     }
@@ -700,7 +700,7 @@
         if (!file) return;
         const dataUrl = await readImageFile(file);
         updateField(cultivarId, 'iconImage', dataUrl);
-        toast('Updated icon image for ' + cultivarId);
+        toast(`Updated icon image for ${cultivarId}`);
         render();
       };
       input.click();
@@ -708,7 +708,7 @@
 
     function clearSpeciesImage(speciesId) {
       updateSpeciesField(speciesId, 'iconImage', null);
-      toast('Cleared icon image for ' + (speciesMap[speciesId]?.name || speciesId));
+      toast(`Cleared icon image for ${speciesMap[speciesId]?.name || speciesId}`);
     }
 
     function clearCultivarImage(cultivarId) {
@@ -716,7 +716,7 @@
       if (!c) return;
       delete c.iconImage;
       save(); render();
-      toast('Cleared icon image override for ' + cultivarId);
+      toast(`Cleared icon image override for ${cultivarId}`);
     }
 
     const tooltip = document.getElementById('iconTooltip');
@@ -731,8 +731,8 @@
     });
     document.addEventListener('mousemove', e => {
       if (tooltip.style.display !== 'block') return;
-      tooltip.style.left = (e.clientX + 16) + 'px';
-      tooltip.style.top = (e.clientY + 16) + 'px';
+      tooltip.style.left = `${e.clientX + 16}px`;
+      tooltip.style.top = `${e.clientY + 16}px`;
     });
     document.addEventListener('mouseout', e => {
       const drop = e.target.closest('.icon-image-drop');
@@ -744,7 +744,7 @@
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+        document.querySelectorAll('.modal-overlay.show').forEach(m => { m.classList.remove('show'); });
       }
     });
   </script>

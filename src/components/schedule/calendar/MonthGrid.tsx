@@ -55,6 +55,7 @@ export function MonthGrid({
   if (collapseWhenEmpty && layout.actionCount === 0 && !expanded) {
     return (
       <div className={styles.month}>
+        {/* biome-ignore lint/a11y/useSemanticElements: collapsed-month block is a grid container; a native <button> would inherit layout-breaking UA chrome. Keyboard + role provided. */}
         <div
           className={styles.emptyMonth}
           role="button"
@@ -82,9 +83,9 @@ export function MonthGrid({
             {w}
           </div>
         ))}
-        {layout.weeks.flat().map((cell, i) => (
+        {layout.weeks.flat().map((cell) => (
           <Cell
-            key={i}
+            key={cell.date}
             cell={cell}
             today={today}
             colorEncoding={colorEncoding}
@@ -122,6 +123,7 @@ function Cell({ cell, today, colorEncoding, onSelectDay, onSelectBar }: CellProp
     .join(' ');
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: day cell contains interactive <Bar> buttons; nesting them in a native <button> is invalid HTML. Keyboard + role provided.
     <div
       className={classes}
       role="button"
@@ -135,20 +137,16 @@ function Cell({ cell, today, colorEncoding, onSelectDay, onSelectBar }: CellProp
       }}
     >
       <div className={`${styles.dayNum} ${cell.isToday ? styles.dayNumToday : ''}`}>{day}</div>
-      {cell.visible.map((p, i) => (
+      {cell.visible.map((p) => (
         <Bar
-          key={i}
+          key={`${p.action.plantId}:${p.action.actionId}`}
           placement={p}
           today={today}
           colorEncoding={colorEncoding}
           onSelect={onSelectBar}
         />
       ))}
-      {busy && (
-        <div className={styles.busyHint} aria-label={`${cell.hiddenCount} more`}>
-          +{cell.hiddenCount} more
-        </div>
-      )}
+      {busy && <div className={styles.busyHint}>+{cell.hiddenCount} more</div>}
     </div>
   );
 }

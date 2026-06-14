@@ -10,7 +10,7 @@ const makeEntry = (
   color = '#000',
 ): PaletteEntry => ({
   id,
-  name: `${speciesName}${varietyLabel !== speciesName ? ', ' + varietyLabel : ''}`,
+  name: `${speciesName}${varietyLabel !== speciesName ? `, ${varietyLabel}` : ''}`,
   category: 'plantings',
   speciesId,
   speciesName,

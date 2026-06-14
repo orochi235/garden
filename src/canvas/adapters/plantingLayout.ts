@@ -27,7 +27,7 @@ type Container = (Structure | Zone) & { layout: Layout | null };
 
 function findContainer(garden: Garden, id: string): Container | null {
   const s = garden.structures.find((x) => x.id === id);
-  if (s && s.container) return s as Container;
+  if (s?.container) return s as Container;
   const z = garden.zones.find((x) => x.id === id);
   if (z) return z as Container;
   return null;
@@ -74,7 +74,7 @@ export function plantingLayoutFor(
   containerId: string,
 ): LayoutStrategy<PlantingPose> | null {
   const probe = findContainer(getGarden(), containerId);
-  if (!probe || !probe.layout) return null;
+  if (!probe?.layout) return null;
 
   const snap = nearestSlotSnap();
 
@@ -109,7 +109,7 @@ export function plantingLayoutFor(
     getDropTargets(_container, children, dragged) {
       const garden = getGarden();
       const c = findContainer(garden, containerId);
-      if (!c || !c.layout) return [];
+      if (!c?.layout) return [];
 
       const bounds = getPlantableBounds(c);
 

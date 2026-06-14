@@ -142,10 +142,10 @@ for (const name of order) {
     { val: t.listHover, showSolid: true },
   ];
   // Extract the solid RGB from an rgba() string
-  function rgbaToSolid(rgba) {
+  const rgbaToSolid = (rgba) => {
     const m = rgba.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
     return m ? `rgb(${m[1]}, ${m[2]}, ${m[3]})` : rgba;
-  }
+  };
 
   let cells = `<td><strong>${name}</strong></td>`;
   for (const f of fields) {

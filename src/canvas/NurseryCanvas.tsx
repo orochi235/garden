@@ -315,7 +315,6 @@ export function NurseryCanvas() {
           const w = tray.widthIn * v.scale;
           return (
             <input
-              autoFocus
               value={renaming.value}
               onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
               onKeyDown={(e) => {
