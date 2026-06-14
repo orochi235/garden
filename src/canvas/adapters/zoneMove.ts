@@ -43,7 +43,7 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
       const g = useGardenStore.getState().garden;
       useGardenStore.getState().applyGardenPatch({ zones: g.zones.filter((z) => z.id !== id) });
     },
-    applyBatch(ops, label) {
+    applyOps(ops, label) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);
       void label;

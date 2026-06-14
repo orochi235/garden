@@ -110,7 +110,7 @@ describe('gardenSceneAdapter', () => {
     expect(a.getChildren!(bed.id)).toEqual([planting.id]);
   });
 
-  it('applyBatch checkpoints exactly once for any number of ops', () => {
+  it('applyOps checkpoints once per labeled call and applies all ops', () => {
     const { planting } = setup();
     const a = createGardenSceneAdapter();
     // Drain undo stack to a known state.
@@ -132,7 +132,8 @@ describe('gardenSceneAdapter', () => {
         return noopOp;
       },
     };
-    a.applyBatch!([noopOp, noopOp, noopOp], 'Multi');
+    // Labeled call checkpoints exactly once regardless of op count.
+    a.applyOps!([noopOp, noopOp, noopOp], 'Multi');
     expect(checkpoints).toBe(1);
 
     // And applies all ops (verify with a real mutating op).
@@ -145,9 +146,41 @@ describe('gardenSceneAdapter', () => {
         return countingOp;
       },
     };
-    a.applyBatch!([countingOp, countingOp, countingOp, countingOp], 'Multi2');
+    a.applyOps!([countingOp, countingOp, countingOp, countingOp], 'Multi2');
     expect(applies).toBe(4);
     void planting;
+  });
+
+  it('applyOps without a label is transient (applies ops, no checkpoint)', () => {
+    setup();
+    const a = createGardenSceneAdapter();
+    // Drain undo stack to a known state.
+    useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
+    expect(useGardenStore.getState().canUndo()).toBe(false);
+
+    let checkpoints = 0;
+    const origCheckpoint = useGardenStore.getState().checkpoint;
+    useGardenStore.setState({
+      checkpoint: () => {
+        checkpoints += 1;
+        origCheckpoint();
+      },
+    });
+
+    let applies = 0;
+    const countingOp: Op = {
+      apply() {
+        applies += 1;
+      },
+      invert() {
+        return countingOp;
+      },
+    };
+    // Unlabeled (area-select) call: ops apply, but no checkpoint is pushed.
+    a.applyOps!([countingOp, countingOp]);
+    expect(applies).toBe(2);
+    expect(checkpoints).toBe(0);
+    expect(useGardenStore.getState().canUndo()).toBe(false);
   });
 
   it('hitTest returns top-most overlapping node, hitAll returns full stack', () => {

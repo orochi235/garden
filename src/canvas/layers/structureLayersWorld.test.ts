@@ -23,7 +23,7 @@ function makeStructure(over: Partial<Structure> = {}): Structure {
   } as unknown as Structure;
 }
 
-const view = { x: 0, y: 0, scale: 10 };
+const view = { x: 0, y: 0, scale: { x: 10, y: 10 } };
 
 const baseUi: ReturnType<GetUi> = {
   selectedIds: [],

@@ -9,7 +9,7 @@ import { circlePolygon, type DrawCommand, roundRectPolygon, viewToMat3 } from '.
 export type GetTrays = () => Tray[];
 
 function px(view: View, p: number): number {
-  return p / Math.max(0.0001, view.scale);
+  return p / Math.max(0.0001, view.scale.x);
 }
 
 /** Column-major 3×3 translation matrix. */
@@ -88,10 +88,10 @@ export function hitTestTrayLabel(
   worldX: number,
   worldY: number,
 ): Tray | null {
-  const areaH = LABEL_AREA_PX / Math.max(0.0001, view.scale);
+  const areaH = LABEL_AREA_PX / Math.max(0.0001, view.scale.x);
   for (const tray of trays) {
     const o = trayWorldOrigin(tray, ss);
-    const labelTop = o.y + tray.heightIn + LABEL_GAP_PX / view.scale;
+    const labelTop = o.y + tray.heightIn + LABEL_GAP_PX / view.scale.x;
     if (
       worldX >= o.x &&
       worldX <= o.x + tray.widthIn &&

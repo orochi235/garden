@@ -30,7 +30,7 @@ export function createStructureResizeAdapter(): ResizeAdapter<Structure, Structu
         length: pose.length,
       });
     },
-    applyBatch(ops, _label) {
+    applyOps(ops, _label) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);
     },

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createSeedling, createTray, setCell } from '../../model/nursery';
 import { createSeedlingLayers, type SeedlingLayerUi } from './seedlingLayersWorld';
 
-const view = { x: 0, y: 0, scale: 30 };
+const view = { x: 0, y: 0, scale: { x: 30, y: 30 } };
 
 const baseUi: SeedlingLayerUi = {
   showWarnings: true,

@@ -1,30 +1,30 @@
-import type { RenderLayer, View } from '@orochi235/weasel';
+import type { View } from '@orochi235/weasel';
+import { polygonFromPoints } from '@orochi235/weasel';
 
 /**
- * Local replacement for weasel's internal `viewToMat3` (not in 0.2.0 public API).
+ * Local reimplementation of weasel's `viewToMat3`, kept for behavioral parity
+ * (we deliberately do NOT swap to the kit's exported `viewToMat3`).
  * Column-major 3×3: maps world coords → screen pixels using the camera-position
  * View semantics (view.x/y is the world point at canvas origin).
+ *
+ * HEAD's `View.scale` is a per-axis `{ x, y }` vector. eric uses uniform zoom
+ * (`scale.x === scale.y`), so the two axes are read independently here while
+ * staying runtime-identical to the old scalar form.
  */
 export function viewToMat3(view: View): Float32Array {
-  const s = view.scale;
-  return new Float32Array([s, 0, 0, 0, s, 0, -view.x * s, -view.y * s, 1]);
+  const sx = view.scale.x;
+  const sy = view.scale.y;
+  // biome-ignore format: matrix layout
+  return new Float32Array([sx, 0, 0, 0, sy, 0, -view.x * sx, -view.y * sy, 1]);
 }
 
 /**
- * `DrawCommand` is declared in weasel's .d.ts but not in the public export block
- * (0.2.0 oversight). Derive it structurally from `RenderLayer.draw`'s return type
- * so layer files can import it from one place.
+ * `DrawCommand` and `TextureHandle` are now public exports of
+ * `@orochi235/weasel` (they were private in the 0.2.0 pin, which is why this
+ * module derived structural shims). Re-export them so layer files keep
+ * importing both from one place, unchanged.
  */
-export type DrawCommand = ReturnType<RenderLayer<unknown>['draw']>[number];
-
-/**
- * `TextureHandle` is also declared but not exported. Derive it from the pattern
- * factory return shape.
- */
-import { type createTilePattern, polygonFromPoints } from '@orochi235/weasel';
-
-export type { PolygonPath } from '@orochi235/weasel';
-export type TextureHandle = NonNullable<ReturnType<typeof createTilePattern>>;
+export type { DrawCommand, PolygonPath, TextureHandle } from '@orochi235/weasel';
 
 /**
  * Polygon approximation of a circle. Pre-flattened to N samples so it doesn't

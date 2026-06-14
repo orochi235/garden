@@ -55,7 +55,7 @@ function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
     draw(_data, view: View, _dims: Dims): DrawCommand[] {
       const g = getGarden();
       const items = mode === 'garden' ? bboxesGarden(g) : bboxesNursery(g);
-      const lw = 1 / Math.max(0.0001, view.scale);
+      const lw = 1 / Math.max(0.0001, view.scale.x);
       const stroke = { paint: { fill: 'solid' as const, color: '#ff0040' }, width: lw };
       const children: DrawCommand[] = items.map((b) => ({
         kind: 'path',
@@ -88,8 +88,8 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
         w = t.widthIn;
         h = t.heightIn;
       }
-      const lw = 2 / Math.max(0.0001, view.scale);
-      const dashSize = 4 / view.scale;
+      const lw = 2 / Math.max(0.0001, view.scale.x);
+      const dashSize = 4 / view.scale.x;
       const children: DrawCommand[] = [
         {
           kind: 'path',
@@ -112,7 +112,7 @@ function makeAxesLayer(): RenderLayer<unknown> {
     label: 'Debug: Axes',
     alwaysOn: true,
     draw(_data, view: View, _dims: Dims): DrawCommand[] {
-      const px = (n: number) => n / Math.max(0.0001, view.scale);
+      const px = (n: number) => n / Math.max(0.0001, view.scale.x);
       const lw = px(2);
       const xAxis = new PathBuilder().moveTo(0, 0).lineTo(100, 0).build();
       const yAxis = new PathBuilder().moveTo(0, 0).lineTo(0, 100).build();
@@ -171,7 +171,7 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
         w = t.widthIn;
         h = t.heightIn;
       }
-      const lw = 1 / Math.max(0.0001, view.scale);
+      const lw = 1 / Math.max(0.0001, view.scale.x);
       const stroke = { paint: { fill: 'solid' as const, color: 'rgba(255,255,0,0.3)' }, width: lw };
       const children: DrawCommand[] = [];
       for (let x = 0; x <= w + 1e-6; x += step) {

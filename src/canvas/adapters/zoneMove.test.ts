@@ -31,11 +31,11 @@ describe('zoneMoveAdapter', () => {
     expect(updated.length).toBe(z.length);
   });
 
-  it('applyBatch checkpoints once per batch', () => {
+  it('applyOps checkpoints once per batch', () => {
     const z = setup();
     const a = createZoneMoveAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    a.applyBatch!(
+    a.applyOps!(
       [
         createTransformOp({
           id: z.id,

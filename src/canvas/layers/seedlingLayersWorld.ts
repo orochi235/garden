@@ -21,7 +21,7 @@ export type GetSeedlingUi = () => SeedlingLayerUi;
 export type GetSeedlingHighlight = (id: string) => number;
 
 function px(view: View, p: number): number {
-  return p / Math.max(0.0001, view.scale);
+  return p / Math.max(0.0001, view.scale.x);
 }
 
 /** Column-major 3×3 translation matrix. */

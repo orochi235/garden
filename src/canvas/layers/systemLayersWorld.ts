@@ -25,8 +25,8 @@ function createOriginLayer(meta: LayerDescriptor): RenderLayer<unknown> {
     ...meta,
     space: 'screen',
     draw(_data, view, _dims): DrawCommand[] {
-      const ox = (0 - view.x) * view.scale;
-      const oy = (0 - view.y) * view.scale;
+      const ox = (0 - view.x) * view.scale.x;
+      const oy = (0 - view.y) * view.scale.x;
       const r = 4;
       const stroke = { paint: { fill: 'solid' as const, color: 'rgba(0,0,0,0.3)' }, width: 1 };
       const horiz = new PathBuilder()

@@ -1,4 +1,4 @@
-import type { LayoutStrategy, MoveAdapter, SnapTarget } from '@orochi235/weasel';
+import type { LayoutStrategy, MoveAdapter, Op, SnapTarget } from '@orochi235/weasel';
 import { validCellsForContainer } from '../../model/cellOccupancy';
 import type { Planting } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
@@ -116,7 +116,7 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
         },
       };
     },
-    applyBatch(ops, label) {
+    applyOps(ops: Op[], label: string) {
       useGardenStore.getState().checkpoint();
       // Apply reparent ops before transform ops on the same element so that
       // setPose computes local coords relative to the new parent, not the old.

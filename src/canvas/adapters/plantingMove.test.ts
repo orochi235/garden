@@ -29,14 +29,14 @@ describe('plantingMoveAdapter', () => {
     expect(a.getParent(planting.id)).toBe(bed.id);
   });
 
-  it('applyBatch wraps mutations in a checkpoint', () => {
+  it('applyOps wraps mutations in a checkpoint', () => {
     const { planting } = setup();
     const a = createPlantingMoveAdapter();
     // setup() pushes history via addStructure/addPlanting; drain it so we start
-    // from a known-empty undo stack and can verify applyBatch adds an entry.
+    // from a known-empty undo stack and can verify applyOps adds an entry.
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const before = useGardenStore.getState().canUndo();
-    a.applyBatch!(
+    a.applyOps!(
       [
         createTransformOp<{ x: number; y: number }>({
           id: planting.id,

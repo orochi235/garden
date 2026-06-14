@@ -271,7 +271,7 @@ export function createNurserySceneAdapter(): NurserySceneAdapter {
         metadata: { row: cell.row, col: cell.col },
       };
     },
-    applyBatch(ops, label) {
+    applyOps(ops, label) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);
       void label;

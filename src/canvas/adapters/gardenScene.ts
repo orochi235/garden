@@ -55,8 +55,12 @@ export type GardenSceneAdapter = MoveAdapter<SceneNode, ScenePose> & {
   /** Selection accessors mirror useUiStore. */
   getSelection(): string[];
   setSelection(ids: string[]): void;
-  /** Transient apply (no checkpoint) — required by AreaSelectAdapter contract. */
-  applyOps(ops: Op[]): void;
+  /**
+   * Apply ops. Checkpoints iff a `label` is supplied (move/op commits);
+   * transient (no checkpoint) when called without a label (area-select).
+   * Optional to satisfy both MoveAdapter and AreaSelectAdapter contracts.
+   */
+  applyOps?(ops: Op[], label?: string): void;
 };
 
 function findNode(id: string): SceneNode | undefined {
@@ -190,10 +194,11 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
         },
       };
     },
-    applyBatch(ops, label) {
-      useGardenStore.getState().checkpoint();
+    applyOps(ops, label) {
+      // Checkpoint only for labeled commits (move/ops). Unlabeled calls are
+      // transient (area-select) and must not push a history entry.
+      if (label !== undefined) useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);
-      void label;
     },
     hitTest(worldX, worldY) {
       const hit = adapter.hitAll(worldX, worldY)[0];
@@ -238,9 +243,6 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
     },
     setSelection(ids) {
       useUiStore.getState().setSelection(ids);
-    },
-    applyOps(ops) {
-      for (const op of ops) op.apply(adapter);
     },
   };
   return adapter;

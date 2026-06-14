@@ -15,7 +15,7 @@ describe('createInsertAdapter', () => {
 
   it('commitInsert returns null when no plottingTool active', () => {
     const a = createInsertAdapter();
-    expect(a.commitInsert({ x: 0, y: 0, width: 1, height: 1 })).toBeNull();
+    expect(a.commitInsert!({ x: 0, y: 0, width: 1, height: 1 })).toBeNull();
   });
 
   it('commitInsert builds a Structure when category=structures', () => {
@@ -23,7 +23,7 @@ describe('createInsertAdapter', () => {
       plottingTool: { category: 'structures', type: 'bed', color: '#abc' } as never,
     } as never);
     const a = createInsertAdapter();
-    const obj = a.commitInsert({ x: 1, y: 2, width: 3, height: 4 });
+    const obj = a.commitInsert!({ x: 1, y: 2, width: 3, height: 4 });
     expect(obj).toMatchObject({ x: 1, y: 2, width: 3, length: 4 });
     expect((obj as { type: string }).type).toBe('bed');
     expect(typeof obj!.id).toBe('string');
@@ -34,17 +34,17 @@ describe('createInsertAdapter', () => {
       plottingTool: { category: 'zones', color: '#abc', pattern: null } as never,
     } as never);
     const a = createInsertAdapter();
-    const obj = a.commitInsert({ x: 1, y: 2, width: 3, height: 4 });
+    const obj = a.commitInsert!({ x: 1, y: 2, width: 3, height: 4 });
     expect(obj).toMatchObject({ x: 1, y: 2, width: 3, length: 4 });
   });
 
-  it('applyBatch checkpoints + applies InsertOp; undo restores', () => {
+  it('applyOps checkpoints + applies InsertOp; undo restores', () => {
     useUiStore.setState({
       plottingTool: { category: 'zones', color: '#abc', pattern: null } as never,
     } as never);
     const a = createInsertAdapter();
-    const obj = a.commitInsert({ x: 0, y: 0, width: 2, height: 2 })!;
-    a.applyBatch!([createInsertOp({ node: obj })], 'Insert');
+    const obj = a.commitInsert!({ x: 0, y: 0, width: 2, height: 2 })!;
+    a.applyOps!([createInsertOp({ node: obj })], 'Insert');
     expect(useGardenStore.getState().garden.zones).toHaveLength(1);
     useGardenStore.getState().undo();
     expect(useGardenStore.getState().garden.zones).toHaveLength(0);
@@ -65,13 +65,13 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     const sId = useGardenStore.getState().garden.structures[0].id;
     const zId = useGardenStore.getState().garden.zones[0].id;
     const a = createInsertAdapter();
-    const snap = a.snapshotSelection([sId, zId]);
+    const snap = a.snapshotSelection!([sId, zId]);
     expect(snap.items).toHaveLength(2);
   });
 
   it('snapshotSelection ignores ids not in garden', () => {
     const a = createInsertAdapter();
-    const snap = a.snapshotSelection(['nope']);
+    const snap = a.snapshotSelection!(['nope']);
     expect(snap.items).toEqual([]);
   });
 
@@ -80,8 +80,8 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const sId = useGardenStore.getState().garden.structures[0].id;
     const a = createInsertAdapter();
-    const snap = a.snapshotSelection([sId]);
-    const out = a.commitPaste(snap, { dx: 1, dy: 2 });
+    const snap = a.snapshotSelection!([sId]);
+    const out = a.commitPaste!(snap, { dx: 1, dy: 2 });
     expect(out).toHaveLength(1);
     const made = out[0] as { id: string; x: number; y: number };
     expect(made.id).not.toBe(sId);
@@ -94,8 +94,8 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
     const zId = useGardenStore.getState().garden.zones[0].id;
     const a = createInsertAdapter();
-    const snap = a.snapshotSelection([zId]);
-    const out = a.commitPaste(snap, { dx: 2, dy: 3 });
+    const snap = a.snapshotSelection!([zId]);
+    const out = a.commitPaste!(snap, { dx: 2, dy: 3 });
     expect(out).toHaveLength(1);
     const made = out[0] as { id: string; x: number; y: number };
     expect(made.id).not.toBe(zId);
@@ -114,8 +114,8 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     }));
     const a = createInsertAdapter();
     // Snapshot the planting only (parent stays in garden; clone keeps same parentId).
-    const snap = a.snapshotSelection([planting.id]);
-    const out = a.commitPaste(snap, { dx: 0.5, dy: 0.5 });
+    const snap = a.snapshotSelection!([planting.id]);
+    const out = a.commitPaste!(snap, { dx: 0.5, dy: 0.5 });
     expect(out).toHaveLength(1);
     const made = out[0] as { id: string; parentId: string; x: number; y: number };
     expect(made.id).not.toBe(planting.id);
@@ -148,7 +148,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const planting = createPlanting({ parentId: 'orig', x: 0, y: 0, cultivarId: 'tomato' });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'planting', data: planting }] };
-    const out = a.commitPaste(
+    const out = a.commitPaste!(
       snap,
       { dx: 0, dy: 0 },
       {
@@ -165,7 +165,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const planting = createPlanting({ parentId: 'orig', x: 0, y: 0, cultivarId: 'tomato' });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'planting', data: planting }] };
-    const out = a.commitPaste(
+    const out = a.commitPaste!(
       snap,
       { dx: 0, dy: 0 },
       {
@@ -179,7 +179,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const planting = createPlanting({ parentId: 'orig', x: 1, y: 1, cultivarId: 'tomato' });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'planting', data: planting }] };
-    const out = a.commitPaste(snap, { dx: 0.5, dy: 0.5 }) as Array<{
+    const out = a.commitPaste!(snap, { dx: 0.5, dy: 0.5 }) as Array<{
       parentId: string;
       x: number;
       y: number;
@@ -194,7 +194,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
     const structure = createStructure({ type: 'pot', x: 5, y: 6, width: 1, length: 1 });
     const a = createInsertAdapter();
     const snap = { items: [{ kind: 'structure', data: structure }] };
-    const out = a.commitPaste(
+    const out = a.commitPaste!(
       snap,
       { dx: 1, dy: 2 },
       {

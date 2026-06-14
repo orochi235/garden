@@ -7,7 +7,7 @@ import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
 function px(view: View, p: number): number {
-  return p / Math.max(0.0001, view.scale);
+  return p / Math.max(0.0001, view.scale.x);
 }
 
 /**
@@ -30,8 +30,8 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
       ...meta['zone-bodies'],
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
-        const dashSize = 6 / Math.max(0.0001, view.scale);
-        const gapSize = 3 / Math.max(0.0001, view.scale);
+        const dashSize = 6 / Math.max(0.0001, view.scale.x);
+        const gapSize = 3 / Math.max(0.0001, view.scale.x);
         const children: DrawCommand[] = sorted.flatMap((z) => [
           {
             kind: 'path' as const,
@@ -95,7 +95,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
         const ui = getUi();
         if (ui.labelMode === 'none' || ui.labelMode === 'selection') return [];
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
-        const fontPx = ui.labelFontSize / Math.max(0.0001, view.scale);
+        const fontPx = ui.labelFontSize / Math.max(0.0001, view.scale.x);
         // Flagged: text rendering requires registerFont() wired at app boot.
         const children: DrawCommand[] = sorted
           .filter((z) => !!z.label)

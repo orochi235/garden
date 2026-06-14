@@ -23,11 +23,11 @@ describe('createZoneResizeAdapter', () => {
     expect(a.getNode('missing')).toBeUndefined();
   });
 
-  it('applyBatch checkpoints + applies; undo restores', () => {
+  it('applyOps checkpoints + applies; undo restores', () => {
     const z = useGardenStore.getState().garden.zones[0];
     const a = createZoneResizeAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    a.applyBatch!(
+    a.applyOps!(
       [
         createTransformOp({
           id: z.id,

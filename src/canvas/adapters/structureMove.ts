@@ -47,7 +47,7 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
         .getState()
         .applyGardenPatch({ structures: g.structures.filter((s) => s.id !== id) });
     },
-    applyBatch(ops, label) {
+    applyOps(ops, label) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);
       void label;

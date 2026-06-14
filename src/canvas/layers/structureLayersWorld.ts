@@ -57,7 +57,7 @@ function buildStructureRenderQueue(structures: Structure[]): {
 }
 
 function pxToWorld(view: View, px: number): number {
-  return px / Math.max(0.0001, view.scale);
+  return px / Math.max(0.0001, view.scale.x);
 }
 
 function getQueue(getStructures: () => Structure[]): { queue: StructureRenderItem[] } {
@@ -411,7 +411,7 @@ export function createStructureLayers(
         if (labelMode === 'none' || labelMode === 'selection') return [];
         const { queue } = getQueue(getStructures);
 
-        const fontPx = labelFontSize / Math.max(0.0001, view.scale);
+        const fontPx = labelFontSize / Math.max(0.0001, view.scale.x);
         const padX = pxToWorld(view, 4);
         const padY = pxToWorld(view, 1);
 

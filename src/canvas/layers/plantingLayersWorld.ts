@@ -53,7 +53,7 @@ interface PlantingParent {
 }
 
 function px(view: View, p: number): number {
-  return p / Math.max(0.0001, view.scale);
+  return p / Math.max(0.0001, view.scale.x);
 }
 
 function rectsOverlap(a: RenderedRect, b: RenderedRect): boolean {
@@ -389,7 +389,7 @@ export function createPlantingLayers(
           structures,
         );
 
-        const fontPx = 9 / Math.max(0.0001, view.scale);
+        const fontPx = 9 / Math.max(0.0001, view.scale.x);
         const children: DrawCommand[] = [];
         for (const [, group] of plantingsByParent) {
           const parent = parentMap.get(group[0]?.parentId ?? '');
@@ -487,7 +487,7 @@ export function createPlantingLayers(
           structures,
         );
 
-        const fontPx = data.labelFontSize / Math.max(0.0001, view.scale);
+        const fontPx = data.labelFontSize / Math.max(0.0001, view.scale.x);
 
         const labelOccluders: RenderedRect[] = [];
         const candidates: { text: string; rect: RenderedRect; selected: boolean }[] = [];

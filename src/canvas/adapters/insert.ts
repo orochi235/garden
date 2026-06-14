@@ -11,10 +11,10 @@ interface SnapshotItem {
   data: Structure | Zone | Planting;
 }
 
-export interface GardenInsertAdapter extends InsertAdapter<GardenObj> {
+export type GardenInsertAdapter = InsertAdapter<GardenObj> & {
   removeNode(id: string): void;
   getNode(id: string): GardenObj | undefined;
-}
+};
 
 export function createInsertAdapter(): GardenInsertAdapter {
   const adapter: GardenInsertAdapter = {
@@ -173,7 +173,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
     getSelection() {
       return useUiStore.getState().selectedIds;
     },
-    applyBatch(ops: Op[], _label: string) {
+    applyOps(ops: Op[], _label: string) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter as never);
     },

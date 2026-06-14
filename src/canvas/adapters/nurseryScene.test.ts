@@ -131,14 +131,14 @@ describe('nurseryScene', () => {
     expect(top?.id).toBe(tray.id);
   });
 
-  it('applyBatch calls checkpoint once and applies each op', () => {
+  it('applyOps calls checkpoint once and applies each op', () => {
     setup();
     useUiStore.getState().setAppMode('nursery');
     const a = createNurserySceneAdapter();
     const checkpoint = vi.spyOn(useGardenStore.getState(), 'checkpoint');
     const op1: Op = { apply: vi.fn(), invert: vi.fn() };
     const op2: Op = { apply: vi.fn(), invert: vi.fn() };
-    a.applyBatch!([op1, op2], 'test');
+    a.applyOps!([op1, op2], 'test');
     expect(checkpoint).toHaveBeenCalledTimes(1);
     expect(op1.apply).toHaveBeenCalledWith(a);
     expect(op2.apply).toHaveBeenCalledWith(a);

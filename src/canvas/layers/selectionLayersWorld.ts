@@ -27,7 +27,7 @@ export const SELECTION_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
 const SELECTION_META = descriptorById(SELECTION_LAYER_DESCRIPTORS);
 
 function px(view: View, p: number): number {
-  return p / Math.max(0.0001, view.scale);
+  return p / Math.max(0.0001, view.scale.x);
 }
 
 /**
@@ -140,7 +140,7 @@ export function createSelectionOutlineLayer(
 
         // Flagged: text commands require registerFont() wired at app boot.
         if (obj.label) {
-          const fontPx = (labelFontSize ?? 10) / Math.max(0.0001, view.scale);
+          const fontPx = (labelFontSize ?? 10) / Math.max(0.0001, view.scale.x);
           children.push(
             textCommand(obj.x + obj.width / 2, obj.y + obj.length + px(view, 8), obj.label, {
               fontSize: fontPx,
@@ -237,10 +237,10 @@ export function createSelectionHandlesLayer(
       const hs = 8;
       const children: DrawCommand[] = [];
       for (const obj of selected) {
-        const sx = (obj.x - view.x) * view.scale;
-        const sy = (obj.y - view.y) * view.scale;
-        const sw = obj.width * view.scale;
-        const sh = obj.length * view.scale;
+        const sx = (obj.x - view.x) * view.scale.x;
+        const sy = (obj.y - view.y) * view.scale.x;
+        const sw = obj.width * view.scale.x;
+        const sh = obj.length * view.scale.x;
 
         const corners: [number, number][] = [
           [sx, sy],
@@ -292,10 +292,10 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
       const strokeColor = '#888888';
 
       const rectHandles = (wx: number, wy: number, ww: number, wh: number): DrawCommand[] => {
-        const sx = (wx - view.x) * view.scale;
-        const sy = (wy - view.y) * view.scale;
-        const sw = ww * view.scale;
-        const sh = wh * view.scale;
+        const sx = (wx - view.x) * view.scale.x;
+        const sy = (wy - view.y) * view.scale.x;
+        const sw = ww * view.scale.x;
+        const sh = wh * view.scale.x;
         const corners: [number, number][] = [
           [sx, sy],
           [sx + sw / 2, sy],
@@ -315,8 +315,8 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
       };
 
       const dotHandle = (wx: number, wy: number): DrawCommand => {
-        const sx = (wx - view.x) * view.scale;
-        const sy = (wy - view.y) * view.scale;
+        const sx = (wx - view.x) * view.scale.x;
+        const sy = (wy - view.y) * view.scale.x;
         return {
           kind: 'path',
           path: rectPath(sx - hs / 2, sy - hs / 2, hs, hs),

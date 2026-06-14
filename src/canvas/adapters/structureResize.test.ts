@@ -23,11 +23,11 @@ describe('createStructureResizeAdapter', () => {
     expect(a.getNode('missing')).toBeUndefined();
   });
 
-  it('applyBatch checkpoints + undo restores', () => {
+  it('applyOps checkpoints + undo restores', () => {
     const s = useGardenStore.getState().garden.structures[0];
     const a = createStructureResizeAdapter();
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);
-    a.applyBatch!(
+    a.applyOps!(
       [
         createTransformOp({
           id: s.id,
