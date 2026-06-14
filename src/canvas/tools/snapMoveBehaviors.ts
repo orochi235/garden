@@ -87,6 +87,20 @@ export function requirePlantingDrop(adapter: GardenSceneAdapter): MoveBehavior<S
     onEnd(ctx) {
       const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind !== 'planting') return;
+      // `ctx.snap` is set by `findSnapContainer`'s attraction radius, which
+      // reaches BEYOND the container bounds. The move's layout pass only
+      // commits a drop when the dragged center is *inside* the container, so an
+      // attraction-only release (cursor outside the bounds) commits nothing —
+      // and the controller would otherwise fall through to a raw-pose commit,
+      // stranding the planting at the cursor ("an odd place in the container").
+      // Plantings are slot-bound; treat an attraction-only snap as a free
+      // release so it snaps back to origin instead.
+      const snap = ctx.snap;
+      const cursorInside =
+        (snap?.metadata as { cursorInside?: boolean } | undefined)?.cursorInside === true;
+      if (snap && !cursorInside) {
+        return inner.onEnd?.({ ...ctx, snap: null });
+      }
       return inner.onEnd?.(ctx);
     },
   };

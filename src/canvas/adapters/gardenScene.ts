@@ -188,6 +188,11 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
         slotPose: { x: parent.x + snap.slotX, y: parent.y + snap.slotY },
         metadata: {
           instant: snap.cursorInside && snap.empty,
+          // True only when the cursor is genuinely inside the container bounds
+          // (vs merely within its snap-attraction radius). The snap-back guard
+          // reads this to reject attraction-only releases, which the move's
+          // layout pass would not commit. See `requirePlantingDrop`.
+          cursorInside: snap.cursorInside,
           kind: snap.kind,
           slotX: snap.slotX,
           slotY: snap.slotY,

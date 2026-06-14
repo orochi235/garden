@@ -110,6 +110,9 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
         slotPose: { x: parent.x + snap.slotX, y: parent.y + snap.slotY },
         metadata: {
           instant: snap.cursorInside && snap.empty,
+          // See `gardenScene.findSnapTarget` — drives the snap-back guard's
+          // rejection of attraction-only releases (outside container bounds).
+          cursorInside: snap.cursorInside,
           kind: snap.kind,
           slotX: snap.slotX,
           slotY: snap.slotY,
