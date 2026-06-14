@@ -93,8 +93,38 @@ These symbols are now **public in `@orochi235/weasel`** (they were private in th
 
 ---
 
-## Surface 4 — Garden gestures (H2) — REAL REWIRE
+## Surface 4 — Garden gestures (H2) — VENDOR THE CONTROLLERS (decision 2026-06-13)
 
+> **Architecture correction:** the original plan assumed eric adopts HEAD's `SceneCanvas`/dispatcher.
+> It does **not** — eric has its **own** `defineTool`/`ToolCtx` gesture framework (still public on HEAD)
+> and only used weasel's `useMove`/`useResize`/`useClone`/`useAreaSelect` as **imperative controllers**
+> it drives itself (`.start()/.move()/.end()` from its tool's `drag` handlers). HEAD removed exactly
+> those 4 controllers (dispatcher-driven `moveAction`/etc. replace them).
+>
+> **Decision (Mike, 2026-06-13): VENDOR the 4 controllers + their pin-era gesture types into eric**
+> (`src/canvas/gestures/`), reconciling imports to HEAD's still-public primitives. Eric keeps its tool
+> framework + bespoke drag-preview unchanged → fastest, lowest-parity-risk path to green. Adopting
+> HEAD's declarative Action API is deferred to a follow-up SP: see
+> `docs/superpowers/plans/2026-06-13-followup-head-action-api-adoption.md`.
+
+**Vendoring surface (contained — only the gesture layer):**
+- Removed controllers, used ONLY in `useEricSelectTool.ts` + `useEricCycleTool.ts`:
+  `useMove` (pin move.ts ~573 LOC), `useResize` (~634), `useClone` (~136), `useAreaSelect` (~185),
+  `cloneByAltDrag`, `selectFromMarquee`.
+- Pin gesture **types** (HEAD's evolved — eric's behaviors were written against the pin contract, so
+  vendor the pin's): `MoveBehavior` (onMove→`{pose}`, NOT HEAD's `{transform}`), `GestureContext`,
+  `MoveOverlay`, `ModifierState`, `UseMoveOptions`, `UseResizeOptions`, `ResizeBehavior`. Plus shared
+  infra `useDragGesture`, `translateRectPose`/composePose, resize geometry.
+- Still import from `@orochi235/weasel` (HEAD-public, unchanged): `Op`, `createTransformOp`,
+  `dispatchApplyBatch`, `MoveAdapter`/`ResizeAdapter`/`InsertAdapter` (structural), `SnapTarget`,
+  `LayoutStrategy`, `ResizeAnchor`, `cornerResizeHandles`, `hitCornerHandle`, `defineTool`, `ToolCtx`,
+  `Tool`, `RenderLayer`, `Dims`. Vendor an op-glue shim ONLY if a HEAD primitive's shape diverged.
+- Rewire imports: `useEricSelectTool.ts`/`useEricCycleTool.ts` pull the controllers from
+  `../gestures`; `snapMoveBehaviors.ts`/`structureMoveBehaviors.ts` pull `MoveBehavior` from
+  `../gestures`; behavior tests pull `GestureContext` from `../gestures`. Eric stops importing the
+  gesture API from weasel entirely.
+
+### (Superseded by the vendor decision — kept for the follow-up SP) Original Action-API mapping
 The 6 hard breaks. `useMove`/`useResize`/`useAreaSelect`/`useClone` + `cloneByAltDrag` are **removed**.
 
 | Pin hook (eric uses) | HEAD replacement |
