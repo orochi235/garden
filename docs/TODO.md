@@ -35,6 +35,25 @@ Watch out for:
 
 Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so it travels with the kit when it splits out into the `@orochi235/weasel` repo. Add kit-specific items there, not here.
 
+## Text rendering (MSDF unification)
+
+Canvas text now renders (weasel `tsup splitting:true` shared the font registry; eric
+registers the Inter atlas at boot in `main.tsx`). Follow-ups:
+
+- ~~Plant/structure/etc. captions started at the label midpoint instead of left edge.~~
+  Resolved 2026-06-14: root cause was weasel's GL `layoutRuns` ignoring `align` without a
+  `maxWidth` box; fixed to anchor center/right on the line's own width (matches the 2-D
+  `renderLabel` anchor model).
+- ~~Label pill widths used a `0.6×char` heuristic ("no canvas.measureText available") in
+  `structureLayersWorld.ts` and `plantingLayersWorld.ts`.~~ Resolved 2026-06-14: replaced
+  with real MSDF measurement via weasel's new `measureTextBounds(text, style)`.
+- **Deferred (weasel-side workstream):** unify on a single MSDF text renderer and retire
+  the 2-D `renderLabel`/`createMarkdownRenderer` path. eric's stake is the cultivar packet
+  tiles (`src/components/collection/CultivarIconView.tsx` → `PacketCanvas`), which render
+  to a DOM 2-D `<canvas>` using outline/shadow/letter-spacing/markdown effects MSDF
+  doesn't have yet. Full plan + acceptance in weasel's `HANDOFF-msdf-text-unification.md`.
+  When MSDF gains outline/shadow/letter-spacing + offscreen raster, migrate the tiles.
+
 ## Canvas redesign deferrals (Phase 1)
 
 - ~~`gardenSceneAdapter.findSnapTarget` is a no-op for structure and zone nodes. Once Phase 2 wires drag-to-move on structures/zones, decide whether to add a grid-snap branch or accept free positioning.~~ Resolved: grid-snap for structures/zones is handled by `snapStructureZoneToGrid` in `useEricSelectTool.ts`, not via `findSnapTarget`. `findSnapTarget` correctly returns null for non-plantings. Updated `snapStructureZoneToGrid` to honour the `snapToGrid` boolean on structures (`false` → free move); zones have no such flag and default to grid-snap.
