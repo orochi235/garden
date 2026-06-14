@@ -15,11 +15,15 @@ describe('gardenStore — Phase 4 in-place undo/redo', () => {
     const id = useGardenStore.getState().garden.structures[0].id;
     const startX = useGardenStore.getState().garden.structures[0].x;
     useGardenStore.getState().commitStructureUpdate(id, { x: startX + 3 });
-    expect(useGardenStore.getState().garden.structures.find((s) => s.id === id)!.x).toBe(startX + 3);
+    expect(useGardenStore.getState().garden.structures.find((s) => s.id === id)!.x).toBe(
+      startX + 3,
+    );
     useGardenStore.getState().undo();
     expect(useGardenStore.getState().garden.structures.find((s) => s.id === id)!.x).toBe(startX);
     useGardenStore.getState().redo();
-    expect(useGardenStore.getState().garden.structures.find((s) => s.id === id)!.x).toBe(startX + 3);
+    expect(useGardenStore.getState().garden.structures.find((s) => s.id === id)!.x).toBe(
+      startX + 3,
+    );
   });
 
   it('undo reverts a base field (name) but NOT live nursery edits (overlay trick)', () => {
