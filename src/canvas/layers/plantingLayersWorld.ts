@@ -152,6 +152,7 @@ export function createPlantingLayers(
   return [
     {
       ...meta['container-overlays'],
+      space: 'screen' as const,
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const plantings = getPlantings();
         const zones = getZones();
@@ -223,6 +224,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-conflicts'],
+      space: 'screen' as const,
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
         const plantings = getPlantings();
@@ -291,6 +293,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-spacing'],
+      space: 'screen' as const,
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
@@ -337,6 +340,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-icons'],
+      space: 'screen' as const,
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
@@ -377,6 +381,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-measurements'],
+      space: 'screen' as const,
       // Flagged: text commands require registerFont() wired at app boot.
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
@@ -427,6 +432,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-highlights'],
+      space: 'screen' as const,
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const data = getUi();
         const plantings = getPlantings();
@@ -469,6 +475,7 @@ export function createPlantingLayers(
 
     {
       ...meta['planting-labels'],
+      space: 'screen' as const,
       // Flagged: text commands require registerFont() wired at app boot.
       // NOTE(concern): Markdown label rendering (bold species name + italic variety)
       // previously used createMarkdownRenderer(ctx,...) which requires a canvas
@@ -560,6 +567,7 @@ export function createPlantingLayers(
 
     {
       ...meta['container-walls'],
+      space: 'screen' as const,
       // Inner-rim stroke marking the soil/wall boundary. Wall masking is
       // gone: planting-icons now wraps each container's plants in a clip
       // group keyed to the inner soil shape (see buildContainerClipPath),

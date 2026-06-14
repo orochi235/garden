@@ -78,6 +78,7 @@ export function createStructureLayers(
   return [
     {
       ...meta['structure-walls'],
+      space: 'screen' as const,
       // Walls draw the outer ring/frame for containers (pot/felt-planter/
       // raised-bed). Soil disc/rect lives in `structure-bodies` so toggling
       // walls off reveals just the soil.
@@ -133,6 +134,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-bodies'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
         const lw = pxToWorld(view, 1);
@@ -242,6 +244,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-surfaces'],
+      space: 'screen' as const,
       draw(_data, _view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
         const children: DrawCommand[] = [];
@@ -265,6 +268,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-plantable-area'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { queue } = getQueue(getStructures);
         const children: DrawCommand[] = [];
@@ -308,6 +312,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-highlights'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
         const { getHighlight } = ui;
@@ -405,6 +410,7 @@ export function createStructureLayers(
     },
     {
       ...meta['structure-labels'],
+      space: 'screen' as const,
       // Flagged: text commands require registerFont() wired at app boot.
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { labelMode, labelFontSize, debugOverlappingLabels } = getUi();

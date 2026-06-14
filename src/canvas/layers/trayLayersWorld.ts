@@ -127,6 +127,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
   return [
     {
       id: 'tray-body',
+      space: 'screen' as const,
       label: 'Tray Body',
       alwaysOn: true,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
@@ -138,6 +139,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
     },
     {
       id: 'tray-wells',
+      space: 'screen' as const,
       label: 'Tray Wells',
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const children = getTrays().map((tray) =>
@@ -148,6 +150,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
     },
     {
       id: 'tray-grid',
+      space: 'screen' as const,
       label: 'Tray Grid',
       defaultVisible: true,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
@@ -157,6 +160,7 @@ export function createTrayLayers(getTrays: GetTrays): RenderLayer<unknown>[] {
     },
     {
       id: 'tray-labels',
+      space: 'screen' as const,
       label: 'Tray Labels',
       alwaysOn: true,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {

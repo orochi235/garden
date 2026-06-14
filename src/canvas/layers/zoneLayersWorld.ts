@@ -28,6 +28,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
   return [
     {
       ...meta['zone-bodies'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         const dashSize = 6 / Math.max(0.0001, view.scale.x);
@@ -53,6 +54,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     },
     {
       ...meta['zone-patterns'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
         const children: DrawCommand[] = sorted
@@ -67,6 +69,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     },
     {
       ...meta['zone-highlights'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const { getHighlight } = getUi();
         const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
@@ -91,6 +94,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
     },
     {
       ...meta['zone-labels'],
+      space: 'screen' as const,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
         const ui = getUi();
         if (ui.labelMode === 'none' || ui.labelMode === 'selection') return [];

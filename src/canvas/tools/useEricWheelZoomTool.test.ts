@@ -1,7 +1,7 @@
 import type { View as KitView, ToolCtx } from '@orochi235/weasel';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { type View, toKitView } from '../layers/worldLayerData';
+import { toKitView, type View } from '../layers/worldLayerData';
 import { useEricWheelZoomTool } from './useEricWheelZoomTool';
 
 function makeCtx(

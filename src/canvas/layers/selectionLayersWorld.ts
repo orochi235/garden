@@ -43,6 +43,7 @@ export function createSelectionOutlineLayer(
 ): RenderLayer<unknown> {
   return {
     ...SELECTION_META['selection-outlines'],
+    space: 'screen' as const,
     draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
       const { selectedIds, labelFontSize } = getUi();
       if (selectedIds.length === 0) return [];
@@ -166,6 +167,7 @@ export function createGroupOutlineLayer(
 ): RenderLayer<unknown> {
   return {
     ...SELECTION_META['group-outlines'],
+    space: 'screen' as const,
     draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
       const { selectedIds } = getUi();
       if (selectedIds.length === 0) return [];

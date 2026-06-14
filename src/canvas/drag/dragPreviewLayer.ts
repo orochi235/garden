@@ -16,6 +16,7 @@ export function createDragPreviewLayer(
 ): RenderLayer<unknown> {
   return {
     id: 'drag-preview',
+    space: 'screen' as const,
     label: 'Drag Preview',
     alwaysOn: true,
     draw(_data, view, _dims): DrawCommand[] {

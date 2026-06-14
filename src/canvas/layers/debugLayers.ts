@@ -50,6 +50,7 @@ function bboxesNursery(g: Garden): Bbox[] {
 function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown> {
   return {
     id: 'debug-hitboxes',
+    space: 'screen' as const,
     label: 'Debug: Hitboxes',
     alwaysOn: true,
     draw(_data, view: View, _dims: Dims): DrawCommand[] {
@@ -70,6 +71,7 @@ function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
 function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown> {
   return {
     id: 'debug-bounds',
+    space: 'screen' as const,
     label: 'Debug: Bounds',
     alwaysOn: true,
     draw(_data, view: View, _dims: Dims): DrawCommand[] {
@@ -109,6 +111,7 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
 function makeAxesLayer(): RenderLayer<unknown> {
   return {
     id: 'debug-axes',
+    space: 'screen' as const,
     label: 'Debug: Axes',
     alwaysOn: true,
     draw(_data, view: View, _dims: Dims): DrawCommand[] {
@@ -155,6 +158,7 @@ function makeAxesLayer(): RenderLayer<unknown> {
 function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown> {
   return {
     id: 'debug-grid',
+    space: 'screen' as const,
     label: 'Debug: Grid',
     alwaysOn: true,
     draw(_data, view: View, _dims: Dims): DrawCommand[] {

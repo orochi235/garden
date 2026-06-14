@@ -175,6 +175,7 @@ export function createSeedlingLayers(
   return [
     {
       id: 'seedlings',
+      space: 'screen' as const,
       label: 'Seedlings',
       alwaysOn: true,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
@@ -190,6 +191,7 @@ export function createSeedlingLayers(
     },
     {
       id: 'seedling-labels',
+      space: 'screen' as const,
       label: 'Seedling Labels',
       defaultVisible: false,
       draw(_data, view: View, _dims: Dims): DrawCommand[] {
