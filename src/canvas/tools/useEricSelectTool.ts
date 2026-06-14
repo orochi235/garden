@@ -117,6 +117,27 @@ function hitOutlineEdge(
 }
 
 /**
+ * True when world point `pt` is inside container `c`'s bounds (ellipse for
+ * circle structures, rect otherwise). Used by the move-ghost cell-snap to
+ * tell whether a planting is still inside its source container or being
+ * dragged out. Mirrors `plantingLayout.contains`.
+ */
+function poseInsideContainer(
+  c: { x: number; y: number; width: number; length: number; shape?: string },
+  pt: { x: number; y: number },
+): boolean {
+  if (c.shape === 'circle') {
+    const cx = c.x + c.width / 2;
+    const cy = c.y + c.length / 2;
+    const rx = c.width / 2;
+    const ry = c.length / 2;
+    if (rx === 0 || ry === 0) return false;
+    return (pt.x - cx) ** 2 / (rx * rx) + (pt.y - cy) ** 2 / (ry * ry) <= 1;
+  }
+  return pt.x >= c.x && pt.x <= c.x + c.width && pt.y >= c.y && pt.y <= c.y + c.length;
+}
+
+/**
  * Mirror `findSnapTarget` into `ctx.snap` for the planting being dragged.
  * Lets `requirePlantingDrop` decide whether to cancel a free-space release.
  * Skips non-plantings (structures/zones move freely with no snap requirement).
@@ -223,6 +244,15 @@ export function useEricSelectTool(
         garden.structures.find((s) => s.id === parentId) ??
         garden.zones.find((z) => z.id === parentId);
       if (!parent || parent.layout?.type !== 'cell-grid') return p;
+      // The `?? planting.parentId` fallback (no active destination) cell-snaps
+      // intra-container drags so the ghost jumps cell-to-cell. But once the
+      // ghost leaves the source parent the planting is being dragged OUT —
+      // keep snapping there and the ghost sticks to the nearest source-bed
+      // cell forever and can never leave. So when we're on the source-parent
+      // fallback, only snap while the ghost is still inside its bounds;
+      // otherwise let it follow the cursor (it snaps back on release, or
+      // drops into whatever container it enters).
+      if (moveOverlay.destContainerId == null && !poseInsideContainer(parent, p)) return p;
       const cellSize = parent.layout.cellSizeFt;
       const bounds = getPlantableBounds(parent);
       const cells = validCellsForContainer(bounds, cellSize);
