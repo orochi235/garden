@@ -1,7 +1,7 @@
 import { asNodeId, composeRectPose, decomposeRectPose } from '@orochi235/weasel';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
-import type { GardenAddNodeSpec, GardenBase, GardenScene } from './gardenScene';
+import type { GardenAddNodeSpec, GardenBase, GardenPose, GardenScene } from './gardenScene';
 
 const DEFAULT_FOOTPRINT_FT = 0.5;
 
@@ -139,21 +139,35 @@ export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
   const zones: Zone[] = [];
   const plantings: Planting[] = [];
 
+  // Structures/zones are stored parent-local in the Scene (kit frame); the Garden
+  // stores them in world coords. Compose world up the parent chain, memoized.
+  const worldCache = new Map<string, GardenPose>();
+  function worldPoseOf(nodeId: string): GardenPose {
+    const hit = worldCache.get(nodeId);
+    if (hit) return hit;
+    const n = scene.get(asNodeId(nodeId))!;
+    const local = n.pose;
+    const world = n.parent ? composeRectPose(worldPoseOf(String(n.parent)), local) : local;
+    worldCache.set(nodeId, world);
+    return world;
+  }
+
   for (const [, node] of scene.nodes) {
     const data = node.data;
     const pose = node.pose;
     const parentId = node.parent ? String(node.parent) : null;
 
     if (data.kind === 'structure') {
+      const world = worldPoseOf(String(node.id));
       structures.push({
         id: String(node.id),
         type: data.type,
-        shape: pose.shape ?? 'rectangle',
-        x: pose.x,
-        y: pose.y,
-        width: pose.width,
-        length: pose.height,
-        rotation: pose.rotation ?? 0,
+        shape: world.shape ?? 'rectangle',
+        x: world.x,
+        y: world.y,
+        width: world.width,
+        length: world.height,
+        rotation: world.rotation ?? 0,
         color: data.color,
         label: data.label,
         zIndex: data.zIndex,
@@ -168,12 +182,13 @@ export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
         clipChildren: data.clipChildren,
       });
     } else if (data.kind === 'zone') {
+      const world = worldPoseOf(String(node.id));
       zones.push({
         id: String(node.id),
-        x: pose.x,
-        y: pose.y,
-        width: pose.width,
-        length: pose.height,
+        x: world.x,
+        y: world.y,
+        width: world.width,
+        length: world.height,
         color: data.color,
         label: data.label,
         zIndex: data.zIndex,

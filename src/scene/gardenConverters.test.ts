@@ -166,6 +166,57 @@ describe('sceneToGarden round-trip', () => {
   });
 });
 
+describe('sceneToGarden nested frame (compose world back)', () => {
+  it('round-trips a nested structure to garden world coordinates (with rotation)', () => {
+    const g = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 2, width: 10, length: 10, container: true }),
+      struct({ id: 's2', x: 5, y: 6, width: 3, length: 3, rotation: 45, parentId: 's1', container: true }),
+    ];
+    const scene = createGardenScene(gardenToScene(g));
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.structures.find((s) => s.id === 's2')).toMatchObject({
+      x: 5, y: 6, width: 3, length: 3, rotation: 45, parentId: 's1',
+    });
+  });
+
+  it('round-trips multi-level nested structures', () => {
+    const g = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
+    g.structures = [
+      struct({ id: 'a', x: 1, y: 1, container: true }),
+      struct({ id: 'b', x: 4, y: 5, parentId: 'a', container: true }),
+      struct({ id: 'c', x: 9, y: 8, parentId: 'b', container: true }),
+    ];
+    const scene = createGardenScene(gardenToScene(g));
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.structures.find((s) => s.id === 'c')).toMatchObject({ x: 9, y: 8, parentId: 'b' });
+    expect(out.structures.find((s) => s.id === 'b')).toMatchObject({ x: 4, y: 5, parentId: 'a' });
+  });
+
+  it('round-trips a nested zone to garden world coordinates', () => {
+    const g = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    g.zones = [
+      zone({ id: 'z1', x: 2, y: 3 }),
+      zone({ id: 'z2', x: 7, y: 8, parentId: 'z1' }),
+    ];
+    const scene = createGardenScene(gardenToScene(g));
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.zones.find((z) => z.id === 'z2')).toMatchObject({ x: 7, y: 8, parentId: 'z1' });
+  });
+
+  it('round-trips a planting under a nested structure (local coords preserved)', () => {
+    const g = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 2, container: true }),
+      struct({ id: 's2', x: 5, y: 6, parentId: 's1', container: true }),
+    ];
+    g.plantings = [plant({ id: 'p1', parentId: 's2', x: 1, y: 1 })];
+    const scene = createGardenScene(gardenToScene(g));
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.plantings.find((p) => p.id === 'p1')).toMatchObject({ parentId: 's2', x: 1, y: 1 });
+  });
+});
+
 // Helper: kit world pose of a node by composing local poses up the parent chain.
 function kitWorld(scene: ReturnType<typeof createGardenScene>, id: string): { x: number; y: number; width: number; height: number } {
   const n = scene.get(id as never)!;
