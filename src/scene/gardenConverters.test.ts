@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';
-import { gardenToScene, sceneToGarden, splitBase } from './gardenConverters';
+import {
+  gardenToScene,
+  gardenToSerializedScene,
+  sceneToGarden,
+  splitBase,
+} from './gardenConverters';
 import type { GardenPose } from './gardenScene';
 import { createGardenScene } from './gardenScene';
 
@@ -265,5 +270,38 @@ describe('gardenToScene nested frame (parent-local poses)', () => {
     const scene = createGardenScene(gardenToScene(g));
     expect(scene.get('p1' as never)!.pose).toMatchObject({ x: 1, y: 1 });
     expect(kitWorld(scene, 'p1')).toMatchObject({ x: 6, y: 7 });
+  });
+});
+
+describe('gardenToSerializedScene', () => {
+  it('produces a v1 SerializedScene that loadState round-trips back to the garden', () => {
+    const g = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 1, width: 12, length: 12, container: true }),
+      struct({ id: 's2', x: 14, y: 14, parentId: 's1' }),
+    ];
+    g.zones = [zone({ id: 'z1', x: 0, y: 20 })];
+    g.plantings = [plant({ id: 'p1', parentId: 's1', x: 2, y: 2 })];
+
+    const serialized = gardenToSerializedScene(g);
+    expect(serialized.version).toBe(1);
+    expect(serialized.systemLayers.map((l) => l.id)).toEqual([
+      'ground',
+      'blueprint',
+      'structures',
+      'zones',
+      'plantings',
+    ]);
+    expect(serialized.nodes.find((n) => n.id === ('s1' as never))!.parent).toBeUndefined();
+    expect(serialized.nodes.find((n) => n.id === ('s2' as never))!.parent).toBe('s1');
+
+    const scene = createGardenScene([]);
+    scene.loadState(serialized);
+    const out = sceneToGarden(scene, splitBase(g));
+    expect(out.structures.map((s) => s.id).sort()).toEqual(['s1', 's2']);
+    expect(out.zones.map((z) => z.id)).toEqual(['z1']);
+    expect(out.plantings.map((p) => p.id)).toEqual(['p1']);
+    expect(out.structures.find((s) => s.id === 's2')).toMatchObject({ x: 14, y: 14 });
+    expect(out.structures.find((s) => s.id === 's1')).toMatchObject({ x: 1, y: 1 });
   });
 });

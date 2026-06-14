@@ -1,7 +1,21 @@
-import { asNodeId, composeRectPose, decomposeRectPose } from '@orochi235/weasel';
+import {
+  asNodeId,
+  composeRectPose,
+  decomposeRectPose,
+  type SerializedNode,
+} from '@orochi235/weasel';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
-import type { GardenAddNodeSpec, GardenBase, GardenPose, GardenScene } from './gardenScene';
+import type {
+  GardenAddNodeSpec,
+  GardenBase,
+  GardenLayer,
+  GardenNodeData,
+  GardenPose,
+  GardenScene,
+  GardenSerializedScene,
+} from './gardenScene';
+import { GARDEN_LAYERS } from './gardenScene';
 
 const DEFAULT_FOOTPRINT_FT = 0.5;
 
@@ -126,6 +140,29 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
   }
 
   return specs;
+}
+
+/**
+ * Serialize a Garden directly to a `SerializedScene` (the shape `scene.toJSON()`
+ * emits and `scene.loadState()` consumes). Reuses `gardenToScene` for all
+ * frame/footprint/container/layer logic, then maps the resulting specs to
+ * serialized nodes. Spec order is parent-before-child, which `loadState`
+ * requires. Backs both snapshot-undo restore and (Phase 5) `.garden` persistence.
+ */
+export function gardenToSerializedScene(garden: Garden): GardenSerializedScene {
+  const specs = gardenToScene(garden);
+  const nodes: SerializedNode<GardenNodeData, GardenLayer, GardenPose>[] = specs.map((s) => {
+    const node: SerializedNode<GardenNodeData, GardenLayer, GardenPose> = {
+      id: s.id!,
+      kind: s.kind,
+      layer: s.layer,
+      pose: s.pose,
+      data: s.data,
+    };
+    if (s.parent != null) node.parent = s.parent;
+    return node;
+  });
+  return { version: 1, systemLayers: GARDEN_LAYERS.map((id) => ({ id })), nodes };
 }
 
 export function splitBase(garden: Garden): GardenBase {
