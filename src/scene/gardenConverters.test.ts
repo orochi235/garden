@@ -5,6 +5,7 @@ import type { Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';
 import { gardenToScene, sceneToGarden, splitBase } from './gardenConverters';
 import { createGardenScene } from './gardenScene';
+import type { GardenPose } from './gardenScene';
 
 function struct(p: Partial<Structure> & Pick<Structure, 'id'>): Structure {
   return {
@@ -218,11 +219,9 @@ describe('sceneToGarden nested frame (compose world back)', () => {
 });
 
 // Helper: kit world pose of a node by composing local poses up the parent chain.
-function kitWorld(scene: ReturnType<typeof createGardenScene>, id: string): { x: number; y: number; width: number; height: number } {
-  const n = scene.get(id as never)!;
-  return n.parent
-    ? (composeRectPose(kitWorld(scene, String(n.parent)) as never, n.pose as never) as never)
-    : (n.pose as never);
+function kitWorld(scene: ReturnType<typeof createGardenScene>, id: string): GardenPose {
+  const n = scene.get(asNodeId(id))!;
+  return n.parent ? composeRectPose(kitWorld(scene, String(n.parent)), n.pose) : n.pose;
 }
 
 describe('gardenToScene nested frame (parent-local poses)', () => {

@@ -141,6 +141,8 @@ export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
 
   // Structures/zones are stored parent-local in the Scene (kit frame); the Garden
   // stores them in world coords. Compose world up the parent chain, memoized.
+  // Recursion needs no cycle guard: the Scene constructor rejects parent cycles,
+  // so any GardenScene reaching here has a structurally acyclic parent chain.
   const worldCache = new Map<string, GardenPose>();
   function worldPoseOf(nodeId: string): GardenPose {
     const hit = worldCache.get(nodeId);
