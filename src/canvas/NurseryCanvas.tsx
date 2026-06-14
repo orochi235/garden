@@ -1,5 +1,5 @@
 import type { RenderLayer } from '@orochi235/weasel';
-import { Canvas, computeFitView, useCanvasSize, useTools } from '@orochi235/weasel';
+import { Canvas, useCanvasSize, useTools } from '@orochi235/weasel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
@@ -22,7 +22,7 @@ import { createAllHandlesLayer } from './layers/selectionLayersWorld';
 import { createSystemLayers } from './layers/systemLayersWorld';
 import { createTrayLayers } from './layers/trayLayersWorld';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
-import type { View } from './layers/worldLayerData';
+import { computeFitView, fromKitView, toKitView, type View } from './layers/worldLayerData';
 import { onIconLoad } from './plantRenderers';
 import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
@@ -146,7 +146,8 @@ export function NurseryCanvas() {
 
   const BASE_SEED_ZOOM = 30; // px/in at "100%"
 
-  const handleViewChange = (next: View) => {
+  const handleViewChange = (kitNext: Parameters<typeof fromKitView>[0]) => {
+    const next: View = fromKitView(kitNext);
     const scale = Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, next.scale));
     const clamped = { x: next.x, y: next.y, scale };
     setView(clamped);
@@ -297,11 +298,10 @@ export function NurseryCanvas() {
           width={width}
           height={height}
           adapter={adapter}
-          view={view}
+          view={toKitView(view)}
           onViewChange={handleViewChange}
           layers={layers}
           tools={tools}
-          selectionMode="none"
         />
       )}
       {renaming &&

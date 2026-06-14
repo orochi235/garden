@@ -6,6 +6,7 @@ import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
+import { toKitView } from '../layers/worldLayerData';
 import { type SeedlingMoveScratch, useSeedlingMoveTool } from './useSeedlingMoveTool';
 
 /**
@@ -60,8 +61,8 @@ function makeMoveCtx(
     modifiers: { alt: false, shift: false, meta: false, ctrl: false, space: false },
     selection: {} as never,
     adapter: null,
-    applyBatch: () => {},
-    view: { x: 0, y: 0, scale: 50 },
+    applyOps: () => {},
+    view: toKitView({ x: 0, y: 0, scale: 50 }),
     setView: () => {},
     canvasRect: new DOMRect(0, 0, 800, 600),
     scratch,
@@ -92,7 +93,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     const cmds = tool.overlay!.draw(
       undefined as never,
-      { x: 0, y: 0, scale: 50 },
+      toKitView({ x: 0, y: 0, scale: 50 }),
       { width: 800, height: 600 },
     );
     expect(cmds).toHaveLength(0);
@@ -127,7 +128,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     const cmds = tool.overlay!.draw(
       undefined as never,
-      { x: 0, y: 0, scale: 50 },
+      toKitView({ x: 0, y: 0, scale: 50 }),
       { width: 800, height: 600 },
     );
     const fills = collectFills(cmds as DrawCommand[]);
@@ -171,7 +172,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     const cmds = tool.overlay!.draw(
       undefined as never,
-      { x: 0, y: 0, scale: 50 },
+      toKitView({ x: 0, y: 0, scale: 50 }),
       { width: 800, height: 600 },
     );
     const fills = collectFills(cmds as DrawCommand[]);
@@ -204,7 +205,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     const cmds = tool.overlay!.draw(
       undefined as never,
-      { x: 0, y: 0, scale: 50 },
+      toKitView({ x: 0, y: 0, scale: 50 }),
       { width: 800, height: 600 },
     );
     const fills = collectFills(cmds as DrawCommand[]);
@@ -341,7 +342,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     const cmds = tool.overlay!.draw(
       undefined as never,
-      { x: 0, y: 0, scale: 50 },
+      toKitView({ x: 0, y: 0, scale: 50 }),
       { width: 800, height: 600 },
     );
     const fills = collectFills(cmds as DrawCommand[]);

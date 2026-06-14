@@ -1,5 +1,11 @@
 import type { GridSlotConfig, RenderLayer } from '@orochi235/weasel';
-import { Canvas, fitZoom, useCanvasSize, useInsertTool, useTools } from '@orochi235/weasel';
+import {
+  ActiveToolContextProviderIfRoot,
+  Canvas,
+  useCanvasSize,
+  useInsertTool,
+  useTools,
+} from '@orochi235/weasel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
@@ -25,7 +31,13 @@ import {
 import { createStructureLayers } from './layers/structureLayersWorld';
 import { createSystemLayers } from './layers/systemLayersWorld';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
-import { fromKitView, type GetUi, toKitView, type View } from './layers/worldLayerData';
+import {
+  computeFitView,
+  fromKitView,
+  type GetUi,
+  toKitView,
+  type View,
+} from './layers/worldLayerData';
 import { createZoneLayers } from './layers/zoneLayersWorld';
 import { NurseryCanvas } from './NurseryCanvas';
 import { onIconLoad } from './plantRenderers';
@@ -39,8 +51,15 @@ import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
 
 export function CanvasNewPrototype() {
   const appMode = useUiStore((s) => s.appMode);
-  if (appMode === 'nursery') return <NurseryCanvas />;
-  return <GardenCanvasNewPrototype />;
+  // HEAD's `useTools` reads `useActiveToolContext()`, which throws without an
+  // `ActiveToolContextProvider` ancestor (the pin's `useTools` had no such
+  // dependency). Both canvases call `useTools`, so provide the context here —
+  // `IfRoot` reuses an outer provider if the app ever adds one higher up.
+  return (
+    <ActiveToolContextProviderIfRoot>
+      {appMode === 'nursery' ? <NurseryCanvas /> : <GardenCanvasNewPrototype />}
+    </ActiveToolContextProviderIfRoot>
+  );
 }
 
 // Garden canvas zoom bounds (px-per-foot). Same range we historically clamped
@@ -51,28 +70,6 @@ const GARDEN_MAX_ZOOM = 200;
 
 function clampZoom(z: number): number {
   return Math.min(GARDEN_MAX_ZOOM, Math.max(GARDEN_MIN_ZOOM, z));
-}
-
-/**
- * Fit `contentW × contentH` (world units) into the `viewportW × viewportH`
- * (px) viewport, returning eric's scalar zoom/pan triple.
- *
- * weasel HEAD's `computeFitView` is scene-based and returns a per-axis `View`;
- * eric keeps its own scalar zoom/pan model (mirrored into `uiStore`), so this
- * vendors the pin's simple uniform-zoom fit (`fitZoom` is still kit-public)
- * rather than adopting the scene-backed API.
- */
-function computeFitView(
-  viewportW: number,
-  viewportH: number,
-  contentW: number,
-  contentH: number,
-  padRatio = 0.85,
-): { zoom: number; panX: number; panY: number } {
-  const zoom = fitZoom(viewportW * padRatio, viewportH * padRatio, contentW, contentH);
-  const cw = contentW * zoom;
-  const ch = contentH * zoom;
-  return { zoom, panX: (viewportW - cw) / 2, panY: (viewportH - ch) / 2 };
 }
 
 function GardenCanvasNewPrototype() {

@@ -196,7 +196,7 @@ export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<Seedling
         if (!trayId) return [];
         const tray = useGardenStore.getState().garden.nursery.trays.find((t) => t.id === trayId);
         if (!tray) return [];
-        const scale = view.scale;
+        const scale = view.scale.x;
         const cellPx = tray.cellPitchIn * scale;
         const gutterPx = cellPx * DRAG_SPREAD_GUTTER_RATIO;
         const markerLen = Math.min(gutterPx * 0.45, cellPx * 0.3);

@@ -6,7 +6,7 @@ import { useUiStore } from '../../store/uiStore';
 import { type NurserySceneAdapter, trayWorldOrigin } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 import { hitTestTrayLabel } from '../layers/trayLayersWorld';
-import type { View } from '../layers/worldLayerData';
+import { toKitView, type View } from '../layers/worldLayerData';
 import { findSeedlingsInRect, hitTestCellInches } from '../nurseryHitTest';
 
 /**
@@ -98,7 +98,13 @@ export function useSeedSelectTool(
             // Check for a label-area click — trigger inline rename.
             if (onLabelClick && viewRef?.current) {
               const ss = useGardenStore.getState().garden.nursery;
-              const hit = hitTestTrayLabel(ss.trays, ss, viewRef.current, ctx.worldX, ctx.worldY);
+              const hit = hitTestTrayLabel(
+                ss.trays,
+                ss,
+                toKitView(viewRef.current),
+                ctx.worldX,
+                ctx.worldY,
+              );
               if (hit) {
                 onLabelClick(hit.id);
                 return 'claim';

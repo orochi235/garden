@@ -6,6 +6,7 @@ import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
+import { toKitView } from '../layers/worldLayerData';
 import { type SeedSelectScratch, useSeedSelectTool } from './useSeedSelectTool';
 
 function makeCtx(
@@ -20,8 +21,8 @@ function makeCtx(
     modifiers: { alt: false, shift: false, meta: false, ctrl: false, space: false },
     selection: {} as never,
     adapter: null,
-    applyBatch: () => {},
-    view: { x: 0, y: 0, scale: 50 },
+    applyOps: () => {},
+    view: toKitView({ x: 0, y: 0, scale: 50 }),
     setView: () => {},
     canvasRect: new DOMRect(0, 0, 800, 600),
     scratch,

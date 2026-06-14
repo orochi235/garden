@@ -1,4 +1,4 @@
-import type { View as KitView } from '@orochi235/weasel';
+import { fitZoom, type View as KitView } from '@orochi235/weasel';
 import type { LabelMode } from '../../store/uiStore';
 
 /** Camera-coords viewport. eric uses **uniform** zoom, so its viewport state
@@ -22,6 +22,29 @@ export function toKitView(v: View): KitView {
  *  always uniform so `scale.x === scale.y`). */
 export function fromKitView(v: KitView): View {
   return { x: v.x, y: v.y, scale: v.scale.x };
+}
+
+/**
+ * Fit `contentW × contentH` (world units) into the `viewportW × viewportH`
+ * (px) viewport, returning eric's scalar zoom/pan triple.
+ *
+ * weasel HEAD's `computeFitView` is scene-based and returns a per-axis `View`;
+ * eric keeps its own scalar zoom/pan model (mirrored into `uiStore`), so this
+ * vendors the pin's simple uniform-zoom fit (`fitZoom` is still kit-public)
+ * rather than adopting the scene-backed API. Shared by the garden and nursery
+ * canvases.
+ */
+export function computeFitView(
+  viewportW: number,
+  viewportH: number,
+  contentW: number,
+  contentH: number,
+  padRatio = 0.85,
+): { zoom: number; panX: number; panY: number } {
+  const zoom = fitZoom(viewportW * padRatio, viewportH * padRatio, contentW, contentH);
+  const cw = contentW * zoom;
+  const ch = contentH * zoom;
+  return { zoom, panX: (viewportW - cw) / 2, panY: (viewportH - ch) / 2 };
 }
 
 /**
