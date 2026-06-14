@@ -76,6 +76,7 @@ export function NurseryCanvas() {
   // Adapter is stateless wrt mount — recreate is fine.
   const adapter = useMemo(() => createNurserySceneAdapter(), []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: iconTick is an intentional redraw trigger; the layer getters read latest state from the store at call time.
   const layers = useMemo(() => {
     const getTrays = () => {
       // Multi-tray auto-flow: render every tray in insertion order. Each layer
@@ -174,25 +175,26 @@ export function NurseryCanvas() {
   const tray = garden.nursery.trays.find((t) => t.id === currentTrayId);
   const trayDimsKey = tray ? `${tray.widthIn.toFixed(2)}x${tray.heightIn.toFixed(2)}` : 'none';
   const lastFitKeyRef = useRef<string>('');
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fitViewToTray is recreated each render; the fit-key guard (currentTrayId/trayDimsKey/width/height) owns when a refit runs.
   useEffect(() => {
     if (width === 0 || height === 0 || !currentTrayId) return;
     const key = `${currentTrayId}:${trayDimsKey}:${width}x${height}`;
     if (lastFitKeyRef.current === key) return;
     lastFitKeyRef.current = key;
     fitViewToTray(width, height);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height, currentTrayId, trayDimsKey]);
   // Reset action.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally fires only on resetTick; width/height/fitViewToTray are read at the latest value via closure.
   useEffect(() => {
     if (resetTick === 0) return;
     if (width === 0 || height === 0) return;
     fitViewToTray(width, height);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetTick]);
 
   // Unified zoom requests from the status bar / keyboard.
   const canvasZoomRequest = useUiStore((s) => s.canvasZoomRequest);
   const prevZoomReqRef = useRef(canvasZoomRequest);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally fires only on canvasZoomRequest; width/height/fitViewToTray are read at the latest value via closure.
   useEffect(() => {
     const req = canvasZoomRequest;
     if (!req || req === prevZoomReqRef.current) return;
@@ -211,7 +213,6 @@ export function NurseryCanvas() {
       });
     }
     useUiStore.getState().setCanvasZoomRequest(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasZoomRequest]);
 
   const [ready, setReady] = useState(false);

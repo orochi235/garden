@@ -44,6 +44,7 @@ export function usePaletteDropTool({ containerRef, viewRef }: Options): void {
   const registry = useMemo(() => ({ [drag.kind]: drag as never }), [drag]);
   const controller = useDragController(registry);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: containerRef/viewRef are refs read via .current inside the subscription; ref.current must not be a hook dependency. Effect binds once.
   useEffect(() => {
     let cleanupGhost: (() => void) | null = null;
 

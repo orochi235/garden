@@ -9,7 +9,7 @@ import { undoAction } from './editing/undo';
 import { cycleLayerDownAction, cycleLayerUpAction } from './layers/cycleLayer';
 import { duplicateAction } from './objects/duplicate';
 import { rotateCcwAction, rotateCwAction } from './objects/rotate';
-import type { ActionDescriptor } from './types';
+import type { ActionDescriptor, ActionTarget } from './types';
 import { cycleViewModeAction } from './view/cycleViewMode';
 import { resetViewAction } from './view/resetView';
 
@@ -41,5 +41,5 @@ export function getActionsForScope(scopeId: string): ActionDescriptor[] {
 }
 
 export function getActionsForTargetKind(kind: string): ActionDescriptor[] {
-  return allActions.filter((a) => a.targets.includes(kind as any));
+  return allActions.filter((a) => a.targets.includes(kind as ActionTarget['kind']));
 }

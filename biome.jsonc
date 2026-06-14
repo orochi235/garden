@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -12,6 +12,8 @@
       "!**/tsconfig.*",
       "!**/eslint.*",
       "!**/dist/**/*",
+      "!test-results",
+      "!src/data/species-extended.json",
       "!.claude",
       "!.worktrees",
       "!.superpowers",
@@ -50,5 +52,20 @@
       "quoteStyle": "single",
       "lineWidth": 100
     }
-  }
+  },
+  "overrides": [
+    {
+      // Standalone docs/admin dev-tool pages: their inline <script> functions are
+      // wired via HTML on* attributes, which biome can't see when linting the script
+      // in isolation (false-positive noUnusedVariables). Descending-specificity in a
+      // throwaway diagram page is noise too.
+      "includes": ["docs/**/*.html"],
+      "linter": {
+        "rules": {
+          "correctness": { "noUnusedVariables": "off" },
+          "style": { "noDescendingSpecificity": "off" }
+        }
+      }
+    }
+  ]
 }

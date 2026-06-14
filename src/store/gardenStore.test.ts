@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyNurseryState } from '../model/nursery';
+import type { Garden } from '../model/types';
 import { blankGarden, useGardenStore } from './gardenStore';
 import { useUiStore } from './uiStore';
 
@@ -227,9 +228,9 @@ describe('gardenStore', () => {
   });
 
   it('loadGarden backfills nursery when missing', () => {
-    const legacy = { ...blankGarden() } as any;
+    const legacy: Partial<Garden> = { ...blankGarden() };
     delete legacy.nursery;
-    useGardenStore.getState().loadGarden(legacy);
+    useGardenStore.getState().loadGarden(legacy as Garden);
     expect(useGardenStore.getState().garden.nursery).toEqual(emptyNurseryState());
   });
 });

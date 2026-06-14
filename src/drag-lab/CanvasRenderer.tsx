@@ -1,5 +1,5 @@
 import { useDropZone } from '@orochi235/weasel';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DISPLAY_PX_PER_FT, PX_PER_FT } from './constants';
 import type { ContainerShape, DragFeedback, LabItem, LayoutStrategy, Point, Rect } from './types';
 
@@ -45,7 +45,7 @@ export function CanvasRenderer({
   const [paletteDragItem, setPaletteDragItem] = useState<LabItem | null>(null);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
-  const bounds: Rect = { x: 0, y: 0, width, height };
+  const bounds: Rect = useMemo(() => ({ x: 0, y: 0, width, height }), [width, height]);
   const canvasW = width * PX_PER_FT;
   const canvasH = height * PX_PER_FT;
 

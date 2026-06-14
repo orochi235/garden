@@ -18,6 +18,7 @@ function PlantIcon({ cultivarId, color }: { cultivarId: string; color: string })
 
   useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is an intentional redraw trigger — bumped when async icon assets finish loading.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -90,6 +91,7 @@ function SmallPlantIcon({ cultivarId, color }: { cultivarId: string; color: stri
 
   useEffect(() => onIconLoad(() => setTick((t) => t + 1)), []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is an intentional redraw trigger — bumped when async icon assets finish loading.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

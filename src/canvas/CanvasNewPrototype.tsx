@@ -189,6 +189,7 @@ function GardenCanvasNewPrototype() {
 
   const gridCellSizeFt = useGardenStore((s) => s.garden.gridCellSizeFt);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: iconTick/dragPreview/garden.* are intentional redraw triggers; the layer getters read latest state from the store at call time.
   const layers = useMemo(() => {
     const getStructures = () => useGardenStore.getState().garden.structures;
     const getZones = () => useGardenStore.getState().garden.zones;

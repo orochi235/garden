@@ -116,14 +116,15 @@ export function CollectionEditor() {
     close();
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runSaveChecks is recreated each render; this effect fires on the transfer-completion signal and calls the latest closure.
   useEffect(() => {
     if (pendingSaveAfterTransfer && state.checked.size === 0) {
       setPendingSaveAfterTransfer(false);
       runSaveChecks();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSaveAfterTransfer, state.checked.size]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the Escape handler re-binds when the modal-overlay flags change; attemptCancel is read as the latest closure and state.dirty gates its fallthrough behavior.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {

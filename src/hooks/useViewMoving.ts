@@ -10,6 +10,7 @@ export function useViewMoving(delay = 200) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const initialRef = useRef(true);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: zoom/panX/panY are intentional change-triggers — the debounce fires on any view change without reading their values.
   useEffect(() => {
     if (initialRef.current) {
       initialRef.current = false;

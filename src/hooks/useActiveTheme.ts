@@ -47,7 +47,7 @@ export function useActiveTheme(): CycleState {
       setLayerFlip((f) => !f);
     }, interval);
     return () => clearInterval(id);
-  }, [themeOverride, isCycling, interval]);
+  }, [isCycling, interval]);
 
   let theme: TimeTheme;
   if (appMode === 'nursery') {

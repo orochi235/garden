@@ -51,6 +51,7 @@ function PacketCanvas({ cultivar }: { cultivar: Cultivar }) {
   const taxonomicName = species?.taxonomicName ?? '';
   const variety = cultivar.variety ?? '';
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick is an intentional redraw trigger — bumped when async icon assets finish loading.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

@@ -81,6 +81,7 @@ export function useSeedSelectTool(
   void adapter;
   const { onLabelClick, viewRef } = options;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the tool is defined once; it reads onLabelClick (stable handler) and viewRef.current via closure — ref.current must not be a hook dependency.
   return useMemo(
     () =>
       defineTool<SeedSelectScratch>({

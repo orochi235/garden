@@ -321,7 +321,7 @@ export function LayerSelector() {
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [activeLayer, renderWidget, hiddenIndices, layers]);
+  }, [activeLayer, renderWidget, layers]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
