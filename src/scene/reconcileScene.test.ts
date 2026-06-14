@@ -203,6 +203,28 @@ describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
     expect(scene.get(asNodeId('p1'))).toBeUndefined();
     expect(out.plantings).toEqual([]);
   });
+  it('re-adds a planting that relocates out of a demoting container (rebuild + re-add path)', () => {
+    // s1 starts as a container (container:false but has child p1), s2 is an
+    // explicit container. In target, p1 moves to s2 — s1 demotes to leaf
+    // (rebuild root). The subtree remove drops p1, but the Adds pass re-adds it
+    // under s2.
+    const start = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
+    start.structures = [
+      struct({ id: 's1', container: false, x: 0, y: 0 }),
+      struct({ id: 's2', container: true, x: 10, y: 0 }),
+    ];
+    start.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 1 })];
+    const target = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
+    target.structures = [
+      struct({ id: 's1', container: false, x: 0, y: 0 }),
+      struct({ id: 's2', container: true, x: 10, y: 0 }),
+    ];
+    target.plantings = [plant({ id: 'p1', parentId: 's2', x: 2, y: 2 })];
+    const { scene, out } = reconcileTo(start, target);
+    expect(scene.get(asNodeId('s1'))!.kind).toBe('leaf');
+    expect(scene.get(asNodeId('p1'))!.parent).toBe('s2');
+    expect(out.plantings[0]).toMatchObject({ parentId: 's2' });
+  });
 });
 
 describe('reconcileScene — batch semantics', () => {

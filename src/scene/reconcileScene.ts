@@ -1,4 +1,3 @@
-import { asNodeId } from '@orochi235/weasel';
 import type { Garden } from '../model/types';
 import { gardenToScene } from './gardenConverters';
 import type { GardenScene } from './gardenScene';
@@ -7,6 +6,9 @@ import type { GardenScene } from './gardenScene';
  * Structural deep-equality that treats `undefined` and absent keys as equal.
  * Used to decide whether a pose/data field actually changed before emitting an
  * op, so an unchanged target produces zero ops.
+ *
+ * Scoped to JSON-ish pose/data shapes (scalars, plain objects, scalar arrays).
+ * Not a general-purpose deep-equal — no handling of Date, Map, Set, etc.
  */
 export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -40,13 +42,18 @@ export function reconcileScene(scene: GardenScene, target: Garden): void {
     // 1. Rebuild roots: nodes present in both whose kind or layer differs. kit
     //    has no setKind, and cross-layer move/setLayer can't satisfy the
     //    subtree-layer assertion, so remove-subtree + re-add (the re-add happens
-    //    in the Adds pass below, since the node is now absent). In eric's data a
-    //    rebuild root never has surviving descendants (leaf↔container = no
-    //    children; cross-layer = a leaf planting).
+    //    in the Adds pass below, since the node is now absent). A rebuild root's
+    //    descendants are never *retained in place* — but a container demoting to
+    //    leaf can have a descendant that relocates to a different parent in the
+    //    target; that descendant is dropped by the subtree remove here and then
+    //    RE-ADDED by the Adds pass (since it's a spec absent from survivors).
+    //    Correctness therefore depends on the Adds pass re-adding every spec'd
+    //    node absent after removals — do not add a "skip already-existing" guard
+    //    to the Adds pass without accounting for this.
     for (const s of specs) {
-      const node = scene.get(asNodeId(String(s.id)));
+      const node = scene.get(s.id!);
       if (node && (node.kind !== s.kind || node.layer !== s.layer)) {
-        scene.remove(asNodeId(String(s.id)));
+        scene.remove(s.id!);
       }
     }
 
@@ -70,16 +77,15 @@ export function reconcileScene(scene: GardenScene, target: Garden): void {
 
     // 4. Updates: surviving nodes only (newly added are already correct).
     for (const s of specs) {
-      const id = String(s.id);
-      if (!survivors.has(id)) continue;
-      const node = scene.get(asNodeId(id))!;
+      if (!survivors.has(String(s.id))) continue;
+      const node = scene.get(s.id!)!;
       const curParent = node.parent ? String(node.parent) : null;
       const tgtParent = s.parent ? String(s.parent) : null;
       if (curParent !== tgtParent) {
-        scene.move(asNodeId(id), tgtParent ? asNodeId(tgtParent) : null);
+        scene.move(s.id!, s.parent ?? null);
       }
-      if (!deepEqual(node.pose, s.pose)) scene.setPose(asNodeId(id), s.pose);
-      if (!deepEqual(node.data, s.data)) scene.update(asNodeId(id), { data: s.data });
+      if (!deepEqual(node.pose, s.pose)) scene.setPose(s.id!, s.pose);
+      if (!deepEqual(node.data, s.data)) scene.update(s.id!, { data: s.data });
     }
   });
 }
