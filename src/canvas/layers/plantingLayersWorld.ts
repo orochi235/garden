@@ -3,6 +3,7 @@ import {
   type Path,
   PathBuilder,
   type RenderLayer,
+  measureTextBounds,
   rectPath,
   textCommand,
   type View,
@@ -522,9 +523,10 @@ export function createPlantingLayers(
             const speciesName = species?.name ?? cultivar.name;
             const variety = cultivar.variety;
             const text = variety ? `${speciesName} (${variety})` : speciesName;
-            // Approximate label width: 0.6× fontPx per char + 2×padX
+            // Measure via the MSDF atlas so the pill fits the rendered glyphs
+            // exactly (matches `textCommand`); + 2×padX horizontal padding.
             const padX = px(view, 4);
-            const approxW = text.length * fontPx * 0.6 + padX * 2;
+            const approxW = measureTextBounds(text, { fontSize: fontPx }).width + padX * 2;
             const labelY = wy + radius + px(view, 8);
             candidates.push({
               text,

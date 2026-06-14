@@ -1,5 +1,5 @@
 import type { Dims, View } from '@orochi235/weasel';
-import { type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
+import { type RenderLayer, measureTextBounds, rectPath, textCommand } from '@orochi235/weasel';
 import type { Structure } from '../../model/types';
 import { FILL_COLORS } from '../../model/types';
 import { paintFor } from '../patterns';
@@ -428,8 +428,11 @@ export function createStructureLayers(
           w: number;
           h: number;
         }
-        // Approximate text width: ~0.6× fontPx per character (no canvas.measureText available).
-        const approxTextWidth = (text: string) => text.length * fontPx * 0.6;
+        // Measure via the MSDF atlas so pills fit the rendered glyphs exactly
+        // (matches what `textCommand` draws). Labels use the default 'sans-serif'
+        // family registered at app boot.
+        const approxTextWidth = (text: string) =>
+          measureTextBounds(text, { fontSize: fontPx }).width;
         const entries: Entry[] = [];
         for (const item of queue) {
           const members = item.type === 'single' ? [item.structure] : item.members;
