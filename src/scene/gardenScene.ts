@@ -1,4 +1,4 @@
-import type { AddNodeSpec, Scene } from '@orochi235/weasel';
+import type { AddNodeSpec, Scene, SerializedScene } from '@orochi235/weasel';
 import { createScene } from '@orochi235/weasel';
 import type { Layout } from '../model/layout';
 import type { FillType, Garden, LayerId, StructureShape } from '../model/types';
@@ -64,6 +64,7 @@ export type GardenNodeData =
 
 export type GardenScene = Scene<GardenNodeData, GardenLayer, GardenPose>;
 export type GardenAddNodeSpec = AddNodeSpec<GardenNodeData, GardenLayer, GardenPose>;
+export type GardenSerializedScene = SerializedScene<GardenNodeData, GardenLayer, GardenPose>;
 
 /** The non-spatial remainder of a Garden — everything the Scene does NOT own. */
 export type GardenBase = Omit<Garden, 'structures' | 'zones' | 'plantings'>;
