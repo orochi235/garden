@@ -16,8 +16,14 @@ import {
   generateId,
   getPlantableBounds,
 } from '../model/types';
-import { gardenToScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
-import type { GardenBase, GardenNodeData, GardenPose, GardenScene } from '../scene/gardenScene';
+import { gardenToScene, gardenToSerializedScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
+import type {
+  GardenBase,
+  GardenNodeData,
+  GardenPose,
+  GardenScene,
+  GardenSerializedScene,
+} from '../scene/gardenScene';
 import { createGardenScene } from '../scene/gardenScene';
 import { reconcileScene } from '../scene/reconcileScene';
 import { structuresCollide } from '../utils/collision';
@@ -283,14 +289,14 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   }
 
   /**
-   * Rebuild the scene + base from a full Garden snapshot and publish it. Shared
-   * by the legacy mutation bridge (patch) and undo/redo/loadGarden/reset.
+   * Replace the whole garden from a full Garden snapshot — used by
+   * loadGarden/reset. Restores the spatial scene IN PLACE via loadState (the
+   * existing instance is preserved, so a mounted SceneCanvas keeps its ref) and
+   * swaps the non-spatial base wholesale (including this garden's own nursery).
    */
   function adoptGarden(next: Garden) {
     base = splitBase(next);
-    scene = createGardenScene(gardenToScene(next));
-    subscribeScene();
-    overrides.clear();
+    scene.loadState(gardenToSerializedScene(next));
     invalidateComposed();
     set({ garden: composeGarden() });
   }
