@@ -17,9 +17,7 @@ describe('gardenStore — Phase 3 in-place mutation', () => {
   it('applies a moved structure position through fine-grained ops (applyGardenPatch)', () => {
     const store = useGardenStore.getState();
     const id = store.garden.structures[0].id;
-    const moved = store.garden.structures.map((s) =>
-      s.id === id ? { ...s, x: s.x + 2 } : s,
-    );
+    const moved = store.garden.structures.map((s) => (s.id === id ? { ...s, x: s.x + 2 } : s));
     store.applyGardenPatch({ structures: moved });
     const after = useGardenStore.getState().garden.structures.find((s) => s.id === id);
     expect(after!.x).toBe(moved.find((s) => s.id === id)!.x);

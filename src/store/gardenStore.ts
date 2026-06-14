@@ -17,9 +17,9 @@ import {
   getPlantableBounds,
 } from '../model/types';
 import { gardenToScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
-import { reconcileScene } from '../scene/reconcileScene';
 import type { GardenBase, GardenNodeData, GardenPose, GardenScene } from '../scene/gardenScene';
 import { createGardenScene } from '../scene/gardenScene';
+import { reconcileScene } from '../scene/reconcileScene';
 import { structuresCollide } from '../utils/collision';
 import { loadAutosave, persistCollection } from '../utils/file';
 import { worldToLocalForParent } from '../utils/plantingPose';
