@@ -14,6 +14,7 @@
       "!**/dist/**/*",
       "!test-results",
       "!src/data/species-extended.json",
+      "!public/fonts",
       "!.claude",
       "!.worktrees",
       "!.superpowers",
