@@ -65,7 +65,11 @@ export function NurseryCanvas() {
 
   useUiStore((s) => s.selectedIds);
   useUiStore((s) => s.hiddenSeedlingIds);
-  useUiStore((s) => s.dragPreview);
+  // Captured (not just subscribed) so it can drive the `layers` memo below:
+  // drag ghosts and the gutter-affordance overlay only repaint when weasel
+  // sees a fresh `layers` ref, and the dispatcher does NOT bump gestureTick on
+  // every pointermove (only on phase transitions). Mirrors the garden canvas.
+  const dragPreview = useUiStore((s) => s.dragPreview);
   useUiStore((s) => s.showSeedlingWarnings);
   useUiStore((s) => s.renderLayerVisibility);
   useHighlightTick();
@@ -76,7 +80,7 @@ export function NurseryCanvas() {
   // Adapter is stateless wrt mount — recreate is fine.
   const adapter = useMemo(() => createNurserySceneAdapter(), []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: iconTick is an intentional redraw trigger; the layer getters read latest state from the store at call time.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the layer getters read latest store state at call time; the deps below are intentional redraw triggers. iconTick — icon bitmap decode. dragPreview — drag ghosts + gutter-affordance overlay repaint during a drag (the dispatcher only bumps gestureTick on phase transitions, not per pointermove). nursery.seedlings/trays — committed moves/sows mutate these arrays; without the dep weasel keeps the stale layers ref and never repaints (same fix as the garden canvas).
   const layers = useMemo(() => {
     const getTrays = () => {
       // Multi-tray auto-flow: render every tray in insertion order. Each layer
@@ -131,7 +135,7 @@ export function NurseryCanvas() {
     });
     return map;
     // iconTick — see plant-icon redraw note in CanvasNewPrototype.
-  }, [iconTick]);
+  }, [iconTick, dragPreview, garden.nursery.seedlings, garden.nursery.trays]);
 
   // View state lives locally — the canvas owns its own viewport. Outside actors
   // (palette drag, reset action) talk to us via `palettePointerPayload` and
