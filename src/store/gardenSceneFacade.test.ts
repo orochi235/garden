@@ -76,21 +76,11 @@ describe('store round-trip: .garden -> loadGarden(scene) -> serialize', () => {
       const loaded = deserializeGarden(json);
       useGardenStore.getState().loadGarden(loaded);
 
-      // Parse the serialized output as raw JSON rather than going through
-      // deserializeGarden again. deserializeGarden re-runs snapPlantingsToCellGrid,
-      // which is a load-time migration that isn't idempotent when applied twice to
-      // already-snapped coordinates. The raw JSON from serializeGarden faithfully
-      // reflects what the scene preserved, which is what we want to compare.
-      const savedRaw = JSON.parse(serializeGarden(useGardenStore.getState().garden)) as {
-        structures: typeof loaded.structures;
-        zones: typeof loaded.zones & Array<Record<string, unknown>>;
-        plantings: typeof loaded.plantings;
-        nursery: typeof loaded.nursery;
-        name: string;
-        widthFt: number;
-        lengthFt: number;
-        collection: Array<{ id: string }>;
-      };
+      // Full disk round-trip: serialize the scene-backed garden and read it back.
+      // The new scene-native format reconstructs spatial arrays via sceneToGarden
+      // (it does NOT re-run snapPlantingsToCellGrid), so the round-trip is
+      // idempotent and faithfully reflects what the scene preserved.
+      const savedRaw = deserializeGarden(serializeGarden(useGardenStore.getState().garden));
 
       const sortById = <T extends { id: string }>(xs: T[]) =>
         [...xs].sort((a, b) => a.id.localeCompare(b.id));
