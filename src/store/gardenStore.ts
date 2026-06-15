@@ -39,6 +39,13 @@ import { useUiStore } from './uiStore';
 
 interface GardenStore {
   garden: Garden;
+  /**
+   * The live kit Scene that is the spatial store of record. Identity is stable
+   * for the store lifetime — loadGarden/reset/undo/redo restore it IN PLACE via
+   * scene.loadState (Phase 4), never recreating it — so a component (e.g.
+   * <SceneCanvas scene={…}>) can safely capture this reference once.
+   */
+  getScene: () => GardenScene;
   updateGarden: (
     updates: Partial<
       Pick<
@@ -472,6 +479,8 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
   return {
     garden: composeGarden(),
+
+    getScene: () => scene,
 
     loadGarden: (garden) => {
       gardenHistory.clear();

@@ -79,6 +79,28 @@ describe('gardenStore — Phase 3 in-place mutation', () => {
     expect(useGardenStore.getState().garden.name).toBe('Renamed');
   });
 
+  // Phase 6 guard: getScene() exposes the live store-of-record Scene, and its
+  // identity is stable across in-place restores (undo) — so a component like
+  // <SceneCanvas scene={…}> can capture the reference once. Mutations bump the
+  // scene version (drives SceneCanvas's useSyncExternalStore repaint).
+  it('getScene() returns the live, identity-stable Scene; mutations bump its version', () => {
+    const store = useGardenStore.getState();
+    const scene = store.getScene();
+    expect(typeof scene.getVersion).toBe('function');
+
+    const id = store.garden.structures[0].id;
+    const v0 = scene.getVersion();
+    store.commitStructureUpdate(id, { x: store.garden.structures[0].x + 3 });
+    const v1 = store.getScene().getVersion();
+    expect(v1).toBeGreaterThan(v0);
+    // Same instance after a spatial mutation.
+    expect(useGardenStore.getState().getScene()).toBe(scene);
+
+    // Undo restores in place via loadState — instance identity preserved.
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().getScene()).toBe(scene);
+  });
+
   // Phase 3 guard: the Scene instance is mutated in place, not recreated.
   // Observable proof: a store subscription registered BEFORE a spatial patch
   // still fires AFTER it. Under the old bridge, adoptGarden replaced the scene
