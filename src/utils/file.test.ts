@@ -1,8 +1,55 @@
 import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
 import { emptyNurseryState } from '../model/nursery';
+import type { Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';
-import { deserializeGarden, serializeGarden } from './file';
+import { autosave, deserializeGarden, loadAutosave, serializeGarden } from './file';
+
+// Minimal valid model literals (mirrors src/scene/gardenConverters.test.ts helpers).
+function struct(p: Partial<Structure> & Pick<Structure, 'id'>): Structure {
+  return {
+    type: 'raised-bed',
+    shape: 'rectangle',
+    x: 0,
+    y: 0,
+    width: 4,
+    length: 8,
+    rotation: 0,
+    color: '#aaa',
+    label: '',
+    zIndex: 0,
+    parentId: null,
+    groupId: null,
+    snapToGrid: true,
+    surface: false,
+    container: true,
+    fill: null,
+    layout: null,
+    wallThicknessFt: 0.5,
+    clipChildren: false,
+    ...p,
+  };
+}
+function plant(p: Partial<Planting> & Pick<Planting, 'id' | 'parentId'>): Planting {
+  return { cultivarId: 'tomato', x: 1, y: 1, label: '', icon: null, ...p };
+}
+function zone(p: Partial<Zone> & Pick<Zone, 'id'>): Zone {
+  return {
+    x: 0,
+    y: 0,
+    width: 4,
+    length: 4,
+    color: '#aaa',
+    label: '',
+    zIndex: 0,
+    parentId: null,
+    soilType: null,
+    sunExposure: null,
+    layout: null,
+    pattern: null,
+    ...p,
+  };
+}
 
 describe('serializeGarden', () => {
   it('serializes to JSON string', () => {
@@ -128,52 +175,63 @@ describe('deserializeGarden', () => {
   });
 
   it('strips dead legacy fields (arrangement, trellisEdge, pattern) from structures on load, strips arrangement from zones, but preserves pattern on zones', () => {
-    const garden = createGarden({ name: 'Legacy', widthFt: 20, lengthFt: 15 });
-    const raw = JSON.parse(serializeGarden(garden));
-    // Inject a structure with legacy fields.
-    raw.structures.push({
-      id: 'legacy-s',
-      type: 'raised-bed',
-      x: 0,
-      y: 0,
-      width: 4,
-      length: 8,
-      rotation: 0,
-      color: '#888',
-      label: null,
-      zIndex: 0,
-      parentId: null,
-      groupId: null,
-      snapToGrid: true,
-      surface: false,
-      container: false,
-      fill: null,
-      layout: null,
-      wallThicknessFt: 0,
-      clipChildren: true,
-      // Legacy fields that should be stripped:
-      arrangement: 'grid',
-      trellisEdge: 'north',
-      pattern: 'stripes',
-    });
-    // Inject a zone with a real `pattern` field that must be preserved,
-    // and a dead `arrangement` field that must be stripped.
-    raw.zones.push({
-      id: 'zone-z',
-      x: 0,
-      y: 0,
-      width: 4,
-      length: 4,
-      color: '#aaa',
-      label: null,
-      zIndex: 0,
-      parentId: null,
-      soilType: null,
-      sunExposure: null,
-      layout: null,
-      pattern: 'dots',
-      arrangement: 'legacy-dead-field',
-    });
+    // Hand-built legacy (garden-array) file — no `scene` key → legacy load path.
+    const raw = {
+      version: 1,
+      name: 'Legacy',
+      widthFt: 20,
+      lengthFt: 15,
+      collection: [],
+      // A structure carrying dead legacy fields that must be stripped.
+      structures: [
+        {
+          id: 'legacy-s',
+          type: 'raised-bed',
+          x: 0,
+          y: 0,
+          width: 4,
+          length: 8,
+          rotation: 0,
+          color: '#888',
+          label: null,
+          zIndex: 0,
+          parentId: null,
+          groupId: null,
+          snapToGrid: true,
+          surface: false,
+          container: false,
+          fill: null,
+          layout: null,
+          wallThicknessFt: 0,
+          clipChildren: true,
+          // Legacy fields that should be stripped:
+          arrangement: 'grid',
+          trellisEdge: 'north',
+          pattern: 'stripes',
+        },
+      ],
+      // A zone with a real `pattern` field that must be preserved, and a dead
+      // `arrangement` field that must be stripped.
+      zones: [
+        {
+          id: 'zone-z',
+          x: 0,
+          y: 0,
+          width: 4,
+          length: 4,
+          color: '#aaa',
+          label: null,
+          zIndex: 0,
+          parentId: null,
+          soilType: null,
+          sunExposure: null,
+          layout: null,
+          pattern: 'dots',
+          arrangement: 'legacy-dead-field',
+        },
+      ],
+      plantings: [],
+    };
     const result = deserializeGarden(JSON.stringify(raw));
     const s = result.structures.find((x) => x.id === 'legacy-s')!;
     expect('arrangement' in s).toBe(false);
@@ -207,5 +265,70 @@ describe('deserializeGarden', () => {
     expect((result.structures[0] as unknown as { height?: number }).height).toBeUndefined();
     expect(result.zones[0].length).toBe(4);
     expect((result.zones[0] as unknown as { height?: number }).height).toBeUndefined();
+  });
+});
+
+describe('serializeGarden / deserializeGarden — SerializedScene format (Phase 5)', () => {
+  it('writes the new scene format on disk (scene key, no spatial arrays)', () => {
+    const g = createGarden({ name: 'New', widthFt: 30, lengthFt: 30 });
+    const onDisk = JSON.parse(serializeGarden(g));
+    expect(onDisk.scene).toBeDefined();
+    expect(onDisk.scene.version).toBe(1);
+    expect(onDisk.structures).toBeUndefined();
+    expect(onDisk.zones).toBeUndefined();
+    expect(onDisk.plantings).toBeUndefined();
+    // Non-spatial base still present.
+    expect(onDisk.name).toBe('New');
+    expect(onDisk.version).toBe(1);
+    expect(onDisk.nursery).toBeDefined();
+  });
+
+  it('round-trips a garden with nested structures/zones/plantings losslessly', () => {
+    const g = createGarden({ name: 'Round', widthFt: 30, lengthFt: 30 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 1, width: 12, length: 12, container: true }),
+      struct({ id: 's2', x: 14, y: 14, parentId: 's1' }),
+    ];
+    g.zones = [zone({ id: 'z1', x: 0, y: 20 })];
+    g.plantings = [plant({ id: 'p1', parentId: 's1', x: 2, y: 2 })];
+
+    const restored = deserializeGarden(serializeGarden(g));
+    expect(restored.structures.map((s) => s.id).sort()).toEqual(['s1', 's2']);
+    expect(restored.zones.map((z) => z.id)).toEqual(['z1']);
+    expect(restored.plantings.map((p) => p.id)).toEqual(['p1']);
+    // Nested child composes back to its world coords (Phase 2 frame fix).
+    expect(restored.structures.find((s) => s.id === 's2')).toMatchObject({ x: 14, y: 14 });
+    expect(restored.structures.find((s) => s.id === 's1')).toMatchObject({ x: 1, y: 1 });
+  });
+});
+
+describe('autosave — transparent SerializedScene migration', () => {
+  it('autosave → loadAutosave round-trips the garden', () => {
+    const g = createGarden({ name: 'Auto', widthFt: 12, lengthFt: 12 });
+    g.structures = [struct({ id: 's1', container: true })];
+    g.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 1 })];
+    autosave(g);
+    const back = loadAutosave();
+    expect(back?.name).toBe('Auto');
+    expect(back?.structures.map((s) => s.id).sort()).toEqual(g.structures.map((s) => s.id).sort());
+    expect(back?.plantings.map((p) => p.id)).toEqual(['p1']);
+  });
+
+  it('loadAutosave still reads a legacy garden-array autosave', () => {
+    localStorage.setItem(
+      'garden-planner-autosave',
+      JSON.stringify({
+        version: 1,
+        name: 'LegacyAuto',
+        widthFt: 10,
+        lengthFt: 10,
+        structures: [],
+        zones: [],
+        plantings: [],
+        collection: [],
+      }),
+    );
+    const back = loadAutosave();
+    expect(back?.name).toBe('LegacyAuto');
   });
 });

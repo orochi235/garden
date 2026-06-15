@@ -4,6 +4,9 @@ import { getCultivar } from '../model/cultivars';
 import { emptyNurseryState } from '../model/nursery';
 import type { Garden, Structure, Zone } from '../model/types';
 import { getPlantableBounds, PLANTABLE_TYPES } from '../model/types';
+import { gardenToSerializedScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
+import type { GardenBase, GardenSerializedScene } from '../scene/gardenScene';
+import { createGardenScene } from '../scene/gardenScene';
 
 /**
  * Project the collection to the on-disk form: builtin cultivars become
@@ -45,9 +48,21 @@ function hydrateCollection(raw: unknown): Cultivar[] {
   return out;
 }
 
+/**
+ * Serialize to the scene-native on-disk format: the non-spatial base plus a
+ * `scene: SerializedScene` (drops the `structures`/`zones`/`plantings` arrays).
+ * Nested poses are stored parent-local inside the scene, so the file round-trips
+ * losslessly through kit composition. Older garden-array files still load (see
+ * `deserializeGarden`). Builtin cultivars are projected to `{ id }` refs.
+ */
 export function serializeGarden(garden: Garden): string {
+  const base = splitBase(garden);
   return JSON.stringify(
-    { ...garden, collection: projectCollectionForExport(garden.collection) },
+    {
+      ...base,
+      collection: projectCollectionForExport(garden.collection),
+      scene: gardenToSerializedScene(garden),
+    },
     null,
     2,
   );
@@ -55,6 +70,7 @@ export function serializeGarden(garden: Garden): string {
 
 export function deserializeGarden(json: string): Garden {
   const data = JSON.parse(json);
+  // Legacy field migrations are array-guarded → no-op on new-format data.
   migrateHeightToLength(data);
   stripLegacyFields(data);
   if (!data.version || !data.name || data.widthFt == null || data.lengthFt == null) {
@@ -68,6 +84,20 @@ export function deserializeGarden(json: string): Garden {
   }
   if (!data.nursery) data.nursery = emptyNurseryState();
   data.collection = hydrateCollection(data.collection);
+
+  // New (scene-native) format: reconstruct the spatial arrays from the
+  // serialized scene by loading it into a throwaway instance, then composing a
+  // Garden via sceneToGarden. Nested poses are stored parent-local, so the
+  // converter composes them back to world coords (Phase 2/4 frame handling).
+  // This path does NOT run snapPlantingsToCellGrid (the scene is authoritative).
+  if (data.scene != null) {
+    const { scene: serialized, ...base } = data;
+    const scene = createGardenScene([]);
+    scene.loadState(serialized as GardenSerializedScene);
+    return sceneToGarden(scene, base as GardenBase);
+  }
+
+  // Legacy (garden-array) format.
   migrateLayoutsToCellGrid(data as Garden);
   snapPlantingsToCellGrid(data as Garden);
   return data as Garden;
