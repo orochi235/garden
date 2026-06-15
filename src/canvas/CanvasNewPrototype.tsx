@@ -1,7 +1,7 @@
 import type { GridSlotConfig, RenderLayer } from '@orochi235/weasel';
 import {
   ActiveToolContextProviderIfRoot,
-  Canvas,
+  SceneCanvas,
   useCanvasSize,
   useInsertTool,
   useTools,
@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import { useUiStore } from '../store/uiStore';
-import { createGardenSceneAdapter, type SceneNode, type ScenePose } from './adapters/gardenScene';
+import { createGardenSceneAdapter } from './adapters/gardenScene';
 import { createInsertAdapter } from './adapters/insert';
 import { isDebugEnabled } from './debug';
 import { AREA_SELECT_DRAG_KIND, createAreaSelectDrag } from './drag/areaSelectDrag';
@@ -41,6 +41,7 @@ import {
 import { createZoneLayers } from './layers/zoneLayersWorld';
 import { NurseryCanvas } from './NurseryCanvas';
 import { onIconLoad } from './plantRenderers';
+import { useGardenSelectionApi } from './selectionBridge';
 import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
 import { useEricCycleTool } from './tools/useEricCycleTool';
 import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
@@ -477,6 +478,15 @@ function GardenCanvasNewPrototype() {
     ambient: [rightDragPan, wheelZoom],
   });
 
+  // The live kit Scene is the spatial store of record (identity-stable across
+  // in-place loadState restores), so capture it once for <SceneCanvas>.
+  const scene = useMemo(() => useGardenStore.getState().getScene(), []);
+  // Bridge uiStore selection into the kit's SelectionApi shape.
+  const selectionApi = useGardenSelectionApi();
+  // Suppress the kit default scene painter — eric draws every entity via its own
+  // domain layers; keep all of those (custom keys pass through the kit merge).
+  const sceneCanvasLayers = useMemo(() => ({ scene: null, ...layers }), [layers]);
+
   return (
     <div
       ref={containerRef}
@@ -491,14 +501,18 @@ function GardenCanvasNewPrototype() {
       onContextMenu={(e) => e.preventDefault()}
     >
       {width > 0 && height > 0 && (
-        <Canvas<SceneNode, ScenePose>
+        <SceneCanvas
+          scene={scene}
           width={width}
           height={height}
-          adapter={adapter}
           view={toKitView(view)}
           onViewChange={handleViewChange}
-          layers={layers}
+          layers={sceneCanvasLayers}
           tools={tools}
+          selection={selectionApi}
+          selectionMode="multi"
+          enableGestureDispatcher={false}
+          enableKeybindings={false}
         />
       )}
     </div>
