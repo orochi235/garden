@@ -1,0 +1,117 @@
+{
+  "id": "fixture-garden-grouped",
+  "version": 1,
+  "name": "Grouped Garden",
+  "widthFt": 20,
+  "lengthFt": 20,
+  "gridCellSizeFt": 1,
+  "displayUnit": "ft",
+  "groundColor": "#4A7C59",
+  "blueprint": null,
+  "structures": [
+    {
+      "id": "struct-1",
+      "type": "raised-bed",
+      "shape": "rectangle",
+      "x": 3,
+      "y": 10,
+      "width": 4,
+      "length": 6,
+      "rotation": 0,
+      "color": "#8B6914",
+      "label": "Bed A",
+      "zIndex": 0,
+      "parentId": null,
+      "groupId": "g1",
+      "snapToGrid": true,
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "layout": {
+        "type": "grid",
+        "cellSizeFt": 0.25
+      },
+      "wallThicknessFt": 0.0833,
+      "clipChildren": true
+    },
+    {
+      "id": "struct-2",
+      "type": "raised-bed",
+      "shape": "rectangle",
+      "x": 8,
+      "y": 10,
+      "width": 4,
+      "length": 6,
+      "rotation": 0,
+      "color": "#8B6914",
+      "label": "Bed B",
+      "zIndex": 0,
+      "parentId": null,
+      "groupId": "g1",
+      "snapToGrid": true,
+      "surface": false,
+      "container": true,
+      "fill": "soil",
+      "layout": {
+        "type": "grid",
+        "cellSizeFt": 0.25
+      },
+      "wallThicknessFt": 0.0833,
+      "clipChildren": true
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-1",
+      "x": 3,
+      "y": 2,
+      "width": 6,
+      "length": 4,
+      "color": "#7FB06944",
+      "label": "Sunny Patch",
+      "zIndex": 0,
+      "parentId": null,
+      "soilType": null,
+      "sunExposure": "full",
+      "layout": {
+        "type": "grid",
+        "cellSizeFt": 0.25
+      },
+      "pattern": null
+    }
+  ],
+  "plantings": [
+    {
+      "id": "planting-1",
+      "parentId": "zone-1",
+      "cultivarId": "tomato",
+      "x": 4,
+      "y": 3,
+      "label": "Tomato",
+      "icon": null
+    },
+    {
+      "id": "planting-2",
+      "parentId": "struct-1",
+      "cultivarId": "lettuce",
+      "x": 4,
+      "y": 11,
+      "label": "Lettuce",
+      "icon": null
+    },
+    {
+      "id": "planting-3",
+      "parentId": "struct-2",
+      "cultivarId": "basil",
+      "x": 9,
+      "y": 11,
+      "label": "Basil",
+      "icon": null
+    }
+  ],
+  "seedStarting": {
+    "trays": [],
+    "seedlings": []
+  },
+  "collection": []
+}

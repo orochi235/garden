@@ -16,7 +16,7 @@ const baseUi: ReturnType<GetUi> = {
 };
 
 describe('createPlantingLayers (world)', () => {
-  it('returns 8 layers in canonical order', () => {
+  it('returns the non-body overlay layers in canonical order (icons/highlights moved to the scene slot)', () => {
     const layers = createPlantingLayers(
       () => [],
       () => [],
@@ -27,22 +27,10 @@ describe('createPlantingLayers (world)', () => {
       'container-overlays',
       'planting-conflicts',
       'planting-spacing',
-      'planting-icons',
       'planting-measurements',
-      'planting-highlights',
       'planting-labels',
       'container-walls',
     ]);
-  });
-
-  it('planting-icons is alwaysOn', () => {
-    const layers = createPlantingLayers(
-      () => [],
-      () => [],
-      () => [],
-      () => baseUi,
-    );
-    expect(layers.find((l) => l.id === 'planting-icons')?.alwaysOn).toBe(true);
   });
 
   it('planting-measurements has defaultVisible=false', () => {

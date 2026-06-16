@@ -14,16 +14,11 @@ const baseUi: ReturnType<GetUi> = {
 };
 
 describe('createZoneLayers (world)', () => {
-  it('returns 4 layers in canonical order', () => {
+  it('returns only the label layer (bodies/patterns/highlights moved to the scene slot)', () => {
     const layers = createZoneLayers(
       () => [],
       () => baseUi,
     );
-    expect(layers.map((l) => l.id)).toEqual([
-      'zone-bodies',
-      'zone-patterns',
-      'zone-highlights',
-      'zone-labels',
-    ]);
+    expect(layers.map((l) => l.id)).toEqual(['zone-labels']);
   });
 });

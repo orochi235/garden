@@ -1,7 +1,6 @@
 import {
   type Dims,
   measureTextBounds,
-  type Path,
   PathBuilder,
   type RenderLayer,
   rectPath,
@@ -15,7 +14,6 @@ import { getSpecies } from '../../model/species';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
 import { plantingWorldPose } from '../../utils/plantingPose';
-import { plantDrawCommands } from '../plantRenderers';
 import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
@@ -25,13 +23,19 @@ import { descriptorById } from './worldLayerData';
  * order. Factory pulls label/alwaysOn/defaultVisible by id; the panel
  * imports the array for the "Plantings" group.
  */
+/**
+ * Planting glyph BODY rendering (the icon/footprint, clipped to the container
+ * soil) and the selection-flash ring now live in the kit scene slot
+ * (`createGardenDrawOne`), so the old `planting-icons` and `planting-highlights`
+ * sub-layers were removed here. Every other overlay (container slot dots,
+ * spacing conflicts, spacing rings, measurements, labels, container walls)
+ * stays as a custom-keyed layer.
+ */
 export const PLANTING_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
   { id: 'container-overlays', label: 'Container Overlays' },
   { id: 'planting-conflicts', label: 'Spacing Conflicts' },
   { id: 'planting-spacing', label: 'Planting Spacing' },
-  { id: 'planting-icons', label: 'Planting Icons', alwaysOn: true },
   { id: 'planting-measurements', label: 'Planting Measurements', defaultVisible: false },
-  { id: 'planting-highlights', label: 'Planting Highlights' },
   { id: 'planting-labels', label: 'Planting Labels' },
   { id: 'container-walls', label: 'Container Walls' },
 ];
@@ -89,30 +93,6 @@ function buildParentLookup(
   return { parentMap, childCount, plantingsByParent };
 }
 
-/**
- * Inner-soil clip path for a container, or null if no clipping applies
- * (zone, no walls, or `clipChildren === false`). Plants inside the container
- * are wrapped in a group with this clip so icons can't bleed past the soil
- * edge or onto the surrounding ground.
- */
-function buildContainerClipPath(s: Structure | undefined): Path | null {
-  if (!s?.container || s.clipChildren === false) return null;
-  const wallWidth = s.wallThicknessFt ?? 0;
-  if (wallWidth <= 0) return null;
-  if (s.type === 'pot' || s.type === 'felt-planter') {
-    const cx = s.x + s.width / 2;
-    const cy = s.y + s.length / 2;
-    const rOuter = Math.min(s.width, s.length) / 2;
-    const rInner = rOuter - wallWidth;
-    if (rInner <= 0) return null;
-    return circlePolygon(cx, cy, rInner);
-  }
-  const innerW = s.width - wallWidth * 2;
-  const innerH = s.length - wallWidth * 2;
-  if (innerW <= 0 || innerH <= 0) return null;
-  return rectPath(s.x + wallWidth, s.y + wallWidth, innerW, innerH);
-}
-
 function plantingRadius(
   p: Planting,
   parent: PlantingParent,
@@ -125,22 +105,6 @@ function plantingRadius(
   return isSingleFill
     ? (Math.min(parent.width, parent.length) / 2) * plantIconScale
     : (footprint / 2) * plantIconScale;
-}
-
-/**
- * Render a plant glyph as DrawCommands, translated to (wx, wy).
- */
-function plantGlyphAt(
-  cultivarId: string,
-  wx: number,
-  wy: number,
-  radius: number,
-  showFootprintCircles: boolean,
-): DrawCommand[] {
-  const cultivar = getCultivar(cultivarId);
-  const color = cultivar?.color ?? '#4A7C59';
-  const iconBgColor = showFootprintCircles ? (cultivar?.iconBgColor ?? null) : 'transparent';
-  return plantDrawCommands(cultivarId, wx, wy, radius, color, iconBgColor);
 }
 
 export function createPlantingLayers(
@@ -340,47 +304,6 @@ export function createPlantingLayers(
     },
 
     {
-      ...meta['planting-icons'],
-      space: 'screen' as const,
-      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
-        const data = getUi();
-        const plantings = getPlantings();
-        const zones = getZones();
-        const structures = getStructures();
-        const structureById = new Map(structures.map((s) => [s.id, s]));
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
-          plantings,
-          zones,
-          structures,
-        );
-
-        const children: DrawCommand[] = [];
-        for (const [parentId, group] of plantingsByParent) {
-          const parent = parentMap.get(parentId);
-          if (!parent) continue;
-
-          const cmds: DrawCommand[] = [];
-          for (const p of group) {
-            const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
-            const radius = Math.max(
-              px(view, 3),
-              plantingRadius(p, parent, childCount, data.plantIconScale),
-            );
-            cmds.push(...plantGlyphAt(p.cultivarId, wx, wy, radius, data.showFootprintCircles));
-          }
-
-          const clip = buildContainerClipPath(structureById.get(parentId));
-          if (clip) {
-            children.push({ kind: 'group', clip, children: cmds });
-          } else {
-            children.push(...cmds);
-          }
-        }
-        return [{ kind: 'group', transform: viewToMat3(view), children }];
-      },
-    },
-
-    {
       ...meta['planting-measurements'],
       space: 'screen' as const,
       // Flagged: text commands require registerFont() wired at app boot.
@@ -425,49 +348,6 @@ export function createPlantingLayers(
                 fill: { fill: 'solid', color: 'rgba(255, 255, 200, 0.5)' },
               }),
             );
-          }
-        }
-        return [{ kind: 'group', transform: viewToMat3(view), children }];
-      },
-    },
-
-    {
-      ...meta['planting-highlights'],
-      space: 'screen' as const,
-      draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
-        const data = getUi();
-        const plantings = getPlantings();
-        const zones = getZones();
-        const structures = getStructures();
-        const { parentMap, childCount, plantingsByParent } = buildParentLookup(
-          plantings,
-          zones,
-          structures,
-        );
-
-        const children: DrawCommand[] = [];
-        for (const [, group] of plantingsByParent) {
-          const parent = parentMap.get(group[0]?.parentId ?? '');
-          if (!parent) continue;
-          for (const p of group) {
-            const opacity = data.getHighlight(p.id);
-            if (opacity <= 0) continue;
-            const { x: wx, y: wy } = plantingWorldPose({ structures, zones }, p);
-            const radius = Math.max(
-              px(view, 3),
-              plantingRadius(p, parent, childCount, data.plantIconScale),
-            );
-            children.push({
-              kind: 'group',
-              alpha: opacity,
-              children: [
-                {
-                  kind: 'path',
-                  path: circlePolygon(wx, wy, radius + px(view, 1)),
-                  stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
-                },
-              ],
-            });
           }
         }
         return [{ kind: 'group', transform: viewToMat3(view), children }];

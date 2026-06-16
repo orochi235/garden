@@ -37,30 +37,12 @@ const baseUi: ReturnType<GetUi> = {
 };
 
 describe('createStructureLayers (world)', () => {
-  it('returns 6 layers in canonical order', () => {
+  it('returns only the non-body layers in canonical order (bodies moved to the scene slot)', () => {
     const layers = createStructureLayers(
       () => [],
       () => baseUi,
     );
-    expect(layers.map((l) => l.id)).toEqual([
-      'structure-walls',
-      'structure-bodies',
-      'structure-surfaces',
-      'structure-plantable-area',
-      'structure-highlights',
-      'structure-labels',
-    ]);
-  });
-
-  it('structure-highlights returns empty array when no structure has getHighlight(id)>0', () => {
-    const s = makeStructure();
-    const ui: ReturnType<GetUi> = { ...baseUi, getHighlight: () => 0 };
-    const layer = createStructureLayers(
-      () => [s],
-      () => ui,
-    ).find((l) => l.id === 'structure-highlights')!;
-    const result = layer.draw({}, view, { width: 800, height: 600 });
-    expect(result).toEqual([]);
+    expect(layers.map((l) => l.id)).toEqual(['structure-plantable-area', 'structure-labels']);
   });
 
   it('structure-labels returns empty array when labelMode is none', () => {

@@ -1,7 +1,6 @@
 import type { Dims, View } from '@orochi235/weasel';
-import { type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
+import { type RenderLayer, textCommand } from '@orochi235/weasel';
 import type { Zone } from '../../model/types';
-import { type PatternId, paintFor } from '../patterns';
 import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
@@ -15,83 +14,19 @@ function px(view: View, p: number): number {
  * draw order. The factory below pulls `label`/`alwaysOn`/`defaultVisible`
  * from these entries by id, and `RenderLayersPanel` imports the array to
  * build its "Zones" group.
+ *
+ * Zone BODY rendering (body fill + dashed outline, patterns, selection-flash
+ * highlight) lives in the kit scene slot now (`createGardenDrawOne`), so the
+ * old `zone-bodies` / `zone-patterns` / `zone-highlights` sub-layers were
+ * removed here. Only the label sub-layer remains.
  */
 export const ZONE_LAYER_DESCRIPTORS: readonly LayerDescriptor[] = [
-  { id: 'zone-bodies', label: 'Zone Bodies', alwaysOn: true },
-  { id: 'zone-patterns', label: 'Zone Patterns' },
-  { id: 'zone-highlights', label: 'Zone Highlights' },
   { id: 'zone-labels', label: 'Zone Labels' },
 ];
 
 export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLayer<unknown>[] {
   const meta = descriptorById(ZONE_LAYER_DESCRIPTORS);
   return [
-    {
-      ...meta['zone-bodies'],
-      space: 'screen' as const,
-      draw(_data, view: View, _dims: Dims): DrawCommand[] {
-        const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
-        const dashSize = 6 / Math.max(0.0001, view.scale.x);
-        const gapSize = 3 / Math.max(0.0001, view.scale.x);
-        const children: DrawCommand[] = sorted.flatMap((z) => [
-          {
-            kind: 'path' as const,
-            path: rectPath(z.x, z.y, z.width, z.length),
-            fill: { fill: 'solid' as const, color: z.color },
-          },
-          {
-            kind: 'path' as const,
-            path: rectPath(z.x, z.y, z.width, z.length),
-            stroke: {
-              paint: { fill: 'solid' as const, color: '#4A7C59' },
-              width: px(view, 1.5),
-              dash: [dashSize, gapSize],
-            },
-          },
-        ]);
-        return [{ kind: 'group', transform: viewToMat3(view), children }];
-      },
-    },
-    {
-      ...meta['zone-patterns'],
-      space: 'screen' as const,
-      draw(_data, view: View, _dims: Dims): DrawCommand[] {
-        const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
-        const children: DrawCommand[] = sorted
-          .filter((z) => z.pattern != null)
-          .map((z) => ({
-            kind: 'path' as const,
-            path: rectPath(z.x, z.y, z.width, z.length),
-            fill: paintFor(z.pattern as PatternId),
-          }));
-        return [{ kind: 'group', transform: viewToMat3(view), children }];
-      },
-    },
-    {
-      ...meta['zone-highlights'],
-      space: 'screen' as const,
-      draw(_data, view: View, _dims: Dims): DrawCommand[] {
-        const { getHighlight } = getUi();
-        const sorted = [...getZones()].sort((a, b) => a.zIndex - b.zIndex);
-        const children: DrawCommand[] = sorted
-          .filter((z) => getHighlight(z.id) > 0)
-          .map((z) => ({
-            kind: 'group' as const,
-            alpha: getHighlight(z.id),
-            children: [
-              {
-                kind: 'path' as const,
-                path: rectPath(z.x, z.y, z.width, z.length),
-                stroke: {
-                  paint: { fill: 'solid' as const, color: '#FFD700' },
-                  width: px(view, 2),
-                },
-              },
-            ],
-          }));
-        return [{ kind: 'group', transform: viewToMat3(view), children }];
-      },
-    },
     {
       ...meta['zone-labels'],
       space: 'screen' as const,

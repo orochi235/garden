@@ -14,6 +14,7 @@ interface Fixture {
 const FIXTURES: Fixture[] = [
   { name: 'garden-empty' },
   { name: 'garden-mixed' },
+  { name: 'garden-grouped' },
   { name: 'nursery-empty', mode: 'nursery' },
   { name: 'nursery-with-seedlings', mode: 'nursery' },
 ];

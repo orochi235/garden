@@ -6,7 +6,7 @@ import {
   useInsertTool,
   useTools,
 } from '@orochi235/weasel';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import { useUiStore } from '../store/uiStore';
@@ -20,6 +20,7 @@ import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
 import { createPlotDrag, PLOT_DRAG_KIND, type PlotPutative } from './drag/plotDrag';
 import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
 import { createDebugLayers } from './layers/debugLayers';
+import { createGardenDrawOne } from './layers/gardenDrawOne';
 import { createPlantingLayers } from './layers/plantingLayersWorld';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
 import {
@@ -209,61 +210,66 @@ function GardenCanvasNewPrototype() {
 
   const gridCellSizeFt = useGardenStore((s) => s.garden.gridCellSizeFt);
 
+  // Shared per-frame UI getter. Reads the stores at call time, so it has no
+  // render-scoped deps and stays referentially stable — both the domain layer
+  // factories AND the kit scene-slot painter (`createGardenDrawOne`) read from
+  // this same getter so committed bodies and decorations agree on UI state.
+  const getUi = useCallback<GetUi>(() => {
+    const u = useUiStore.getState();
+    // Per-id flash opacity — layers call `getHighlight(id)` per entity. The
+    // highlight store already keys flashes/hovers by id; we just pass the
+    // reader through so each layer can pulse independently.
+    const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
+    // Surface the palette-drop drag putative so the conflict overlay can
+    // include the ghost in its occupancy compute (red/yellow before commit).
+    let dragPlantingGhost: { parentId: string; cultivarId: string; x: number; y: number } | null =
+      null;
+    if (u.dragPreview && u.dragPreview.kind === 'garden-palette-plant') {
+      const put = u.dragPreview.putative as {
+        parentId?: string;
+        cultivarId?: string;
+        x?: number;
+        y?: number;
+      };
+      if (
+        put?.parentId &&
+        put.cultivarId &&
+        typeof put.x === 'number' &&
+        typeof put.y === 'number'
+      ) {
+        // putative.{x,y} are WORLD coords; the conflict overlay's resolveFootprint
+        // expects parent-LOCAL plus parent.x/y as origin, so convert back here.
+        const parent =
+          useGardenStore.getState().garden.structures.find((s) => s.id === put.parentId) ??
+          useGardenStore.getState().garden.zones.find((z) => z.id === put.parentId);
+        if (parent) {
+          dragPlantingGhost = {
+            parentId: put.parentId,
+            cultivarId: put.cultivarId,
+            x: put.x - parent.x,
+            y: put.y - parent.y,
+          };
+        }
+      }
+    }
+    return {
+      selectedIds: u.selectedIds,
+      labelMode: u.labelMode,
+      labelFontSize: u.labelFontSize,
+      plantIconScale: u.plantIconScale,
+      showFootprintCircles: u.showFootprintCircles,
+      getHighlight,
+      debugOverlappingLabels: u.debugOverlappingLabels,
+      dragClashIds: u.dragClashIds,
+      dragPlantingGhost,
+    };
+  }, []);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: iconTick/dragPreview/garden.* are intentional redraw triggers; the layer getters read latest state from the store at call time.
   const layers = useMemo(() => {
     const getStructures = () => useGardenStore.getState().garden.structures;
     const getZones = () => useGardenStore.getState().garden.zones;
     const getPlantings = () => useGardenStore.getState().garden.plantings;
-    const getUi: GetUi = () => {
-      const u = useUiStore.getState();
-      // Per-id flash opacity — layers call `getHighlight(id)` per entity. The
-      // highlight store already keys flashes/hovers by id; we just pass the
-      // reader through so each layer can pulse independently.
-      const getHighlight = (id: string) => useHighlightStore.getState().computeOpacity(id);
-      // Surface the palette-drop drag putative so the conflict overlay can
-      // include the ghost in its occupancy compute (red/yellow before commit).
-      let dragPlantingGhost: { parentId: string; cultivarId: string; x: number; y: number } | null =
-        null;
-      if (u.dragPreview && u.dragPreview.kind === 'garden-palette-plant') {
-        const put = u.dragPreview.putative as {
-          parentId?: string;
-          cultivarId?: string;
-          x?: number;
-          y?: number;
-        };
-        if (
-          put?.parentId &&
-          put.cultivarId &&
-          typeof put.x === 'number' &&
-          typeof put.y === 'number'
-        ) {
-          // putative.{x,y} are WORLD coords; the conflict overlay's resolveFootprint
-          // expects parent-LOCAL plus parent.x/y as origin, so convert back here.
-          const parent =
-            useGardenStore.getState().garden.structures.find((s) => s.id === put.parentId) ??
-            useGardenStore.getState().garden.zones.find((z) => z.id === put.parentId);
-          if (parent) {
-            dragPlantingGhost = {
-              parentId: put.parentId,
-              cultivarId: put.cultivarId,
-              x: put.x - parent.x,
-              y: put.y - parent.y,
-            };
-          }
-        }
-      }
-      return {
-        selectedIds: u.selectedIds,
-        labelMode: u.labelMode,
-        labelFontSize: u.labelFontSize,
-        plantIconScale: u.plantIconScale,
-        showFootprintCircles: u.showFootprintCircles,
-        getHighlight,
-        debugOverlappingLabels: u.debugOverlappingLabels,
-        dragClashIds: u.dragClashIds,
-        dragPlantingGhost,
-      };
-    };
 
     // Putative-drag preview layer — Phase 2 dispatches to the
     // garden-palette-plant drag (cursor-following ghost during palette →
@@ -336,7 +342,15 @@ function GardenCanvasNewPrototype() {
     // stable and weasel never repaints, even though the data is fresh.
     // Cross-container moves "just worked" because the parentId-change path
     // bumps other state; same-container moves only changed x/y.
-  }, [gridCellSizeFt, iconTick, dragPreview, garden.plantings, garden.structures, garden.zones]);
+  }, [
+    getUi,
+    gridCellSizeFt,
+    iconTick,
+    dragPreview,
+    garden.plantings,
+    garden.structures,
+    garden.zones,
+  ]);
 
   // Build the kit camera-coord `View` from local screen-space (zoom, panX, panY).
   // Pre-fit (zoom===0) we render with a fallback margin-fit so the very first
@@ -483,9 +497,36 @@ function GardenCanvasNewPrototype() {
   const scene = useMemo(() => useGardenStore.getState().getScene(), []);
   // Bridge uiStore selection into the kit's SelectionApi shape.
   const selectionApi = useGardenSelectionApi();
-  // Suppress the kit default scene painter — eric draws every entity via its own
-  // domain layers; keep all of those (custom keys pass through the kit merge).
-  const sceneCanvasLayers = useMemo(() => ({ scene: null, ...layers }), [layers]);
+  // The kit scene slot now paints committed entity BODIES via one per-node
+  // painter (`createGardenDrawOne`). Eric's domain layers keep everything else
+  // (labels, highlights, overlays, selection chrome) as custom-keyed layers,
+  // which the kit merges into the tail (above the scene slot).
+  //
+  // The kit drives the scene slot from the live `GardenScene`, so its `drawOne`
+  // receives a kit `Node<GardenNodeData, …>` + the scene's (geometry-only)
+  // `GardenPose`. `createGardenDrawOne` is written against eric's own
+  // `SceneNode` (full domain entity in `.data`) + world `ScenePose`, so we
+  // bridge by node id through eric's scene adapter: `getNode(id)` rebuilds the
+  // full entity and `getPose(id)` returns its WORLD position — exactly the
+  // store-backed values the old body layers drew, keeping committed output
+  // pixel-identical. The kit pose is intentionally ignored (it stores
+  // parent-local child coords; the adapter composes world).
+  const sceneCanvasLayers = useMemo(() => {
+    const ericDrawOne = createGardenDrawOne(getUi);
+    const drawOne = (
+      kitNode: { id: string },
+      _kitPose: unknown,
+      kitView: Parameters<typeof ericDrawOne>[2],
+    ): ReturnType<typeof ericDrawOne> => {
+      const node = adapter.getNode(kitNode.id);
+      if (!node) return [];
+      return ericDrawOne(node, adapter.getPose(node.id), kitView);
+    };
+    return {
+      scene: { drawOne: drawOne as never },
+      ...layers,
+    };
+  }, [adapter, getUi, layers]);
 
   return (
     <div
