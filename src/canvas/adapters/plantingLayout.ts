@@ -100,7 +100,7 @@ export function plantingLayoutFor(
       );
     },
 
-    getChildPositions(_container, children) {
+    childPoses(_container, children) {
       const out = new Map<string, PlantingPose>();
       for (const c of children) out.set(c.id, c.pose);
       return out;
@@ -175,7 +175,7 @@ export function plantingLayoutFor(
         .map((p) => ({ pose: { x: p.x, y: p.y }, origin: { x: p.x, y: p.y } }));
     },
 
-    reflowFor() {
+    reflowPoses() {
       return new Map();
     },
 

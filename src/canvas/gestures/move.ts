@@ -342,7 +342,7 @@ export function useMove<TNode extends { id: string }, TPose>(
         } else {
           destContainerId = dest.id;
           accepted = true;
-          hypotheticalChildPositions = layout.reflowFor(
+          hypotheticalChildPositions = layout.reflowPoses(
             { id: dest.id, bounds: dest.bounds },
             children,
             draggedArg,
@@ -364,7 +364,7 @@ export function useMove<TNode extends { id: string }, TPose>(
               const srcChildren = srcChildIds
                 .filter((cid) => cid !== draggedId)
                 .map((cid) => ({ id: cid, pose: adapter.getPose(cid) }));
-              const reflowed = srcLayout.getChildPositions(
+              const reflowed = srcLayout.childPoses(
                 { id: sourceContainerId, bounds: srcBounds },
                 srcChildren,
               );
