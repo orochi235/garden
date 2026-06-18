@@ -1,10 +1,19 @@
-import type { SnapTarget } from '@orochi235/weasel';
+import type { GestureContext, GroupTransform, SnapTarget } from '@orochi235/weasel';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createGardenSceneAdapter, type SceneNode, type ScenePose } from '../adapters/gardenScene';
 import { plantingLayoutFor } from '../adapters/plantingLayout';
-import type { GestureContext } from '../gestures';
 import { requirePlantingDrop, snapStructureZoneToGrid } from './snapMoveBehaviors';
+
+/** A translate `GroupTransform` from a primary origin to a target pose. */
+function translateTo(
+  origin: Map<string, ScenePose>,
+  primaryId: string,
+  target: { x: number; y: number },
+): GroupTransform {
+  const o = origin.get(primaryId)!;
+  return { kind: 'translate', dx: target.x - o.x, dy: target.y - o.y };
+}
 
 function makeCtx(
   draggedIds: string[],
@@ -44,11 +53,11 @@ describe('snapStructureZoneToGrid', () => {
     const origin = new Map<string, ScenePose>([[s.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([s.id], origin);
     // Propose a fractional pose; with spacing=1 it should snap to nearest int.
-    const result = behavior.onMove!(ctx, { x: 3.4, y: 5.7 });
+    const result = behavior.onMove!(ctx, translateTo(origin, s.id, { x: 3.4, y: 5.7 }));
     expect(result).toBeTruthy();
-    const pose = (result as { pose: ScenePose }).pose;
-    expect(pose.x).toBe(3);
-    expect(pose.y).toBe(6);
+    // origin (0,0) → snapped (3,6) becomes a uniform translate delta.
+    const transform = (result as { transform: GroupTransform }).transform;
+    expect(transform).toEqual({ kind: 'translate', dx: 3, dy: 6 });
   });
 
   it('does not snap when structure.snapToGrid is false', () => {
@@ -60,7 +69,7 @@ describe('snapStructureZoneToGrid', () => {
 
     const origin = new Map<string, ScenePose>([[s0.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([s0.id], origin);
-    const result = behavior.onMove!(ctx, { x: 3.4, y: 5.7 });
+    const result = behavior.onMove!(ctx, translateTo(origin, s0.id, { x: 3.4, y: 5.7 }));
     // No snap → behavior returns undefined.
     expect(result).toBeUndefined();
   });
@@ -73,9 +82,11 @@ describe('snapStructureZoneToGrid', () => {
 
     const origin = new Map<string, ScenePose>([[s.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([s.id], origin, { alt: true });
-    const result = behavior.onMove!(ctx, { x: 3.4, y: 5.7 });
-    // weasel's snapToGrid returns no pose when bypass key is held.
-    expect(result === undefined || (result as { pose?: ScenePose }).pose === undefined).toBe(true);
+    const result = behavior.onMove!(ctx, translateTo(origin, s.id, { x: 3.4, y: 5.7 }));
+    // weasel's snapToGrid returns no transform when bypass key is held.
+    expect(
+      result === undefined || (result as { transform?: GroupTransform }).transform === undefined,
+    ).toBe(true);
   });
 });
 
@@ -85,7 +96,7 @@ describe('requirePlantingDrop (snap-back)', () => {
     useGardenStore.getState().loadGarden(blankGarden());
   });
 
-  it('aborts (returns null) when a planting is released over no snap target', () => {
+  it('aborts (returns null) when a planting is released in free space (no container under cursor)', () => {
     // Add a bed and a planting to drag.
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const bed = useGardenStore.getState().garden.structures[0];
@@ -95,15 +106,13 @@ describe('requirePlantingDrop (snap-back)', () => {
     const behavior = requirePlantingDrop(adapter);
 
     const origin = new Map<string, ScenePose>([[p.id, { x: 1, y: 1 }]]);
-    // current well outside any container, snap is null.
-    const current = new Map<string, ScenePose>([[p.id, { x: 100, y: 100 }]]);
-    const ctx = makeCtx([p.id], origin, { current, adapter });
-    behavior.onStart?.(ctx);
-    const result = behavior.onEnd!(ctx);
-    expect(result).toBeNull();
+    const ctx = makeCtx([p.id], origin, { adapter });
+    // Cursor released well outside any container.
+    ctx.pointer = { worldX: 100, worldY: 100, clientX: 0, clientY: 0 };
+    expect(behavior.onEnd!(ctx)).toBeNull();
   });
 
-  it('defers (returns undefined) when a snap target is active on release', () => {
+  it('defers (returns undefined) when released over an accepting container', () => {
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const bed = useGardenStore.getState().garden.structures[0];
     useGardenStore.getState().addPlanting({ cultivarId: 'tomato', parentId: bed.id, x: 1, y: 1 });
@@ -112,15 +121,10 @@ describe('requirePlantingDrop (snap-back)', () => {
     const behavior = requirePlantingDrop(adapter);
 
     const origin = new Map<string, ScenePose>([[p.id, { x: 1, y: 1 }]]);
-    const ctx = makeCtx([p.id], origin, {
-      // A committable snap: the cursor is genuinely inside the container, so
-      // the guard defers to the move's layout pass instead of snapping back.
-      snap: { parentId: bed.id, slotPose: { x: 2, y: 2 }, metadata: { cursorInside: true } },
-      adapter,
-    });
-    behavior.onStart?.(ctx);
-    const result = behavior.onEnd!(ctx);
-    expect(result).toBeUndefined();
+    const ctx = makeCtx([p.id], origin, { adapter });
+    // Cursor inside the bed (0,0)–(4,4) → defer to the kit layout's commitDrop.
+    ctx.pointer = { worldX: 2, worldY: 2, clientX: 0, clientY: 0 };
+    expect(behavior.onEnd!(ctx)).toBeUndefined();
   });
 
   it('does nothing for non-planting drags (structures move freely)', () => {
@@ -135,17 +139,13 @@ describe('requirePlantingDrop (snap-back)', () => {
     expect(result).toBeUndefined();
   });
 
-  it('snaps back when released in a container attraction band but OUTSIDE its bounds', () => {
-    // Regression: `findSnapContainer` attracts a planting toward a nearby
-    // container within an attraction RADIUS (≈ footprint × 2), but the move's
-    // layout pass only commits when the dragged CENTER is strictly inside the
-    // container bounds. In the gap between those two regions, `ctx.snap` is
-    // truthy so the snap-back guard used to *defer* — and the controller then
-    // free-committed the planting at the raw cursor pose ("an odd place").
-    // A planting is slot-bound; an attraction-only release must snap back.
+  it('snaps back when released OUTSIDE a container, agreeing with the kit layout pass', () => {
+    // A planting is slot-bound: it may only land in a cell of a container the
+    // kit layout pass would accept. The guard uses the SAME `contains` test, so
+    // a release outside all container bounds snaps back (rather than free-
+    // committing the planting at the raw cursor — "an odd place").
     useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
     const src = useGardenStore.getState().garden.structures[0];
-    // A small single-plant pot: its 1ft bounds are dwarfed by its attraction band.
     useGardenStore.getState().addStructure({ type: 'pot', x: 10, y: 10, width: 1, length: 1 });
     const pot = useGardenStore.getState().garden.structures[1];
     useGardenStore.getState().addPlanting({ cultivarId: 'tomato', parentId: src.id, x: 2, y: 2 });
@@ -153,33 +153,21 @@ describe('requirePlantingDrop (snap-back)', () => {
     const adapter = createGardenSceneAdapter();
     const behavior = requirePlantingDrop(adapter);
 
-    // Release just OUTSIDE the pot's [10,11]×[10,11] bounds, still inside its band.
+    // Release just OUTSIDE the pot's [10,11]×[10,11] bounds and away from the bed.
     const release = { x: 11.3, y: 10.5 };
-
-    // Precondition 1: the attraction fires here (this is what sets ctx.snap).
-    const snap = adapter.findSnapTarget!(p.id, release.x, release.y);
-    expect(snap).not.toBeNull();
-    expect(snap!.parentId).toBe(pot.id);
-
-    // Precondition 2: the commit path would NOT accept — release is outside bounds.
+    // The kit layout pass would NOT accept this release (outside all bounds)…
     const layout = plantingLayoutFor(() => useGardenStore.getState().garden, pot.id)!;
     expect(layout.contains!({ x: 0, y: 0 }, release)).toBe(false);
 
     const origin = new Map<string, ScenePose>([[p.id, { x: 2, y: 2 }]]);
-    const current = new Map<string, ScenePose>([[p.id, release]]);
-    const ctx = makeCtx([p.id], origin, { current, snap, adapter });
-    behavior.onStart?.(ctx);
-    const result = behavior.onEnd!(ctx);
-    expect(result).toBeNull();
+    const ctx = makeCtx([p.id], origin, { adapter });
+    ctx.pointer = { worldX: release.x, worldY: release.y, clientX: 0, clientY: 0 };
+    // …so the guard snaps it back.
+    expect(behavior.onEnd!(ctx)).toBeNull();
   });
 });
 
-describe('snapToContainer (via gardenScene findSnapTarget)', () => {
-  // The eric equivalent of weasel's snapToContainer is the
-  // `trackPlantingSnap` behavior in useEricSelectTool.ts, which mirrors
-  // `adapter.findSnapTarget` into ctx.snap. Verifying the underlying
-  // adapter contract here doubles as coverage for the snap-to-bed case
-  // requested in the deferral.
+describe('gardenScene findSnapTarget (cross-bed snap contract)', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());

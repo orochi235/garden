@@ -134,7 +134,7 @@ export function NurseryCanvas() {
       map[l.id] = { layer: l };
     });
     return map;
-    // iconTick — see plant-icon redraw note in CanvasNewPrototype.
+    // iconTick — see plant-icon redraw note in GardenCanvas.
   }, [iconTick, dragPreview, garden.nursery.seedlings, garden.nursery.trays]);
 
   // View state lives locally — the canvas owns its own viewport. Outside actors

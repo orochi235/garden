@@ -9,7 +9,7 @@ import { useGardenPaletteDropTool } from './useGardenPaletteDropTool';
 /**
  * The garden palette drop tool watches `useUiStore.palettePointerPayload` and
  * runs its own document-level pointer pipeline. It reads the canvas-owned
- * view via the `viewRef` injected by `GardenCanvasNewPrototype`. Tests
+ * view via the `viewRef` injected by `GardenCanvasInner`. Tests
  * assert the public contract: arms a payload, commits via `useGardenStore`
  * add* on release, cleans up the payload on cancel/commit.
  */

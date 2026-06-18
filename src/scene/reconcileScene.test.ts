@@ -164,7 +164,7 @@ describe('reconcileScene — same-layer reparent', () => {
 });
 
 describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
-  it('reparents a planting across layers (structure → zone) via rebuild', () => {
+  it('reparents a planting from a structure to a zone (stays on the plantings layer)', () => {
     const start = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
     start.structures = [struct({ id: 's1', x: 0, y: 0, container: true })];
     start.zones = [zone({ id: 'z1', x: 10, y: 0 })];
@@ -176,7 +176,10 @@ describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
     const { scene, out } = reconcileTo(start, target);
     const p = scene.get(asNodeId('p1'))!;
     expect(p.parent).toBe('z1');
-    expect(p.layer).toBe('zones');
+    // Plantings always live on the top `plantings` layer regardless of whether
+    // their container is a structure or a zone — reparenting is a plain move(),
+    // no layer-change rebuild.
+    expect(p.layer).toBe('plantings');
     expect(out.plantings[0]).toMatchObject({ parentId: 'z1', x: 2, y: 2 });
   });
   it('promotes a leaf structure to a container when it gains its first planting', () => {

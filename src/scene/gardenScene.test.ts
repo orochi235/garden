@@ -3,7 +3,7 @@ import { createGardenScene, GARDEN_LAYERS } from './gardenScene';
 
 describe('createGardenScene', () => {
   it('contains the five garden layers in the correct render order', () => {
-    expect(GARDEN_LAYERS).toEqual(['ground', 'blueprint', 'structures', 'zones', 'plantings']);
+    expect(GARDEN_LAYERS).toEqual(['ground', 'blueprint', 'zones', 'structures', 'plantings']);
   });
 
   it('creates an empty scene with no undo history', () => {

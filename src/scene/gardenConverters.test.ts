@@ -84,8 +84,9 @@ describe('gardenToScene', () => {
     const scene = createGardenScene(gardenToScene(g));
     const p = scene.get('p1' as never)!;
     expect(p.kind).toBe('leaf');
-    // Weasel requires child layer === parent layer; structure parents → 'structures' layer.
-    expect(p.layer).toBe('structures');
+    // Plantings render in the dedicated top `plantings` layer (above container
+    // bodies) while staying a scene child of their structure parent.
+    expect(p.layer).toBe('plantings');
     expect(p.parent).toBe('s1');
     expect(p.pose.x).toBe(1);
     expect(p.pose.y).toBe(2);
@@ -98,13 +99,13 @@ describe('gardenToScene', () => {
     }
   });
 
-  it('nests a planting under a zone on the zones layer', () => {
+  it('nests a planting under a zone but keeps it on the top plantings layer', () => {
     const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
     g.zones = [zone({ id: 'z1' })];
     g.plantings = [plant({ id: 'p1', parentId: 'z1' })];
     const scene = createGardenScene(gardenToScene(g));
     const p = scene.get('p1' as never)!;
-    expect(p.layer).toBe('zones');
+    expect(p.layer).toBe('plantings');
     expect(p.parent).toBe('z1');
   });
 
@@ -288,8 +289,8 @@ describe('gardenToSerializedScene', () => {
     expect(serialized.systemLayers.map((l) => l.id)).toEqual([
       'ground',
       'blueprint',
-      'structures',
       'zones',
+      'structures',
       'plantings',
     ]);
     expect(serialized.nodes.find((n) => n.id === ('s1' as never))!.parent).toBeUndefined();

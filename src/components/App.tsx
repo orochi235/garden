@@ -2,7 +2,7 @@ import { asNodeId, type NodeId, useClipboardOps } from '@orochi235/weasel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { createInsertAdapter } from '../canvas/adapters/insert';
-import { CanvasNewPrototype } from '../canvas/CanvasNewPrototype';
+import { GardenCanvas } from '../canvas/GardenCanvas';
 import { loadFixtureFromUrl } from '../dev/fixtureLoader';
 import { useActiveTheme } from '../hooks/useActiveTheme';
 import type { Cultivar } from '../model/cultivars';
@@ -287,7 +287,7 @@ export function App() {
         onMouseDown={(e) => handleResizeStart('left', e)}
       />
       <div className={styles.canvas}>
-        <CanvasNewPrototype />
+        <GardenCanvas />
         <ViewToolbar />
         <LayerSelector />
       </div>

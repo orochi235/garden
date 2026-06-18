@@ -1,11 +1,22 @@
+import type { GestureContext, GroupTransform } from '@orochi235/weasel';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { SceneNode } from '../adapters/gardenScene';
 import { createGardenSceneAdapter, type ScenePose } from '../adapters/gardenScene';
-import type { GestureContext } from '../gestures';
 import { clampStructureZoneToGardenBounds, detectStructureClash } from './structureMoveBehaviors';
+
+/** Build a translate `GroupTransform` from a primary origin to a target pose,
+ *  matching how the dispatcher hands behaviors a uniform transform. */
+function translateTo(
+  origin: Map<string, ScenePose>,
+  primaryId: string,
+  target: { x: number; y: number },
+): GroupTransform {
+  const o = origin.get(primaryId)!;
+  return { kind: 'translate', dx: target.x - o.x, dy: target.y - o.y };
+}
 
 function makeCtx(
   draggedIds: string[],
@@ -42,10 +53,14 @@ describe('clampStructureZoneToGardenBounds', () => {
     const ctx = makeCtx([s.id], origin);
     // Propose dragging far past the right edge: pose (25, 10) → AABB right
     // edge would be at 29 > 20.
-    const result = behavior.onMove!(ctx, { x: 25, y: 10 });
+    const result = behavior.onMove!(ctx, translateTo(origin, s.id, { x: 25, y: 10 }));
     expect(result).toBeTruthy();
-    // Right edge should land at widthFt=20: x = 16.
-    expect((result as { pose: ScenePose }).pose).toEqual({ x: 16, y: 10 });
+    // Right edge should land at widthFt=20 (x=16): origin 10 + dx 6.
+    expect((result as { transform: GroupTransform }).transform).toEqual({
+      kind: 'translate',
+      dx: 6,
+      dy: 0,
+    });
   });
 
   it('clamps past the top-left corner to (0,0)', () => {
@@ -56,8 +71,13 @@ describe('clampStructureZoneToGardenBounds', () => {
 
     const origin = new Map<string, ScenePose>([[s.id, { x: 5, y: 5 }]]);
     const ctx = makeCtx([s.id], origin);
-    const result = behavior.onMove!(ctx, { x: -3, y: -2 });
-    expect((result as { pose: ScenePose }).pose).toEqual({ x: 0, y: 0 });
+    const result = behavior.onMove!(ctx, translateTo(origin, s.id, { x: -3, y: -2 }));
+    // Clamped to (0,0): origin (5,5) + (dx -5, dy -5).
+    expect((result as { transform: GroupTransform }).transform).toEqual({
+      kind: 'translate',
+      dx: -5,
+      dy: -5,
+    });
   });
 
   it('passes through poses that stay in bounds', () => {
@@ -68,7 +88,7 @@ describe('clampStructureZoneToGardenBounds', () => {
 
     const origin = new Map<string, ScenePose>([[s.id, { x: 1, y: 1 }]]);
     const ctx = makeCtx([s.id], origin);
-    expect(behavior.onMove!(ctx, { x: 5, y: 7 })).toBeUndefined();
+    expect(behavior.onMove!(ctx, translateTo(origin, s.id, { x: 5, y: 7 }))).toBeUndefined();
   });
 });
 
@@ -89,7 +109,7 @@ describe('detectStructureClash', () => {
     const origin = new Map<string, ScenePose>([[a.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([a.id], origin);
     // Drag a so its AABB overlaps b at (10,10,3,3).
-    behavior.onMove!(ctx, { x: 11, y: 11 });
+    behavior.onMove!(ctx, translateTo(origin, a.id, { x: 11, y: 11 }));
     expect(useUiStore.getState().dragClashIds).toEqual([b.id]);
   });
 
@@ -104,7 +124,7 @@ describe('detectStructureClash', () => {
     useUiStore.getState().setDragClashIds(['stale']);
     const origin = new Map<string, ScenePose>([[a.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([a.id], origin);
-    behavior.onMove!(ctx, { x: 5, y: 5 });
+    behavior.onMove!(ctx, translateTo(origin, a.id, { x: 5, y: 5 }));
     expect(useUiStore.getState().dragClashIds).toEqual([]);
   });
 
@@ -126,11 +146,15 @@ describe('detectStructureClash', () => {
       [b.id, { x: 15, y: 10 }],
     ]);
     const ctx = makeCtx([a.id, b.id], origin);
-    const result = behavior.onMove!(ctx, { x: 10, y: 5 });
+    const result = behavior.onMove!(ctx, translateTo(origin, a.id, { x: 10, y: 5 }));
     expect(result).toBeTruthy();
-    // Union AABB right edge would be at 23; clamp shifts primary back by -3.
-    // Primary lands at (10 - 3, 5) = (7, 5).
-    expect((result as { pose: ScenePose }).pose).toEqual({ x: 7, y: 5 });
+    // Union AABB right edge would be at 23; clamp shifts the group delta back
+    // by -3. Primary dx 5 → 2 (lands at (7,5)); applied uniformly to secondary.
+    expect((result as { transform: GroupTransform }).transform).toEqual({
+      kind: 'translate',
+      dx: 2,
+      dy: 0,
+    });
   });
 
   it('multi-select group-drag: clash detector flags non-dragged structure overlap on a secondary', () => {
@@ -149,7 +173,7 @@ describe('detectStructureClash', () => {
     ]);
     const ctx = makeCtx([a.id, b.id], origin);
     // Drag dx = +7: a goes to (7,0); b goes to (12,0) — overlaps c at (12,0).
-    behavior.onMove!(ctx, { x: 7, y: 0 });
+    behavior.onMove!(ctx, translateTo(origin, a.id, { x: 7, y: 0 }));
     expect(useUiStore.getState().dragClashIds).toEqual([c.id]);
   });
 

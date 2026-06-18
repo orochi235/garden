@@ -1,7 +1,7 @@
+import type { MoveBehavior } from '@orochi235/weasel';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
-import type { MoveBehavior } from '../gestures';
 
 /**
  * Compute the union AABB (in world coordinates) of every dragged id, applying
@@ -71,9 +71,18 @@ export function clampStructureZoneToGardenBounds(
       const node = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!node) return;
       if (node.kind !== 'structure' && node.kind !== 'zone') return;
+      // Behaviors now receive a uniform `GroupTransform`; reconstruct the
+      // primary's proposed pose from its origin so the AABB math is unchanged.
+      if (proposed.kind !== 'translate') return;
+      const primaryOrigin = ctx.origin.get(ctx.draggedIds[0]);
+      if (!primaryOrigin) return;
+      const proposedPrimary: ScenePose = {
+        x: primaryOrigin.x + proposed.dx,
+        y: primaryOrigin.y + proposed.dy,
+      };
 
       const garden = useGardenStore.getState().garden;
-      const aabb = unionDraggedAABB(adapter, ctx.draggedIds, ctx.origin, proposed);
+      const aabb = unionDraggedAABB(adapter, ctx.draggedIds, ctx.origin, proposedPrimary);
       if (!aabb) return;
 
       let shiftX = 0;
@@ -91,7 +100,10 @@ export function clampStructureZoneToGardenBounds(
       }
 
       if (shiftX === 0 && shiftY === 0) return;
-      return { pose: { x: proposed.x + shiftX, y: proposed.y + shiftY } };
+      // Shift the whole-group delta so every dragged id stays in bounds.
+      return {
+        transform: { kind: 'translate', dx: proposed.dx + shiftX, dy: proposed.dy + shiftY },
+      };
     },
   };
 }
@@ -127,12 +139,11 @@ export function detectStructureClash(adapter: GardenSceneAdapter): MoveBehavior<
         return;
       }
 
+      if (proposed.kind !== 'translate') return;
       const garden = useGardenStore.getState().garden;
       const draggedSet = new Set(ctx.draggedIds);
-      const primaryOrigin = ctx.origin.get(ctx.draggedIds[0]);
-      if (!primaryOrigin) return;
-      const dx = proposed.x - primaryOrigin.x;
-      const dy = proposed.y - primaryOrigin.y;
+      const dx = proposed.dx;
+      const dy = proposed.dy;
 
       const draggedRects: { x: number; y: number; width: number; height: number }[] = [];
       for (const id of ctx.draggedIds) {

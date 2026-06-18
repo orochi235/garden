@@ -5,12 +5,16 @@ import type { FillType, Garden, LayerId, StructureShape } from '../model/types';
 
 export type GardenLayer = LayerId;
 
-/** Render order, low→high. Matches the old structures-under-zones-under-plantings stacking. */
+/** Render order, low→high. Matches the old eric layer stack (`baseList`):
+ *  zones (ground regions) under structures (beds/pots/paths) under plantings.
+ *  Plantings are emitted into the dedicated `plantings` layer (drawn last, on
+ *  top of every container body) — the kit scene slot honors each node's own
+ *  layer, so a planting that is a scene child of a container still draws here. */
 export const GARDEN_LAYERS: readonly GardenLayer[] = [
   'ground',
   'blueprint',
-  'structures',
   'zones',
+  'structures',
   'plantings',
 ];
 
@@ -66,6 +70,18 @@ export type GardenScene = Scene<GardenNodeData, GardenLayer, GardenPose>;
 export type GardenAddNodeSpec = AddNodeSpec<GardenNodeData, GardenLayer, GardenPose>;
 export type GardenSerializedScene = SerializedScene<GardenNodeData, GardenLayer, GardenPose>;
 
+/**
+ * `clipFromPose` that disables the kit's container clip. Used for NESTED
+ * containers (e.g. pots on a patio): their scene pose is parent-LOCAL, but
+ * eric's scene-slot painter renders in world space, so the kit's default
+ * local-pose silhouette clip would clip the world-space body out entirely.
+ * Registered under `CLIP_NONE_KEY` so it round-trips through `loadState`
+ * (functions can't serialize — the key resolves back to this fn via the
+ * scene registry). Must be a STABLE reference for the registry reverse-lookup.
+ */
+export const CLIP_NONE_KEY = 'eric:none';
+export const clipNone = (): null => null;
+
 /** The non-spatial remainder of a Garden — everything the Scene does NOT own. */
 export type GardenBase = Omit<Garden, 'structures' | 'zones' | 'plantings'>;
 
@@ -74,5 +90,9 @@ export function createGardenScene(initial: readonly GardenAddNodeSpec[]): Garden
     systemLayers: GARDEN_LAYERS.map((id) => ({ id })),
     initial,
     historyLimit: GARDEN_HISTORY_LIMIT,
+    // Resolves `clipFromPoseKey` back to `clipNone` after loadState/sceneFromJSON
+    // (see CLIP_NONE_KEY) so nested-container clip-disabling survives a scene
+    // serialize → restore round-trip.
+    registry: { clipFromPose: { [CLIP_NONE_KEY]: clipNone } },
   });
 }

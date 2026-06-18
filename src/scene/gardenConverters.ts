@@ -15,7 +15,7 @@ import type {
   GardenScene,
   GardenSerializedScene,
 } from './gardenScene';
-import { GARDEN_LAYERS } from './gardenScene';
+import { CLIP_NONE_KEY, clipNone, GARDEN_LAYERS } from './gardenScene';
 
 const DEFAULT_FOOTPRINT_FT = 0.5;
 
@@ -61,6 +61,13 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
       layer: 'structures',
       pose: parent ? decomposeRectPose(structurePose(parent), structurePose(s)) : structurePose(s),
       parent: s.parentId ? asNodeId(s.parentId) : null,
+      // A NESTED container (e.g. a pot inside a patio) has a parent-LOCAL scene
+      // pose, but eric's scene-slot painter renders in WORLD space. The kit's
+      // default container clip is built from that local pose, so it would clip
+      // the world-space body out entirely. Disable the clip for nested
+      // containers — their contents stay clipped by the top-level ancestor.
+      // Top-level containers keep the kit default (their pose IS world).
+      ...(isSceneContainer(s) && parent ? { clipFromPose: clipNone } : {}),
       data: {
         kind: 'structure',
         type: s.type,
@@ -116,23 +123,21 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
   for (const z of [...garden.zones].sort(byZ)) emitZone(z);
 
   // Plantings (leaves) — always have a parentId; parent already emitted above.
-  // Weasel requires a child to be on the same layer as its parent, so we derive
-  // the layer from whether the parent is a structure or zone.
-  // Plantings have no zIndex and are therefore emitted in array order (no sort).
+  // They render in the dedicated top `plantings` layer (above every container
+  // body), even though they remain scene CHILDREN of their container for
+  // hit-testing / move / reparent. The kit's layer-major render order + the
+  // per-node-layer scene-slot painter honor a child's own layer, and the scene
+  // allows a child on a higher layer than its parent. (We still validate the
+  // parentId resolves, to catch malformed gardens.) No zIndex → array order.
   const zoneIds = new Set(garden.zones.map((z) => z.id));
   for (const p of garden.plantings) {
-    let layer: 'zones' | 'structures';
-    if (zoneIds.has(p.parentId)) {
-      layer = 'zones';
-    } else if (structById.has(p.parentId)) {
-      layer = 'structures';
-    } else {
+    if (!zoneIds.has(p.parentId) && !structById.has(p.parentId)) {
       throw new Error(`gardenToScene: planting '${p.id}' has unknown parentId '${p.parentId}'`);
     }
     specs.push({
       id: asNodeId(p.id),
       kind: 'leaf',
-      layer,
+      layer: 'plantings',
       pose: plantingPose(p),
       parent: asNodeId(p.parentId),
       data: { kind: 'planting', cultivarId: p.cultivarId, label: p.label, icon: p.icon },
@@ -160,6 +165,11 @@ export function gardenToSerializedScene(garden: Garden): GardenSerializedScene {
       data: s.data,
     };
     if (s.parent != null) node.parent = s.parent;
+    // clipFromPose is a function (can't serialize) — emit its registry key so
+    // loadState resolves it back. Only `clipNone` (nested containers) is used.
+    if (s.kind === 'container' && s.clipFromPose === clipNone) {
+      node.clipFromPoseKey = CLIP_NONE_KEY;
+    }
     return node;
   });
   return { version: 1, systemLayers: GARDEN_LAYERS.map((id) => ({ id })), nodes };

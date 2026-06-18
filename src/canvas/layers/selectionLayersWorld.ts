@@ -13,7 +13,7 @@ import { descriptorById } from './worldLayerData';
 /**
  * Single source of truth for selection-related layer metadata. Order here
  * matches the canonical insertion order at the canvas registration site
- * (`CanvasNewPrototype` adds group-outlines, then selection-outlines, then
+ * (`GardenCanvas` adds group-outlines, then selection-outlines, then
  * selection-handles). The `debug-all-handles` overlay registered behind the
  * `?debug=handles` token is intentionally kept out of this list — it's a
  * debug-gated overlay, not a regular sidebar-toggleable layer.

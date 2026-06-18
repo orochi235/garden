@@ -4,7 +4,13 @@ import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { FILL_COLORS } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
-import type { PlantingNode, SceneNode, ScenePose, StructureNode, ZoneNode } from '../adapters/gardenScene';
+import type {
+  PlantingNode,
+  SceneNode,
+  ScenePose,
+  StructureNode,
+  ZoneNode,
+} from '../adapters/gardenScene';
 import { type PatternId, paintFor } from '../patterns';
 import { plantDrawCommands } from '../plantRenderers';
 import { circlePolygon, type DrawCommand, ellipsePolygon } from '../util/weaselLocal';
@@ -277,9 +283,10 @@ interface PlantingParentLite {
 }
 
 /** Resolve a planting's parent (structure or zone) + sibling count from store. */
-function resolvePlantingParent(
-  p: Planting,
-): { parent: PlantingParentLite | null; siblingCount: number } {
+function resolvePlantingParent(p: Planting): {
+  parent: PlantingParentLite | null;
+  siblingCount: number;
+} {
   const g = useGardenStore.getState().garden;
   const z = g.zones.find((x) => x.id === p.parentId);
   const s = z ? undefined : g.structures.find((x) => x.id === p.parentId);

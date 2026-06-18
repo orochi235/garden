@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { CanvasNewPrototype } from './CanvasNewPrototype';
+import { GardenCanvas } from './GardenCanvas';
 
 beforeAll(() => {
   // jsdom lacks ResizeObserver; useCanvasSize needs it. Stub minimally.
@@ -13,10 +13,10 @@ beforeAll(() => {
   }
 });
 
-describe('CanvasNewPrototype', () => {
+describe('GardenCanvas', () => {
   it('mounts without console errors', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { unmount } = render(<CanvasNewPrototype />);
+    const { unmount } = render(<GardenCanvas />);
     unmount();
     expect(errSpy).not.toHaveBeenCalled();
     errSpy.mockRestore();

@@ -1,10 +1,8 @@
+import type { MoveBehavior } from '@orochi235/weasel';
+import { snapToGrid as weaselSnapToGrid } from '@orochi235/weasel/move';
 import { useGardenStore } from '../../store/gardenStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
-import {
-  type MoveBehavior,
-  snapBackOrDelete as weaselSnapBackOrDelete,
-  snapToGrid as weaselSnapToGrid,
-} from '../gestures';
+import { plantingLayoutFor } from '../adapters/plantingLayout';
 
 /**
  * Mapping from Phase 5 deferral vocabulary → eric implementations:
@@ -12,7 +10,7 @@ import {
  * - `snapToGrid`        → `snapStructureZoneToGrid`  (wraps weasel's `snapToGrid`,
  *                          gated to structures/zones, honours per-structure
  *                          `snapToGrid: false`, alt bypasses).
- * - `snapToContainer`   → `trackPlantingSnap` (kept in useEricSelectTool.ts).
+ * - `snapToContainer`   → `trackPlantingSnap` (this file).
  *                          Eric does NOT use weasel's generic `snapToContainer`
  *                          because the in-flight visual is owned by the layout
  *                          strategy (see `getLayout()`); we only need to mirror
@@ -68,40 +66,35 @@ export function snapStructureZoneToGrid(adapter: GardenSceneAdapter): MoveBehavi
 /**
  * Snap-back: if a planting is released over no snap target, cancel the
  * gesture so the plant reverts to its origin instead of free-committing in
- * empty space. Wraps weasel's `snapBackOrDelete` with `radius: Infinity`
- * (any release with no snap aborts) and `'snap-back'` policy.
+ * empty space.
+ *
+ * This behavior is a thin slot-bound GUARD that DEFERS to the kit's container
+ * layout system (`layouts` / `LayoutStrategy.commitDrop`): when the cursor is
+ * released over a container the layout would accept, it returns `undefined`
+ * (defer) so the kit's `commitDrop` owns the in-bounds drop + reparent. Only a
+ * release in free space returns `null` (abort → snap back to origin). It uses
+ * the SAME acceptance test as the kit layout pass (`plantingLayoutFor.contains`)
+ * so the two never disagree — the previous version ran a parallel snap system
+ * (`trackPlantingSnap` + `findSnapTarget`) that claimed the commit first and
+ * stopped the kit layout from ever committing.
  */
 export function requirePlantingDrop(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
-  // Infinity radius → any no-snap release counts as "within radius" → returns
-  // null (gesture aborted). Snap-back policy → never deletes.
-  const inner = weaselSnapBackOrDelete<ScenePose>({
-    radius: Number.POSITIVE_INFINITY,
-    onFreeRelease: 'snap-back',
-  });
   return {
-    onStart(ctx) {
-      const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
-      if (!obj || obj.kind !== 'planting') return;
-      inner.onStart?.(ctx);
-    },
     onEnd(ctx) {
       const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
-      if (!obj || obj.kind !== 'planting') return;
-      // `ctx.snap` is set by `findSnapContainer`'s attraction radius, which
-      // reaches BEYOND the container bounds. The move's layout pass only
-      // commits a drop when the dragged center is *inside* the container, so an
-      // attraction-only release (cursor outside the bounds) commits nothing —
-      // and the controller would otherwise fall through to a raw-pose commit,
-      // stranding the planting at the cursor ("an odd place in the container").
-      // Plantings are slot-bound; treat an attraction-only snap as a free
-      // release so it snaps back to origin instead.
-      const snap = ctx.snap;
-      const cursorInside =
-        (snap?.metadata as { cursorInside?: boolean } | undefined)?.cursorInside === true;
-      if (snap && !cursorInside) {
-        return inner.onEnd?.({ ...ctx, snap: null });
-      }
-      return inner.onEnd?.(ctx);
+      if (!obj || obj.kind !== 'planting') return; // non-planting → defer
+      const garden = useGardenStore.getState().garden;
+      const getGarden = () => garden;
+      // The release point in WORLD coords (eric's container geometry is world).
+      const point = { x: ctx.pointer.worldX, y: ctx.pointer.worldY };
+      // Released over any container whose layout would accept this drop?
+      // (Same `contains` the kit's layout pass uses, so we agree with it.)
+      const overAcceptingContainer = [...garden.structures, ...garden.zones].some((c) => {
+        const layout = plantingLayoutFor(getGarden, c.id);
+        return layout?.contains?.({ x: 0, y: 0 }, point) === true;
+      });
+      // Defer → kit `commitDrop` lands it in the slot. Free space → snap back.
+      return overAcceptingContainer ? undefined : null;
     },
   };
 }

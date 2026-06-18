@@ -1,34 +1,45 @@
-import type { GridSlotConfig, RenderLayer } from '@orochi235/weasel';
+import type {
+  ActionsProp,
+  AnyTool,
+  GridSlotConfig,
+  MoveBehavior,
+  NodeId,
+  Op,
+  PoseComposition,
+  RenderLayer,
+  SelectionApi,
+  ToolsApi,
+} from '@orochi235/weasel';
 import {
   ActiveToolContextProviderIfRoot,
+  composeRectPose,
+  decomposeRectPose,
+  defaultCommitAdapter,
   SceneCanvas,
   useCanvasSize,
+  useDepSource,
   useInsertTool,
-  useTools,
 } from '@orochi235/weasel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { GardenScene } from '../scene/gardenScene';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import { useUiStore } from '../store/uiStore';
-import { createGardenSceneAdapter } from './adapters/gardenScene';
+import { expandToGroups } from '../utils/groups';
+import { createGardenSceneAdapter, type ScenePose } from './adapters/gardenScene';
 import { createInsertAdapter } from './adapters/insert';
+import { plantingLayoutFor } from './adapters/plantingLayout';
 import { isDebugEnabled } from './debug';
-import { AREA_SELECT_DRAG_KIND, createAreaSelectDrag } from './drag/areaSelectDrag';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
-import { createMoveDrag, MOVE_DRAG_KIND } from './drag/moveDrag';
 import { createPlotDrag, PLOT_DRAG_KIND, type PlotPutative } from './drag/plotDrag';
-import { createResizeDrag, RESIZE_DRAG_KIND } from './drag/resizeDrag';
+import type { WorldRect } from './hitTest';
+import { createStructureClashLayer } from './layers/clashLayer';
 import { createDebugLayers } from './layers/debugLayers';
 import { createGardenDrawOne } from './layers/gardenDrawOne';
 import { createPlantingLayers } from './layers/plantingLayersWorld';
 import { setRegisteredLayers } from './layers/renderLayerRegistry';
-import {
-  createAllHandlesLayer,
-  createGroupOutlineLayer,
-  createSelectionHandlesLayer,
-  createSelectionOutlineLayer,
-} from './layers/selectionLayersWorld';
+import { createAllHandlesLayer, createGroupOutlineLayer } from './layers/selectionLayersWorld';
 import { createStructureLayers } from './layers/structureLayersWorld';
 import { createSystemLayers } from './layers/systemLayersWorld';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
@@ -43,15 +54,20 @@ import { createZoneLayers } from './layers/zoneLayersWorld';
 import { NurseryCanvas } from './NurseryCanvas';
 import { onIconLoad } from './plantRenderers';
 import { useGardenSelectionApi } from './selectionBridge';
+import { requirePlantingDrop, snapStructureZoneToGrid } from './tools/snapMoveBehaviors';
+import {
+  clampStructureZoneToGardenBounds,
+  detectStructureClash,
+} from './tools/structureMoveBehaviors';
+import { useEricCanvasClickTool } from './tools/useEricCanvasClickTool';
 import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
 import { useEricCycleTool } from './tools/useEricCycleTool';
 import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
-import { useEricSelectTool } from './tools/useEricSelectTool';
-import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
+import { useEricSelectAreaTool } from './tools/useEricSelectAreaTool';
 import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
 
-export function CanvasNewPrototype() {
+export function GardenCanvas() {
   const appMode = useUiStore((s) => s.appMode);
   // HEAD's `useTools` reads `useActiveToolContext()`, which throws without an
   // `ActiveToolContextProvider` ancestor (the pin's `useTools` had no such
@@ -59,7 +75,7 @@ export function CanvasNewPrototype() {
   // `IfRoot` reuses an outer provider if the app ever adds one higher up.
   return (
     <ActiveToolContextProviderIfRoot>
-      {appMode === 'nursery' ? <NurseryCanvas /> : <GardenCanvasNewPrototype />}
+      {appMode === 'nursery' ? <NurseryCanvas /> : <GardenCanvasInner />}
     </ActiveToolContextProviderIfRoot>
   );
 }
@@ -74,7 +90,82 @@ function clampZoom(z: number): number {
   return Math.min(GARDEN_MAX_ZOOM, Math.max(GARDEN_MIN_ZOOM, z));
 }
 
-function GardenCanvasNewPrototype() {
+/** Capability sets per garden view mode, consumed by `getActiveMode` so the
+ *  kit gesture dispatcher's eligibility filter only runs its actions in the
+ *  modes that should own pointer gestures:
+ *   - select / draw → kit owns move/resize/area-select.
+ *   - select-area   → kit owns area-select only (force-marquee); transforms off.
+ *   - insert (plotting) → kit owns insert only.
+ *   - pan / zoom    → no kit actions; eric's legacy pan/zoom tools own drags.
+ *  Eric's legacy pan/zoom tools carry no dispatcher bindings, so without this
+ *  gate `moveAction`/`areaSelectAction`'s ambient bindings would also fire on a
+ *  pan/zoom drag (double-handling). */
+const CAP_SELECT = new Set(['transforms-selection', 'creates-selection', 'edits-page']);
+const CAP_AREA = new Set(['creates-selection']);
+const CAP_INSERT = new Set(['creates-shapes']);
+const CAP_NONE = new Set<string>();
+
+/**
+ * Bridges the kit's gesture-commit pipeline into the garden's undo history by
+ * registering two deps — `applyOps` (the commit channel) and `poseComposition`
+ * (the local-pose model the commit's frame math rides on). These live on the
+ * dep registry, which only exists inside `<SceneCanvas>`'s tree — so this
+ * renders as a CHILD of `<SceneCanvas>`, not a sibling. The kit's default
+ * actions (move / resize / delete / nudge / …) consume both:
+ *
+ *  - `applyOps(ops, label)` routes a gesture's committed ops through eric's own
+ *    undo instead of the kit's internal history. We checkpoint the garden store
+ *    (eric's snapshot-stack undo) BEFORE applying, then commit the kit's
+ *    LOCAL-frame ops to the live scene via `defaultCommitAdapter` — which
+ *    applies them directly on scene poses with no world↔local conversion. (Do
+ *    NOT use `createGardenSceneAdapter` here: it's world-in and would
+ *    double-convert.) The store's scene subscription recomposes `garden`
+ *    automatically once the batch lands, so the projection + UI refresh for free.
+ *  - `poseComposition` tells the kit eric's scene is LOCAL-pose (children store
+ *    parent-relative coords), so its layout-drop / reparent frame math composes
+ *    correctly. Without it the kit defaults to IDENTITY (absolute/world) and
+ *    mis-frames nested drops.
+ */
+function GardenHistoryBridge({ scene }: { scene: GardenScene }) {
+  useDepSource('applyOps', () => (ops: Op[], label: string) => {
+    useGardenStore.getState().checkpoint();
+    scene.applyBatch(ops, label, defaultCommitAdapter(scene));
+  });
+  useDepSource(
+    'poseComposition',
+    () => ({ compose: composeRectPose, decompose: decomposeRectPose }) as PoseComposition<unknown>,
+  );
+  return null;
+}
+
+/**
+ * Overrides the kit's default `areaSelect` dep (marquee hit-test). The kit
+ * default (`hitTestAABB`) reads RAW node poses — parent-LOCAL for eric's nested
+ * plantings — and tests them against the world-space marquee, so a plant in a
+ * far-right bed (small local x) wrongly matches a top-left marquee. It also
+ * skips container nodes, so it can't marquee-select beds/zones. eric's
+ * `adapter.hitTestArea` is world-frame, footprint-precise, and container-
+ * inclusive — the same domain hit-test the pre-kit marquee used, and the mirror
+ * of how `geometry.pickEvery` feeds `adapter.hitAll` for click selection. The
+ * `areaSelect` dep is the kit's sanctioned per-consumer override point for
+ * exactly this (selection get/set stay on the shared SelectionApi).
+ */
+function GardenAreaSelectDep({
+  adapter,
+  selection,
+}: {
+  adapter: { hitTestArea(rect: WorldRect): string[] };
+  selection: SelectionApi;
+}) {
+  useDepSource('areaSelect', () => ({
+    hitTestArea: (bounds) => adapter.hitTestArea(bounds) as NodeId[],
+    getSelection: () => selection.get() as NodeId[],
+    setSelection: (ids) => selection.set(ids),
+  }));
+  return null;
+}
+
+function GardenCanvasInner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
   const garden = useGardenStore((s) => s.garden);
@@ -271,18 +362,16 @@ function GardenCanvasNewPrototype() {
     const getZones = () => useGardenStore.getState().garden.zones;
     const getPlantings = () => useGardenStore.getState().garden.plantings;
 
-    // Putative-drag preview layer — Phase 2 dispatches to the
-    // garden-palette-plant drag (cursor-following ghost during palette →
-    // garden plantings drop) and the eric-move drag (per-id ghost layout +
-    // snap-target outline during structure / zone / planting moves).
+    // Putative-drag preview layer — renders the palette → garden plant ghost
+    // and the plot (rectangle) draw preview from `uiStore.dragPreview`. The
+    // move / resize / area-select ghosts now render through the kit dispatcher
+    // (`usePreviewGhostLayer` + the dispatcher overlay), so only the two
+    // eric-owned putative drags remain registered here.
     const dragPreviewRegistry = {
       [createGardenPaletteDrag({ getEntry: () => null }).kind]: createGardenPaletteDrag({
         getEntry: () => null,
       }),
-      [MOVE_DRAG_KIND]: createMoveDrag(),
-      [RESIZE_DRAG_KIND]: createResizeDrag(),
       [PLOT_DRAG_KIND]: createPlotDrag(),
-      [AREA_SELECT_DRAG_KIND]: createAreaSelectDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createZoneLayers(getZones, getUi),
@@ -290,8 +379,7 @@ function GardenCanvasNewPrototype() {
       ...createPlantingLayers(getPlantings, getZones, getStructures, getUi),
       createDragPreviewLayer(dragPreviewRegistry as never),
       createGroupOutlineLayer(getStructures, getUi),
-      createSelectionOutlineLayer(getPlantings, getZones, getStructures, getUi),
-      createSelectionHandlesLayer(getZones, getStructures, getUi),
+      createStructureClashLayer(getStructures, getUi),
       ...createSystemLayers(),
     ];
     const debugLayers = createDebugLayers('garden', () => useGardenStore.getState().garden);
@@ -312,7 +400,17 @@ function GardenCanvasNewPrototype() {
       ...wrapLayersWithVisibility(baseList, () => useUiStore.getState().renderLayerVisibility),
       ...debugLayers,
     ];
-    const map: Record<string, { layer: RenderLayer<unknown> } | GridSlotConfig> = {};
+    const map: Record<string, { layer: RenderLayer<unknown>; before?: string } | GridSlotConfig> =
+      {};
+    // Overlays that belong UNDER the plant icons but ABOVE the container bodies
+    // (cell-grid slot dots, spacing-conflict rings, spacing rings) — matching
+    // the pre-scene-slot stack where these drew below `planting-icons`. Plant
+    // icons now render in the scene slot's top `plantings` sub-layer, which the
+    // kit exposes as the addressable slot `scene:plantings`; slot these just
+    // before it (so they sit above `scene:structures`/`scene:zones` bodies,
+    // below the icons). Everything else (labels, measurements, walls, group/
+    // clash highlights) defaults to the tail, above the icons.
+    const BELOW_ICONS = new Set(['container-overlays', 'planting-conflicts', 'planting-spacing']);
     const gridConfig: GridSlotConfig = {
       spacing: gridCellSizeFt,
       bounds: () => {
@@ -325,7 +423,7 @@ function GardenCanvasNewPrototype() {
     };
     map.grid = gridConfig;
     list.forEach((l) => {
-      map[l.id] = { layer: l };
+      map[l.id] = BELOW_ICONS.has(l.id) ? { layer: l, before: 'scene:plantings' } : { layer: l };
     });
     return map;
     // iconTick is intentional — bumps when an icon bitmap finishes decoding
@@ -381,32 +479,22 @@ function GardenCanvasNewPrototype() {
   };
 
   // --- Tools ---
-  const selectTool = useEricSelectTool(adapter, { insertAdapter });
-  // Second select variant: in 'select-area' viewMode, drags on object bodies
-  // are reinterpreted as marquee strokes (no move/resize/clone).
-  const selectAreaTool = useEricSelectTool(adapter, {
-    insertAdapter,
-    forceMarquee: true,
-    toolId: 'eric-select-area',
-  });
-  const cycleTool = useEricCycleTool(adapter, insertAdapter);
+  // The kit gesture dispatcher owns move / resize / area-select / clone through
+  // its internal `select` tool (configured via `selectTool` on <SceneCanvas>).
+  // Eric keeps its custom pan / zoom / insert / cycle tools, plus a focused
+  // force-marquee tool (select-area) and an ambient click tool (clear +
+  // group-promote). Active-slot switching is driven from `viewMode` below.
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();
-  const wheelZoom = useEricWheelZoomTool();
   const clickZoom = useEricClickZoomTool();
-  // Plot (rectangle) drag — migrated onto the putative-drag framework.
-  // An `InsertBehavior` mirrors the in-flight start/current points into
-  // `uiStore.dragPreview` on every frame so the framework's `dragPreviewLayer`
-  // can render the rectangle via `plotDrag.renderPreview`. The kit's internal
-  // screen-space `insert-overlay` marquee is suppressed (fully transparent
-  // overlayStyle) so the framework owns the visual. Commit still flows
-  // through `useInsert.end` → `dispatchApplyBatch` → `insertAdapter.applyBatch`,
-  // which calls `gardenStore.checkpoint()` exactly once per gesture.
-  // See `src/canvas/drag/plotDrag.ts` for the rationale.
+  const cycleTool = useEricCycleTool(adapter, insertAdapter);
+  const clickTool = useEricCanvasClickTool(adapter);
+  const selectAreaTool = useEricSelectAreaTool();
+  // Plot (rectangle) drag — migrated onto the putative-drag framework. See the
+  // long-form note preserved below.
   const insertTool = useInsertTool(insertAdapter, {
     onGestureEnd: () => {
       useUiStore.getState().setPlottingTool(null);
-      // Clear the slot — the gesture (committed or cancelled) is over.
       const ui = useUiStore.getState();
       if (ui.dragPreview && ui.dragPreview.kind === PLOT_DRAG_KIND) {
         ui.setDragPreview(null);
@@ -442,91 +530,207 @@ function GardenCanvasNewPrototype() {
       },
     ],
   });
-  // Palette → garden drop tool (non-claiming pseudo-tool). Mirrors the
-  // nursery `usePaletteDropTool`: subscribes to `palettePointerPayload`,
-  // owns ghost + threshold drag + commit. Reads our local `viewRef` to do
-  // screen→world math (the canvas owns its viewport state).
+  // Palette → garden drop tool (non-claiming pseudo-tool). Subscribes to
+  // `palettePointerPayload`, owns ghost + threshold drag + commit.
   useGardenPaletteDropTool({ containerRef, viewRef });
+
+  // Domain move behaviors threaded into the kit `move` action via the internal
+  // select tool's binding `opts.behaviors`. Typed against eric's `ScenePose`
+  // (position-only); the kit drives them with the scene's rect `GardenPose`,
+  // which is a structural superset, so the cast is sound (behaviors only read
+  // x/y + `node.data`).
+  const selectTool = useMemo(
+    () => ({
+      move: {
+        behaviors: [
+          snapStructureZoneToGrid(adapter),
+          // snap → clamp → clash: clamp is the last word on position; clash
+          // needs the post-snap/clamp pose. Planting behaviors are kind-narrowed.
+          clampStructureZoneToGardenBounds(adapter),
+          detectStructureClash(adapter),
+          // Slot-bound guard: defers in-bounds planting drops to the kit's
+          // container layout (`layouts` → commitDrop); only snaps back a
+          // release in free space.
+          requirePlantingDrop(adapter),
+        ] as unknown as MoveBehavior<unknown>[],
+        // Dragging one grouped structure moves all `groupId` siblings. Selection
+        // in the UI store stays narrow so the kit's single-target resize
+        // affordance is preserved on the clicked member.
+        expandIds: (ids: string[]) =>
+          expandToGroups(ids, useGardenStore.getState().garden.structures),
+      },
+      // Plantings have a fixed cultivar footprint, not a user-editable rect, so
+      // they aren't resizable. The kit folds this predicate over the selection
+      // into the `selection.resize-handles` visibility rule, which gates both
+      // the painted handles AND the resize affordance (visible == hittable).
+      // Structures/zones (everything not a planting) keep their handles.
+      resize: {
+        resizable: (id: string) =>
+          !useGardenStore.getState().garden.plantings.some((p) => p.id === id),
+      },
+      // Garden structures/zones don't rotate — disable rotation entirely
+      // (drops the rotate action + hides the rotation-handle chrome).
+      rotate: false as const,
+    }),
+    [adapter],
+  );
+
+  // Hit-test + bounds overrides for the kit select tool. `pickEvery` returns
+  // eric's domain hit stack (plantings over structures over zones, footprint-
+  // precise); the kit collapses parent/child overlap via `pickTopMostHit`.
+  const geometry = useMemo(
+    () => ({
+      pickEvery: (worldX: number, worldY: number): string[] =>
+        adapter.hitAll(worldX, worldY).map((n) => n.id),
+      boundsOf: (id: string) => {
+        const b = adapter.getBounds(id);
+        return b ? { x: b.x, y: b.y, width: b.width, height: b.length } : null;
+      },
+    }),
+    [adapter],
+  );
+
+  // Container layout strategies, keyed by container id — drives the kit move
+  // action's reflow-on-enter + commit-on-drop for plantings dropped into beds.
+  const layouts = useMemo(
+    () => (id: string) => plantingLayoutFor(() => useGardenStore.getState().garden, id),
+    [],
+  );
 
   const viewMode = useUiStore((s) => s.viewMode);
   const plottingTool = useUiStore((s) => s.plottingTool);
+
+  // Active dispatcher tool id, driven by viewMode + plotting state.
   const activeToolId = useMemo(() => {
     if (plottingTool) return insertTool.id;
     switch (viewMode) {
       case 'pan':
         return leftDragPan.id;
       case 'select':
-      case 'draw': // insertTool activates above when plottingTool is set; bare draw = select
-        return selectTool.id;
+      case 'draw':
+        return 'select';
       case 'select-area':
-        // Force-marquee variant: drag-from-body draws a marquee instead of moving.
         return selectAreaTool.id;
       case 'zoom':
-        // Click-to-zoom around the cursor; shift-click zooms out. Wheel-zoom
-        // remains always-on. Double-click on the toolbar zoom button still
-        // resets to fit-view (handled in the toolbar, not here).
         return clickZoom.id;
       default:
-        return selectTool.id;
+        return 'select';
     }
-  }, [
-    viewMode,
-    plottingTool,
-    leftDragPan.id,
-    selectTool.id,
-    selectAreaTool.id,
-    insertTool.id,
-    clickZoom.id,
-  ]);
+  }, [viewMode, plottingTool, leftDragPan.id, selectAreaTool.id, insertTool.id, clickZoom.id]);
 
-  const tools = useTools({
-    active: activeToolId,
-    registry: {
-      [selectTool.id]: selectTool,
-      [selectAreaTool.id]: selectAreaTool,
-      [cycleTool.id]: cycleTool,
+  // Mode + capabilities reported to the dispatcher's eligibility filter (see
+  // CAP_* above). Reads live store state so it has no render-scoped deps.
+  const getActiveMode = useCallback(() => {
+    const ui = useUiStore.getState();
+    if (ui.plottingTool) return { id: 'insert', allowedCapabilities: CAP_INSERT };
+    switch (ui.viewMode) {
+      case 'pan':
+      case 'zoom':
+        return { id: ui.viewMode, allowedCapabilities: CAP_NONE };
+      case 'select-area':
+        return { id: 'select-area', allowedCapabilities: CAP_AREA };
+      default:
+        return { id: 'normal', allowedCapabilities: CAP_SELECT };
+    }
+  }, []);
+
+  // Capture the internal `ToolsApi` SceneCanvas synthesizes so we can drive the
+  // active slot from `viewMode`. Child (SceneCanvas) effects run before this
+  // parent effect, so the ref is populated before the first switch.
+  const toolsApiRef = useRef<ToolsApi | null>(null);
+  const handleToolsCreated = useCallback((t: ToolsApi) => {
+    toolsApiRef.current = t;
+  }, []);
+  useEffect(() => {
+    toolsApiRef.current?.setActive(activeToolId);
+  }, [activeToolId]);
+
+  // Eric tools added alongside the internal select tool. Foreground (switchable)
+  // tools go in the patch-form `tools` record; always-on tools (right-drag pan,
+  // alt-click cycle, canvas click) go in `ambient`. Wheel zoom is the kit's
+  // `viewport.zoom` action (plain-wheel mode) — see the `viewport` prop below.
+  const toolsPatch = useMemo<Record<string, AnyTool>>(
+    () => ({
       [leftDragPan.id]: leftDragPan,
-      [insertTool.id]: insertTool,
       [clickZoom.id]: clickZoom,
-    },
-    ambient: [rightDragPan, wheelZoom],
-  });
+      [insertTool.id]: insertTool,
+      [selectAreaTool.id]: selectAreaTool,
+    }),
+    [leftDragPan, clickZoom, insertTool, selectAreaTool],
+  );
+  const ambient = useMemo<AnyTool[]>(
+    () => [rightDragPan, cycleTool, clickTool],
+    [rightDragPan, cycleTool, clickTool],
+  );
+
+  // Disable kit actions whose eric semantics we own: `clearSelection` and
+  // group-promote live in `eric-canvas-click`; clone/duplicate stay in
+  // `eric-cycle` (alt-click then alt-drag). Disabling clone leaves the select
+  // tool's alt-drag binding inert so the cycle tool owns alt-drag cloning.
+  const actions = useMemo<ActionsProp>(
+    () => ({ clearSelection: null, clone: null, duplicate: null }) as ActionsProp,
+    [],
+  );
 
   // The live kit Scene is the spatial store of record (identity-stable across
   // in-place loadState restores), so capture it once for <SceneCanvas>.
   const scene = useMemo(() => useGardenStore.getState().getScene(), []);
-  // Bridge uiStore selection into the kit's SelectionApi shape.
   const selectionApi = useGardenSelectionApi();
-  // The kit scene slot now paints committed entity BODIES via one per-node
-  // painter (`createGardenDrawOne`). Eric's domain layers keep everything else
-  // (labels, highlights, overlays, selection chrome) as custom-keyed layers,
-  // which the kit merges into the tail (above the scene slot).
+
+  // Kit scene-slot painter. The kit drives the slot from the live `GardenScene`,
+  // handing `drawOne` a kit `Node<GardenNodeData,…>` + the scene's geometry-only
+  // `GardenPose`. `createGardenDrawOne` is written against eric's own `SceneNode`
+  // (full domain entity in `.data`) + a WORLD `ScenePose`, so we bridge by id:
+  // `adapter.getNode(id)` rebuilds the full entity, and we compose the kit pose
+  // to world.
   //
-  // The kit drives the scene slot from the live `GardenScene`, so its `drawOne`
-  // receives a kit `Node<GardenNodeData, …>` + the scene's (geometry-only)
-  // `GardenPose`. `createGardenDrawOne` is written against eric's own
-  // `SceneNode` (full domain entity in `.data`) + world `ScenePose`, so we
-  // bridge by node id through eric's scene adapter: `getNode(id)` rebuilds the
-  // full entity and `getPose(id)` returns its WORLD position — exactly the
-  // store-backed values the old body layers drew, keeping committed output
-  // pixel-identical. The kit pose is intentionally ignored (it stores
-  // parent-local child coords; the adapter composes world).
+  // The kit pose is parent-LOCAL for plantings (world for structures/zones) and
+  // carries the live PREVIEW pose during a drag (via `usePreviewGhostLayer`).
+  // Composing it to world makes drag ghosts render at the dragged location;
+  // for committed render the composition is pixel-identical to the store world
+  // pose because the store's `garden` is derived from this same scene.
   const sceneCanvasLayers = useMemo(() => {
     const ericDrawOne = createGardenDrawOne(getUi);
     const drawOne = (
       kitNode: { id: string },
-      _kitPose: unknown,
+      kitPose: { x: number; y: number } | null,
       kitView: Parameters<typeof ericDrawOne>[2],
     ): ReturnType<typeof ericDrawOne> => {
       const node = adapter.getNode(kitNode.id);
       if (!node) return [];
-      return ericDrawOne(node, adapter.getPose(node.id), kitView);
+      let world: ScenePose;
+      if (kitPose == null) {
+        world = adapter.getPose(node.id);
+      } else {
+        // The kit pose is parent-LOCAL for ANY node that is a scene child of a
+        // container — plantings in a bed/zone, but also structures nested in a
+        // container (e.g. pots on a patio). Compose the parent's world origin so
+        // the body renders at its real location; top-level nodes have no parent
+        // and their kit pose is already world. The store holds recomposed world
+        // coords, so a single parent lookup suffices even for deeper nesting.
+        const parentId = (node.data as { parentId?: string | null }).parentId ?? null;
+        if (parentId) {
+          const g = useGardenStore.getState().garden;
+          const parent =
+            g.structures.find((s) => s.id === parentId) ?? g.zones.find((z) => z.id === parentId);
+          world = { x: kitPose.x + (parent?.x ?? 0), y: kitPose.y + (parent?.y ?? 0) };
+        } else {
+          world = { x: kitPose.x, y: kitPose.y };
+        }
+      }
+      return ericDrawOne(node, world, kitView);
     };
     return {
       scene: { drawOne: drawOne as never },
+      // The kit's default selection-overlay `poseById` reads `adapter.getPose`,
+      // which is the scene pose — parent-LOCAL for contained items (plantings,
+      // nested structures), so the chrome would draw near the world origin.
+      // Supply the WORLD AABB (same source as `geometry.boundsOf`) so the
+      // selection box + handles sit on the entity at its real location.
+      selectionOverlay: { poseById: (id: string) => geometry.boundsOf(id) as never },
       ...layers,
     };
-  }, [adapter, getUi, layers]);
+  }, [adapter, getUi, layers, geometry]);
 
   return (
     <div
@@ -549,12 +753,30 @@ function GardenCanvasNewPrototype() {
           view={toKitView(view)}
           onViewChange={handleViewChange}
           layers={sceneCanvasLayers}
-          tools={tools}
+          defaultTools={['select']}
+          selectTool={selectTool as never}
+          geometry={geometry}
+          layouts={layouts as never}
+          tools={toolsPatch}
+          ambient={ambient}
+          actions={actions}
+          getActiveMode={getActiveMode}
+          // Wheel zoom is the kit's `viewport.zoom` action in plain-wheel mode
+          // (bare wheel = zoom, anchored at cursor) with eric's px-per-foot
+          // scale clamp (~5–500); the kit default is Cmd-wheel + a 0.1–8 clamp.
+          // Wheel PAN stays off — eric pans via its drag tools / StatusBar, and
+          // a plain-wheel pan would compete with plain-wheel zoom. Click zoom +
+          // left/right-drag pan remain eric tools (ambient / tools patch).
+          viewport={{ pan: false, zoom: { wheel: 'plain', min: 5, max: 500 } }}
+          onToolsCreated={handleToolsCreated}
           selection={selectionApi}
           selectionMode="multi"
-          enableGestureDispatcher={false}
+          enableGestureDispatcher={true}
           enableKeybindings={false}
-        />
+        >
+          <GardenHistoryBridge scene={scene} />
+          <GardenAreaSelectDep adapter={adapter} selection={selectionApi} />
+        </SceneCanvas>
       )}
     </div>
   );

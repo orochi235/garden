@@ -11,7 +11,7 @@ import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
  * (built on `useInsert` + `useDragRect`). It owns pointer routing, overlay
  * state, click-vs-drag dispatch, and commit via `InsertAdapter.commitInsert`.
  *
- * `CanvasNewPrototype` mirrors `insertTool.controller.overlay` (well, the
+ * `GardenCanvas` mirrors `insertTool.controller.overlay` (well, the
  * tool's exposed in-flight bounds via the controller it was built from) into
  * `uiStore.dragPreview` on each frame, and this `Drag.renderPreview` becomes
  * the canonical drawer. The framework's `dragPreviewLayer` dispatches to it.
@@ -41,7 +41,7 @@ export interface PlotInput {
   color: string;
 }
 
-/** What `CanvasNewPrototype` writes into `uiStore.dragPreview` on every move. */
+/** What `GardenCanvas` writes into `uiStore.dragPreview` on every move. */
 export interface PlotPutative {
   start: { x: number; y: number };
   current: { x: number; y: number };

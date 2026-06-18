@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Planting, Structure, Zone } from '../../model/types';
-import type {
-  PlantingNode,
-  ScenePose,
-  StructureNode,
-  ZoneNode,
-} from '../adapters/gardenScene';
-import { createGardenDrawOne } from './gardenDrawOne';
+import type { PlantingNode, ScenePose, StructureNode, ZoneNode } from '../adapters/gardenScene';
 import type { DrawCommand } from '../util/weaselLocal';
+import { createGardenDrawOne } from './gardenDrawOne';
 import type { GetUi } from './worldLayerData';
 
 const view = { x: 0, y: 0, scale: { x: 10, y: 10 } };
@@ -169,8 +164,7 @@ describe('createGardenDrawOne', () => {
       expect(hasPatternFill(cmds)).toBe(true);
       // Highlight group: a group with alpha === getHighlight + a gold ring.
       const hl = cmds.find(
-        (c): c is Extract<DrawCommand, { kind: 'group' }> =>
-          c.kind === 'group' && c.alpha === 0.7,
+        (c): c is Extract<DrawCommand, { kind: 'group' }> => c.kind === 'group' && c.alpha === 0.7,
       );
       expect(hl).toBeDefined();
       expect(collectFillColors(hl ? [hl] : [])).toEqual([]);
@@ -214,8 +208,7 @@ describe('createGardenDrawOne', () => {
       };
       const cmds = drawOne(node, poseOf(0, 0), view);
       const hl = cmds.find(
-        (c): c is Extract<DrawCommand, { kind: 'group' }> =>
-          c.kind === 'group' && c.alpha === 0.5,
+        (c): c is Extract<DrawCommand, { kind: 'group' }> => c.kind === 'group' && c.alpha === 0.5,
       );
       expect(hl).toBeDefined();
     });
@@ -232,8 +225,7 @@ describe('createGardenDrawOne', () => {
       expect(cmds.length).toBeGreaterThan(0);
       // Highlight group with the getHighlight alpha + a gold ring stroke.
       const hl = cmds.find(
-        (c): c is Extract<DrawCommand, { kind: 'group' }> =>
-          c.kind === 'group' && c.alpha === 0.9,
+        (c): c is Extract<DrawCommand, { kind: 'group' }> => c.kind === 'group' && c.alpha === 0.9,
       );
       expect(hl).toBeDefined();
     });

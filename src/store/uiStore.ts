@@ -73,7 +73,7 @@ interface UiStore {
   selectedIds: string[];
   /**
    * Read-only mirror of the garden canvas's local view state, written ONLY
-   * by `GardenCanvasNewPrototype` via `setGardenViewMirror`. UI siblings of
+   * by `GardenCanvasInner` via `setGardenViewMirror`. UI siblings of
    * the canvas (StatusBar, ScaleIndicator, ReturnToGarden, useGardenOffscreen,
    * useViewMoving) read these to render scale/zoom/return-to-garden hints.
    * Tools and gestures must NOT read these — they should plumb the view
