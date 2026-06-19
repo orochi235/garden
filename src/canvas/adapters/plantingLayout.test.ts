@@ -134,7 +134,10 @@ describe('plantingLayoutFor', () => {
     }
   });
 
-  it('commitDrop emits reparent + transform when source differs', () => {
+  // commitDrop emits a pose (transform) op ONLY — the kit's move action owns the
+  // cross-container reparent (`move.ts` layout-drop commit), matching the kit's
+  // reference strategies. So the op count is 1 regardless of source container.
+  it('commitDrop emits a single transform op (no reparent) when source differs', () => {
     const garden = makeGarden();
     const layout = plantingLayoutFor(() => garden, 'pot-1')!;
     const ops = layout.commitDrop(
@@ -148,10 +151,11 @@ describe('plantingLayoutFor', () => {
       },
       { pose: { x: 12, y: 12 }, origin: { x: 12, y: 12 } },
     );
-    expect(ops).toHaveLength(2);
+    expect(ops).toHaveLength(1);
+    expect(ops[0].name).not.toBe('reparent');
   });
 
-  it('commitDrop omits reparent when source is the same container', () => {
+  it('commitDrop emits a single transform op when source is the same container', () => {
     const garden = makeGarden();
     const layout = plantingLayoutFor(() => garden, 'pot-1')!;
     const ops = layout.commitDrop(
@@ -166,5 +170,6 @@ describe('plantingLayoutFor', () => {
       { pose: { x: 12, y: 12 }, origin: { x: 12, y: 12 } },
     );
     expect(ops).toHaveLength(1);
+    expect(ops[0].name).not.toBe('reparent');
   });
 });

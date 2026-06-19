@@ -9,9 +9,7 @@
  * `DropTarget` / `LayoutStrategy` contract weasel expects.
  */
 
-import type { Op } from '@orochi235/weasel';
 import {
-  createReparentOp,
   createTransformOp,
   type DropTarget,
   type LayoutSnap,
@@ -180,27 +178,19 @@ export function plantingLayoutFor(
     },
 
     commitDrop(_container, _children, dragged, target) {
-      const ops: Op[] = [];
-      if (target === null) return ops;
-      if (dragged.sourceContainerId !== containerId) {
-        ops.push(
-          createReparentOp({
-            id: dragged.id,
-            fromParentId: dragged.sourceContainerId,
-            toParentId: containerId,
-            label: 'Drop into container',
-          }),
-        );
-      }
-      ops.push(
+      // Pose op only. The kit's move action owns the cross-container reparent
+      // (`move.ts` layout-drop commit emits `createReparentOp` when the source
+      // and destination containers differ), matching the kit's reference
+      // strategies (tileGrid/freeform/snapPoint), which emit pose ops alone.
+      if (target === null) return [];
+      return [
         createTransformOp<PlantingPose>({
           id: dragged.id,
           from: dragged.originPose,
           to: target.pose,
           label: 'Drop into container',
         }),
-      );
-      return ops;
+      ];
     },
   };
 }
