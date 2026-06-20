@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
-import { emptyNurseryState } from '../model/nursery';
+import { createSeedling, createTray, emptyNurseryState, setCell } from '../model/nursery';
 import type { Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';
+import { blankGarden } from '../store/gardenStore';
 import { autosave, deserializeGarden, loadAutosave, serializeGarden } from './file';
 
 // Minimal valid model literals (mirrors src/scene/gardenConverters.test.ts helpers).
@@ -330,5 +331,38 @@ describe('autosave — transparent SerializedScene migration', () => {
     );
     const back = loadAutosave();
     expect(back?.name).toBe('LegacyAuto');
+  });
+});
+
+describe('nursery persistence — round-trip after nursery left GardenBase', () => {
+  it('round-trips trays + seedlings through serialize/deserialize', () => {
+    const g = blankGarden();
+    const tray = createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 'A' });
+    const seedling = createSeedling({
+      cultivarId: 'tomato.brandywine',
+      trayId: tray.id,
+      row: 0,
+      col: 1,
+    });
+    const sownTray = setCell(tray, 0, 1, { state: 'sown', seedlingId: seedling.id });
+    g.nursery = { trays: [sownTray], seedlings: [seedling] };
+
+    const round = deserializeGarden(serializeGarden(g));
+
+    expect(round.nursery.trays.map((t) => t.label)).toEqual(['A']);
+    // Seedling round-trips with its cell linkage intact.
+    expect(round.nursery.seedlings).toHaveLength(1);
+    expect(round.nursery.seedlings[0]).toMatchObject({
+      id: seedling.id,
+      cultivarId: 'tomato.brandywine',
+      trayId: tray.id,
+      row: 0,
+      col: 1,
+    });
+    // The sown slot survives and still points at the seedling.
+    expect(round.nursery.trays[0].slots[1]).toEqual({
+      state: 'sown',
+      seedlingId: seedling.id,
+    });
   });
 });
