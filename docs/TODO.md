@@ -35,6 +35,17 @@ Watch out for:
 
 Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so it travels with the kit when it splits out into the `@orochi235/weasel` repo. Add kit-specific items there, not here.
 
+## Garden interaction bugs — live dispatcher (found by e2e 2026-06-20)
+
+eric's first behavioral interaction e2e (`tests/e2e/interactions.spec.ts`, `npm run test:e2e`) surfaced three garden-mode bugs that shipped in the Phase-7 gesture migration (`4ff5c8d`) but were never exercised against a real browser. Each has GREEN unit tests against a *mocked* dispatcher — the breakage is in live SceneCanvas/dispatcher integration. The e2e tests assert the intended behavior and are marked `test.fail()` (expected-failures) so the suite stays green and each flips to a hard failure the moment its bug is fixed (remove the annotation then). Marquee selection, corner-resize anchor precision, and wheel-zoom clamp were verified PASSING by the same harness.
+
+- [ ] **Plot/insert creates an orphan `kit-rect` node, not an eric `Structure`/`Zone`** (most serious — garden plotting may be non-functional). `SceneCanvas` owns the `insert` dep via its default `useInsertDepSource` factory; eric never registers a custom `insert` dep to route commits through `createInsertAdapter().commitInsert` (which reads `plottingTool` and builds a real Structure/Zone) — so that eric code is effectively dead and `garden.structures` never changes on plot. ⚠️ Before fixing: the e2e arms the plot tool via `setPlottingTool()` programmatically — confirm the real toolbar arming path reproduces it (rule out a test-arming artifact).
+- [ ] **Group-outline click-to-promote doesn't fire.** Clicking a group sibling's outline edge should promote selection to the whole group (re-homed into the ambient `eric-canvas-click` tool during the migration); it never fires in the live dispatcher.
+- [ ] **Alt-click cycle doesn't advance.** A 2nd alt-click at the same point stays on the top hit instead of advancing to the object underneath — likely the kit `select` tool re-selecting the top body-hit, overriding the ambient `useEricCycleTool` claim.
+- [ ] **Minor: `<SceneCanvas viewport={{zoom:{min:5,max:500}}}>` is dead config.** `GardenCanvas.handleViewChange` re-clamps every committed view through its own `clampZoom` (`GARDEN_MIN_ZOOM=10`, `GARDEN_MAX_ZOOM=200`), which wins — effective clamp is [10,200] px/ft. Either drop the prop or make `handleViewChange` honor it.
+
+Not e2e-assertable (need human eyes): wheel zoom-toward-cursor anchor *feel*; subjective resize-drag smoothness.
+
 ## Text rendering (MSDF unification)
 
 Canvas text now renders (weasel `tsup splitting:true` shared the font registry; eric
