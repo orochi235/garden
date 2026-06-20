@@ -3,7 +3,7 @@ import type React from 'react';
 import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { type NurserySceneAdapter, trayWorldOrigin } from '../adapters/nurseryScene';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND, type AreaSelectPutative } from '../drag/areaSelectDrag';
 import { hitTestTrayLabel } from '../layers/trayLayersWorld';
 import { toKitView, type View } from '../layers/worldLayerData';
@@ -74,11 +74,7 @@ export interface SeedSelectOptions {
   viewRef?: React.RefObject<View>;
 }
 
-export function useSeedSelectTool(
-  adapter: NurserySceneAdapter,
-  options: SeedSelectOptions = {},
-): Tool<SeedSelectScratch> {
-  void adapter;
+export function useSeedSelectTool(options: SeedSelectOptions = {}): Tool<SeedSelectScratch> {
   const { onLabelClick, viewRef } = options;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the tool is defined once; it reads onLabelClick (stable handler) and viewRef.current via closure — ref.current must not be a hook dependency.

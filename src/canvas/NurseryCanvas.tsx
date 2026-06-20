@@ -247,8 +247,8 @@ export function NurseryCanvas() {
   );
 
   // --- Tools ---
-  const moveTool = useSeedlingMoveTool(adapter);
-  const selectTool = useSeedSelectTool(adapter, { onLabelClick: handleLabelClick, viewRef });
+  const moveTool = useSeedlingMoveTool();
+  const selectTool = useSeedSelectTool({ onLabelClick: handleLabelClick, viewRef });
   const sowTool = useSowCellTool();
   const fillTool = useFillTrayTool();
   const rightDragPan = useEricRightDragPan();

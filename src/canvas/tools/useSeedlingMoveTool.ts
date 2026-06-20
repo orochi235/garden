@@ -11,7 +11,7 @@ import { type Seedling, type Tray, trayInteriorOffsetIn } from '../../model/nurs
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { type NurserySceneAdapter, trayWorldOrigin } from '../adapters/nurseryScene';
+import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { SEED_FILL_TRAY_DRAG_KIND, type SeedFillPutative } from '../drag/seedFillTrayDrag';
 import { SEEDLING_MOVE_DRAG_KIND, type SeedlingMovePutative } from '../drag/seedlingMoveDrag';
 import {
@@ -145,11 +145,10 @@ function markerCommands(
   ];
 }
 
-export function useSeedlingMoveTool(adapter: NurserySceneAdapter): Tool<SeedlingMoveScratch> {
+export function useSeedlingMoveTool(): Tool<SeedlingMoveScratch> {
   // Stable mutable mirror so the overlay's draw closure (defined once) sees
   // current scratch values across renders without re-creating the layer.
   const scratchRef = useRef<SeedlingMoveScratch>(initScratch());
-  void adapter;
 
   const overlay = useMemo<RenderLayer<unknown>>(
     () => ({

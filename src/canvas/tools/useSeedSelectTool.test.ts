@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { AREA_SELECT_DRAG_KIND } from '../drag/areaSelectDrag';
 import { toKitView } from '../layers/worldLayerData';
 import { type SeedSelectScratch, useSeedSelectTool } from './useSeedSelectTool';
@@ -37,8 +36,7 @@ function pointer(): PointerEvent {
 }
 
 function renderTool() {
-  const adapter = createNurserySceneAdapter();
-  return renderHook(() => useSeedSelectTool(adapter));
+  return renderHook(() => useSeedSelectTool());
 }
 
 describe('useSeedSelectTool', () => {

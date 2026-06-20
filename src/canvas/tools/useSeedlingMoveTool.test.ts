@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { createNurserySceneAdapter } from '../adapters/nurseryScene';
 import { toKitView } from '../layers/worldLayerData';
 import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
 import { type SeedlingMoveScratch, useSeedlingMoveTool } from './useSeedlingMoveTool';
@@ -70,8 +69,7 @@ function makeMoveCtx(
 }
 
 function renderTool() {
-  const adapter = createNurserySceneAdapter();
-  return renderHook(() => useSeedlingMoveTool(adapter));
+  return renderHook(() => useSeedlingMoveTool());
 }
 
 describe('useSeedlingMoveTool gutter-affordance overlay', () => {
