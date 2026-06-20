@@ -92,16 +92,13 @@ New modules:
     if any).
   - `nurseryToScene(ns: NurseryState)` → `AddNodeSpec[]` (trays parent-first,
     then in-tray seedlings as children with cell-center local poses).
-  - `nurseryToSerializedScene(ns)` → `NurserySerializedScene` (JSON shape
-    `{ version, systemLayers, nodes }`, function-valued fields keyed for
-    registry reverse-lookup as garden does).
   - `sceneToNursery(scene, base)` → `NurseryState` (read tray nodes + seedling
-    children, recompose world from local poses is unnecessary — read
-    `(trayId, row, col)` straight from `data`; the scene pose is a derived
-    projection, the `data` carries authority). Merge `base.transplanted`
+    children — read `(trayId, row, col)` straight from `data`; the scene pose is a
+    derived projection, the `data` carries authority). Merge `base.transplanted`
     seedlings into the returned `seedlings[]`.
-  - Types `NurseryScene`, `NurserySerializedScene`, `NurseryNodeData`,
-    `NurseryLayer`, `NurseryBase`.
+  - Types `NurseryScene`, `NurseryNodeData`, `NurseryLayer`, `NurseryBase`.
+  - (No `nurseryToSerializedScene` — persistence stays array-based; see
+    Persistence.)
 - `src/scene/reconcileNurseryScene.ts`
   - `reconcileNurseryScene(scene, target)` — in-place differ batched in one
     `scene.batch('reconcile-nursery', …)` (mirror of `reconcileScene.ts:37-91`:
@@ -124,24 +121,38 @@ New modules:
 The composed `garden.nursery` keeps its current `{ trays, seedlings }` shape so
 no downstream consumer (layers, tools, sidebar) changes.
 
-### Undo
+### Undo (array snapshots — simplification, approved 2026-06-20)
 
-The nursery keeps its **own** history stack — garden and nursery undo stay
-independent, exactly as today (garden undo preserves nursery and vice versa).
-Switch nursery snapshots from raw `garden.nursery` arrays to
-`nurseryScene.toJSON()` (+ the `nurseryBase` list), restored in place via
-`nurseryScene.loadState()`. One checkpoint per action preserved. The in-place
-`loadState` keeps the `NurseryScene` instance identity stable so the
-`<SceneCanvas>`-captured ref stays valid (same reason garden uses `loadState`).
+The nursery keeps its **own** history stack with its **existing array snapshots**
+(`nurseryHistory.push(get().garden.nursery, …)`), unchanged from today. Garden
+and nursery undo stay independent (garden undo preserves nursery and vice versa).
 
-### Persistence
+Garden undo uses `scene.toJSON()`/`loadState` because garden poses are stored
+parent-LOCAL and plain arrays round-trip lossily. The nursery has **no such
+problem** — positions are derived from `(trayId, row, col)` + array order, so the
+arrays are lossless authority. Restoring a nursery snapshot calls
+`patch({ nursery })` → `reconcileNurseryScene`, which mutates the scene **in
+place** — so the `<SceneCanvas>`-captured scene ref stays valid **without**
+`loadState`. No `nurseryScene.toJSON()` / scene-snapshot path is needed.
 
-Autosave embeds `nurseryScene: NurserySerializedScene` (+ the transplanted-out
-base list) in the garden JSON, replacing the current `nursery: { trays,
-seedlings }` arrays. The deserializer detects the legacy array shape and builds
-the scene from it (auto-upgraded on next save) — mirror of garden's legacy
-fallback in `file.ts:71-104`. `serializeGarden` / `deserializeGarden` /
-`backfillGarden` updated accordingly.
+One checkpoint per action preserved (every writer already funnels through
+`commitNursery`).
+
+### Persistence (array on disk — simplification, approved 2026-06-20)
+
+The nursery persists on disk as plain `nursery: { trays, seedlings }` arrays
+(today's format), because those arrays are lossless authority — there is no
+nested-local-pose round-trip problem that forced garden to a `SerializedScene` on
+disk. The store rebuilds the nursery scene from the arrays on load, exactly as it
+bootstraps. Consequences:
+
+- **No `nurseryToSerializedScene` converter and no legacy-format migration** —
+  the array shape never changes.
+- The only persistence edit: once `nursery` leaves `GardenBase` (it becomes
+  scene-backed, no longer in `base`), `serializeGarden`'s `...base` spread stops
+  including it, so re-add `nursery: garden.nursery` explicitly to the serialized
+  output. `deserializeGarden` already reads `data.nursery` arrays and the store's
+  `adoptGarden` builds the nursery scene from them.
 
 ### Canvas mount (the goal)
 
@@ -172,8 +183,8 @@ fallback in `file.ts:71-104`. `serializeGarden` / `deserializeGarden` /
 |---|---|---|
 | `nurseryScene.ts` | Pure converters NurseryState ↔ Scene/SerializedScene | weasel `createScene`/pose helpers, `model/nursery` |
 | `reconcileNurseryScene.ts` | In-place scene diff/apply for one mutation | `nurseryScene.ts`, weasel Scene ops |
-| `gardenStore` nursery seam | Live scene, compose facade, route mutations, undo, accessor | the two modules above |
-| `file.ts` (persist) | Serialize/deserialize `nurseryScene` + legacy fallback | `nurseryScene.ts` |
+| `gardenStore` nursery seam | Live scene, compose facade, route mutations, array undo, accessor | the two modules above |
+| `file.ts` (persist) | Re-add `nursery` arrays to serialized output (one-line, post base removal) | — |
 | `NurseryCanvas.tsx` | Mount on `<SceneCanvas>`, retain eric tools/layers/view | `getNurseryScene`, existing tools/layers |
 
 Each converter is independently testable (round-trip
@@ -184,16 +195,17 @@ through the facade).
 
 ## Testing
 
-- **Round-trip:** `nurseryToSerializedScene` → `loadState` → `sceneToNursery`
+- **Round-trip:** `nurseryToScene` → `createNurseryScene` → `sceneToNursery`
   equals the original `NurseryState` (including transplanted-out seedlings via
   base, multi-tray auto-flow, occupied/empty cells).
 - **Reconcile:** each nursery mutation produces the expected scene node set; one
   batch / one notification; no-op edits skipped.
-- **Undo:** a nursery action then undo restores prior state in place; nursery
-  undo does not touch garden and vice versa; scene instance identity stable.
-- **Persistence:** new format round-trips through disk
-  (`deserialize(serialize())`); legacy `nursery: { trays, seedlings }` JSON loads
-  and upgrades.
+- **Undo:** a nursery action then undo restores prior state; nursery undo does not
+  touch garden and vice versa; scene instance identity stable across the
+  array-snapshot restore (reconcile is in-place).
+- **Persistence:** `serializeGarden` output still includes `nursery: { trays,
+  seedlings }` after nursery leaves `base`; `deserialize(serialize())` round-trips
+  the nursery; existing legacy `.garden` files still load.
 - **Existing suites:** all current nursery tests (`useSeedlingMoveTool`,
   `useSeedSelectTool`, `useFillTrayTool`, `useSowCellTool`, `gardenStore`
   nursery actions, `nurseryScene`/hit-test) pass unchanged — the facade shape is
