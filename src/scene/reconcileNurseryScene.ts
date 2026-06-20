@@ -16,7 +16,15 @@ export function reconcileNurseryScene(scene: NurseryScene, target: NurseryState)
 
   scene.batch('reconcile-nursery', () => {
     // 1. Rebuild roots: present in both but kind/layer differs (no setKind).
-    //    The re-add happens in the Adds pass below (node is now absent).
+    //    The re-add happens in the Adds pass below (node is now absent). A
+    //    rebuild root's descendants are never *retained in place* — but a
+    //    container demoting to leaf can have a descendant that relocates to a
+    //    different parent in the target; that descendant is dropped by the
+    //    subtree remove here and then RE-ADDED by the Adds pass (since it's a
+    //    spec absent from survivors). Correctness therefore depends on the Adds
+    //    pass re-adding every spec'd node absent after removals — do not add a
+    //    "skip already-existing" guard to the Adds pass without accounting for
+    //    this.
     for (const s of specs) {
       const node = scene.get(s.id!);
       if (node && (node.kind !== s.kind || node.layer !== s.layer)) scene.remove(s.id!);

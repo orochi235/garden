@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTray, createSeedling, setCell, type NurseryState } from '../model/nursery';
+import { createTray, createSeedling, setCell, type NurseryState, type Seedling } from '../model/nursery';
 import { createNurseryScene, nurseryToScene } from './nurseryScene';
 import { reconcileNurseryScene } from './reconcileNurseryScene';
 
@@ -51,6 +51,33 @@ describe('reconcileNurseryScene', () => {
     const nodeB = scene.get(b.id as never)!;
     expect((nodeA.data as { order: number }).order).toBe(1);
     expect((nodeB.data as { order: number }).order).toBe(0);
+  });
+
+  it('reparents (move, not remove+add) a seedling that relocates trays', () => {
+    const trayA = createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 'A' });
+    const trayB = createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 'B' });
+    const s = createSeedling({ cultivarId: 'tomato', trayId: trayA.id, row: 0, col: 0 });
+    const initial: NurseryState = {
+      trays: [setCell(trayA, 0, 0, { state: 'sown', seedlingId: s.id }), trayB],
+      seedlings: [s],
+    };
+    const scene = createNurseryScene(nurseryToScene(initial));
+    expect(String(scene.get(s.id as never)!.parent)).toBe(trayA.id);
+
+    // Same seedling id, now in tray B at a different cell: clear A's cell, sow B's.
+    const moved: Seedling = { ...s, trayId: trayB.id, row: 1, col: 1 };
+    const next: NurseryState = {
+      trays: [
+        setCell(trayA, 0, 0, { state: 'empty', seedlingId: null }),
+        setCell(trayB, 1, 1, { state: 'sown', seedlingId: s.id }),
+      ],
+      seedlings: [moved],
+    };
+    reconcileNurseryScene(scene, next);
+
+    const node = scene.get(s.id as never);
+    expect(node).toBeDefined();
+    expect(String(node!.parent)).toBe(trayB.id);
   });
 
   it('a no-op reconcile emits no version bump', () => {
