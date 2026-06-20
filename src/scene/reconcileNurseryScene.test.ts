@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createTray, createSeedling, setCell, type NurseryState, type Seedling } from '../model/nursery';
+import {
+  createSeedling,
+  createTray,
+  type NurseryState,
+  type Seedling,
+  setCell,
+} from '../model/nursery';
 import { createNurseryScene, nurseryToScene } from './nurseryScene';
 import { reconcileNurseryScene } from './reconcileNurseryScene';
 

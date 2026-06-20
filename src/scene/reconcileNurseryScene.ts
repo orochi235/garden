@@ -1,6 +1,6 @@
 import type { NurseryState } from '../model/nursery';
-import { nurseryToScene } from './nurseryScene';
 import type { NurseryScene } from './nurseryScene';
+import { nurseryToScene } from './nurseryScene';
 import { deepEqual } from './reconcileScene';
 
 /**
