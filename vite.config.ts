@@ -60,6 +60,7 @@ export default defineConfig({
       '**/.claude/**',
       '**/dist/**',
       'tests/visual/**',
+      'tests/e2e/**',
     ],
   },
 });

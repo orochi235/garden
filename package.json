@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test --config tests/e2e/e2e.config.ts",
     "test:visual": "playwright test --config tests/visual/visual.config.ts",
     "test:visual:update": "playwright test --config tests/visual/visual.config.ts --update-snapshots",
     "check:optimizer-boundary": "./scripts/check-optimizer-boundary.sh"

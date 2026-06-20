@@ -22,6 +22,17 @@ await registerFont(
   console.warn('failed to register default canvas font; text labels will not render', err);
 });
 
+// Dev-only: expose the Zustand stores for headless e2e introspection and
+// console debugging. Stripped from production bundles via the DEV guard.
+if (import.meta.env.DEV) {
+  void Promise.all([import('./store/gardenStore'), import('./store/uiStore')]).then(
+    ([garden, ui]) => {
+      (window as unknown as Record<string, unknown>).__gardenStore = garden.useGardenStore;
+      (window as unknown as Record<string, unknown>).__uiStore = ui.useUiStore;
+    },
+  );
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
