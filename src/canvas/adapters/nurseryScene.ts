@@ -189,13 +189,11 @@ export function createNurserySceneAdapter(): NurserySceneAdapter {
         }
       }
     },
-    setParent(_id, _parentId) {
-      // No-op by design: cross-tray reparenting goes through
-      // `gardenStore.moveSeedlingsAcrossTrays`, called directly by
-      // `useSeedlingMoveTool.drag.onEnd` when a single-seedling drag commits
-      // on a cell of a tray different from the source. The kit Tool gesture
-      // engine never invokes this entrypoint for the nursery flow.
-    },
+    // Note: `MoveAdapter.setParent` is intentionally not implemented. Cross-tray
+    // reparenting goes through `gardenStore.moveSeedlingsAcrossTrays`, called
+    // directly by `useSeedlingMoveTool.drag.onEnd` when a single-seedling drag
+    // commits on a cell of a tray different from the source. No kit path drives
+    // this adapter's `useMove`, so the optional `setParent` hook is never called.
     findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
       const node = findNode(draggedId);
       if (!node || node.kind !== 'seedling') return null;

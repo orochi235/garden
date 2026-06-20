@@ -269,8 +269,9 @@ function scrubSelection(ids: string[], garden: Garden): string[] {
 //
 // patch() (and thus commitGarden/commitNursery/applyGardenPatch) routes spatial
 // changes through fine-grained in-place reconcileScene ops (Phase 3 / seam #2)
-// — the Scene instance is never recreated on a normal mutation. undo/redo/
-// loadGarden/reset still recreate via adoptGarden, pending Phase 4 (loadState).
+// — the Scene instance is never recreated on a normal mutation. Nursery
+// undo/redo also reconcile in place via patch({ nursery }). Garden undo/redo/
+// loadGarden/reset still recreate via adoptGarden.
 
 const SPATIAL_KEYS = ['structures', 'zones', 'plantings'] as const;
 
@@ -407,8 +408,11 @@ export const useGardenStore = create<GardenStore>((set, get) => {
    * Apply a partial update to the garden via fine-grained, in-place scene ops
    * (Phase 3 — seam #2). Base (non-spatial) keys mutate the `base` object;
    * spatial keys (structures/zones/plantings) are reconciled against the
-   * existing Scene instance — the instance is never recreated here. undo/redo/
-   * loadGarden/reset still go through adoptGarden until Phase 4 (loadState).
+   * existing Scene instance — the instance is never recreated here. The nursery
+   * key is its own scene channel: it reconciles in place via
+   * reconcileNurseryScene (so nursery undo/redo route through patch({ nursery })
+   * directly, never recreating the NurseryScene). Garden undo/redo/loadGarden/
+   * reset still go through adoptGarden.
    */
   function patch(updates: Partial<Garden>) {
     const baseUpdates: Record<string, unknown> = {};

@@ -330,6 +330,9 @@ export function NurseryCanvas() {
           height={height}
           view={toKitView(view)}
           onViewChange={handleViewChange}
+          // Whole-map cast (vs garden's surgical per-layer casts): the nursery
+          // has no kit scene-slot painter, so eric's entire RenderLayer map is
+          // opaque to SceneCanvas's node type and casts at this boundary.
           layers={layers as never}
           geometry={geometry}
           tools={tools}
