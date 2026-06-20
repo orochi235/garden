@@ -145,8 +145,9 @@ describe('sceneToGarden round-trip', () => {
     expect(out.plantings[0]).toMatchObject({ id: 'p1', parentId: 's1', x: 1, y: 2 });
     expect(Object.keys(out.plantings[0])).not.toContain('width');
     expect(out.name).toBe('g');
-    expect(out.nursery).toBe(g.nursery); // base reattached by reference
-    expect(out.collection).toBe(g.collection);
+    // `nursery` is no longer part of GardenBase / sceneToGarden — it is backed
+    // by its own NurseryScene and composed into garden.nursery in the store.
+    expect(out.collection).toBe(g.collection); // base reattached by reference
   });
 
   it('preserves zIndex on the way back', () => {

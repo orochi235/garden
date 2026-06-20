@@ -30,6 +30,15 @@ import type {
   GardenSerializedScene,
 } from '../scene/gardenScene';
 import { createGardenScene } from '../scene/gardenScene';
+import {
+  createNurseryScene,
+  type NurseryBase,
+  type NurseryScene,
+  nurseryToScene,
+  sceneToNursery,
+  splitNurseryBase,
+} from '../scene/nurseryScene';
+import { reconcileNurseryScene } from '../scene/reconcileNurseryScene';
 import { reconcileScene } from '../scene/reconcileScene';
 import { structuresCollide } from '../utils/collision';
 import { loadAutosave, persistCollection } from '../utils/file';
@@ -46,6 +55,13 @@ interface GardenStore {
    * <SceneCanvas scene={…}>) can safely capture this reference once.
    */
   getScene: () => GardenScene;
+  /**
+   * The live NurseryScene that is the spatial store of record for the nursery
+   * (trays + in-tray seedlings). Identity is stable for the store lifetime —
+   * loadGarden/reset/undo restore it IN PLACE via reconcileNurseryScene, never
+   * recreating it — so a mounted <NurseryCanvas scene={…}> can capture it once.
+   */
+  getNurseryScene: () => NurseryScene;
   updateGarden: (
     updates: Partial<
       Pick<
@@ -201,6 +217,10 @@ function backfillGarden(garden: Garden): Garden {
     delete legacy.seedStarting;
   }
   if (!garden.nursery) garden.nursery = emptyNurseryState();
+  // Normalize a partial nursery (e.g. a fixture with `{ trays: [] }` and no
+  // `seedlings`): the scene-backing split/convert helpers assume both arrays.
+  if (!garden.nursery.trays) garden.nursery.trays = [];
+  if (!garden.nursery.seedlings) garden.nursery.seedlings = [];
   if (!garden.collection) garden.collection = [];
   return garden;
 }
@@ -271,24 +291,59 @@ let base: GardenBase = splitBase(blankGarden());
 // the cache-key + clear() calls are no-ops. A future scene-ops migration may repurpose it.
 const overrides = new Map<string, { pose?: Partial<GardenPose>; data?: Partial<GardenNodeData> }>();
 
+// The nursery is scene-backed by its own NurseryScene (parallel to `scene`).
+// `garden.nursery` is composed from it + the non-spatial nurseryBase.
+let nurseryScene: NurseryScene = createNurseryScene([]);
+let nurseryBase: NurseryBase = { transplanted: [] };
+
+let composedNursery: NurseryState | null = null;
+let composedNurseryVersion = -1;
+let composedNurseryBase: NurseryBase | null = null;
+
 let composed: Garden | null = null;
 let composedVersion = -1;
 let composedBase: GardenBase | null = null;
+let composedNurseryRef: NurseryState | null = null;
 let overridesDirty = false;
 
 // Identity under SP1 — no live override layer (see overrides above).
-function applyOverrides(g: Garden): Garden {
+function applyOverrides<T>(g: T): T {
   if (overrides.size === 0) return g;
   return g; // Task C3
 }
 
+/** Compose the nursery facade from the live NurseryScene + non-spatial base. */
+function composeNursery(): NurseryState {
+  const v = nurseryScene.getVersion();
+  if (composedNursery && composedNurseryVersion === v && composedNurseryBase === nurseryBase)
+    return composedNursery;
+  composedNursery = sceneToNursery(nurseryScene, nurseryBase);
+  composedNurseryVersion = v;
+  composedNurseryBase = nurseryBase;
+  return composedNursery;
+}
+
+/** Reset the composed-nursery memo so the next composeNursery() recomputes. */
+function invalidateComposedNursery() {
+  composedNursery = null;
+  composedNurseryVersion = -1;
+  composedNurseryBase = null;
+}
+
 function composeGarden(): Garden {
   const v = scene.getVersion();
-  if (composed && composedVersion === v && composedBase === base && !overridesDirty)
+  if (
+    composed &&
+    composedVersion === v &&
+    composedBase === base &&
+    composedNurseryRef === composeNursery() &&
+    !overridesDirty
+  )
     return composed;
-  composed = applyOverrides(sceneToGarden(scene, base));
+  composed = { ...applyOverrides(sceneToGarden(scene, base)), nursery: composeNursery() };
   composedVersion = v;
   composedBase = base;
+  composedNurseryRef = composed.nursery;
   overridesDirty = false;
   return composed;
 }
@@ -298,6 +353,7 @@ function invalidateComposed() {
   composed = null;
   composedVersion = -1;
   composedBase = null;
+  composedNurseryRef = null;
 }
 
 export const useGardenStore = create<GardenStore>((set, get) => {
@@ -306,18 +362,25 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     scene.subscribe(() => {
       set({ garden: composeGarden() });
     });
+    nurseryScene.subscribe(() => {
+      set({ garden: composeGarden() });
+    });
   }
 
   /**
    * Replace the whole garden from a full Garden snapshot — used by
    * loadGarden/reset. Restores the spatial scene IN PLACE via loadState (the
    * existing instance is preserved, so a mounted SceneCanvas keeps its ref) and
-   * swaps the non-spatial base wholesale (including this garden's own nursery).
+   * swaps the non-spatial base wholesale, and rebuilds the nursery scene/base
+   * IN PLACE (reconcile, not recreate) so a mounted NurseryCanvas keeps its ref.
    */
   function adoptGarden(next: Garden) {
     base = splitBase(next);
+    nurseryBase = splitNurseryBase(next.nursery);
     scene.loadState(gardenToSerializedScene(next));
+    reconcileNurseryScene(nurseryScene, next.nursery);
     invalidateComposed();
+    invalidateComposedNursery();
     set({ garden: composeGarden() });
   }
 
@@ -327,13 +390,14 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   }
 
   /**
-   * Restore a garden-mode undo/redo snapshot IN PLACE. Swaps base (overlaying
-   * the LIVE nursery so a garden undo never reverts nursery edits) then loads
+   * Restore a garden-mode undo/redo snapshot IN PLACE. Swaps base then loads
    * the serialized scene into the existing instance via loadState. Base is set
-   * before loadState so the subscription's recompose sees the new base.
+   * before loadState so the subscription's recompose sees the new base. The
+   * nursery is NOT touched here — it is backed by its own scene with its own
+   * undo stack, so a garden undo never reverts nursery edits.
    */
   function restoreSnapshot(snap: GardenSnapshot) {
-    base = { ...snap.base, nursery: base.nursery };
+    base = snap.base;
     invalidateComposed();
     scene.loadState(snap.scene);
     set({ garden: composeGarden() });
@@ -350,9 +414,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     const baseUpdates: Record<string, unknown> = {};
     let hasBase = false;
     let hasSpatial = false;
+    let hasNursery = false;
     for (const k of Object.keys(updates)) {
       if ((SPATIAL_KEYS as readonly string[]).includes(k)) {
         hasSpatial = true;
+      } else if (k === 'nursery') {
+        hasNursery = true;
       } else {
         baseUpdates[k] = (updates as Record<string, unknown>)[k];
         hasBase = true;
@@ -361,6 +428,17 @@ export const useGardenStore = create<GardenStore>((set, get) => {
     if (hasBase) {
       base = { ...base, ...baseUpdates } as GardenBase;
       invalidateComposed();
+    }
+    if (hasNursery) {
+      // Nursery is its own scene channel: split off the non-spatial part and
+      // reconcile the rest into the live NurseryScene in place (the instance is
+      // never recreated). The garden facade embeds the composed nursery, so it
+      // must recompute too.
+      const next = updates.nursery as NurseryState;
+      nurseryBase = splitNurseryBase(next);
+      invalidateComposedNursery();
+      invalidateComposed();
+      reconcileNurseryScene(nurseryScene, next);
     }
     if (hasSpatial) {
       // Reconcile against the composed target (composeGarden already reflects
@@ -473,14 +551,19 @@ export const useGardenStore = create<GardenStore>((set, get) => {
   // is well-formed, so no extra backfill is needed here.
   const bootstrap = initialGarden();
   base = splitBase(bootstrap);
+  nurseryBase = splitNurseryBase(bootstrap.nursery);
   scene = createGardenScene(gardenToScene(bootstrap));
+  nurseryScene = createNurseryScene(nurseryToScene(bootstrap.nursery));
   subscribeScene();
   invalidateComposed();
+  invalidateComposedNursery();
 
   return {
     garden: composeGarden(),
 
     getScene: () => scene,
+
+    getNurseryScene: () => nurseryScene,
 
     loadGarden: (garden) => {
       gardenHistory.clear();

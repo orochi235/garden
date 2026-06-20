@@ -82,8 +82,10 @@ export type GardenSerializedScene = SerializedScene<GardenNodeData, GardenLayer,
 export const CLIP_NONE_KEY = 'eric:none';
 export const clipNone = (): null => null;
 
-/** The non-spatial remainder of a Garden — everything the Scene does NOT own. */
-export type GardenBase = Omit<Garden, 'structures' | 'zones' | 'plantings'>;
+/** The non-spatial remainder of a Garden — everything the Scene does NOT own.
+ *  `nursery` is excluded: it is backed by its own NurseryScene (see
+ *  src/scene/nurseryScene.ts), composed into `garden.nursery` separately. */
+export type GardenBase = Omit<Garden, 'structures' | 'zones' | 'plantings' | 'nursery'>;
 
 export function createGardenScene(initial: readonly GardenAddNodeSpec[]): GardenScene {
   return createScene<GardenNodeData, GardenLayer, GardenPose>({

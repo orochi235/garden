@@ -176,12 +176,12 @@ export function gardenToSerializedScene(garden: Garden): GardenSerializedScene {
 }
 
 export function splitBase(garden: Garden): GardenBase {
-  const { structures: _s, zones: _z, plantings: _p, ...base } = garden;
+  const { structures: _s, zones: _z, plantings: _p, nursery: _n, ...base } = garden;
   return base;
 }
 
 // Output array order follows scene.nodes insertion order (not zIndex); tests compare by id/sort.
-export function sceneToGarden(scene: GardenScene, base: GardenBase): Garden {
+export function sceneToGarden(scene: GardenScene, base: GardenBase): Omit<Garden, 'nursery'> {
   const structures: Structure[] = [];
   const zones: Zone[] = [];
   const plantings: Planting[] = [];

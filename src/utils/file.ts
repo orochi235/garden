@@ -60,6 +60,9 @@ export function serializeGarden(garden: Garden): string {
   return JSON.stringify(
     {
       ...base,
+      // `nursery` is no longer part of GardenBase (scene-backed separately), so
+      // re-include it explicitly so the on-disk file stays self-contained.
+      nursery: garden.nursery,
       collection: projectCollectionForExport(garden.collection),
       scene: gardenToSerializedScene(garden),
     },
@@ -91,10 +94,12 @@ export function deserializeGarden(json: string): Garden {
   // converter composes them back to world coords (Phase 2/4 frame handling).
   // This path does NOT run snapPlantingsToCellGrid (the scene is authoritative).
   if (data.scene != null) {
-    const { scene: serialized, ...base } = data;
+    // `nursery` is no longer part of GardenBase (it is scene-backed separately),
+    // so pull it out of the base and re-attach it to the composed garden.
+    const { scene: serialized, nursery, ...base } = data;
     const scene = createGardenScene([]);
     scene.loadState(serialized as GardenSerializedScene);
-    return sceneToGarden(scene, base as GardenBase);
+    return { ...sceneToGarden(scene, base as GardenBase), nursery };
   }
 
   // Legacy (garden-array) format.

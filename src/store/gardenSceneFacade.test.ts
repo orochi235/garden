@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createTray } from '../model/nursery';
 import { createGarden, DEFAULT_WALL_THICKNESS_FT } from '../model/types';
 import { deserializeGarden, serializeGarden } from '../utils/file';
 import { blankGarden, useGardenStore } from './gardenStore';
+import { useUiStore } from './uiStore';
 
 describe('gardenStore scene-backed facade', () => {
   beforeEach(() => {
@@ -113,4 +115,48 @@ describe('store round-trip: .garden -> loadGarden(scene) -> serialize', () => {
       );
     });
   }
+});
+
+describe('nursery scene-backed facade', () => {
+  beforeEach(() => {
+    useUiStore.getState().setAppMode('garden');
+    useGardenStore.getState().reset();
+  });
+
+  it('getNurseryScene returns a stable instance across nursery edits', () => {
+    const s1 = useGardenStore.getState().getNurseryScene();
+    useGardenStore
+      .getState()
+      .addTray(createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 'A' }));
+    const s2 = useGardenStore.getState().getNurseryScene();
+    expect(s2).toBe(s1);
+  });
+
+  it('addTray surfaces through garden.nursery (composed from the scene)', () => {
+    useGardenStore
+      .getState()
+      .addTray(createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 'A' }));
+    const trays = useGardenStore.getState().garden.nursery.trays;
+    expect(trays.map((t) => t.label)).toContain('A');
+  });
+
+  it('nursery undo restores prior state and does not touch garden', () => {
+    const store = useGardenStore.getState();
+    const beforeStructures = store.garden.structures.length;
+    // Nursery undo only fires in nursery mode (see undo()'s appMode branch).
+    useUiStore.getState().setAppMode('nursery');
+    store.addTray(createTray({ rows: 2, cols: 2, cellSize: 'medium', label: 'A' }));
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(1);
+    useGardenStore.getState().undo();
+    expect(useGardenStore.getState().garden.nursery.trays).toHaveLength(0);
+    expect(useGardenStore.getState().garden.structures.length).toBe(beforeStructures);
+  });
+
+  it('reorderTrays reflows tray order through the scene', () => {
+    const store = useGardenStore.getState();
+    store.addTray(createTray({ rows: 1, cols: 1, cellSize: 'medium', label: 'A' }));
+    store.addTray(createTray({ rows: 1, cols: 1, cellSize: 'medium', label: 'B' }));
+    useGardenStore.getState().reorderTrays(0, 1);
+    expect(useGardenStore.getState().garden.nursery.trays.map((t) => t.label)).toEqual(['B', 'A']);
+  });
 });
