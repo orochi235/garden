@@ -1,4 +1,4 @@
-import type { LayoutStrategy, MoveAdapter, Op, SnapTarget } from '@orochi235/weasel';
+import type { LayoutStrategy, MoveAdapter, Op } from '@orochi235/weasel';
 import { validCellsForContainer } from '../../model/cellOccupancy';
 import type { Planting } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
@@ -8,7 +8,6 @@ import {
   plantingWorldPose,
   worldToLocalForParent,
 } from '../../utils/plantingPose';
-import { findSnapContainer } from '../findSnapContainer';
 import { plantingLayoutFor } from './plantingLayout';
 
 export interface PlantingPose {
@@ -29,8 +28,8 @@ function getParent(id: string): { id: string; x: number; y: number } | undefined
   return getPlantingParent(useGardenStore.getState().garden, id);
 }
 
-export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
-  const adapter: Required<PlantingMoveAdapter> = {
+export function createPlantingMoveAdapter(): Required<Omit<PlantingMoveAdapter, 'findSnapTarget'>> {
+  const adapter: Required<Omit<PlantingMoveAdapter, 'findSnapTarget'>> = {
     getNode(id) {
       return getPlanting(id);
     },
@@ -96,28 +95,6 @@ export function createPlantingMoveAdapter(): Required<PlantingMoveAdapter> {
     },
     getLayout(containerId): LayoutStrategy<PlantingPose> | null {
       return plantingLayoutFor(() => useGardenStore.getState().garden, containerId);
-    },
-    findSnapTarget(draggedId, worldX, worldY): SnapTarget<PlantingPose> | null {
-      const planting = getPlanting(draggedId);
-      if (!planting) return null;
-      const garden = useGardenStore.getState().garden;
-      const snap = findSnapContainer(worldX, worldY, planting, garden);
-      if (!snap) return null;
-      const parent = getParent(snap.id);
-      if (!parent) return null;
-      return {
-        parentId: snap.id,
-        slotPose: { x: parent.x + snap.slotX, y: parent.y + snap.slotY },
-        metadata: {
-          instant: snap.cursorInside && snap.empty,
-          // See `gardenScene.findSnapTarget` — drives the snap-back guard's
-          // rejection of attraction-only releases (outside container bounds).
-          cursorInside: snap.cursorInside,
-          kind: snap.kind,
-          slotX: snap.slotX,
-          slotY: snap.slotY,
-        },
-      };
     },
     applyOps(ops: Op[], label: string) {
       useGardenStore.getState().checkpoint();

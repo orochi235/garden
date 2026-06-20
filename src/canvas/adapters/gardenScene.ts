@@ -1,4 +1,4 @@
-import type { LayoutStrategy, MoveAdapter, Op, SnapTarget } from '@orochi235/weasel';
+import type { LayoutStrategy, MoveAdapter, Op } from '@orochi235/weasel';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
@@ -8,7 +8,6 @@ import {
   plantingWorldPose,
   worldToLocalForParent,
 } from '../../utils/plantingPose';
-import { findSnapContainer } from '../findSnapContainer';
 import { type HitResult, hitTestArea, hitTestStack, type WorldRect } from '../hitTest';
 import { plantingLayoutFor } from './plantingLayout';
 
@@ -83,8 +82,8 @@ function allNodes(): SceneNode[] {
   return nodes;
 }
 
-export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
-  const adapter: Required<GardenSceneAdapter> = {
+export function createGardenSceneAdapter(): Required<Omit<GardenSceneAdapter, 'findSnapTarget'>> {
+  const adapter: Required<Omit<GardenSceneAdapter, 'findSnapTarget'>> = {
     getNode(id) {
       return findNode(id);
     },
@@ -174,30 +173,6 @@ export function createGardenSceneAdapter(): Required<GardenSceneAdapter> {
       // returns null for everything else, in which case useMove falls through
       // to free-space pose commit.
       return plantingLayoutFor(() => useGardenStore.getState().garden, id);
-    },
-    findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
-      const node = findNode(draggedId);
-      if (!node || node.kind !== 'planting') return null;
-      const garden = useGardenStore.getState().garden;
-      const snap = findSnapContainer(worldX, worldY, node.data, garden);
-      if (!snap) return null;
-      const parent = getPlantingParent(garden, snap.id);
-      if (!parent) return null;
-      return {
-        parentId: snap.id,
-        slotPose: { x: parent.x + snap.slotX, y: parent.y + snap.slotY },
-        metadata: {
-          instant: snap.cursorInside && snap.empty,
-          // True only when the cursor is genuinely inside the container bounds
-          // (vs merely within its snap-attraction radius). The snap-back guard
-          // reads this to reject attraction-only releases, which the move's
-          // layout pass would not commit. See `requirePlantingDrop`.
-          cursorInside: snap.cursorInside,
-          kind: snap.kind,
-          slotX: snap.slotX,
-          slotY: snap.slotY,
-        },
-      };
     },
     applyOps(ops, label) {
       // Checkpoint only for labeled commits (move/ops). Unlabeled calls are

@@ -1,4 +1,4 @@
-import type { MoveAdapter, SnapTarget } from '@orochi235/weasel';
+import type { MoveAdapter } from '@orochi235/weasel';
 import type { NurseryState, Seedling, Tray } from '../../model/nursery';
 import { getCell } from '../../model/nursery';
 import { useGardenStore } from '../../store/gardenStore';
@@ -194,34 +194,6 @@ export function createNurserySceneAdapter(): NurserySceneAdapter {
     // directly by `useSeedlingMoveTool.drag.onEnd` when a single-seedling drag
     // commits on a cell of a tray different from the source. No kit path drives
     // this adapter's `useMove`, so the optional `setParent` hook is never called.
-    findSnapTarget(draggedId, worldX, worldY): SnapTarget<ScenePose> | null {
-      const node = findNode(draggedId);
-      if (!node || node.kind !== 'seedling') return null;
-      const ss = useGardenStore.getState().garden.nursery;
-      // Find the nearest tray (by center) that has an available cell near the cursor.
-      let bestTray: Tray | null = null;
-      let bestDist = Infinity;
-      for (const t of ss.trays) {
-        const o = trayWorldOrigin(t, ss);
-        const cx = o.x + t.widthIn / 2;
-        const cy = o.y + t.heightIn / 2;
-        const d = (cx - worldX) ** 2 + (cy - worldY) ** 2;
-        if (d < bestDist) {
-          bestDist = d;
-          bestTray = t;
-        }
-      }
-      if (!bestTray) return null;
-      const o = trayWorldOrigin(bestTray, ss);
-      const cell = findEmptyCellNearest(bestTray, worldX - o.x, worldY - o.y, draggedId);
-      if (!cell) return null;
-      const center = cellCenterInches(bestTray, cell.row, cell.col);
-      return {
-        parentId: bestTray.id,
-        slotPose: { x: o.x + center.x, y: o.y + center.y },
-        metadata: { row: cell.row, col: cell.col },
-      };
-    },
     applyOps(ops, label) {
       useGardenStore.getState().checkpoint();
       for (const op of ops) op.apply(adapter);

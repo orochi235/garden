@@ -81,33 +81,6 @@ describe('nurseryScene', () => {
     expect(moved.col).toBe(1);
   });
 
-  it('findSnapTarget returns the nearest empty cell of nearest tray', () => {
-    const { tray, sA } = setup();
-    const a = createNurserySceneAdapter();
-    const off = trayInteriorOffsetIn(tray);
-    // Drop near cell (1, 1) — empty.
-    const t = a.findSnapTarget!(
-      sA.id,
-      off.x + 1.5 * tray.cellPitchIn,
-      off.y + 1.5 * tray.cellPitchIn,
-    );
-    expect(t).not.toBeNull();
-    expect(t!.parentId).toBe(tray.id);
-    expect(t!.metadata).toEqual({ row: 1, col: 1 });
-    expect(t!.slotPose).toEqual({
-      x: off.x + 1.5 * tray.cellPitchIn,
-      y: off.y + 1.5 * tray.cellPitchIn,
-    });
-  });
-
-  it('findSnapTarget returns null for trays', () => {
-    const { tray } = setup();
-    const a = createNurserySceneAdapter();
-    const fn = a.findSnapTarget;
-    expect(fn).toBeDefined();
-    expect(fn!(tray.id, 1, 1)).toBeNull();
-  });
-
   it('hitTest cascades seedling above tray when overlapping', () => {
     const { tray, sA } = setup();
     const a = createNurserySceneAdapter();
