@@ -1,15 +1,10 @@
 import type { RenderLayer } from '@orochi235/weasel';
-import { Canvas, useCanvasSize, useTools } from '@orochi235/weasel';
+import { SceneCanvas, useCanvasSize, useTools } from '@orochi235/weasel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import { useUiStore } from '../store/uiStore';
-import {
-  createNurserySceneAdapter,
-  type ScenePose,
-  type SeedNode,
-  trayWorldOrigin,
-} from './adapters/nurseryScene';
+import { createNurserySceneAdapter, trayWorldOrigin } from './adapters/nurseryScene';
 import { isDebugEnabled } from './debug';
 import { createAreaSelectDrag } from './drag/areaSelectDrag';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
@@ -77,8 +72,14 @@ export function NurseryCanvas() {
   const [iconTick, setIconTick] = useState(0);
   useEffect(() => onIconLoad(() => setIconTick((t) => t + 1)), []);
 
-  // Adapter is stateless wrt mount — recreate is fine.
+  // Adapter is stateless wrt mount — recreate is fine. It stays: eric's seed
+  // tools and the `geometry` picking below consume it. It is NOT passed to
+  // SceneCanvas (which is scene-authoritative via `nurseryScene`).
   const adapter = useMemo(() => createNurserySceneAdapter(), []);
+
+  // The live NurseryScene is the spatial store of record (identity-stable
+  // across in-place loadState restores), captured once for <SceneCanvas>.
+  const nurseryScene = useMemo(() => useGardenStore.getState().getNurseryScene(), []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the layer getters read latest store state at call time; the deps below are intentional redraw triggers. iconTick — icon bitmap decode. dragPreview — drag ghosts + gutter-affordance overlay repaint during a drag (the dispatcher only bumps gestureTick on phase transitions, not per pointermove). nursery.seedlings/trays — committed moves/sows mutate these arrays; without the dep weasel keeps the stale layers ref and never repaints (same fix as the garden canvas).
   const layers = useMemo(() => {
@@ -279,6 +280,31 @@ export function NurseryCanvas() {
     ambient: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
   });
 
+  // World-frame picking + bounds for SceneCanvas. `pickEvery` returns eric's
+  // domain hit stack (seedlings over trays, cell-precise); `boundsOf` returns
+  // the world AABB — tray = full footprint, seedling = one cell centered on its
+  // world pose. Written against the real `NurserySceneAdapter` (`getNode` →
+  // `SeedNode`, `getPose` → world `ScenePose`).
+  const geometry = useMemo(
+    () => ({
+      pickEvery: (worldX: number, worldY: number): string[] =>
+        adapter.hitAll(worldX, worldY).map((n) => n.id),
+      boundsOf: (id: string) => {
+        const node = adapter.getNode(id);
+        if (!node) return null;
+        const p = adapter.getPose(id);
+        if (node.kind === 'tray') {
+          return { x: p.x, y: p.y, width: node.data.widthIn, height: node.data.heightIn };
+        }
+        const ss = useGardenStore.getState().garden.nursery;
+        const tray = ss.trays.find((t) => t.id === node.data.trayId);
+        const pitch = tray?.cellPitchIn ?? 1;
+        return { x: p.x - pitch / 2, y: p.y - pitch / 2, width: pitch, height: pitch };
+      },
+    }),
+    [adapter],
+  );
+
   // Subscribe so React re-renders when highlight pulses; computeOpacity reads
   // happen during paint in the layer closures.
   void useHighlightStore;
@@ -298,14 +324,18 @@ export function NurseryCanvas() {
       onContextMenu={(e) => e.preventDefault()}
     >
       {width > 0 && height > 0 && (
-        <Canvas<SeedNode, ScenePose>
+        <SceneCanvas
+          scene={nurseryScene}
           width={width}
           height={height}
-          adapter={adapter}
           view={toKitView(view)}
           onViewChange={handleViewChange}
-          layers={layers}
+          layers={layers as never}
+          geometry={geometry}
           tools={tools}
+          selectionMode="none"
+          enableGestureDispatcher={false}
+          enableKeybindings={false}
         />
       )}
       {renaming &&
