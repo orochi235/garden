@@ -27,7 +27,7 @@ import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import { useUiStore } from '../store/uiStore';
 import { expandToGroups } from '../utils/groups';
 import { createGardenSceneAdapter, type ScenePose } from './adapters/gardenScene';
-import { createInsertAdapter } from './adapters/insert';
+import { createInsertAdapter, type GardenInsertAdapter } from './adapters/insert';
 import { plantingLayoutFor } from './adapters/plantingLayout';
 import { isDebugEnabled } from './debug';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
@@ -165,6 +165,37 @@ function GardenAreaSelectDep({
   return null;
 }
 
+/**
+ * Overrides the kit's default `insert` dep (`useInsertDepSource`), which builds
+ * orphan `kit-${kind}` leaf nodes (`{path, fill}`) that eric's scene→garden
+ * facade doesn't recognise — so a plot would never land in `garden.structures`.
+ * The dispatcher's `insertAction` consumes this dep's `commit`; weasel's
+ * `useInsertTool` is a thin declarative wrapper that ignores the adapter/options
+ * passed to it, so the adapter MUST be wired through the dep here. Routes the
+ * commit through eric's `commitInsert` (reads the armed `plottingTool` and
+ * builds a real `Structure`/`Zone`) + `insertNode` (reconciles the new node into
+ * the scene-of-record). Same per-consumer override seam as `GardenAreaSelectDep`
+ * — registered as a child of `<SceneCanvas>` so it wins over the kit default.
+ */
+function GardenInsertDep({ insertAdapter }: { insertAdapter: GardenInsertAdapter }) {
+  useDepSource('insert', () => ({
+    // `extras` (kind/geometry) is irrelevant to eric — the armed `plottingTool`
+    // decides structure vs. zone — so only the AABB `bounds` are consumed.
+    commit: (bounds): NodeId | null => {
+      // `commitInsert` is optional on the base `InsertAdapter` interface but is
+      // always defined on eric's adapter; guard to satisfy the type.
+      const node = insertAdapter.commitInsert?.(bounds);
+      if (!node) return null;
+      // One undo step: snapshot BEFORE the insert, then add. `insertNode` routes
+      // through `applyGardenPatch` → `reconcileScene` (no checkpoint of its own).
+      useGardenStore.getState().checkpoint();
+      insertAdapter.insertNode(node);
+      return node.id as NodeId;
+    },
+  }));
+  return null;
+}
+
 function GardenCanvasInner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
@@ -196,6 +227,16 @@ function GardenCanvasInner() {
 
   const adapter = useMemo(() => createGardenSceneAdapter(), []);
   const insertAdapter = useMemo(() => createInsertAdapter(), []);
+
+  // Alt-click cycle memo for the select tool's `pickBest` seam (below). Tracks
+  // the last (worldX, worldY) + hit-stack + index so repeated alt-clicks at the
+  // same point advance one deeper through overlapping objects.
+  const cyclePickMemoRef = useRef<{
+    worldX: number;
+    worldY: number;
+    ids: string[];
+    index: number;
+  } | null>(null);
 
   // View state lives locally — the canvas owns its viewport. UI siblings
   // (StatusBar, ScaleIndicator, ReturnToGarden, useGardenOffscreen,
@@ -571,6 +612,31 @@ function GardenCanvasInner() {
       // Garden structures/zones don't rotate — disable rotation entirely
       // (drops the rotate action + hides the rotation-handle chrome).
       rotate: false as const,
+      // Alt-aware body pick. The kit select tool claims every pointerdown
+      // before any ambient tool runs (defineTool compiles `pointerDown` →
+      // `pointer.onDown`, which claims via `begin`; the dispatcher returns on
+      // the first claim, and active precedes ambient). So the old ambient
+      // `useEricCycleTool` selection never fired — alt-click stack cycling has
+      // to live HERE, in the select tool's `pickBest` seam.
+      //   - no alt → topmost hit (eric's `hitAll` is ordered top-first +
+      //     footprint-precise — the same id the kit default would resolve).
+      //   - alt → cycle: first alt-click at a point selects the top; each
+      //     subsequent alt-click at the same point advances one deeper, wrapping.
+      pickBest: (worldX: number, worldY: number, alt: boolean): string | null => {
+        const ids = adapter.hitAll(worldX, worldY).map((n) => n.id);
+        if (ids.length === 0) return null;
+        if (!alt) return ids[0];
+        const memo = cyclePickMemoRef.current;
+        const same =
+          memo != null &&
+          Math.abs(memo.worldX - worldX) < 0.001 &&
+          Math.abs(memo.worldY - worldY) < 0.001 &&
+          memo.ids.length === ids.length &&
+          memo.ids.every((v, i) => v === ids[i]);
+        const nextIndex = same ? (memo!.index + 1) % ids.length : 0;
+        cyclePickMemoRef.current = { worldX, worldY, ids, index: nextIndex };
+        return ids[nextIndex];
+      },
     }),
     [adapter],
   );
@@ -759,6 +825,12 @@ function GardenCanvasInner() {
           layouts={layouts as never}
           tools={toolsPatch}
           ambient={ambient}
+          // `eric-canvas-click` owns group-outline-edge promote + clear-on-empty
+          // via `pointer.onClick`. The dispatcher never fires AMBIENT onClick —
+          // only the in-flight gesture owner + this dedicated click-fallback slot
+          // (consulted when the active select tool doesn't claim the click). The
+          // same tool stays in `ambient` for its Escape `keyboard.onDown` handler.
+          clickFallback={clickTool}
           actions={actions}
           getActiveMode={getActiveMode}
           // Wheel zoom is the kit's `viewport.zoom` action in plain-wheel mode
@@ -776,6 +848,7 @@ function GardenCanvasInner() {
         >
           <GardenHistoryBridge scene={scene} />
           <GardenAreaSelectDep adapter={adapter} selection={selectionApi} />
+          <GardenInsertDep insertAdapter={insertAdapter} />
         </SceneCanvas>
       )}
     </div>

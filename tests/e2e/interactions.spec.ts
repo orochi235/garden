@@ -145,8 +145,15 @@ async function clickAt(
   at: { x: number; y: number },
   opts?: { modifiers?: ('Alt' | 'Shift' | 'Control' | 'Meta')[] },
 ) {
+  // Deliver modifiers via the keyboard (down before / up after), NOT via
+  // mouse.click's `modifiers` option: that option doesn't propagate `altKey`
+  // to the synthesized pointerdown event the canvas dispatcher reads, so
+  // alt-clicks would silently arrive as plain clicks. Mirrors the `drag`
+  // helper above, which already presses modifiers through the keyboard.
   await page.mouse.move(at.x, at.y);
-  await page.mouse.click(at.x, at.y, { modifiers: opts?.modifiers });
+  for (const m of opts?.modifiers ?? []) await page.keyboard.down(m);
+  await page.mouse.click(at.x, at.y);
+  for (const m of opts?.modifiers ?? []) await page.keyboard.up(m);
 }
 
 // ---------------------------------------------------------------------------
@@ -271,8 +278,6 @@ test('3. alt-click cycles selection through the stack at a point', async ({ page
   // the kit `select` tool re-selects the top body-hit, overriding the ambient
   // cycle tool's claim. Unit tests for useEricCycleTool pass against a MOCKED
   // dispatcher, so the regression is in live SceneCanvas/dispatcher routing.
-  // Expected-failure until fixed; remove this annotation when the bug is fixed.
-  test.fail();
   await loadFixture(page, 'garden-mixed');
   const view = await getView(page);
   const rect = await canvasRect(page);
@@ -311,8 +316,7 @@ test('4. plot gesture inserts a new structure into the store', async ({ page }) 
   // createInsertAdapter().commitInsert, so SceneCanvas's default insert dep wins.
   // CAVEAT: this test arms the plot tool via setPlottingTool() programmatically;
   // before fixing, confirm the real toolbar arming path reproduces it (i.e. rule
-  // out a test-arming artifact). Expected-failure until fixed; remove when fixed.
-  test.fail();
+  // out a test-arming artifact).
   await loadFixture(page, 'garden-mixed');
   const view = await getView(page);
   const rect = await canvasRect(page);
@@ -352,8 +356,6 @@ test('5. clicking a group sibling outline promotes selection to the group', asyn
   // outline edge does NOT promote selection to the whole group in the live
   // dispatcher. The group-outline click-to-promote path (re-homed into the
   // ambient eric-canvas-click tool during the gesture migration) never fires.
-  // Expected-failure until fixed; remove this annotation when the bug is fixed.
-  test.fail();
   await loadFixture(page, 'garden-grouped');
   const garden = await getGarden(page);
   const view = await getView(page);
