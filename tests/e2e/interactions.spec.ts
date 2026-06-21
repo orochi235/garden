@@ -12,11 +12,11 @@ import { expect, type Page, test } from '@playwright/test';
  * test() so partial passes are visible.
  *
  * Tests 3 (alt-click cycle), 4 (plot insert), and 5 (group-outline promote)
- * are marked `test.fail()` — they assert the INTENDED behavior and document
- * live-dispatcher bugs this harness found on 2026-06-20 (all three pass their
- * unit tests against a mocked dispatcher). When a bug is fixed its test will
- * start passing, `test.fail()` will then flag "expected to fail but passed" —
- * remove the annotation at that point. The other tests must stay green.
+ * documented three live-dispatcher bugs this harness found on 2026-06-20 (each
+ * passed its unit tests against a mocked dispatcher but failed live). All three
+ * are now FIXED and assert real passes; the per-test "KNOWN BUG" notes are kept
+ * as historical context for the root cause. Test 7 (alt-drag clone) covers the
+ * restored clone action. All tests must stay green.
  *
  * World→screen transform (verified against src/canvas/hitTest.ts
  * getHandleScreenPositions and src/store/uiStore.ts view-mirror semantics):
@@ -433,4 +433,60 @@ test('6. wheel zoom clamps at min and max px/ft', async ({ page }) => {
     EFFECTIVE_MIN - 0.0001,
   );
   expect(zoomMin, 'reaches the effective min clamp').toBeLessThanOrEqual(EFFECTIVE_MIN + 0.1);
+});
+
+// ---------------------------------------------------------------------------
+// 7. Alt-drag clone (restored 2026-06-20)
+// ---------------------------------------------------------------------------
+test('7. alt-dragging a structure clones it at the drop offset', async ({ page }) => {
+  // Live coverage for the restored alt-drag clone (createGardenCloneAction,
+  // wired as the kit `clone` action). The retired useEricCycleTool clone path
+  // had NO e2e — it was silently dead after the pickBest migration because the
+  // kit select tool claims every pointerdown before any ambient tool runs. The
+  // restored action rides the select tool's own alt-body-drag→clone binding.
+  await loadFixture(page, 'garden-mixed');
+  await page.evaluate(() => {
+    window.__uiStore.getState().clearSelection();
+    window.__uiStore.getState().setViewMode('select');
+  });
+  const garden = await getGarden(page);
+  const view = await getView(page);
+  const rect = await canvasRect(page);
+
+  const struct = garden.structures.find((s) => s.id === 'struct-1')!;
+  expect(struct, 'struct-1 present').toBeTruthy();
+  const before = garden.structures.length;
+
+  // Alt-drag struct-1's center by +2ft in each axis. Destination stays within
+  // the 20×20 garden and clear enough to land a copy.
+  const fromWorld = rectCenterWorld(struct);
+  const toWorld = { x: fromWorld.x + 2, y: fromWorld.y + 2 };
+  const from = worldToPage(fromWorld, view, rect);
+  const to = worldToPage(toWorld, view, rect);
+  await drag(page, from, to, { steps: 10, modifiers: ['Alt'] });
+  await page.waitForTimeout(200);
+
+  const after = await getGarden(page);
+  const sel = await getSelectedIds(page);
+  console.log(
+    '[alt-clone] structures before',
+    before,
+    'after',
+    after.structures.length,
+    'sel',
+    sel,
+  );
+
+  // A copy was added and the original survived.
+  expect(after.structures.length, 'one clone added').toBe(before + 1);
+  expect(
+    after.structures.some((s) => s.id === 'struct-1'),
+    'original survives',
+  ).toBe(true);
+  // The new structure is offset by ~the drag delta (2ft, 2ft) and is selected.
+  const clone = after.structures.find((s) => s.id !== struct.id && s.type === struct.type);
+  expect(clone, 'clone exists').toBeTruthy();
+  expect(clone!.x).toBeCloseTo(struct.x + 2, 1);
+  expect(clone!.y).toBeCloseTo(struct.y + 2, 1);
+  expect(sel, 'selection moves to the clone').toEqual([clone!.id]);
 });

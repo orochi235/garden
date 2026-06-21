@@ -8,7 +8,7 @@ Running list of intended application behaviors.
 - While the pan tool is selected, left-click drag on the canvas should pan it
 - Right-click drag always pans regardless of tool
 - While the zoom tool is selected, left-click on the canvas zooms in around the click point and shift+left-click zooms out; the cursor shows `zoom-in`/`zoom-out` accordingly. The world point under the cursor stays under the cursor across the zoom. Double-clicking the toolbar zoom button resets to fit-view.
-- While selecting, if you hold down alt and drag an object, it should clone it (snaps to grid)
+- While selecting, if you hold down alt and drag an object, it should clone it
 - Drag operations require a minimum screen-pixel distance (`DRAG_THRESHOLD_PX`, default 4px) before activating; clicks with a slow release do not trigger a drag or push undo state
 - If a planting is dragged and then returned within `DRAG_THRESHOLD_PX` of its original arrangement position, the drag is undone entirely — no undo history entry is created
 - When dragging a planting near an empty or partially-filled container for 500ms (configurable via `SNAP_DWELL_MS`), show a ghosted preview of the planting at the container's next available arrangement slot; releasing commits the re-parent (or clone if alt is held); moving away cancels
@@ -165,14 +165,34 @@ Running list of intended application behaviors.
 - Snap-dwell (the 500 ms hover-into-container UX from legacy) is not yet
   ported. Container resolution is immediate based on cursor position.
 
-## Alt+drag clone (2026-05-05)
+## Alt+drag clone (retired + re-homed 2026-06-20)
 
-- Holding Alt and dragging a selected object duplicates it at the drop position (original stays in place).
-- The cycle tool (`useEricCycleTool`) delegates the drag to `useClone(cloneByAltDrag())` from weasel when an alt+click (cycle) is immediately followed by a drag.
-- The ghost overlay (dim copy tracking the cursor) is rendered by the cycle tool's own overlay layer while the drag is in flight.
-- Clone is committed as a single undo step via `applyBatch('Clone')`.
-- Structures and zones clone with an offset equal to the drag delta. Plantings resolve their new parent from whichever container the cursor is over at drop; if no container, the drop is silent (no new planting created).
-- Alt+click cycling remains unchanged: alt-clicking without dragging still cycles through overlapping objects at the cursor.
+- Holding Alt and dragging a selected object duplicates it at the drop position;
+  the original stays in place. Committed as a single undo step. A dim ghost of
+  each prospective clone tracks the cursor during the drag.
+- **Implementation moved seams.** The original lived in `useEricCycleTool`
+  (alt+click cycle, then delegate the drag to `useClone(cloneByAltDrag())`).
+  When selection migrated into the kit select tool's `pickBest` seam, the kit
+  select tool began claiming every pointerdown before any ambient tool could
+  run — so the ambient cycle tool's drag channel was never reached and alt-drag
+  clone silently broke. The dead cycle tool (and its vendored
+  `src/canvas/gestures/` clone surface) were retired, and clone was re-homed
+  onto the kit's own `clone` action.
+- Now implemented as `createGardenCloneAction` (`src/canvas/tools/gardenCloneAction.ts`),
+  registered via `<SceneCanvas actions={{ clone }}>`. The kit select tool
+  already carries the alt-body-drag→`clone` binding, so the dispatcher routes
+  the gesture here. The commit goes through eric's domain path (NOT the kit
+  `cloneAction`'s verbatim scene-node copy): group-expand the selection →
+  `insertAdapter.commitPaste` at the drag offset / drop point → apply insert +
+  set-selection ops as one undo step via `insertAdapter.applyOps`. The ghost
+  rides the shared `usePreviewGhostLayer` (`previewIds`/`previewPose`).
+- Structures and zones clone with an offset equal to the drag delta. Plantings
+  resolve their new parent from whichever container the cursor is over at drop;
+  if no container, the drop is silent (no new planting created).
+- Alt-dragging one member of a structure group clones the whole group
+  (group-expansion, matching the move action's `expandIds`).
+- Alt+click cycling is independent — it lives in `selectTool.pickBest` (e2e
+  test 3). Live coverage for clone: e2e test 7; unit: `gardenCloneAction.test.ts`.
 
 ## Insert-tool routing and clipboard wiring (Phase 4, 2026-05-05)
 

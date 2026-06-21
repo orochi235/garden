@@ -54,6 +54,7 @@ import { createZoneLayers } from './layers/zoneLayersWorld';
 import { NurseryCanvas } from './NurseryCanvas';
 import { onIconLoad } from './plantRenderers';
 import { useGardenSelectionApi } from './selectionBridge';
+import { createGardenCloneAction } from './tools/gardenCloneAction';
 import { requirePlantingDrop, snapStructureZoneToGrid } from './tools/snapMoveBehaviors';
 import {
   clampStructureZoneToGardenBounds,
@@ -61,7 +62,6 @@ import {
 } from './tools/structureMoveBehaviors';
 import { useEricCanvasClickTool } from './tools/useEricCanvasClickTool';
 import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
-import { useEricCycleTool } from './tools/useEricCycleTool';
 import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
 import { useEricRightDragPan } from './tools/useEricRightDragPan';
 import { useEricSelectAreaTool } from './tools/useEricSelectAreaTool';
@@ -522,13 +522,13 @@ function GardenCanvasInner() {
   // --- Tools ---
   // The kit gesture dispatcher owns move / resize / area-select / clone through
   // its internal `select` tool (configured via `selectTool` on <SceneCanvas>).
-  // Eric keeps its custom pan / zoom / insert / cycle tools, plus a focused
+  // Eric keeps its custom pan / zoom / insert tools, plus a focused
   // force-marquee tool (select-area) and an ambient click tool (clear +
-  // group-promote). Active-slot switching is driven from `viewMode` below.
+  // group-promote). Alt-click stack cycling lives in the select tool's
+  // `pickBest` seam (below). Active-slot switching is driven from `viewMode`.
   const leftDragPan = useEricLeftDragPanTool();
   const rightDragPan = useEricRightDragPan();
   const clickZoom = useEricClickZoomTool();
-  const cycleTool = useEricCycleTool(adapter, insertAdapter);
   const clickTool = useEricCanvasClickTool(adapter);
   const selectAreaTool = useEricSelectAreaTool();
   // Plot (rectangle) drag — migrated onto the putative-drag framework. See the
@@ -613,11 +613,11 @@ function GardenCanvasInner() {
       // (drops the rotate action + hides the rotation-handle chrome).
       rotate: false as const,
       // Alt-aware body pick. The kit select tool claims every pointerdown
-      // before any ambient tool runs (defineTool compiles `pointerDown` →
-      // `pointer.onDown`, which claims via `begin`; the dispatcher returns on
-      // the first claim, and active precedes ambient). So the old ambient
-      // `useEricCycleTool` selection never fired — alt-click stack cycling has
-      // to live HERE, in the select tool's `pickBest` seam.
+      // before any ambient tool runs (its `pointerDownBody` classifier always
+      // returns `begin`; the dispatcher gives the whole gesture to the first
+      // claimer, and active precedes ambient). An ambient cycle tool could
+      // therefore never see the pointerdown, so alt-click stack cycling lives
+      // HERE, in the select tool's `pickBest` seam.
       //   - no alt → topmost hit (eric's `hitAll` is ordered top-first +
       //     footprint-precise — the same id the kit default would resolve).
       //   - alt → cycle: first alt-click at a point selects the top; each
@@ -713,8 +713,8 @@ function GardenCanvasInner() {
 
   // Eric tools added alongside the internal select tool. Foreground (switchable)
   // tools go in the patch-form `tools` record; always-on tools (right-drag pan,
-  // alt-click cycle, canvas click) go in `ambient`. Wheel zoom is the kit's
-  // `viewport.zoom` action (plain-wheel mode) — see the `viewport` prop below.
+  // canvas click) go in `ambient`. Wheel zoom is the kit's `viewport.zoom`
+  // action (plain-wheel mode) — see the `viewport` prop below.
   const toolsPatch = useMemo<Record<string, AnyTool>>(
     () => ({
       [leftDragPan.id]: leftDragPan,
@@ -724,24 +724,28 @@ function GardenCanvasInner() {
     }),
     [leftDragPan, clickZoom, insertTool, selectAreaTool],
   );
-  const ambient = useMemo<AnyTool[]>(
-    () => [rightDragPan, cycleTool, clickTool],
-    [rightDragPan, cycleTool, clickTool],
-  );
-
-  // Disable kit actions whose eric semantics we own: `clearSelection` and
-  // group-promote live in `eric-canvas-click`; clone/duplicate stay in
-  // `eric-cycle` (alt-click then alt-drag). Disabling clone leaves the select
-  // tool's alt-drag binding inert so the cycle tool owns alt-drag cloning.
-  const actions = useMemo<ActionsProp>(
-    () => ({ clearSelection: null, clone: null, duplicate: null }) as ActionsProp,
-    [],
-  );
+  const ambient = useMemo<AnyTool[]>(() => [rightDragPan, clickTool], [rightDragPan, clickTool]);
 
   // The live kit Scene is the spatial store of record (identity-stable across
   // in-place loadState restores), so capture it once for <SceneCanvas>.
   const scene = useMemo(() => useGardenStore.getState().getScene(), []);
   const selectionApi = useGardenSelectionApi();
+
+  // Action overrides. `clearSelection` + group-promote live in
+  // `eric-canvas-click`, so disable the kit default. `clone` is eric's custom
+  // alt-drag-clone action (`createGardenCloneAction`): the kit select tool's
+  // alt-body-drag binding routes here, but the commit goes through eric's
+  // domain path (group-expansion + planting parent-from-drop + applyOps undo)
+  // instead of the kit cloneAction's verbatim scene-node copy. `duplicate`
+  // (keyboard Cmd+D) stays disabled — out of scope.
+  const cloneAction = useMemo(
+    () => createGardenCloneAction(insertAdapter, scene),
+    [insertAdapter, scene],
+  );
+  const actions = useMemo<ActionsProp>(
+    () => ({ clearSelection: null, clone: cloneAction, duplicate: null }) as ActionsProp,
+    [cloneAction],
+  );
 
   // Kit scene-slot painter. The kit drives the slot from the live `GardenScene`,
   // handing `drawOne` a kit `Node<GardenNodeData,…>` + the scene's geometry-only
