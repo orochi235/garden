@@ -1,5 +1,5 @@
-import type { MoveBehavior } from '@orochi235/weasel';
-import { snapToGrid as weaselSnapToGrid } from '@orochi235/weasel/move';
+import type { MoveBehavior } from '@weasel-js/core';
+import { snapToGrid as weaselSnapToGrid } from '@weasel-js/core/move';
 import { useGardenStore } from '../../store/gardenStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
 import { plantingLayoutFor } from '../adapters/plantingLayout';

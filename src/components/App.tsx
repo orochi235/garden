@@ -1,4 +1,4 @@
-import { asNodeId, type NodeId, useClipboardOps } from '@orochi235/weasel';
+import { asNodeId, type NodeId, useClipboardOps } from '@weasel-js/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useKeyboardActionDispatch } from '../actions/useKeyboardActionDispatch';
 import { createInsertAdapter } from '../canvas/adapters/insert';
@@ -11,6 +11,7 @@ import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
 import { enterNursery } from '../utils/enterNursery';
 import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/file';
+import { ErrorBoundary } from './ErrorBoundary';
 import { LayerSelector } from './LayerSelector';
 import { MenuBar } from './MenuBar';
 import { NurseryPalette } from './palette/NurseryPalette';
@@ -276,27 +277,38 @@ export function App() {
         <MenuBar />
       </div>
       <div className={styles.palette}>
-        {appMode === 'nursery' ? (
-          <NurseryPalette onDragBegin={handleSeedDragBegin} />
-        ) : (
-          <ObjectPalette onDragBegin={handlePaletteDragBegin} />
-        )}
+        <ErrorBoundary label="Palette">
+          {appMode === 'nursery' ? (
+            <NurseryPalette onDragBegin={handleSeedDragBegin} />
+          ) : (
+            <ObjectPalette onDragBegin={handlePaletteDragBegin} />
+          )}
+        </ErrorBoundary>
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.leftHandle}`}
         onMouseDown={(e) => handleResizeStart('left', e)}
       />
       <div className={styles.canvas}>
-        <GardenCanvas />
+        {/* Separate boundaries: a crash in the layer widget's animation must
+            not blank the canvas, and a canvas crash must leave the toolbar
+            usable. */}
+        <ErrorBoundary label="Canvas">
+          <GardenCanvas />
+        </ErrorBoundary>
         <ViewToolbar />
-        <LayerSelector />
+        <ErrorBoundary label="Layer selector">
+          <LayerSelector />
+        </ErrorBoundary>
       </div>
       <div
         className={`${styles.resizeHandle} ${styles.rightHandle}`}
         onMouseDown={(e) => handleResizeStart('right', e)}
       />
       <div className={styles.sidebar}>
-        <Sidebar />
+        <ErrorBoundary label="Sidebar">
+          <Sidebar />
+        </ErrorBoundary>
       </div>
       <div className={styles.status}>
         <StatusBar />

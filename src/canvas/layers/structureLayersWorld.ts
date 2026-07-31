@@ -1,5 +1,5 @@
-import type { Dims, View } from '@orochi235/weasel';
-import { measureTextBounds, type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
+import type { Dims, View } from '@weasel-js/core';
+import { measureTextBounds, type RenderLayer, rectPath, textCommand } from '@weasel-js/core';
 import type { Structure } from '../../model/types';
 import { paintFor } from '../patterns';
 import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';

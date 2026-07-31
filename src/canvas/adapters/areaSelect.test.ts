@@ -1,4 +1,4 @@
-import { asNodeId, createSetSelectionOp } from '@orochi235/weasel';
+import { asNodeId, createSetSelectionOp } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';

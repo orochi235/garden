@@ -7,7 +7,7 @@ import {
   type OngoingHandle,
   type Op,
   type SelectionApi,
-} from '@orochi235/weasel';
+} from '@weasel-js/core';
 import type { GardenScene } from '../../scene/gardenScene';
 import { useGardenStore } from '../../store/gardenStore';
 import { expandToGroups } from '../../utils/groups';

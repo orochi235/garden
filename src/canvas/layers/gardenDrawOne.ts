@@ -1,5 +1,5 @@
-import type { View } from '@orochi235/weasel';
-import { rectPath } from '@orochi235/weasel';
+import type { View } from '@weasel-js/core';
+import { rectPath } from '@weasel-js/core';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { FILL_COLORS } from '../../model/types';

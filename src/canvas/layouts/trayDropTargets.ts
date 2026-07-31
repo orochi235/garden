@@ -1,4 +1,4 @@
-import type { DropTarget } from '@orochi235/weasel';
+import type { DropTarget } from '@weasel-js/core';
 import { type Tray, trayInteriorOffsetIn } from '../../model/nursery';
 
 /** Affordance gutter size in inches, expressed as a fraction of cell pitch. */

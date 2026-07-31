@@ -12,7 +12,7 @@
  * locks. View-transform plumbing stays at the gesture/view boundary.
  */
 
-import type { ViewTransform } from '@orochi235/weasel';
+import type { ViewTransform } from '@weasel-js/core';
 import { getCultivar } from '../model/cultivars';
 import type { LayerId, Planting, Structure, Zone } from '../model/types';
 import { useUiStore } from '../store/uiStore';

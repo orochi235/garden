@@ -1,4 +1,4 @@
-import { asNodeId } from '@orochi235/weasel';
+import { asNodeId } from '@weasel-js/core';
 import { describe, expect, it } from 'vitest';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
 import { createGarden } from '../model/types';

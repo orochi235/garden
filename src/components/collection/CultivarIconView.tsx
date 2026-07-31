@@ -1,4 +1,4 @@
-import { createMarkdownRenderer, type DragPayload, useDragHandle } from '@orochi235/weasel';
+import { createMarkdownRenderer, type DragPayload, useDragHandle } from '@weasel-js/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import type { Cultivar } from '../../model/cultivars';

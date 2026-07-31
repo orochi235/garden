@@ -1,4 +1,4 @@
-import { useDragHandle, useDropZone } from '@orochi235/weasel';
+import { useDragHandle, useDropZone } from '@weasel-js/core';
 import { useCallback, useEffect, useState } from 'react';
 import { CanvasRenderer } from './CanvasRenderer';
 import { ItemPalette } from './ItemPalette';

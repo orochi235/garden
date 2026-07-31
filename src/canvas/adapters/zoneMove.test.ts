@@ -1,4 +1,4 @@
-import { createTransformOp } from '@orochi235/weasel';
+import { createTransformOp } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createZoneMoveAdapter } from './zoneMove';

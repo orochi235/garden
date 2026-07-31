@@ -1,4 +1,4 @@
-import type { InvocationCtx, OngoingHandle, SelectionApi } from '@orochi235/weasel';
+import type { InvocationCtx, OngoingHandle, SelectionApi } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';

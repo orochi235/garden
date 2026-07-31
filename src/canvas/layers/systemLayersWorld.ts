@@ -1,4 +1,4 @@
-import { PathBuilder, type RenderLayer } from '@orochi235/weasel';
+import { PathBuilder, type RenderLayer } from '@weasel-js/core';
 import type { DrawCommand } from '../util/weaselLocal';
 import type { LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';

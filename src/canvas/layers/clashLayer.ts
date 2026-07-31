@@ -1,5 +1,5 @@
-import type { Dims, RenderLayer, View } from '@orochi235/weasel';
-import { rectPath } from '@orochi235/weasel';
+import type { Dims, RenderLayer, View } from '@weasel-js/core';
+import { rectPath } from '@weasel-js/core';
 import type { Structure } from '../../model/types';
 import { type DrawCommand, ellipsePolygon, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi } from './worldLayerData';

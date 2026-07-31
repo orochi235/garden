@@ -1,6 +1,6 @@
 /**
  * Local replacement for the `createDragGhost` that was removed from
- * `@orochi235/weasel` in 0.2.0.
+ * `@weasel-js/core` in 0.2.0.
  *
  * Creates a fixed-position, pointer-events-none screen overlay containing a
  * <canvas> element.  The canvas is scaled by `devicePixelRatio` so it renders

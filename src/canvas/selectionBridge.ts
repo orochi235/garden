@@ -1,4 +1,4 @@
-import type { NodeId, SelectionApi } from '@orochi235/weasel';
+import type { NodeId, SelectionApi } from '@weasel-js/core';
 import { useMemo } from 'react';
 import { useUiStore } from '../store/uiStore';
 

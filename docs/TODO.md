@@ -45,9 +45,68 @@ Bugs 2 & 3 shared ONE root cause (investigated 2026-06-20): the kit's **active `
 - ~~**Alt-click cycle doesn't advance**~~ Resolved 2026-06-20. Fix: eric supplies `selectTool.pickBest(worldX, worldY, alt)` on `<SceneCanvas>` (`GardenCanvas.tsx`). No alt → topmost hit; alt → cycle through the overlapping stack via a `cyclePickMemoRef` (first alt-click = top, each subsequent same-point alt-click goes one deeper, wrapping). The kit select tool claims every pointerdown before ambient runs, so the old ambient `useEricCycleTool` selection was already dead — cycling had to move into the select tool's `pickBest` seam. e2e test 3 now a real pass (`planting-1` → `zone-1`). ALSO fixed a test-harness bug: `clickAt`'s `mouse.click({modifiers})` didn't propagate `altKey` to the pointerdown event (alt-clicks silently arrived as plain clicks) — switched to keyboard `down`/`up` like the `drag` helper. FOLLOW-UP (done 2026-06-20): audited and **retired** `useEricCycleTool` entirely — both paths were dead in the live app. Selection was superseded by `pickBest`; the alt-drag-clone path was confirmed unreachable in weasel source (the kit select tool's `pointerDownBody` classifier always `begin`s, so the dispatcher gives the whole gesture to the select tool and the ambient cycle tool's `pointer.onDown`/`drag` are never consulted — `scratch.cycled` never sets). "Slim to clone-only" wouldn't fire either. Deleted the tool, its test, and the only-consumer vendored `src/canvas/gestures/` clone surface (a duplicate of weasel's now-exported `cloneAction`/`cloneByAltDrag`); stripped the wiring + ambient entry from `GardenCanvas.tsx`. Alt-click cycle is unaffected (lives in `pickBest`, e2e test 3). Alt-drag clone was then **re-homed** onto the kit `clone` action — see "Restore alt-drag clone" below.
 - ~~**Group-outline click-to-promote doesn't fire**~~ Resolved 2026-06-20. Fix: pass `eric-canvas-click` as `<SceneCanvas clickFallback={clickTool}>` (`GardenCanvas.tsx`); the dispatcher fires the fallback's `pointer.onClick` when the active select tool doesn't claim the click. Kept in `ambient` too for its Escape `keyboard.onDown` handler. This also revived the silently-dead **clear-on-empty-click** (same root cause). e2e test 5 now a real pass (outline-edge click promotes `struct-1` → `struct-1`+`struct-2`).
 - ~~**Restore alt-drag clone.**~~ Resolved 2026-06-20. Alt-drag-to-clone went silently dead after the `pickBest` selection migration (the kit select tool claims the gesture before the old ambient cycle tool could). Restored the kit-native way: a custom `clone` action, `createGardenCloneAction` (`src/canvas/tools/gardenCloneAction.ts`), registered via `<SceneCanvas actions={{ clone: cloneAction }}>` in `GardenCanvas.tsx`. The select tool already carries the alt-body-drag→`clone` binding (weasel `useSelectTool.ts` ≈L368), so the dispatcher routes the gesture here. The two domain gaps in weasel's default `cloneAction` are closed: (a) **group-expansion** — the action `expandToGroups` the selection at `start`; (b) **planting parent-from-drop** — the commit goes through eric's `insertAdapter.commitPaste(snap, {dx,dy}, {dropPoint})` (resolves the new container from the cursor world point), NOT the kit action's verbatim scene-node copy + same-parent translate. Commit is one undo step via `insertAdapter.applyOps` (checkpoint + op.apply); ghost rides the shared `usePreviewGhostLayer` via `previewIds`/`previewPose`. Verified: `gardenCloneAction.test.ts` (6 unit tests: structure offset, undo, cancel, zero-delta, group-of-3 expansion, planting parent-from-drop) + **e2e test 7** (live: structure count 1→2, clone at drag offset, selection moves to clone). `duplicate` (keyboard Cmd+D) stays disabled — out of scope. NOTE: clones do NOT grid-snap (commitPaste uses the raw drag offset); behavior.md's "snaps to grid" aside is aspirational, matching the retired impl.
-- [ ] **Minor: `<SceneCanvas viewport={{zoom:{min:5,max:500}}}>` is dead config.** `GardenCanvas.handleViewChange` re-clamps every committed view through its own `clampZoom` (`GARDEN_MIN_ZOOM=10`, `GARDEN_MAX_ZOOM=200`), which wins — effective clamp is [10,200] px/ft. Either drop the prop or make `handleViewChange` honor it.
+- ~~**Minor: `<SceneCanvas viewport={{zoom:{min:5,max:500}}}>` is dead config.**~~ Resolved 2026-07-31 (weasel 0.7 upgrade): the prop now passes `GARDEN_MIN_ZOOM` / `GARDEN_MAX_ZOOM`, the same constants `clampZoom` applies, so the kit clamp and the re-clamp agree at [10,200] px/ft.
 
 Not e2e-assertable (need human eyes): wheel zoom-toward-cursor anchor *feel*; subjective resize-drag smoothness.
+
+## weasel 0.7 upgrade (2026-07-31)
+
+eric now consumes the **published** `@weasel-js/core@^0.7.0` from npm instead of
+`@orochi235/weasel` symlinked to `~/src/weasel`. The old specifier resolved to
+the monorepo root, which exports nothing under that name — the app hadn't
+typechecked since the kit split into `@weasel-js/*` packages.
+
+The load-bearing breaking change: **tools no longer carry imperative
+`pointer` / `drag` / `wheel` / `keyboard` handlers**. A tool is a table of
+`bindings` pointing at registered actions, and the dispatcher no longer walks a
+chain of tools asking each to `'claim'` or `'pass'`. What that cost, and where
+each piece went:
+
+- `defineTool` moved to the `@weasel-js/core/routing` subpath.
+- `useInsertTool` → the kit's `useRectTool` (one `drag` binding onto the
+  `insert` action, committing through eric's `insert` dep).
+- `clickFallback` on `<SceneCanvas>` is **gone** — it existed because the
+  dispatcher never fired an ambient tool's `pointer.onClick`. Ambient tools'
+  *bindings* are consulted normally, so `eric-canvas-click` is now an ordinary
+  ambient tool binding `click`/`empty` → `eric.canvasClick`.
+- Pan/zoom: left-drag pan binds the kit's `viewport.dragPan`; wheel zoom is the
+  kit's `viewport.zoom` (both canvases); click-zoom is eric's own
+  `eric.clickZoom` action. `useEricWheelZoomTool` was deleted.
+- **Right-drag pan is no longer a tool.** `useGestureDispatcher` returns early
+  on `button !== 0`, deliberately leaving secondary buttons to the consumer, so
+  it is a DOM pointer pipeline (`useRightDragPan` in `tools/viewportTools.ts`)
+  on the canvas container.
+- The nursery moved off the retired tool-walking dispatcher entirely
+  (`enableGestureDispatcher` was `false`; it now runs the gesture dispatcher).
+  Its four tools became kit-agnostic gesture objects (`tools/nurseryGestures.ts`)
+  behind two router actions — `eric.nursery.drag` and `eric.nursery.click` —
+  which try their gestures in an explicit priority order. That order used to be
+  an emergent property of active/ambient slot position.
+
+Deliberate behavior changes, all small:
+
+- **Click-to-sow now works with an armed cultivar.** The sow gesture runs
+  before the select gesture in the click router. Under the old ambient ordering
+  the select tool claimed every non-seedling click first, so click-to-sow was
+  only reachable mid-palette-drag.
+- **eric's `PLOT_DRAG_KIND` preview is deleted** (`drag/plotDrag.ts` and its
+  test). `useInsertTool` ignored the options passed to it, so eric's behaviors
+  mirror and its transparent `overlayStyle` were already dead — the kit's own
+  insert overlay has been drawing the plot rect all along.
+- Still open from that same discovery: **`plottingTool` stays armed after a
+  plot** (the old `onGestureEnd` one-shot disarm was dead code). Current live
+  behavior is preserved rather than "fixed"; decide whether plotting should be
+  one-shot or sticky.
+
+Crash containment (the "one click shouldn't kill the app" work):
+
+- `components/ErrorBoundary.tsx` wraps the canvas, palette, sidebar, and layer
+  selector. The app had **no** error boundary anywhere, so any thrown render
+  unmounted the whole tree — including unsaved garden state.
+- Fixed a real one-click crash: switching to nursery mode shrinks the layer set
+  under an in-flight `LayerSelector` tween, and `interpolateLayouts` read past
+  the end of the destination array on every animation frame. Regression test in
+  `components/LayerSelector.test.tsx` (verified failing without the fix).
 
 ## Text rendering (MSDF unification)
 
@@ -82,7 +141,7 @@ registers the Inter atlas at boot in `main.tsx`). Follow-ups:
 - ~~`CanvasNewPrototype` hardcodes `highlightOpacity: 0` and `showFootprintCircles: true`. Wire to real ui state once Phase 3 introduces toggles.~~ Resolved: `uiStore` now exposes `highlightOpacity` (default 0) and `showFootprintCircles` (default `true`); `CanvasNewPrototype` reads both from the store.
 - ~~Selection rendering reads from `uiStore.selectedIds` but selection editing/gestures aren't wired (`selectionMode="none"`). Phase 3 connects palette/drag/click → adapter.~~ Resolved (2026-05-05): keeping `selectionMode="none"` is correct. Eric owns selection editing entirely through `uiStore.selectedIds` via its own tools — `useEricSelectTool` (click/marquee/drag/clone), `useEricCycleTool` (alt-click stack cycling), `useGardenPaletteDropTool` / `usePaletteDropTool` (palette drag-in), plus snap behaviors. The kit's `selectionMode='single'`/`'multi'` would activate the kit's *internal* `useSelection` to mutate from canvas pointer events (`applyClick`, drag-to-move, kit-level resize handles, `'multi'` union-AABB), with no connection to `uiStore`. Eric never passes a `selection` override to bridge them, so flipping the prop would create two competing selection states (kit's internal vs. uiStore-backed) and duplicate move/resize gestures on top of eric's tools. `'none'` is the documented escape hatch for "consumers do their own picking via the active tool" — exactly our case. Verified `npx vitest run src/canvas` (257/257 passing) and `npx tsc --noEmit -p tsconfig.app.json` (no new errors). Same conclusion applies to `SeedStartingCanvasNewPrototype.tsx:248`.
 - ~~Label de-occlusion in `planting-labels` uses world-coord rects; the legacy version used screen rects. Visually verify behavior matches once labels are turned on at varied zoom levels (Phase 3).~~ Verified 2026-05-05 via Playwright on the Marinara fixture (8 plantings in a 4×8 raised bed) with `labelMode: 'all'`. Tested at three zooms (~78%, ~115%, ~138% px-per-ft; clamped at the high end by `useEricWheelZoomTool`'s 5–500 px/ft range): labels stayed pixel-constant in size (`fontPx = labelFontSize / view.scale`), remained anchored under each planting, the structure label "Marinara Bed" sat below the bed, and de-occlusion correctly hid every other row at tighter zooms while showing all labels once spacing exceeded label width. No overlaps, no orphaned labels, foreground/selected labels never lost to background occluders.
-- `vite.config.ts` keeps `resolve.dedupe: ['react', 'react-dom']` because `@orochi235/weasel` is still consumed as a `file:../weasel` link in `package.json` (verified 2026-05-05). The dedupe remains load-bearing to avoid duplicate-React errors from the linked package's own `node_modules`. Revisit once weasel actually ships as a published npm package and the dependency switches to a version range.
+- `vite.config.ts` keeps `resolve.dedupe: ['react', 'react-dom']`. It was load-bearing while weasel was consumed as a `file:../weasel` link (the linked package's own `node_modules` produced duplicate-React errors). As of 2026-07-31 eric depends on published `@weasel-js/core@^0.7.0`, where React is a peer dep and hoists normally — the dedupe is retained as cheap insurance, not because it is required. Safe to drop if it ever gets in the way.
 
 ## Canvas redesign deferrals (Phase 3)
 

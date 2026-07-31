@@ -6,7 +6,7 @@ import {
   rectPath,
   textCommand,
   type View,
-} from '@orochi235/weasel';
+} from '@weasel-js/core';
 import { computeOccupancy, resolveFootprint } from '../../model/cellOccupancy';
 import { computeContainerOverlay } from '../../model/containerOverlay';
 import { getCultivar } from '../../model/cultivars';

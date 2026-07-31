@@ -9,7 +9,7 @@ import type {
   RenderLayer,
   SelectionApi,
   ToolsApi,
-} from '@orochi235/weasel';
+} from '@weasel-js/core';
 import {
   ActiveToolContextProviderIfRoot,
   composeRectPose,
@@ -18,8 +18,8 @@ import {
   SceneCanvas,
   useCanvasSize,
   useDepSource,
-  useInsertTool,
-} from '@orochi235/weasel';
+  useRectTool,
+} from '@weasel-js/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GardenScene } from '../scene/gardenScene';
 import { useGardenStore } from '../store/gardenStore';
@@ -32,7 +32,6 @@ import { plantingLayoutFor } from './adapters/plantingLayout';
 import { isDebugEnabled } from './debug';
 import { createDragPreviewLayer } from './drag/dragPreviewLayer';
 import { createGardenPaletteDrag } from './drag/gardenPaletteDrag';
-import { createPlotDrag, PLOT_DRAG_KIND, type PlotPutative } from './drag/plotDrag';
 import type { WorldRect } from './hitTest';
 import { createStructureClashLayer } from './layers/clashLayer';
 import { createDebugLayers } from './layers/debugLayers';
@@ -60,12 +59,15 @@ import {
   clampStructureZoneToGardenBounds,
   detectStructureClash,
 } from './tools/structureMoveBehaviors';
-import { useEricCanvasClickTool } from './tools/useEricCanvasClickTool';
-import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
-import { useEricLeftDragPanTool } from './tools/useEricLeftDragPanTool';
-import { useEricRightDragPan } from './tools/useEricRightDragPan';
+import { createCanvasClickAction, useEricCanvasClickTool } from './tools/useEricCanvasClickTool';
 import { useEricSelectAreaTool } from './tools/useEricSelectAreaTool';
 import { useGardenPaletteDropTool } from './tools/useGardenPaletteDropTool';
+import {
+  createClickZoomAction,
+  useEricClickZoomTool,
+  useEricLeftDragPanTool,
+  useRightDragPan,
+} from './tools/viewportTools';
 
 export function GardenCanvas() {
   const appMode = useUiStore((s) => s.appMode);
@@ -404,15 +406,15 @@ function GardenCanvasInner() {
     const getPlantings = () => useGardenStore.getState().garden.plantings;
 
     // Putative-drag preview layer — renders the palette → garden plant ghost
-    // and the plot (rectangle) draw preview from `uiStore.dragPreview`. The
-    // move / resize / area-select ghosts now render through the kit dispatcher
-    // (`usePreviewGhostLayer` + the dispatcher overlay), so only the two
-    // eric-owned putative drags remain registered here.
+    // from `uiStore.dragPreview`. The move / resize / area-select ghosts render
+    // through the kit dispatcher (`usePreviewGhostLayer` + the dispatcher
+    // overlay), and the plot (rectangle) preview through the kit `insert`
+    // action's own overlay, so the palette drop is the last eric-owned putative
+    // drag registered here.
     const dragPreviewRegistry = {
       [createGardenPaletteDrag({ getEntry: () => null }).kind]: createGardenPaletteDrag({
         getEntry: () => null,
       }),
-      [PLOT_DRAG_KIND]: createPlotDrag(),
     };
     const baseList: RenderLayer<unknown>[] = [
       ...createZoneLayers(getZones, getUi),
@@ -511,12 +513,18 @@ function GardenCanvasInner() {
     return { x: -offX / scale, y: -offY / scale, scale };
   }, [width, height, garden.widthFt, garden.lengthFt, zoom, panX, panY]);
 
-  const handleViewChange = (kitNext: Parameters<typeof fromKitView>[0]) => {
-    const next: View = fromKitView(kitNext);
+  // Commit a view (eric's scalar form) into the local zoom/pan state, clamped.
+  // Stable identity — the state setters are stable — so non-React callers (the
+  // right-drag pan pipeline) can hold onto it across renders.
+  const applyView = useCallback((next: View) => {
     const clamped = clampZoom(next.scale);
     setZoomState(clamped);
     setPanXState(-next.x * clamped);
     setPanYState(-next.y * clamped);
+  }, []);
+
+  const handleViewChange = (kitNext: Parameters<typeof fromKitView>[0]) => {
+    applyView(fromKitView(kitNext));
   };
 
   // --- Tools ---
@@ -527,50 +535,26 @@ function GardenCanvasInner() {
   // group-promote). Alt-click stack cycling lives in the select tool's
   // `pickBest` seam (below). Active-slot switching is driven from `viewMode`.
   const leftDragPan = useEricLeftDragPanTool();
-  const rightDragPan = useEricRightDragPan();
   const clickZoom = useEricClickZoomTool();
-  const clickTool = useEricCanvasClickTool(adapter);
+  const getViewScale = useCallback(() => viewRef.current.scale, []);
+  const clickTool = useEricCanvasClickTool(getViewScale);
   const selectAreaTool = useEricSelectAreaTool();
-  // Plot (rectangle) drag — migrated onto the putative-drag framework. See the
-  // long-form note preserved below.
-  const insertTool = useInsertTool(insertAdapter, {
-    onGestureEnd: () => {
-      useUiStore.getState().setPlottingTool(null);
-      const ui = useUiStore.getState();
-      if (ui.dragPreview && ui.dragPreview.kind === PLOT_DRAG_KIND) {
-        ui.setDragPreview(null);
-      }
-    },
-    overlayStyle: { fill: 'transparent', stroke: 'transparent', dash: [], lineWidth: 0 },
-    behaviors: [
-      {
-        onStart: (ctx) => {
-          const tool = useUiStore.getState().plottingTool;
-          if (!tool) return;
-          const start = ctx.origin.get('gesture') as { x: number; y: number } | undefined;
-          if (!start) return;
-          const putative: PlotPutative = {
-            start: { x: start.x, y: start.y },
-            current: { x: start.x, y: start.y },
-            entityKind: tool.category === 'structures' ? 'structure' : 'zone',
-            color: tool.color,
-          };
-          useUiStore.getState().setDragPreview({ kind: PLOT_DRAG_KIND, putative });
-        },
-        onMove: (_ctx, proposed) => {
-          const tool = useUiStore.getState().plottingTool;
-          if (!tool) return;
-          const putative: PlotPutative = {
-            start: { x: proposed.start.x, y: proposed.start.y },
-            current: { x: proposed.current.x, y: proposed.current.y },
-            entityKind: tool.category === 'structures' ? 'structure' : 'zone',
-            color: tool.color,
-          };
-          useUiStore.getState().setDragPreview({ kind: PLOT_DRAG_KIND, putative });
-        },
-      },
-    ],
-  });
+  // Plot (rectangle) drag. The kit's own rect tool: a single `drag` binding onto
+  // the `insert` action, which tracks the live bounds, paints the preview, and
+  // commits through the `insert` dep — eric's `GardenInsertDep` below, which
+  // builds a real `Structure`/`Zone` from the armed `plottingTool`.
+  //
+  // Eric's bespoke PLOT_DRAG_KIND preview is gone with it: `useInsertTool`
+  // ignored the adapter/options handed to it, so eric's `behaviors` mirror and
+  // the transparent `overlayStyle` that suppressed the kit's marquee were both
+  // dead code — the kit overlay has been drawing this rect all along. The
+  // armed `plottingTool` likewise stays armed after a plot (`onGestureEnd` was
+  // dead too); one-shot disarm is a behavior change, tracked in docs/TODO.md.
+  const insertTool = useRectTool();
+  // Right-mouse-drag pan. Not a kit tool: the gesture dispatcher only routes the
+  // primary button, leaving secondary buttons to the consumer.
+  const getView = useCallback(() => viewRef.current, []);
+  useRightDragPan(containerRef, getView, applyView);
   // Palette → garden drop tool (non-claiming pseudo-tool). Subscribes to
   // `palettePointerPayload`, owns ghost + threshold drag + commit.
   useGardenPaletteDropTool({ containerRef, viewRef });
@@ -724,7 +708,7 @@ function GardenCanvasInner() {
     }),
     [leftDragPan, clickZoom, insertTool, selectAreaTool],
   );
-  const ambient = useMemo<AnyTool[]>(() => [rightDragPan, clickTool], [rightDragPan, clickTool]);
+  const ambient = useMemo<AnyTool[]>(() => [clickTool], [clickTool]);
 
   // The live kit Scene is the spatial store of record (identity-stable across
   // in-place loadState restores), so capture it once for <SceneCanvas>.
@@ -742,9 +726,24 @@ function GardenCanvasInner() {
     () => createGardenCloneAction(insertAdapter, scene),
     [insertAdapter, scene],
   );
+  const canvasClickAction = useMemo(() => createCanvasClickAction(adapter), [adapter]);
+  const clickZoomAction = useMemo(
+    () => createClickZoomAction({ min: GARDEN_MIN_ZOOM, max: GARDEN_MAX_ZOOM }),
+    [],
+  );
   const actions = useMemo<ActionsProp>(
-    () => ({ clearSelection: null, clone: cloneAction, duplicate: null }) as ActionsProp,
-    [cloneAction],
+    () =>
+      ({
+        clearSelection: null,
+        clone: cloneAction,
+        duplicate: null,
+        // Eric-owned actions the tools above bind to. The `actions` prop takes
+        // any id, so consumer actions register through the same seam as kit
+        // overrides.
+        [canvasClickAction.id]: canvasClickAction,
+        [clickZoomAction.id]: clickZoomAction,
+      }) as ActionsProp,
+    [cloneAction, canvasClickAction, clickZoomAction],
   );
 
   // Kit scene-slot painter. The kit drives the slot from the live `GardenScene`,
@@ -829,21 +828,19 @@ function GardenCanvasInner() {
           layouts={layouts as never}
           tools={toolsPatch}
           ambient={ambient}
-          // `eric-canvas-click` owns group-outline-edge promote + clear-on-empty
-          // via `pointer.onClick`. The dispatcher never fires AMBIENT onClick —
-          // only the in-flight gesture owner + this dedicated click-fallback slot
-          // (consulted when the active select tool doesn't claim the click). The
-          // same tool stays in `ambient` for its Escape `keyboard.onDown` handler.
-          clickFallback={clickTool}
           actions={actions}
           getActiveMode={getActiveMode}
           // Wheel zoom is the kit's `viewport.zoom` action in plain-wheel mode
           // (bare wheel = zoom, anchored at cursor) with eric's px-per-foot
-          // scale clamp (~5–500); the kit default is Cmd-wheel + a 0.1–8 clamp.
+          // scale clamp; the kit default is Cmd-wheel + a 0.1–8 clamp. The clamp
+          // matches `clampZoom` — `handleViewChange` re-clamps every committed
+          // view, so a wider clamp here would just be dead config.
           // Wheel PAN stays off — eric pans via its drag tools / StatusBar, and
-          // a plain-wheel pan would compete with plain-wheel zoom. Click zoom +
-          // left/right-drag pan remain eric tools (ambient / tools patch).
-          viewport={{ pan: false, zoom: { wheel: 'plain', min: 5, max: 500 } }}
+          // a plain-wheel pan would compete with plain-wheel zoom.
+          viewport={{
+            pan: false,
+            zoom: { wheel: 'plain', min: GARDEN_MIN_ZOOM, max: GARDEN_MAX_ZOOM },
+          }}
           onToolsCreated={handleToolsCreated}
           selection={selectionApi}
           selectionMode="multi"

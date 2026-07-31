@@ -1,4 +1,4 @@
-import { createInsertOp } from '@orochi235/weasel';
+import { createInsertOp } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPlanting, createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';

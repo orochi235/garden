@@ -1,5 +1,5 @@
-import type { AddNodeSpec, Scene, SerializedScene } from '@orochi235/weasel';
-import { createScene } from '@orochi235/weasel';
+import type { AddNodeSpec, Scene, SerializedScene } from '@weasel-js/core';
+import { createScene } from '@weasel-js/core';
 import type { Layout } from '../model/layout';
 import type { FillType, Garden, LayerId, StructureShape } from '../model/types';
 

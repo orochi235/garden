@@ -1,4 +1,4 @@
-import type { DragPayload } from '@orochi235/weasel';
+import type { DragPayload } from '@weasel-js/core';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';

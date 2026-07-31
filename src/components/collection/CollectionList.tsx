@@ -1,4 +1,4 @@
-import { useDropZone } from '@orochi235/weasel';
+import { useDropZone } from '@weasel-js/core';
 import { useMemo, useState } from 'react';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';

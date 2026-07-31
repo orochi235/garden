@@ -1,57 +1,34 @@
-import type { ToolCtx } from '@orochi235/weasel';
-import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import { toKitView } from '../layers/worldLayerData';
-import { type SowScratch, useSowCellTool } from './useSowCellTool';
+import type { GesturePoint } from './nurseryGestures';
+import { sowCellGesture } from './useSowCellTool';
 
-function makeCtx(worldX: number, worldY: number, scratch: SowScratch): ToolCtx<SowScratch> {
-  return {
-    worldX,
-    worldY,
-    modifiers: { alt: false, shift: false, meta: false, ctrl: false, space: false },
-    selection: {} as never,
-    adapter: null,
-    applyOps: () => {},
-    view: toKitView({ x: 0, y: 0, scale: 50 }),
-    setView: () => {},
-    canvasRect: new DOMRect(0, 0, 200, 200),
-    scratch,
-  };
+function at(worldX: number, worldY: number, shift = false): GesturePoint {
+  return { worldX, worldY, shift, alt: false };
 }
 
-function makeClick(): PointerEvent {
-  const e = new Event('click') as PointerEvent;
-  Object.assign(e, { button: 0, clientX: 0, clientY: 0 });
-  return e;
-}
-
-describe('useSowCellTool', () => {
+describe('sowCellGesture', () => {
   beforeEach(() => {
     useUiStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
   });
 
-  it('passes when no cultivar is set (neither drag nor armed)', () => {
+  it('declines when no cultivar is set (neither drag nor armed)', () => {
     const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
     useGardenStore.getState().addTray(tray);
-    const { result } = renderHook(() => useSowCellTool());
     const off = trayInteriorOffsetIn(tray);
-    const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
-    expect(result.current.pointer!.onClick!(makeClick(), ctx)).toBe('pass');
+    expect(sowCellGesture.click(at(off.x + 0.1, off.y + 0.1))).toBe(false);
   });
 
-  it('claims and sows when armedCultivarId is set', () => {
+  it('handles the click and sows when armedCultivarId is set', () => {
     const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
     useGardenStore.getState().addTray(tray);
     useUiStore.getState().setArmedCultivarId('tomato');
 
-    const { result } = renderHook(() => useSowCellTool());
     const off = trayInteriorOffsetIn(tray);
-    const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
-    expect(result.current.pointer!.onClick!(makeClick(), ctx)).toBe('claim');
+    expect(sowCellGesture.click(at(off.x + 0.1, off.y + 0.1))).toBe(true);
     const seedlings = useGardenStore.getState().garden.nursery.seedlings;
     expect(seedlings).toHaveLength(1);
     expect(seedlings[0].cultivarId).toBe('tomato');
@@ -65,25 +42,34 @@ describe('useSowCellTool', () => {
     useUiStore.getState().setSeedDragCultivarId('basil');
     useUiStore.getState().setArmedCultivarId('tomato');
 
-    const { result } = renderHook(() => useSowCellTool());
     const off = trayInteriorOffsetIn(tray);
-    const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
-    result.current.pointer!.onClick!(makeClick(), ctx);
+    sowCellGesture.click(at(off.x + 0.1, off.y + 0.1));
     const seedlings = useGardenStore.getState().garden.nursery.seedlings;
     expect(seedlings).toHaveLength(1);
     expect(seedlings[0].cultivarId).toBe('basil');
   });
 
-  it('passes on occupied cell without shift', () => {
+  it('declines on an occupied cell without shift', () => {
     const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
     useGardenStore.getState().addTray(tray);
     useUiStore.getState().setArmedCultivarId('tomato');
     useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil');
 
-    const { result } = renderHook(() => useSowCellTool());
     const off = trayInteriorOffsetIn(tray);
-    const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
-    expect(result.current.pointer!.onClick!(makeClick(), ctx)).toBe('pass');
+    expect(sowCellGesture.click(at(off.x + 0.1, off.y + 0.1))).toBe(false);
+  });
+
+  it('overwrites an occupied cell with shift held', () => {
+    const tray = createTray({ rows: 2, cols: 3, cellSize: 'medium', label: 't' });
+    useGardenStore.getState().addTray(tray);
+    useUiStore.getState().setArmedCultivarId('tomato');
+    useGardenStore.getState().sowCell(tray.id, 0, 0, 'basil');
+
+    const off = trayInteriorOffsetIn(tray);
+    expect(sowCellGesture.click(at(off.x + 0.1, off.y + 0.1, true))).toBe(true);
+    const seedlings = useGardenStore.getState().garden.nursery.seedlings;
+    expect(seedlings).toHaveLength(1);
+    expect(seedlings[0].cultivarId).toBe('tomato');
   });
 
   it('does not auto-disarm after a sow', () => {
@@ -91,10 +77,8 @@ describe('useSowCellTool', () => {
     useGardenStore.getState().addTray(tray);
     useUiStore.getState().setArmedCultivarId('tomato');
 
-    const { result } = renderHook(() => useSowCellTool());
     const off = trayInteriorOffsetIn(tray);
-    const ctx = makeCtx(off.x + 0.1, off.y + 0.1, { handled: false });
-    result.current.pointer!.onClick!(makeClick(), ctx);
+    sowCellGesture.click(at(off.x + 0.1, off.y + 0.1));
     expect(useUiStore.getState().armedCultivarId).toBe('tomato');
   });
 });

@@ -1,4 +1,4 @@
-import type { MoveAdapter } from '@orochi235/weasel';
+import type { MoveAdapter } from '@weasel-js/core';
 import type { Structure } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 
