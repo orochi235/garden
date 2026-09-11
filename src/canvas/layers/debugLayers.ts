@@ -1,5 +1,5 @@
-import type { Dims, View } from '@orochi235/weasel';
-import { PathBuilder, type RenderLayer, rectPath, textCommand } from '@orochi235/weasel';
+import type { Dims, View } from '@weasel-js/core';
+import { PathBuilder, type RenderLayer, rectPath, textCommand } from '@weasel-js/core';
 import { trayInteriorOffsetIn } from '../../model/nursery';
 import type { Garden } from '../../model/types';
 import { isDebugEnabled } from '../debug';

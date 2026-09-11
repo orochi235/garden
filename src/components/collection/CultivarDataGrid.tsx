@@ -1,4 +1,4 @@
-import { type DragPayload, useDragHandle } from '@orochi235/weasel';
+import { type DragPayload, useDragHandle } from '@weasel-js/core';
 import { useEffect, useMemo, useRef } from 'react';
 import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
 import type { Cultivar, CultivarCategory } from '../../model/cultivars';

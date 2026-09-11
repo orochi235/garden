@@ -7,8 +7,8 @@
  * tile is registered exactly once with the renderer.
  */
 
-import type { FillStyle } from '@orochi235/weasel';
-import { chunks, crosshatch, dots, hatch } from '@orochi235/weasel/patterns-builtin';
+import type { FillStyle } from '@weasel-js/core';
+import { chunks, crosshatch, dots, hatch } from '@weasel-js/core/patterns-builtin';
 import type { TextureHandle } from './util/weaselLocal';
 
 export type PatternId = 'hatch' | 'crosshatch' | 'dots' | 'chunks';

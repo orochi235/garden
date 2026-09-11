@@ -138,6 +138,12 @@ function applyEasing(rawT: number): number {
 }
 
 function interpolateLayouts(from: TileState[], to: TileState[], t: number): TileState[] {
+  // Switching app mode swaps the layer set (garden's full list ⇄ the nursery's
+  // two) out from under an in-flight animation, so `from` and `to` can differ
+  // in length. There is no meaningful tween between two different sets — and
+  // reading `to[i]` past its end threw on every frame of the animation, which
+  // is one mode-switch click away — so snap to the destination instead.
+  if (from.length !== to.length) return to;
   return from.map((old, i) => ({
     index: i,
     y: old.y + (to[i].y - old.y) * t,

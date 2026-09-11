@@ -1,5 +1,5 @@
-import type { Dims, View } from '@orochi235/weasel';
-import { type RenderLayer, textCommand } from '@orochi235/weasel';
+import type { Dims, View } from '@weasel-js/core';
+import { type RenderLayer, textCommand } from '@weasel-js/core';
 import type { Zone } from '../../model/types';
 import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';

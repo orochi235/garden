@@ -1,4 +1,4 @@
-import type { ResizeAdapter } from '@orochi235/weasel';
+import type { ResizeAdapter } from '@weasel-js/core';
 import type { Zone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 

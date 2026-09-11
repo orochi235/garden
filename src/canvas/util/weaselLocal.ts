@@ -1,5 +1,5 @@
-import type { View } from '@orochi235/weasel';
-import { polygonFromPoints } from '@orochi235/weasel';
+import type { View } from '@weasel-js/core';
+import { polygonFromPoints } from '@weasel-js/core';
 
 /**
  * Local reimplementation of weasel's `viewToMat3`, kept for behavioral parity
@@ -20,11 +20,11 @@ export function viewToMat3(view: View): Float32Array {
 
 /**
  * `DrawCommand` and `TextureHandle` are now public exports of
- * `@orochi235/weasel` (they were private in the 0.2.0 pin, which is why this
+ * `@weasel-js/core` (they were private in the 0.2.0 pin, which is why this
  * module derived structural shims). Re-export them so layer files keep
  * importing both from one place, unchanged.
  */
-export type { DrawCommand, PolygonPath, TextureHandle } from '@orochi235/weasel';
+export type { DrawCommand, PolygonPath, TextureHandle } from '@weasel-js/core';
 
 /**
  * Polygon approximation of a circle. Pre-flattened to N samples so it doesn't

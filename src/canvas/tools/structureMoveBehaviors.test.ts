@@ -1,4 +1,4 @@
-import type { GestureContext, GroupTransform } from '@orochi235/weasel';
+import type { GestureContext, GroupTransform } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStructure } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';

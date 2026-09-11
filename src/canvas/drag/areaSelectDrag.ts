@@ -1,4 +1,4 @@
-import { rectPath } from '@orochi235/weasel';
+import { rectPath } from '@weasel-js/core';
 import type { DrawCommand } from '../util/weaselLocal';
 import type { Drag, DragPointerSample, DragViewport } from './putativeDrag';
 

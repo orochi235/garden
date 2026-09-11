@@ -1,5 +1,5 @@
-import type { AddNodeSpec, Scene } from '@orochi235/weasel';
-import { asNodeId, createScene } from '@orochi235/weasel';
+import type { AddNodeSpec, Scene } from '@weasel-js/core';
+import { asNodeId, createScene } from '@weasel-js/core';
 import { trayWorldOrigin } from '../canvas/adapters/nurseryLayout';
 import { cellCenterInches } from '../canvas/nurseryHitTest';
 import type { NurseryState, Seedling, Tray } from '../model/nursery';

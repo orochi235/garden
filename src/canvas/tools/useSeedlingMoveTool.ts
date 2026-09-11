@@ -1,11 +1,4 @@
-import {
-  type Dims,
-  defineTool,
-  PathBuilder,
-  type RenderLayer,
-  type Tool,
-  type View,
-} from '@orochi235/weasel';
+import { type Dims, PathBuilder, type RenderLayer, type View } from '@weasel-js/core';
 import { useMemo, useRef } from 'react';
 import { type Seedling, type Tray, trayInteriorOffsetIn } from '../../model/nursery';
 import { resolveGroupMoves } from '../../model/seedlingMoveResolver';
@@ -22,6 +15,7 @@ import {
 } from '../layouts/trayDropTargets';
 import { hitTestCellAcrossTrays, hitTestCellInches } from '../nurseryHitTest';
 import type { DrawCommand } from '../util/weaselLocal';
+import type { GesturePoint, NurseryDragGesture, NurseryDragHandle } from './nurseryGestures';
 
 /**
  * Publish a seedling-move ghost putative into the framework's shared
@@ -145,7 +139,344 @@ function markerCommands(
   ];
 }
 
-export function useSeedlingMoveTool(): Tool<SeedlingMoveScratch> {
+/** Live state of an in-flight seedling drag: the tool scratch plus the pointer
+ *  sample the handlers read. Weasel 0.7's ongoing-action handle pumps `move` /
+ *  `end` with a fresh point each time, so the point rides here rather than on a
+ *  kit-supplied `ToolCtx`. */
+interface MoveDragState {
+  scratch: SeedlingMoveScratch;
+  worldX: number;
+  worldY: number;
+  modifiers: { shift: boolean; alt: boolean };
+}
+
+function onDragMove(st: MoveDragState): void {
+  if (!st.scratch.active) return;
+  st.scratch.currentWorld = { x: st.worldX, y: st.worldY };
+  const ss = useGardenStore.getState().garden.nursery;
+  const tray = ss.trays.find((t) => t.id === st.scratch.trayId);
+  if (!tray) return;
+
+  if (!st.scratch.isGroup) {
+    const hit = hitTrayDropTarget(getTrayDropTargets(tray), {
+      x: st.worldX,
+      y: st.worldY,
+    });
+    const aff: TrayGutterMeta | null = hit && hit.meta.kind !== 'cell' ? hit.meta : null;
+    st.scratch.affordance = aff;
+    if (aff) {
+      const base = {
+        trayId: tray.id,
+        cultivarId: st.scratch.cultivarId!,
+        replace: true,
+      };
+      setFillGhost(
+        aff.kind === 'all'
+          ? { ...base, scope: 'all' }
+          : aff.kind === 'row'
+            ? { ...base, scope: 'row', index: aff.row }
+            : { ...base, scope: 'col', index: aff.col },
+      );
+      setMoveGhost(null);
+      return;
+    }
+  } else {
+    st.scratch.affordance = null;
+  }
+
+  // Cross-tray hit-test for single-seedling drags. Group drags stay
+  // intra-source-tray (anchor-delta semantics don't generalize
+  // across trays of different shapes/sizes).
+  const crossHit = !st.scratch.isGroup
+    ? hitTestCellAcrossTrays(ss.trays, st.worldX, st.worldY, (t) => trayWorldOrigin(t, ss))
+    : null;
+  const o = trayWorldOrigin(tray, ss);
+  const cell = st.scratch.isGroup
+    ? hitTestCellInches(tray, st.worldX - o.x, st.worldY - o.y)
+    : crossHit && crossHit.trayId === tray.id
+      ? { row: crossHit.row, col: crossHit.col }
+      : null;
+  // Cross-tray drop: target is a different tray. Render a single-cell
+  // ghost on the destination via setMoveGhost (feasibility = dest
+  // cell empty). Don't set the (intra-tray) fill ghost.
+  if (!st.scratch.isGroup && crossHit && crossHit.trayId !== tray.id) {
+    const destTray = ss.trays.find((t) => t.id === crossHit.trayId);
+    if (destTray) {
+      const destSlot = destTray.slots[crossHit.row * destTray.cols + crossHit.col];
+      const destFree = destSlot.state === 'empty';
+      setMoveGhost({
+        trayId: destTray.id,
+        feasible: destFree,
+        cells: [
+          {
+            row: crossHit.row,
+            col: crossHit.col,
+            cultivarId: st.scratch.cultivarId!,
+            bumped: false,
+          },
+        ],
+      });
+      setFillGhost(null);
+      return;
+    }
+  }
+  if (!cell) {
+    setFillGhost(null);
+    setMoveGhost(null);
+    return;
+  }
+
+  if (st.scratch.isGroup) {
+    const dr = cell.row - st.scratch.anchorFromRow;
+    const dc = cell.col - st.scratch.anchorFromCol;
+    const groupSeedlings = st.scratch.groupIds
+      .map((id) => ss.seedlings.find((s) => s.id === id))
+      .filter((s): s is Seedling => !!s && s.trayId === tray.id && s.row != null && s.col != null);
+    const pending = groupSeedlings.map((s) => ({
+      seedlingId: s.id,
+      cultivarId: s.cultivarId,
+      fromRow: s.row!,
+      fromCol: s.col!,
+      toRow: s.row! + dr,
+      toCol: s.col! + dc,
+    }));
+    const result = resolveGroupMoves(tray, pending);
+    setMoveGhost({
+      trayId: tray.id,
+      feasible: result.feasible,
+      cells: result.moves.map((m) => ({
+        row: m.finalRow,
+        col: m.finalCol,
+        cultivarId: m.cultivarId,
+        bumped: m.bumped,
+      })),
+    });
+    setFillGhost(null);
+  } else if (cell.row !== st.scratch.anchorFromRow || cell.col !== st.scratch.anchorFromCol) {
+    setFillGhost({
+      trayId: tray.id,
+      cultivarId: st.scratch.cultivarId!,
+      scope: 'cell',
+      row: cell.row,
+      col: cell.col,
+      replace: true,
+    });
+    setMoveGhost(null);
+  } else {
+    setFillGhost(null);
+    setMoveGhost(null);
+  }
+  return;
+}
+
+function onDragEnd(st: MoveDragState): void {
+  if (!st.scratch.active) return;
+  const trayId = st.scratch.trayId!;
+  const ss = useGardenStore.getState().garden.nursery;
+  const tray = ss.trays.find((t) => t.id === trayId);
+  const cleanup = () => {
+    setFillGhost(null);
+    setMoveGhost(null);
+    useUiStore.getState().setHiddenSeedlingIds([]);
+    st.scratch.active = false;
+    st.scratch.affordance = null;
+  };
+  if (!tray) {
+    cleanup();
+    return;
+  }
+
+  if (!st.scratch.isGroup && st.scratch.affordance) {
+    const gs = useGardenStore.getState();
+    const cultivarId = st.scratch.cultivarId!;
+    gs.clearCell(trayId, st.scratch.anchorFromRow, st.scratch.anchorFromCol);
+    const aff = st.scratch.affordance;
+    if (aff.kind === 'all') gs.fillTray(trayId, cultivarId, { replace: true });
+    else if (aff.kind === 'row') gs.fillRow(trayId, aff.row, cultivarId, { replace: true });
+    else gs.fillColumn(trayId, aff.col, cultivarId, { replace: true });
+    cleanup();
+    return;
+  }
+
+  const oEnd = trayWorldOrigin(tray, ss);
+  // Cross-tray drop on commit: single-seedling drags only.
+  const crossHitEnd = !st.scratch.isGroup
+    ? hitTestCellAcrossTrays(ss.trays, st.worldX, st.worldY, (t) => trayWorldOrigin(t, ss))
+    : null;
+  if (!st.scratch.isGroup && crossHitEnd && crossHitEnd.trayId !== trayId) {
+    const destTray = ss.trays.find((t) => t.id === crossHitEnd.trayId);
+    if (destTray) {
+      const destSlot = destTray.slots[crossHitEnd.row * destTray.cols + crossHitEnd.col];
+      if (destSlot.state === 'empty') {
+        useGardenStore.getState().moveSeedlingsAcrossTrays([
+          {
+            seedlingId: st.scratch.draggedId!,
+            fromTrayId: trayId,
+            toTrayId: crossHitEnd.trayId,
+            toRow: crossHitEnd.row,
+            toCol: crossHitEnd.col,
+          },
+        ]);
+      }
+      cleanup();
+      return;
+    }
+  }
+  const cell = hitTestCellInches(tray, st.worldX - oEnd.x, st.worldY - oEnd.y);
+  if (st.scratch.isGroup) {
+    if (!cell) {
+      cleanup();
+      return;
+    }
+    const dr = cell.row - st.scratch.anchorFromRow;
+    const dc = cell.col - st.scratch.anchorFromCol;
+    if (dr === 0 && dc === 0) {
+      cleanup();
+      return;
+    }
+    const groupSeedlings = st.scratch.groupIds
+      .map((id) => ss.seedlings.find((s) => s.id === id))
+      .filter((s): s is Seedling => !!s && s.trayId === tray.id && s.row != null && s.col != null);
+    const pending = groupSeedlings.map((s) => ({
+      seedlingId: s.id,
+      cultivarId: s.cultivarId,
+      fromRow: s.row!,
+      fromCol: s.col!,
+      toRow: s.row! + dr,
+      toCol: s.col! + dc,
+    }));
+    const result = resolveGroupMoves(tray, pending);
+    if (!result.feasible) {
+      cleanup();
+      return;
+    }
+    useGardenStore.getState().moveSeedlingGroup(
+      trayId,
+      result.moves.map((m) => ({
+        seedlingId: m.seedlingId,
+        toRow: m.finalRow,
+        toCol: m.finalCol,
+      })),
+    );
+    cleanup();
+    return;
+  }
+
+  if (!cell) {
+    useGardenStore.getState().clearCell(trayId, st.scratch.anchorFromRow, st.scratch.anchorFromCol);
+    cleanup();
+    return;
+  }
+  if (cell.row === st.scratch.anchorFromRow && cell.col === st.scratch.anchorFromCol) {
+    cleanup();
+    return;
+  }
+  useGardenStore
+    .getState()
+    .moveSeedling(trayId, st.scratch.anchorFromRow, st.scratch.anchorFromCol, cell.row, cell.col);
+  cleanup();
+  return;
+}
+
+function onDragCancel(st: MoveDragState): void {
+  setFillGhost(null);
+  setMoveGhost(null);
+  useUiStore.getState().setHiddenSeedlingIds([]);
+  st.scratch.active = false;
+  st.scratch.affordance = null;
+}
+
+/**
+ * Drag an existing seedling (or the whole selection) to new cells.
+ *
+ * Claims a press that lands on a seedling while no palette drag-to-sow is in
+ * flight; otherwise declines, so the router can offer the drag to the fill and
+ * marquee gestures. `scratchRef` is shared with the gutter overlay, which draws
+ * from the live scratch every frame.
+ */
+export function createSeedlingMoveGesture(scratchRef: {
+  current: SeedlingMoveScratch;
+}): NurseryDragGesture {
+  return {
+    id: 'seedling-move',
+    start(p: GesturePoint): NurseryDragHandle | null {
+      // A palette drag-to-sow is active; defer to the sow / fill gestures.
+      if (useUiStore.getState().seedDragCultivarId) return null;
+      const hit = findSeedlingAt(p.worldX, p.worldY);
+      if (!hit) return null; // empty press — the marquee's
+
+      const ui = useUiStore.getState();
+      // Selection follows the press: shift extends, a plain press selects the
+      // seedling unless it is already part of the selection.
+      if (p.shift) {
+        if (!ui.selectedIds.includes(hit.seedling.id)) ui.addToSelection(hit.seedling.id);
+      } else if (!ui.selectedIds.includes(hit.seedling.id)) {
+        ui.select(hit.seedling.id);
+      }
+
+      const sel = useUiStore.getState().selectedIds;
+      const isAnchorSelected = sel.includes(hit.seedling.id);
+      const groupIds = isAnchorSelected && sel.length > 1 ? sel.slice() : [hit.seedling.id];
+
+      const scratch = initScratch();
+      scratch.draggedId = hit.seedling.id;
+      scratch.trayId = hit.tray.id;
+      scratch.isGroup = groupIds.length > 1;
+      scratch.groupIds = groupIds;
+      scratch.anchorFromRow = hit.seedling.row ?? 0;
+      scratch.anchorFromCol = hit.seedling.col ?? 0;
+      scratch.startWorld = { x: p.worldX, y: p.worldY };
+      scratch.currentWorld = { x: p.worldX, y: p.worldY };
+      scratch.cultivarId = hit.seedling.cultivarId;
+      // Live from the press: hide every dragged seedling so the canvas shows
+      // movement instead of a copy sitting under the ghost.
+      scratch.active = true;
+      scratchRef.current = scratch;
+      useUiStore.getState().setHiddenSeedlingIds(scratch.groupIds);
+
+      const st: MoveDragState = {
+        scratch,
+        worldX: p.worldX,
+        worldY: p.worldY,
+        modifiers: { shift: p.shift, alt: p.alt },
+      };
+      const sync = (m: GesturePoint) => {
+        st.worldX = m.worldX;
+        st.worldY = m.worldY;
+        st.modifiers = { shift: m.shift, alt: m.alt };
+      };
+
+      return {
+        move(m) {
+          sync(m);
+          onDragMove(st);
+        },
+        end(m) {
+          sync(m);
+          onDragEnd(st);
+          scratchRef.current = initScratch();
+        },
+        cancel() {
+          onDragCancel(st);
+          scratchRef.current = initScratch();
+        },
+      };
+    },
+  };
+}
+
+/**
+ * The seedling-move gesture plus the gutter-affordance overlay it drives: the
+ * canvas hands the gesture to the nursery router and the overlay to the
+ * nursery tool.
+ */
+export function useSeedlingMoveGesture(): {
+  gesture: NurseryDragGesture;
+  overlay: RenderLayer<unknown>;
+  /** Live drag scratch, shared with the overlay. Exposed for tests and for any
+   *  consumer that needs to see what the gesture is doing mid-flight. */
+  scratchRef: { current: SeedlingMoveScratch };
+} {
   // Stable mutable mirror so the overlay's draw closure (defined once) sees
   // current scratch values across renders without re-creating the layer.
   const scratchRef = useRef<SeedlingMoveScratch>(initScratch());
@@ -250,332 +581,6 @@ export function useSeedlingMoveTool(): Tool<SeedlingMoveScratch> {
     [],
   );
 
-  return useMemo(
-    () =>
-      defineTool<SeedlingMoveScratch>({
-        id: 'seedling-move',
-        cursor: 'default',
-        overlay,
-        initScratch: () => {
-          const s = initScratch();
-          scratchRef.current = s;
-          return s;
-        },
-
-        pointer: {
-          onClick: (e, ctx) => {
-            if (e.button !== 0) return 'pass';
-            const hit = findSeedlingAt(ctx.worldX, ctx.worldY);
-            if (!hit) return 'pass'; // empty-click handled by useSeedSelectTool
-            return 'pass';
-          },
-          onDown: (e, ctx) => {
-            if (e.button !== 0) return 'pass';
-            // A palette drag-to-sow is active; defer to sow tool.
-            if (useUiStore.getState().seedDragCultivarId) return 'pass';
-            const hit = findSeedlingAt(ctx.worldX, ctx.worldY);
-            if (!hit) return 'pass'; // empty-down handled by useSeedSelectTool
-
-            const ui = useUiStore.getState();
-            // Update selection like legacy: shift extends, plain click selects
-            // if not already in selection.
-            if (ctx.modifiers.shift) {
-              if (!ui.selectedIds.includes(hit.seedling.id)) ui.addToSelection(hit.seedling.id);
-            } else if (!ui.selectedIds.includes(hit.seedling.id)) {
-              ui.select(hit.seedling.id);
-            }
-
-            const sel = useUiStore.getState().selectedIds;
-            const isAnchorSelected = sel.includes(hit.seedling.id);
-            const groupIds = isAnchorSelected && sel.length > 1 ? sel.slice() : [hit.seedling.id];
-            const isGroup = groupIds.length > 1;
-
-            ctx.scratch.draggedId = hit.seedling.id;
-            ctx.scratch.trayId = hit.tray.id;
-            ctx.scratch.isGroup = isGroup;
-            ctx.scratch.groupIds = groupIds;
-            ctx.scratch.anchorFromRow = hit.seedling.row ?? 0;
-            ctx.scratch.anchorFromCol = hit.seedling.col ?? 0;
-            ctx.scratch.startWorld = { x: ctx.worldX, y: ctx.worldY };
-            ctx.scratch.currentWorld = { x: ctx.worldX, y: ctx.worldY };
-            ctx.scratch.cultivarId = hit.seedling.cultivarId;
-            scratchRef.current = ctx.scratch;
-            return 'claim';
-          },
-        },
-
-        drag: {
-          onStart: (_e, ctx) => {
-            if (!ctx.scratch.draggedId) return 'pass';
-            ctx.scratch.active = true;
-            // Hide every dragged seedling so the canvas shows movement.
-            useUiStore.getState().setHiddenSeedlingIds(ctx.scratch.groupIds);
-            scratchRef.current = ctx.scratch;
-            return 'claim';
-          },
-          onMove: (_e, ctx) => {
-            if (!ctx.scratch.active) return 'pass';
-            ctx.scratch.currentWorld = { x: ctx.worldX, y: ctx.worldY };
-            const ss = useGardenStore.getState().garden.nursery;
-            const tray = ss.trays.find((t) => t.id === ctx.scratch.trayId);
-            if (!tray) return 'claim';
-
-            if (!ctx.scratch.isGroup) {
-              const hit = hitTrayDropTarget(getTrayDropTargets(tray), {
-                x: ctx.worldX,
-                y: ctx.worldY,
-              });
-              const aff: TrayGutterMeta | null = hit && hit.meta.kind !== 'cell' ? hit.meta : null;
-              ctx.scratch.affordance = aff;
-              if (aff) {
-                const base = {
-                  trayId: tray.id,
-                  cultivarId: ctx.scratch.cultivarId!,
-                  replace: true,
-                };
-                setFillGhost(
-                  aff.kind === 'all'
-                    ? { ...base, scope: 'all' }
-                    : aff.kind === 'row'
-                      ? { ...base, scope: 'row', index: aff.row }
-                      : { ...base, scope: 'col', index: aff.col },
-                );
-                setMoveGhost(null);
-                scratchRef.current = ctx.scratch;
-                return 'claim';
-              }
-            } else {
-              ctx.scratch.affordance = null;
-            }
-
-            // Cross-tray hit-test for single-seedling drags. Group drags stay
-            // intra-source-tray (anchor-delta semantics don't generalize
-            // across trays of different shapes/sizes).
-            const crossHit = !ctx.scratch.isGroup
-              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) =>
-                  trayWorldOrigin(t, ss),
-                )
-              : null;
-            const o = trayWorldOrigin(tray, ss);
-            const cell = ctx.scratch.isGroup
-              ? hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y)
-              : crossHit && crossHit.trayId === tray.id
-                ? { row: crossHit.row, col: crossHit.col }
-                : null;
-            // Cross-tray drop: target is a different tray. Render a single-cell
-            // ghost on the destination via setMoveGhost (feasibility = dest
-            // cell empty). Don't set the (intra-tray) fill ghost.
-            if (!ctx.scratch.isGroup && crossHit && crossHit.trayId !== tray.id) {
-              const destTray = ss.trays.find((t) => t.id === crossHit.trayId);
-              if (destTray) {
-                const destSlot = destTray.slots[crossHit.row * destTray.cols + crossHit.col];
-                const destFree = destSlot.state === 'empty';
-                setMoveGhost({
-                  trayId: destTray.id,
-                  feasible: destFree,
-                  cells: [
-                    {
-                      row: crossHit.row,
-                      col: crossHit.col,
-                      cultivarId: ctx.scratch.cultivarId!,
-                      bumped: false,
-                    },
-                  ],
-                });
-                setFillGhost(null);
-                scratchRef.current = ctx.scratch;
-                return 'claim';
-              }
-            }
-            if (!cell) {
-              setFillGhost(null);
-              setMoveGhost(null);
-              scratchRef.current = ctx.scratch;
-              return 'claim';
-            }
-
-            if (ctx.scratch.isGroup) {
-              const dr = cell.row - ctx.scratch.anchorFromRow;
-              const dc = cell.col - ctx.scratch.anchorFromCol;
-              const groupSeedlings = ctx.scratch.groupIds
-                .map((id) => ss.seedlings.find((s) => s.id === id))
-                .filter(
-                  (s): s is Seedling =>
-                    !!s && s.trayId === tray.id && s.row != null && s.col != null,
-                );
-              const pending = groupSeedlings.map((s) => ({
-                seedlingId: s.id,
-                cultivarId: s.cultivarId,
-                fromRow: s.row!,
-                fromCol: s.col!,
-                toRow: s.row! + dr,
-                toCol: s.col! + dc,
-              }));
-              const result = resolveGroupMoves(tray, pending);
-              setMoveGhost({
-                trayId: tray.id,
-                feasible: result.feasible,
-                cells: result.moves.map((m) => ({
-                  row: m.finalRow,
-                  col: m.finalCol,
-                  cultivarId: m.cultivarId,
-                  bumped: m.bumped,
-                })),
-              });
-              setFillGhost(null);
-            } else if (
-              cell.row !== ctx.scratch.anchorFromRow ||
-              cell.col !== ctx.scratch.anchorFromCol
-            ) {
-              setFillGhost({
-                trayId: tray.id,
-                cultivarId: ctx.scratch.cultivarId!,
-                scope: 'cell',
-                row: cell.row,
-                col: cell.col,
-                replace: true,
-              });
-              setMoveGhost(null);
-            } else {
-              setFillGhost(null);
-              setMoveGhost(null);
-            }
-            scratchRef.current = ctx.scratch;
-            return 'claim';
-          },
-          onEnd: (_e, ctx) => {
-            if (!ctx.scratch.active) return 'pass';
-            const trayId = ctx.scratch.trayId!;
-            const ss = useGardenStore.getState().garden.nursery;
-            const tray = ss.trays.find((t) => t.id === trayId);
-            const cleanup = () => {
-              setFillGhost(null);
-              setMoveGhost(null);
-              useUiStore.getState().setHiddenSeedlingIds([]);
-              ctx.scratch.active = false;
-              ctx.scratch.affordance = null;
-              scratchRef.current = ctx.scratch;
-            };
-            if (!tray) {
-              cleanup();
-              return 'claim';
-            }
-
-            if (!ctx.scratch.isGroup && ctx.scratch.affordance) {
-              const gs = useGardenStore.getState();
-              const cultivarId = ctx.scratch.cultivarId!;
-              gs.clearCell(trayId, ctx.scratch.anchorFromRow, ctx.scratch.anchorFromCol);
-              const aff = ctx.scratch.affordance;
-              if (aff.kind === 'all') gs.fillTray(trayId, cultivarId, { replace: true });
-              else if (aff.kind === 'row')
-                gs.fillRow(trayId, aff.row, cultivarId, { replace: true });
-              else gs.fillColumn(trayId, aff.col, cultivarId, { replace: true });
-              cleanup();
-              return 'claim';
-            }
-
-            const oEnd = trayWorldOrigin(tray, ss);
-            // Cross-tray drop on commit: single-seedling drags only.
-            const crossHitEnd = !ctx.scratch.isGroup
-              ? hitTestCellAcrossTrays(ss.trays, ctx.worldX, ctx.worldY, (t) =>
-                  trayWorldOrigin(t, ss),
-                )
-              : null;
-            if (!ctx.scratch.isGroup && crossHitEnd && crossHitEnd.trayId !== trayId) {
-              const destTray = ss.trays.find((t) => t.id === crossHitEnd.trayId);
-              if (destTray) {
-                const destSlot = destTray.slots[crossHitEnd.row * destTray.cols + crossHitEnd.col];
-                if (destSlot.state === 'empty') {
-                  useGardenStore.getState().moveSeedlingsAcrossTrays([
-                    {
-                      seedlingId: ctx.scratch.draggedId!,
-                      fromTrayId: trayId,
-                      toTrayId: crossHitEnd.trayId,
-                      toRow: crossHitEnd.row,
-                      toCol: crossHitEnd.col,
-                    },
-                  ]);
-                }
-                cleanup();
-                return 'claim';
-              }
-            }
-            const cell = hitTestCellInches(tray, ctx.worldX - oEnd.x, ctx.worldY - oEnd.y);
-            if (ctx.scratch.isGroup) {
-              if (!cell) {
-                cleanup();
-                return 'claim';
-              }
-              const dr = cell.row - ctx.scratch.anchorFromRow;
-              const dc = cell.col - ctx.scratch.anchorFromCol;
-              if (dr === 0 && dc === 0) {
-                cleanup();
-                return 'claim';
-              }
-              const groupSeedlings = ctx.scratch.groupIds
-                .map((id) => ss.seedlings.find((s) => s.id === id))
-                .filter(
-                  (s): s is Seedling =>
-                    !!s && s.trayId === tray.id && s.row != null && s.col != null,
-                );
-              const pending = groupSeedlings.map((s) => ({
-                seedlingId: s.id,
-                cultivarId: s.cultivarId,
-                fromRow: s.row!,
-                fromCol: s.col!,
-                toRow: s.row! + dr,
-                toCol: s.col! + dc,
-              }));
-              const result = resolveGroupMoves(tray, pending);
-              if (!result.feasible) {
-                cleanup();
-                return 'claim';
-              }
-              useGardenStore.getState().moveSeedlingGroup(
-                trayId,
-                result.moves.map((m) => ({
-                  seedlingId: m.seedlingId,
-                  toRow: m.finalRow,
-                  toCol: m.finalCol,
-                })),
-              );
-              cleanup();
-              return 'claim';
-            }
-
-            if (!cell) {
-              useGardenStore
-                .getState()
-                .clearCell(trayId, ctx.scratch.anchorFromRow, ctx.scratch.anchorFromCol);
-              cleanup();
-              return 'claim';
-            }
-            if (cell.row === ctx.scratch.anchorFromRow && cell.col === ctx.scratch.anchorFromCol) {
-              cleanup();
-              return 'claim';
-            }
-            useGardenStore
-              .getState()
-              .moveSeedling(
-                trayId,
-                ctx.scratch.anchorFromRow,
-                ctx.scratch.anchorFromCol,
-                cell.row,
-                cell.col,
-              );
-            cleanup();
-            return 'claim';
-          },
-          onCancel: (ctx) => {
-            setFillGhost(null);
-            setMoveGhost(null);
-            useUiStore.getState().setHiddenSeedlingIds([]);
-            ctx.scratch.active = false;
-            ctx.scratch.affordance = null;
-            scratchRef.current = ctx.scratch;
-          },
-        },
-      }),
-    [overlay],
-  );
+  const gesture = useMemo(() => createSeedlingMoveGesture(scratchRef), []);
+  return { gesture, overlay, scratchRef };
 }

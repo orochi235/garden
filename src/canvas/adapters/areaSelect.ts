@@ -1,4 +1,4 @@
-import type { AreaSelectAdapter, Op } from '@orochi235/weasel';
+import type { AreaSelectAdapter, Op } from '@weasel-js/core';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { hitTestArea } from '../hitTest';

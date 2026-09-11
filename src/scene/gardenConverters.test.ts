@@ -1,4 +1,4 @@
-import { asNodeId, composeRectPose } from '@orochi235/weasel';
+import { asNodeId, composeRectPose } from '@weasel-js/core';
 import { describe, expect, it } from 'vitest';
 import { getCultivar } from '../model/cultivars';
 import type { Planting, Structure, Zone } from '../model/types';

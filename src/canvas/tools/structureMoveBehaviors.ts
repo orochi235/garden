@@ -1,4 +1,4 @@
-import type { MoveBehavior } from '@orochi235/weasel';
+import type { MoveBehavior } from '@weasel-js/core';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';

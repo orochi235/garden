@@ -1,4 +1,4 @@
-import type { LayoutStrategy, MoveAdapter, Op } from '@orochi235/weasel';
+import type { LayoutStrategy, MoveAdapter, Op } from '@weasel-js/core';
 import { getCultivar } from '../../model/cultivars';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';

@@ -1,4 +1,4 @@
-import type { LayoutStrategy, MoveAdapter, Op } from '@orochi235/weasel';
+import type { LayoutStrategy, MoveAdapter, Op } from '@weasel-js/core';
 import { validCellsForContainer } from '../../model/cellOccupancy';
 import type { Planting } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';

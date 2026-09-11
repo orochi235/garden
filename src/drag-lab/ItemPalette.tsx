@@ -1,4 +1,4 @@
-import { type DragPayload, useDragHandle } from '@orochi235/weasel';
+import { type DragPayload, useDragHandle } from '@weasel-js/core';
 import { useCallback } from 'react';
 import { getAllCultivars } from '@/model/cultivars';
 import type { LabItem } from './types';

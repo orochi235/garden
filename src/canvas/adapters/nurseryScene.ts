@@ -1,4 +1,4 @@
-import type { MoveAdapter } from '@orochi235/weasel';
+import type { MoveAdapter } from '@weasel-js/core';
 import type { NurseryState, Seedling, Tray } from '../../model/nursery';
 import { getCell } from '../../model/nursery';
 import { useGardenStore } from '../../store/gardenStore';

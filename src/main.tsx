@@ -1,4 +1,4 @@
-import { registerFont } from '@orochi235/weasel/renderer';
+import { registerFont } from '@weasel-js/core/renderer';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './components/App';

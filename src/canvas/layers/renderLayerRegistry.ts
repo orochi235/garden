@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@orochi235/weasel';
+import type { RenderLayer } from '@weasel-js/core';
 import { useSyncExternalStore } from 'react';
 
 /**

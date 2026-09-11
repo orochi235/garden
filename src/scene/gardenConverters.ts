@@ -1,9 +1,4 @@
-import {
-  asNodeId,
-  composeRectPose,
-  decomposeRectPose,
-  type SerializedNode,
-} from '@orochi235/weasel';
+import { asNodeId, composeRectPose, decomposeRectPose, type SerializedNode } from '@weasel-js/core';
 import { getCultivar } from '../model/cultivars';
 import type { Garden, Planting, Structure, Zone } from '../model/types';
 import type {

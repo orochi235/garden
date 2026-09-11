@@ -1,4 +1,4 @@
-import { roundToCell, screenToWorld } from '@orochi235/weasel';
+import { roundToCell, screenToWorld } from '@weasel-js/core';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import type { PaletteEntry } from '../../components/palette/paletteData';
 import { getCultivar } from '../../model/cultivars';

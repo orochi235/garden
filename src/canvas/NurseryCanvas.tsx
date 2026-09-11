@@ -1,5 +1,5 @@
-import type { RenderLayer } from '@orochi235/weasel';
-import { SceneCanvas, useCanvasSize, useTools } from '@orochi235/weasel';
+import type { ActionsProp, AnyTool, RenderLayer, ToolsApi } from '@weasel-js/core';
+import { SceneCanvas, useCanvasSize } from '@weasel-js/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
@@ -19,14 +19,21 @@ import { createTrayLayers } from './layers/trayLayersWorld';
 import { wrapLayersWithVisibility } from './layers/visibilityWrap';
 import { computeFitView, fromKitView, toKitView, type View } from './layers/worldLayerData';
 import { onIconLoad } from './plantRenderers';
-import { useEricClickZoomTool } from './tools/useEricClickZoomTool';
-import { useEricRightDragPan } from './tools/useEricRightDragPan';
-import { useEricWheelZoomTool } from './tools/useEricWheelZoomTool';
-import { useFillTrayTool } from './tools/useFillTrayTool';
+import { fillTrayGesture } from './tools/useFillTrayTool';
+import {
+  createNurseryClickAction,
+  createNurseryDragAction,
+  useNurseryTool,
+} from './tools/useNurseryTool';
 import { usePaletteDropTool } from './tools/usePaletteDropTool';
-import { useSeedlingMoveTool } from './tools/useSeedlingMoveTool';
-import { useSeedSelectTool } from './tools/useSeedSelectTool';
-import { useSowCellTool } from './tools/useSowCellTool';
+import { useSeedlingMoveGesture } from './tools/useSeedlingMoveTool';
+import { createSeedClickGesture, seedMarqueeGesture } from './tools/useSeedSelectTool';
+import { sowCellGesture } from './tools/useSowCellTool';
+import {
+  createClickZoomAction,
+  useEricClickZoomTool,
+  useRightDragPan,
+} from './tools/viewportTools';
 
 const SEED_MIN_ZOOM = 5;
 const SEED_MAX_ZOOM = 100;
@@ -247,13 +254,45 @@ export function NurseryCanvas() {
   );
 
   // --- Tools ---
-  const moveTool = useSeedlingMoveTool();
-  const selectTool = useSeedSelectTool({ onLabelClick: handleLabelClick, viewRef });
-  const sowTool = useSowCellTool();
-  const fillTool = useFillTrayTool();
-  const rightDragPan = useEricRightDragPan();
-  const wheelZoom = useEricWheelZoomTool();
+  // Every nursery pointer gesture routes through two actions (`useNurseryTool`):
+  // one drag router and one click router, each trying its gestures in priority
+  // order. Weasel 0.7 retired the tool-walking dispatcher that used to produce
+  // that order out of active/ambient slot position.
+  const { gesture: seedlingMoveGesture, overlay: gutterOverlay } = useSeedlingMoveGesture();
+  const seedClickGesture = useMemo(
+    () =>
+      createSeedClickGesture({ onLabelClick: handleLabelClick, getView: () => viewRef.current }),
+    [handleLabelClick],
+  );
+  const nurseryTool = useNurseryTool(gutterOverlay);
   const clickZoom = useEricClickZoomTool();
+
+  const actions = useMemo<ActionsProp>(() => {
+    // Drag order: a press on a seedling moves it; a shift-press with a cultivar
+    // in hand paints cells; anything left over pulls a marquee.
+    const drag = createNurseryDragAction([
+      seedlingMoveGesture,
+      fillTrayGesture,
+      seedMarqueeGesture,
+    ]);
+    // Click order: sowing first — it declines unless a cultivar is in hand, and
+    // the select gesture claims every non-seedling click, so the other order
+    // makes click-to-sow unreachable.
+    const click = createNurseryClickAction([sowCellGesture, seedClickGesture]);
+    const zoom = createClickZoomAction({ min: SEED_MIN_ZOOM, max: SEED_MAX_ZOOM });
+    return { [drag.id]: drag, [click.id]: click, [zoom.id]: zoom } as ActionsProp;
+  }, [seedlingMoveGesture, seedClickGesture]);
+
+  // Right-mouse-drag pan: a DOM pipeline, because the kit dispatcher only
+  // routes the primary button. Same seam the garden canvas uses.
+  const getView = useCallback(() => viewRef.current, []);
+  const applyView = useCallback((next: View) => {
+    const scale = Math.min(SEED_MAX_ZOOM, Math.max(SEED_MIN_ZOOM, next.scale));
+    setView({ x: next.x, y: next.y, scale });
+    useUiStore.getState().setCanvasZoomPct(Math.round((scale / BASE_SEED_ZOOM) * 100));
+  }, []);
+  useRightDragPan(containerRef, getView, applyView);
+
   // The palette drop tool is a non-claiming pseudo-tool: it doesn't take part
   // in the kit dispatcher (palette drags begin off-canvas, so the dispatcher
   // never sees their pointerdown). Instead it watches the `palettePointerPayload`
@@ -262,23 +301,18 @@ export function NurseryCanvas() {
   usePaletteDropTool({ containerRef, viewRef });
 
   const viewMode = useUiStore((s) => s.viewMode);
-  const activeToolId = viewMode === 'zoom' ? clickZoom.id : moveTool.id;
-
-  // moveTool is the primary active tool: it handles seedling drag and
-  // click-to-select on seedlings. selectTool runs in alwaysOn AFTER moveTool
-  // so it claims pointer-down events that moveTool passes (i.e. empty tray
-  // background) and draws a marquee on drag. Sow tool runs alongside (claims
-  // only when seedDragCultivarId is set); fill tool occupies the shift
-  // modifier slot. When the toolbar arms zoom mode the click-zoom tool takes
-  // over the active slot.
-  const tools = useTools({
-    active: activeToolId,
-    registry: {
-      [moveTool.id]: moveTool,
-      [clickZoom.id]: clickZoom,
-    },
-    ambient: [selectTool, sowTool, fillTool, rightDragPan, wheelZoom],
-  });
+  const activeToolId = viewMode === 'zoom' ? clickZoom.id : nurseryTool.id;
+  const toolsPatch = useMemo<Record<string, AnyTool>>(
+    () => ({ [nurseryTool.id]: nurseryTool, [clickZoom.id]: clickZoom }),
+    [nurseryTool, clickZoom],
+  );
+  const toolsApiRef = useRef<ToolsApi | null>(null);
+  const handleToolsCreated = useCallback((t: ToolsApi) => {
+    toolsApiRef.current = t;
+  }, []);
+  useEffect(() => {
+    toolsApiRef.current?.setActive(activeToolId);
+  }, [activeToolId]);
 
   // World-frame picking + bounds for SceneCanvas. `pickEvery` returns eric's
   // domain hit stack (seedlings over trays, cell-precise); `boundsOf` returns
@@ -335,9 +369,24 @@ export function NurseryCanvas() {
           // opaque to SceneCanvas's node type and casts at this boundary.
           layers={layers as never}
           geometry={geometry}
-          tools={tools}
+          tools={toolsPatch}
+          // No builtin tools: the nursery's whole pointer surface is its own
+          // two bindings, and the kit select tool would claim presses first.
+          // With none registered, the kit's default active id ('select') has
+          // nothing to resolve to — name the real starting tool instead.
+          defaultTools={[]}
+          initialActiveTool="seed-nursery"
+          actions={actions}
+          onToolsCreated={handleToolsCreated}
           selectionMode="none"
-          enableGestureDispatcher={false}
+          // Wheel zoom is the kit's `viewport.zoom` action in plain-wheel mode,
+          // clamped to the nursery's px-per-inch range — this replaces eric's
+          // own wheel-zoom tool. Wheel pan stays off so it can't compete.
+          viewport={{
+            pan: false,
+            zoom: { wheel: 'plain', min: SEED_MIN_ZOOM, max: SEED_MAX_ZOOM },
+          }}
+          enableGestureDispatcher={true}
           enableKeybindings={false}
         />
       )}

@@ -642,7 +642,7 @@ describe('selection rides on history', () => {
     // TDD: cut = snapshot + delete in one applyOps call (single history entry).
     // Undoing cut restores both the zone and the prior selection.
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
-    const { asNodeId, createDeleteOp, createSetSelectionOp } = await import('@orochi235/weasel');
+    const { asNodeId, createDeleteOp, createSetSelectionOp } = await import('@weasel-js/core');
 
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;
@@ -682,7 +682,7 @@ describe('selection rides on history', () => {
     // (now-deleted) pasted ids selected. Routes through the same applyOps
     // path the weasel clipboard uses.
     const { createInsertAdapter } = await import('../canvas/adapters/insert');
-    const { asNodeId, createInsertOp, createSetSelectionOp } = await import('@orochi235/weasel');
+    const { asNodeId, createInsertOp, createSetSelectionOp } = await import('@weasel-js/core');
 
     useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
     const z1 = useGardenStore.getState().garden.zones[0].id;

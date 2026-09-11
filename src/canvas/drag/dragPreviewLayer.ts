@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@orochi235/weasel';
+import type { RenderLayer } from '@weasel-js/core';
 import { useUiStore } from '../../store/uiStore';
 import { fromKitView } from '../layers/worldLayerData';
 import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';

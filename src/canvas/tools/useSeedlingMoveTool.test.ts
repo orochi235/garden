@@ -1,4 +1,3 @@
-import type { ToolCtx } from '@orochi235/weasel';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
@@ -6,7 +5,8 @@ import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { toKitView } from '../layers/worldLayerData';
 import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
-import { type SeedlingMoveScratch, useSeedlingMoveTool } from './useSeedlingMoveTool';
+import type { GesturePoint } from './nurseryGestures';
+import { useSeedlingMoveGesture } from './useSeedlingMoveTool';
 
 /**
  * Tests cover the gutter-affordance overlay that this tool owns (per the
@@ -37,42 +37,15 @@ function collectFills(cmds: DrawCommand[]): string[] {
   return fills;
 }
 
-function makePointerDown(): PointerEvent {
-  const e = new Event('pointerdown') as PointerEvent;
-  Object.assign(e, { button: 0, clientX: 0, clientY: 0, pointerId: 1 });
-  return e;
-}
-
-function makePointerMove(): PointerEvent {
-  const e = new Event('pointermove') as PointerEvent;
-  Object.assign(e, { button: 0, clientX: 0, clientY: 0, pointerId: 1 });
-  return e;
-}
-
-function makeMoveCtx(
-  worldX: number,
-  worldY: number,
-  scratch: SeedlingMoveScratch,
-): ToolCtx<SeedlingMoveScratch> {
-  return {
-    worldX,
-    worldY,
-    modifiers: { alt: false, shift: false, meta: false, ctrl: false, space: false },
-    selection: {} as never,
-    adapter: null,
-    applyOps: () => {},
-    view: toKitView({ x: 0, y: 0, scale: 50 }),
-    setView: () => {},
-    canvasRect: new DOMRect(0, 0, 800, 600),
-    scratch,
-  };
+function at(worldX: number, worldY: number, shift = false): GesturePoint {
+  return { worldX, worldY, shift, alt: false };
 }
 
 function renderTool() {
-  return renderHook(() => useSeedlingMoveTool());
+  return renderHook(() => useSeedlingMoveGesture());
 }
 
-describe('useSeedlingMoveTool gutter-affordance overlay', () => {
+describe('useSeedlingMoveGesture gutter-affordance overlay', () => {
   beforeEach(() => {
     useUiStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
@@ -89,7 +62,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const tool = result.current;
     expect(tool.overlay).toBeDefined();
 
-    const cmds = tool.overlay!.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
+    const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
     });
@@ -112,18 +85,15 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const cellCx = off.x + 0.5 * tray.cellPitchIn;
     const cellCy = off.y + 0.5 * tray.cellPitchIn;
 
-    // Allocate scratch via the tool's initScratch (also wires up the ref mirror).
-    const scratch = tool.initScratch!() as SeedlingMoveScratch;
-    const ctxA = makeMoveCtx(cellCx, cellCy, scratch);
-    tool.pointer!.onDown!(makePointerDown(), ctxA);
-    tool.drag!.onStart!(makePointerDown(), ctxA);
+    void tool.gesture.start(at(cellCx, cellCy));
+    const scratch = tool.scratchRef.current;
 
     // Sanity: scratch reflects an active single-seedling drag.
     expect(scratch.active).toBe(true);
     expect(scratch.isGroup).toBe(false);
     expect(scratch.draggedId).toBe(seedling.id);
 
-    const cmds = tool.overlay!.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
+    const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
     });
@@ -147,10 +117,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const cellCx = off.x + 0.5 * tray.cellPitchIn;
     const cellCy = off.y + 0.5 * tray.cellPitchIn;
 
-    const scratch = tool.initScratch!() as SeedlingMoveScratch;
-    const ctxA = makeMoveCtx(cellCx, cellCy, scratch);
-    tool.pointer!.onDown!(makePointerDown(), ctxA);
-    tool.drag!.onStart!(makePointerDown(), ctxA);
+    const handle = tool.gesture.start(at(cellCx, cellCy));
+    const scratch = tool.scratchRef.current;
 
     // Drive onMove into the row-0 gutter region to set scratch.affordance.
     const targets = getTrayDropTargets(tray);
@@ -162,11 +130,10 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     // Sanity-check the hit-tester agrees we're inside.
     expect(hitTrayDropTarget(targets, { x: inGutterX, y: inGutterY })?.meta.kind).toBe('row');
 
-    const ctxMove = makeMoveCtx(inGutterX, inGutterY, scratch);
-    tool.drag!.onMove!(makePointerMove(), ctxMove);
+    handle?.move(at(inGutterX, inGutterY));
     expect(scratch.affordance?.kind).toBe('row');
 
-    const cmds = tool.overlay!.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
+    const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
     });
@@ -191,14 +158,12 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const cellCx = off.x + 0.5 * tray.cellPitchIn;
     const cellCy = off.y + 0.5 * tray.cellPitchIn;
 
-    const scratch = tool.initScratch!() as SeedlingMoveScratch;
-    const ctxA = makeMoveCtx(cellCx, cellCy, scratch);
-    tool.pointer!.onDown!(makePointerDown(), ctxA);
-    tool.drag!.onStart!(makePointerDown(), ctxA);
+    void tool.gesture.start(at(cellCx, cellCy));
+    const scratch = tool.scratchRef.current;
     expect(scratch.isGroup).toBe(true);
     expect(scratch.active).toBe(true);
 
-    const cmds = tool.overlay!.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
+    const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
     });
@@ -233,10 +198,8 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     // Press on the seedling (tray A cell 0,0).
     const offA = trayInteriorOffsetIn(a);
     const cellA = { x: offA.x + 0.5 * a.cellPitchIn, y: offA.y + 0.5 * a.cellPitchIn };
-    const scratch = tool.initScratch!() as SeedlingMoveScratch;
-    const ctxDown = makeMoveCtx(cellA.x, cellA.y, scratch);
-    tool.pointer!.onDown!(makePointerDown(), ctxDown);
-    tool.drag!.onStart!(makePointerDown(), ctxDown);
+    const handle = tool.gesture.start(at(cellA.x, cellA.y));
+    const scratch = tool.scratchRef.current;
     expect(scratch.active).toBe(true);
     expect(scratch.isGroup).toBe(false);
 
@@ -244,8 +207,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const offB = trayInteriorOffsetIn(b);
     const dropX = trayBOrigin.x + offB.x + 1.5 * b.cellPitchIn;
     const dropY = trayBOrigin.y + offB.y + 1.5 * b.cellPitchIn;
-    const ctxEnd = makeMoveCtx(dropX, dropY, scratch);
-    tool.drag!.onEnd!(makePointerMove(), ctxEnd);
+    handle?.end(at(dropX, dropY));
 
     // Seedling now lives in tray B.
     const ss = useGardenStore.getState().garden.nursery;
@@ -278,18 +240,14 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
 
     const offA = trayInteriorOffsetIn(a);
     const cellA = { x: offA.x + 0.5 * a.cellPitchIn, y: offA.y + 0.5 * a.cellPitchIn };
-    const scratch = tool.initScratch!() as SeedlingMoveScratch;
-    const ctxDown = makeMoveCtx(cellA.x, cellA.y, scratch);
-    tool.pointer!.onDown!(makePointerDown(), ctxDown);
-    tool.drag!.onStart!(makePointerDown(), ctxDown);
+    const handle = tool.gesture.start(at(cellA.x, cellA.y));
 
     // Tray B at (0, a.heightIn + 2) per column-major auto-flow.
     const trayBOrigin = { x: 0, y: a.heightIn + 2 };
     const offB = trayInteriorOffsetIn(b);
     const dropX = trayBOrigin.x + offB.x + 1.5 * b.cellPitchIn;
     const dropY = trayBOrigin.y + offB.y + 1.5 * b.cellPitchIn;
-    const ctxEnd = makeMoveCtx(dropX, dropY, scratch);
-    tool.drag!.onEnd!(makePointerMove(), ctxEnd);
+    handle?.end(at(dropX, dropY));
 
     // Source seedling unchanged.
     const ssAfter = useGardenStore.getState().garden.nursery;
@@ -310,13 +268,9 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     const { result } = renderTool();
     const tool = result.current;
     const off = trayInteriorOffsetIn(a);
-    const scratch = tool.initScratch!() as SeedlingMoveScratch;
-    const ctxDown = makeMoveCtx(off.x + 0.5 * a.cellPitchIn, off.y + 0.5 * a.cellPitchIn, scratch);
-    tool.pointer!.onDown!(makePointerDown(), ctxDown);
-    tool.drag!.onStart!(makePointerDown(), ctxDown);
+    const handle = tool.gesture.start(at(off.x + 0.5 * a.cellPitchIn, off.y + 0.5 * a.cellPitchIn));
 
-    const ctxEnd = makeMoveCtx(off.x + 2.5 * a.cellPitchIn, off.y + 1.5 * a.cellPitchIn, scratch);
-    tool.drag!.onEnd!(makePointerMove(), ctxEnd);
+    handle?.end(at(off.x + 2.5 * a.cellPitchIn, off.y + 1.5 * a.cellPitchIn));
 
     const trayA = useGardenStore.getState().garden.nursery.trays[0];
     expect(trayA.slots[1 * trayA.cols + 2].seedlingId).toBe(sId);
@@ -334,7 +288,7 @@ describe('useSeedlingMoveTool gutter-affordance overlay', () => {
     // Arm a palette drag — overlay's secondary trigger.
     useUiStore.getState().setSeedDragCultivarId('tomato');
 
-    const cmds = tool.overlay!.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
+    const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
     });

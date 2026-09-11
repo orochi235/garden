@@ -1,4 +1,4 @@
-import { fitZoom, type View as KitView } from '@orochi235/weasel';
+import { fitZoom, type View as KitView } from '@weasel-js/core';
 import type { LabelMode } from '../../store/uiStore';
 
 /** Camera-coords viewport. eric uses **uniform** zoom, so its viewport state

@@ -1,4 +1,4 @@
-import type { GestureContext, GroupTransform, SnapTarget } from '@orochi235/weasel';
+import type { GestureContext, GroupTransform, SnapTarget } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createGardenSceneAdapter, type SceneNode, type ScenePose } from '../adapters/gardenScene';

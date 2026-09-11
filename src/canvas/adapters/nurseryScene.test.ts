@@ -1,4 +1,4 @@
-import type { Op } from '@orochi235/weasel';
+import type { Op } from '@weasel-js/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTray, trayInteriorOffsetIn } from '../../model/nursery';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';

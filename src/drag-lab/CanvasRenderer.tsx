@@ -1,4 +1,4 @@
-import { useDropZone } from '@orochi235/weasel';
+import { useDropZone } from '@weasel-js/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DISPLAY_PX_PER_FT, PX_PER_FT } from './constants';
 import type { ContainerShape, DragFeedback, LabItem, LayoutStrategy, Point, Rect } from './types';

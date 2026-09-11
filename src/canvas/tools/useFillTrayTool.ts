@@ -1,116 +1,89 @@
-import { defineTool, type Tool } from '@orochi235/weasel';
-import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { SEED_FILL_TRAY_DRAG_KIND, type SeedFillPutative } from '../drag/seedFillTrayDrag';
 import { getTrayDropTargets, hitTrayDropTarget } from '../layouts/trayDropTargets';
 import { hitTestCellInches } from '../nurseryHitTest';
+import type { GesturePoint, NurseryDragGesture, NurseryDragHandle } from './nurseryGestures';
 
-export interface FillTrayScratch {
-  active: boolean;
-  trayId: string | null;
-  cultivarId: string | null;
-  putative: SeedFillPutative | null;
-}
+/**
+ * Shift-drag inside a tray to paint cells with the currently dragging cultivar
+ * (`useUiStore.seedDragCultivarId`). Publishes the live putative to
+ * `uiStore.dragPreview` under `SEED_FILL_TRAY_DRAG_KIND` so the framework's
+ * `dragPreviewLayer` renders the ghost; commits on release.
+ *
+ * Claims only a shift-press on a cell of some tray while a cultivar is in
+ * hand — otherwise it declines and the router offers the drag to the next
+ * gesture (seedling move, then marquee).
+ */
+export const fillTrayGesture: NurseryDragGesture = {
+  id: 'seedling-fill',
+  start(p: GesturePoint): NurseryDragHandle | null {
+    if (!p.shift) return null;
+    const cultivarId = useUiStore.getState().seedDragCultivarId;
+    if (!cultivarId) return null;
+    const ss = useGardenStore.getState().garden.nursery;
+    const hitTray = ss.trays.find((tray) => {
+      const o = trayWorldOrigin(tray, ss);
+      return hitTestCellInches(tray, p.worldX - o.x, p.worldY - o.y) != null;
+    });
+    if (!hitTray) return null;
 
-/** Shift-drag inside a tray to paint cells with the current dragging cultivar
- *  (`useUiStore.seedDragCultivarId`). Publishes the live putative to
- *  `uiStore.dragPreview` under `SEED_FILL_TRAY_DRAG_KIND` so the framework's
- *  `dragPreviewLayer` renders the ghost; commits on `drag.onEnd`. */
-export function useFillTrayTool(): Tool<FillTrayScratch> {
-  return useMemo(
-    () =>
-      defineTool<FillTrayScratch>({
-        id: 'seedling-fill',
-        cursor: 'crosshair',
-        initScratch: () => ({ active: false, trayId: null, cultivarId: null, putative: null }),
+    const trayId = hitTray.id;
+    let putative: SeedFillPutative | null = null;
 
-        pointer: {
-          onDown: (e, ctx) => {
-            if (e.button !== 0 || !ctx.modifiers.shift) return 'pass';
-            const cultivarId = useUiStore.getState().seedDragCultivarId;
-            if (!cultivarId) return 'pass';
-            const ss = useGardenStore.getState().garden.nursery;
-            for (const tray of ss.trays) {
-              const o = trayWorldOrigin(tray, ss);
-              const cell = hitTestCellInches(tray, ctx.worldX - o.x, ctx.worldY - o.y);
-              if (!cell) continue;
-              ctx.scratch.active = true;
-              ctx.scratch.trayId = tray.id;
-              ctx.scratch.cultivarId = cultivarId;
-              return 'claim';
-            }
-            return 'pass';
-          },
-        },
+    const clearGhost = () => {
+      putative = null;
+      useUiStore.getState().setDragPreview(null);
+    };
 
-        drag: {
-          onStart: (_e, ctx) => (ctx.scratch.active ? 'claim' : 'pass'),
-          onMove: (_e, ctx) => {
-            if (!ctx.scratch.active || !ctx.scratch.trayId || !ctx.scratch.cultivarId)
-              return 'pass';
-            const tray = useGardenStore
-              .getState()
-              .garden.nursery.trays.find((t) => t.id === ctx.scratch.trayId);
-            if (!tray) return 'claim';
-            const hit = hitTrayDropTarget(getTrayDropTargets(tray), {
-              x: ctx.worldX,
-              y: ctx.worldY,
+    return {
+      move(m: GesturePoint) {
+        const tray = useGardenStore.getState().garden.nursery.trays.find((t) => t.id === trayId);
+        if (!tray) return;
+        const hit = hitTrayDropTarget(getTrayDropTargets(tray), { x: m.worldX, y: m.worldY });
+        if (!hit) {
+          clearGhost();
+          return;
+        }
+        const meta = hit.meta;
+        const base = { trayId: tray.id, cultivarId, replace: true };
+        putative =
+          meta.kind === 'all'
+            ? { ...base, scope: 'all' }
+            : meta.kind === 'row'
+              ? { ...base, scope: 'row', index: meta.row }
+              : meta.kind === 'col'
+                ? { ...base, scope: 'col', index: meta.col }
+                : { ...base, scope: 'cell', row: meta.row, col: meta.col };
+        useUiStore.getState().setDragPreview({ kind: SEED_FILL_TRAY_DRAG_KIND, putative });
+      },
+      end() {
+        const committed = putative;
+        clearGhost();
+        if (!committed) return;
+        const gs = useGardenStore.getState();
+        const replace = committed.replace ?? true;
+        switch (committed.scope) {
+          case 'all':
+            gs.fillTray(committed.trayId, committed.cultivarId, { replace });
+            break;
+          case 'row':
+            gs.fillRow(committed.trayId, committed.index, committed.cultivarId, { replace });
+            break;
+          case 'col':
+            gs.fillColumn(committed.trayId, committed.index, committed.cultivarId, { replace });
+            break;
+          case 'cell':
+            gs.sowCell(committed.trayId, committed.row, committed.col, committed.cultivarId, {
+              replace,
             });
-            if (!hit) {
-              ctx.scratch.putative = null;
-              useUiStore.getState().setDragPreview(null);
-              return 'claim';
-            }
-            const m = hit.meta;
-            const base = { trayId: tray.id, cultivarId: ctx.scratch.cultivarId, replace: true };
-            const putative: SeedFillPutative =
-              m.kind === 'all'
-                ? { ...base, scope: 'all' }
-                : m.kind === 'row'
-                  ? { ...base, scope: 'row', index: m.row }
-                  : m.kind === 'col'
-                    ? { ...base, scope: 'col', index: m.col }
-                    : { ...base, scope: 'cell', row: m.row, col: m.col };
-            ctx.scratch.putative = putative;
-            useUiStore.getState().setDragPreview({ kind: SEED_FILL_TRAY_DRAG_KIND, putative });
-            return 'claim';
-          },
-          onEnd: (_e, ctx) => {
-            if (!ctx.scratch.active) return 'pass';
-            const putative = ctx.scratch.putative;
-            useUiStore.getState().setDragPreview(null);
-            ctx.scratch.active = false;
-            ctx.scratch.putative = null;
-            if (!putative) return 'claim';
-            const gs = useGardenStore.getState();
-            const replace = putative.replace ?? true;
-            switch (putative.scope) {
-              case 'all':
-                gs.fillTray(putative.trayId, putative.cultivarId, { replace });
-                break;
-              case 'row':
-                gs.fillRow(putative.trayId, putative.index, putative.cultivarId, { replace });
-                break;
-              case 'col':
-                gs.fillColumn(putative.trayId, putative.index, putative.cultivarId, { replace });
-                break;
-              case 'cell':
-                gs.sowCell(putative.trayId, putative.row, putative.col, putative.cultivarId, {
-                  replace,
-                });
-                break;
-            }
-            return 'claim';
-          },
-          onCancel: (ctx) => {
-            useUiStore.getState().setDragPreview(null);
-            ctx.scratch.active = false;
-            ctx.scratch.putative = null;
-          },
-        },
-      }),
-    [],
-  );
-}
+            break;
+        }
+      },
+      cancel() {
+        clearGhost();
+      },
+    };
+  },
+};

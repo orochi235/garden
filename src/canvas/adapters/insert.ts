@@ -1,4 +1,4 @@
-import type { ClipboardSnapshot, InsertAdapter, Op } from '@orochi235/weasel';
+import type { ClipboardSnapshot, InsertAdapter, Op } from '@weasel-js/core';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { createPlanting, createStructure, createZone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';

@@ -14,7 +14,7 @@ import {
   type DropTarget,
   type LayoutSnap,
   type LayoutStrategy,
-} from '@orochi235/weasel';
+} from '@weasel-js/core';
 import { getCultivar } from '../../model/cultivars';
 import { getGridCells, getSlots, type Layout } from '../../model/layout';
 import type { Garden, Structure, Zone } from '../../model/types';
