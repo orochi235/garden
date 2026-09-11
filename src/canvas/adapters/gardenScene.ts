@@ -40,6 +40,13 @@ export interface SceneBounds {
   length: number;
 }
 
+/**
+ * Adapter members eric deliberately leaves unimplemented. `getZIndex`/`compareZ`
+ * would make hit-testing respect the `zIndex` that paint order already sorts by
+ * — a real behavior change, not part of catching the dependency up.
+ */
+type OptOut = 'findSnapTarget' | 'getZIndex' | 'compareZ';
+
 export type GardenSceneAdapter = MoveAdapter<SceneNode, ScenePose> & {
   /** Layout strategy for a container id, or null for non-containers. */
   getLayout(id: string): LayoutStrategy<ScenePose> | null;
@@ -82,8 +89,8 @@ function allNodes(): SceneNode[] {
   return nodes;
 }
 
-export function createGardenSceneAdapter(): Required<Omit<GardenSceneAdapter, 'findSnapTarget'>> {
-  const adapter: Required<Omit<GardenSceneAdapter, 'findSnapTarget'>> = {
+export function createGardenSceneAdapter(): Required<Omit<GardenSceneAdapter, OptOut>> {
+  const adapter: Required<Omit<GardenSceneAdapter, OptOut>> = {
     getNode(id) {
       return findNode(id);
     },

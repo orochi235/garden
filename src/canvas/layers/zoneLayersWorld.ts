@@ -1,7 +1,6 @@
-import type { Dims, View } from '@weasel-js/core';
-import { type RenderLayer, textCommand } from '@weasel-js/core';
+import type { Dims, RenderLayer, View } from '@weasel-js/core';
 import type { Zone } from '../../model/types';
-import { type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { type DrawCommand, labelCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -39,7 +38,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
         const children: DrawCommand[] = sorted
           .filter((z) => !!z.label)
           .map((z) =>
-            textCommand(z.x + z.width / 2, z.y + z.length + px(view, 4), z.label!, {
+            labelCommand(z.x + z.width / 2, z.y + z.length + px(view, 4), z.label!, {
               fontSize: fontPx,
               align: 'center',
               fill: { fill: 'solid', color: '#ffffff' },

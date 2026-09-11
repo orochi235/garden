@@ -15,6 +15,8 @@ export interface PlantingPose {
   y: number;
 }
 
+type OptOut = 'findSnapTarget' | 'getZIndex' | 'compareZ';
+
 export type PlantingMoveAdapter = MoveAdapter<Planting, PlantingPose> & {
   insertNode(p: Planting): void;
   removeNode(id: string): void;
@@ -28,8 +30,8 @@ function getParent(id: string): { id: string; x: number; y: number } | undefined
   return getPlantingParent(useGardenStore.getState().garden, id);
 }
 
-export function createPlantingMoveAdapter(): Required<Omit<PlantingMoveAdapter, 'findSnapTarget'>> {
-  const adapter: Required<Omit<PlantingMoveAdapter, 'findSnapTarget'>> = {
+export function createPlantingMoveAdapter(): Required<Omit<PlantingMoveAdapter, OptOut>> {
+  const adapter: Required<Omit<PlantingMoveAdapter, OptOut>> = {
     getNode(id) {
       return getPlanting(id);
     },

@@ -1,10 +1,15 @@
-import type { Dims, View } from '@weasel-js/core';
-import { type RenderLayer, textCommand } from '@weasel-js/core';
+import type { Dims, RenderLayer, View } from '@weasel-js/core';
 import type { NurseryState, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
 import { useGardenStore } from '../../store/gardenStore';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
-import { circlePolygon, type DrawCommand, roundRectPolygon, viewToMat3 } from '../util/weaselLocal';
+import {
+  circlePolygon,
+  type DrawCommand,
+  labelCommand,
+  roundRectPolygon,
+  viewToMat3,
+} from '../util/weaselLocal';
 
 export type GetTrays = () => Tray[];
 
@@ -109,7 +114,7 @@ function trayLabelCommands(tray: Tray, view: View): DrawCommand[] {
   const fontSize = px(view, LABEL_FONT_PX);
   const gapY = tray.heightIn + px(view, LABEL_GAP_PX);
   return [
-    textCommand(tray.widthIn / 2, gapY, tray.label, {
+    labelCommand(tray.widthIn / 2, gapY, tray.label, {
       fontSize,
       align: 'center',
       fill: { fill: 'solid', color: 'rgba(255,255,255,0.65)' },

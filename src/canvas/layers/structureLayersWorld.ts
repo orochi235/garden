@@ -1,8 +1,8 @@
 import type { Dims, View } from '@weasel-js/core';
-import { measureTextBounds, type RenderLayer, rectPath, textCommand } from '@weasel-js/core';
+import { measureTextBounds, type RenderLayer, rectPath } from '@weasel-js/core';
 import type { Structure } from '../../model/types';
 import { paintFor } from '../patterns';
-import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { circlePolygon, type DrawCommand, labelCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -139,7 +139,7 @@ export function createStructureLayers(
           const e = entries[i];
           const isHidden = hidden.has(i);
           if (isHidden && !debugOverlappingLabels) continue;
-          const cmd: DrawCommand = textCommand(e.x + e.w / 2, e.y + padY, e.label, {
+          const cmd: DrawCommand = labelCommand(e.x + e.w / 2, e.y + padY, e.label, {
             fontSize: fontPx,
             align: 'center',
             fill: { fill: 'solid', color: '#ffffff' },

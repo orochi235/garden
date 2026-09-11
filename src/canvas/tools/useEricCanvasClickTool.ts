@@ -1,5 +1,4 @@
-import type { Action, Tool } from '@weasel-js/core';
-import { defineTool } from '@weasel-js/core/routing';
+import { type Action, defineTool, type Tool } from '@weasel-js/core';
 import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';

@@ -1,5 +1,4 @@
-import type { Action, RenderLayer, Tool } from '@weasel-js/core';
-import { defineTool } from '@weasel-js/core/routing';
+import { type Action, defineTool, type RenderLayer, type Tool } from '@weasel-js/core';
 import { useMemo } from 'react';
 import {
   clickFirstHandling,

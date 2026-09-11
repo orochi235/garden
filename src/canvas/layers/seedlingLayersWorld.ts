@@ -1,5 +1,4 @@
-import type { Dims, View } from '@weasel-js/core';
-import { type RenderLayer, textCommand } from '@weasel-js/core';
+import type { Dims, RenderLayer, View } from '@weasel-js/core';
 import { getCultivar } from '../../model/cultivars';
 import type { Seedling, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
@@ -7,7 +6,7 @@ import { hasSeedlingWarnings, SEEDLING_WARNING_COLOR } from '../../model/seedlin
 import { useGardenStore } from '../../store/gardenStore';
 import { trayWorldOrigin } from '../adapters/nurseryScene';
 import { plantDrawCommands } from '../plantRenderers';
-import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { circlePolygon, type DrawCommand, labelCommand, viewToMat3 } from '../util/weaselLocal';
 
 export interface SeedlingLayerUi {
   showWarnings: boolean;
@@ -150,7 +149,7 @@ function seedlingLabelCommandsForTray(
     const label = seedling.labelOverride ?? cultivar.name.slice(0, 4);
     // Flagged: text commands require registerFont() wired at app boot.
     cmds.push(
-      textCommand(cx, cy, label, {
+      labelCommand(cx, cy, label, {
         fontSize: fontPx,
         align: 'center',
         fill: { fill: 'solid', color: '#ffffff' },

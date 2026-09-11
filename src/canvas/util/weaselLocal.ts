@@ -1,5 +1,5 @@
-import type { View } from '@weasel-js/core';
-import { polygonFromPoints } from '@weasel-js/core';
+import type { DrawCommand, FillStyle, TextStyle, View } from '@weasel-js/core';
+import { polygonFromPoints, textCommand } from '@weasel-js/core';
 
 /**
  * Local reimplementation of weasel's `viewToMat3`, kept for behavioral parity
@@ -91,4 +91,20 @@ export function roundRectPolygon(
     }
   }
   return polygonFromPoints(pts);
+}
+
+/**
+ * `textCommand` with the glyph color back in the style object. Weasel 1.0 moved
+ * text paint off `TextStyle` and onto a trailing positional `paint` argument,
+ * on the reasoning that color belongs to the node; eric's labels are overlays
+ * with no node behind them, so they all state their own color.
+ */
+export function labelCommand(
+  x: number,
+  y: number,
+  text: string,
+  style: TextStyle & { fill?: FillStyle | null },
+): DrawCommand {
+  const { fill, ...typography } = style;
+  return textCommand(x, y, text, typography, undefined, undefined, undefined, { fill });
 }

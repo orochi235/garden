@@ -1,9 +1,9 @@
 import type { Dims, View } from '@weasel-js/core';
-import { PathBuilder, type RenderLayer, rectPath, textCommand } from '@weasel-js/core';
+import { PathBuilder, type RenderLayer, rectPath } from '@weasel-js/core';
 import { trayInteriorOffsetIn } from '../../model/nursery';
 import type { Garden } from '../../model/types';
 import { isDebugEnabled } from '../debug';
-import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { circlePolygon, type DrawCommand, labelCommand, viewToMat3 } from '../util/weaselLocal';
 
 type Mode = 'garden' | 'nursery';
 
@@ -137,15 +137,15 @@ function makeAxesLayer(): RenderLayer<unknown> {
           fill: { fill: 'solid', color: '#ffffff' },
         },
         // Labels — flagged: text rendering requires registerFont() wired at app boot.
-        textCommand(100 - px(20), -px(4), '+x', {
+        labelCommand(100 - px(20), -px(4), '+x', {
           fontSize: px(12),
           fill: { fill: 'solid', color: '#ffffff' },
         }),
-        textCommand(px(4), 100 - px(4), '+y', {
+        labelCommand(px(4), 100 - px(4), '+y', {
           fontSize: px(12),
           fill: { fill: 'solid', color: '#ffffff' },
         }),
-        textCommand(px(6), -px(6), '(0,0)', {
+        labelCommand(px(6), -px(6), '(0,0)', {
           fontSize: px(12),
           fill: { fill: 'solid', color: '#ffffff' },
         }),

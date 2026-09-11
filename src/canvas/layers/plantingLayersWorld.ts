@@ -4,7 +4,6 @@ import {
   PathBuilder,
   type RenderLayer,
   rectPath,
-  textCommand,
   type View,
 } from '@weasel-js/core';
 import { computeOccupancy, resolveFootprint } from '../../model/cellOccupancy';
@@ -14,7 +13,7 @@ import { getSpecies } from '../../model/species';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { getPlantableBounds } from '../../model/types';
 import { plantingWorldPose } from '../../utils/plantingPose';
-import { circlePolygon, type DrawCommand, viewToMat3 } from '../util/weaselLocal';
+import { circlePolygon, type DrawCommand, labelCommand, viewToMat3 } from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -335,14 +334,14 @@ export function createPlantingLayers(
             const radius = Math.max(px(view, 3), (footprint / 2) * data.plantIconScale);
             const labelX = wx + radius + px(view, 3);
             children.push(
-              textCommand(labelX, wy - px(view, 2), `${footprint.toFixed(1)}ft`, {
+              labelCommand(labelX, wy - px(view, 2), `${footprint.toFixed(1)}ft`, {
                 fontSize: fontPx,
                 align: 'left',
                 fill: { fill: 'solid', color: 'rgba(255, 255, 255, 0.7)' },
               }),
             );
             children.push(
-              textCommand(labelX, wy + px(view, 8), `${spacing.toFixed(1)}ft`, {
+              labelCommand(labelX, wy + px(view, 8), `${spacing.toFixed(1)}ft`, {
                 fontSize: fontPx,
                 align: 'left',
                 fill: { fill: 'solid', color: 'rgba(255, 255, 200, 0.5)' },
@@ -435,7 +434,7 @@ export function createPlantingLayers(
             fill: { fill: 'solid', color: 'rgba(0, 0, 0, 0.6)' },
           });
           children.push(
-            textCommand(label.rect.x + label.rect.w / 2, label.rect.y, label.text, {
+            labelCommand(label.rect.x + label.rect.w / 2, label.rect.y, label.text, {
               fontSize: fontPx,
               align: 'center',
               fill: { fill: 'solid', color: '#ffffff' },

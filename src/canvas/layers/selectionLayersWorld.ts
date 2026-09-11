@@ -1,12 +1,18 @@
 import type { Dims, View } from '@weasel-js/core';
-import { type RenderLayer, rectPath, textCommand } from '@weasel-js/core';
+import { type RenderLayer, rectPath } from '@weasel-js/core';
 import { getCultivar } from '../../model/cultivars';
 import type { Seedling, Tray } from '../../model/nursery';
 import { trayInteriorOffsetIn } from '../../model/nursery';
 import type { Planting, Structure, Zone } from '../../model/types';
 import { expandToGroups } from '../../utils/groups';
 import { plantingWorldPose } from '../../utils/plantingPose';
-import { circlePolygon, type DrawCommand, ellipsePolygon, viewToMat3 } from '../util/weaselLocal';
+import {
+  circlePolygon,
+  type DrawCommand,
+  ellipsePolygon,
+  labelCommand,
+  viewToMat3,
+} from '../util/weaselLocal';
 import type { GetUi, LayerDescriptor } from './worldLayerData';
 import { descriptorById } from './worldLayerData';
 
@@ -143,7 +149,7 @@ export function createSelectionOutlineLayer(
         if (obj.label) {
           const fontPx = (labelFontSize ?? 10) / Math.max(0.0001, view.scale.x);
           children.push(
-            textCommand(obj.x + obj.width / 2, obj.y + obj.length + px(view, 8), obj.label, {
+            labelCommand(obj.x + obj.width / 2, obj.y + obj.length + px(view, 8), obj.label, {
               fontSize: fontPx,
               align: 'center',
               fill: { fill: 'solid', color: '#ffffff' },

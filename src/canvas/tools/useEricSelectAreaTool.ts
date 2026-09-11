@@ -1,5 +1,4 @@
-import type { AnyTool } from '@weasel-js/core';
-import { defineTool } from '@weasel-js/core/routing';
+import { type AnyTool, defineTool } from '@weasel-js/core';
 import { useMemo } from 'react';
 
 /**

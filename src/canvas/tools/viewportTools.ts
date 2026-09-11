@@ -1,5 +1,4 @@
-import { type Action, type Tool, zoomAt } from '@weasel-js/core';
-import { defineTool } from '@weasel-js/core/routing';
+import { type Action, defineTool, type Tool, zoomAt } from '@weasel-js/core';
 import { type RefObject, useEffect, useMemo } from 'react';
 import type { View } from '../layers/worldLayerData';
 
