@@ -1,27 +1,26 @@
 import type {
   ActionsProp,
   AnyTool,
-  GridSlotConfig,
+  LayoutStrategy,
   MoveBehavior,
   NodeId,
   Op,
-  PoseComposition,
   RenderLayer,
   SelectionApi,
   ToolsApi,
 } from '@weasel-js/core';
 import {
   ActiveToolContextProviderIfRoot,
-  composeRectPose,
-  decomposeRectPose,
   defaultCommitAdapter,
   SceneCanvas,
   useCanvasSize,
   useDepSource,
   useRectTool,
 } from '@weasel-js/core';
+import { createGridLayer } from '@weasel-js/guides';
+import { createModeRegistry, type ModeDefinition } from '@weasel-js/modes';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { GardenScene } from '../scene/gardenScene';
+import { type GardenScene, gardenCanDropInto } from '../scene/gardenScene';
 import { useGardenStore } from '../store/gardenStore';
 import { useHighlightStore, useHighlightTick } from '../store/highlightStore';
 import { useUiStore } from '../store/uiStore';
@@ -54,7 +53,7 @@ import { NurseryCanvas } from './NurseryCanvas';
 import { onIconLoad } from './plantRenderers';
 import { useGardenSelectionApi } from './selectionBridge';
 import { createGardenCloneAction } from './tools/gardenCloneAction';
-import { requirePlantingDrop, snapStructureZoneToGrid } from './tools/snapMoveBehaviors';
+import { requirePlantingDrop, structureZoneGridSnap } from './tools/snapMoveBehaviors';
 import {
   clampStructureZoneToGardenBounds,
   detectStructureClash,
@@ -92,28 +91,43 @@ function clampZoom(z: number): number {
   return Math.min(GARDEN_MAX_ZOOM, Math.max(GARDEN_MIN_ZOOM, z));
 }
 
-/** Capability sets per garden view mode, consumed by `getActiveMode` so the
- *  kit gesture dispatcher's eligibility filter only runs its actions in the
- *  modes that should own pointer gestures:
- *   - select / draw → kit owns move/resize/area-select.
+/** Garden view modes, gating which kit actions the gesture dispatcher runs:
+ *   - normal (select / draw) → kit owns move/resize/area-select.
  *   - select-area   → kit owns area-select only (force-marquee); transforms off.
  *   - insert (plotting) → kit owns insert only.
- *   - pan / zoom    → no kit actions; eric's legacy pan/zoom tools own drags.
- *  Eric's legacy pan/zoom tools carry no dispatcher bindings, so without this
- *  gate `moveAction`/`areaSelectAction`'s ambient bindings would also fire on a
+ *   - pan / zoom    → no kit actions; eric's pan/zoom tools own drags.
+ *  Eric's pan/zoom tools carry their own bindings, so without this gate
+ *  `moveAction`/`areaSelectAction`'s ambient bindings would also fire on a
  *  pan/zoom drag (double-handling). */
-const CAP_SELECT = new Set(['transforms-selection', 'creates-selection', 'edits-page']);
-const CAP_AREA = new Set(['creates-selection']);
-const CAP_INSERT = new Set(['creates-shapes']);
-const CAP_NONE = new Set<string>();
+const GARDEN_MODES: ModeDefinition[] = [
+  { id: 'normal', allows: ['transforms-selection', 'creates-selection', 'edits-page'] },
+  { id: 'select-area', allows: ['creates-selection'] },
+  { id: 'insert', allows: ['creates-shapes'] },
+  { id: 'pan', allows: [] },
+  { id: 'zoom', allows: [] },
+].map((m) => ({ ...m, kind: 'soft', scoping: false }));
+
+/** The kit behavior the garden canvas runs: click/marquee selection with its
+ *  outline, move (with alt-drag clone), and resize. */
+const GARDEN_FEATURES = ['pick', 'move', 'resize'] as const;
+
+function gardenModeId(ui: ReturnType<typeof useUiStore.getState>): string {
+  if (ui.plottingTool) return 'insert';
+  if (ui.viewMode === 'pan' || ui.viewMode === 'zoom' || ui.viewMode === 'select-area') {
+    return ui.viewMode;
+  }
+  return 'normal';
+}
 
 /**
  * Bridges the kit's gesture-commit pipeline into the garden's undo history by
- * registering two deps — `applyOps` (the commit channel) and `poseComposition`
- * (the local-pose model the commit's frame math rides on). These live on the
- * dep registry, which only exists inside `<SceneCanvas>`'s tree — so this
- * renders as a CHILD of `<SceneCanvas>`, not a sibling. The kit's default
- * actions (move / resize / delete / nudge / …) consume both:
+ * registering three deps — `applyOps` (the commit channel), `canDropInto`
+ * (which garden nodes take children; every garden node is a mark, which the kit
+ * admits nothing into by default), and `layout` (each container's planting
+ * layout, read live from the garden instead of stored on its scene node).
+ * These live on the dep registry, which only exists inside `<SceneCanvas>`'s tree — so this renders as a CHILD of
+ * `<SceneCanvas>`, not a sibling. The kit's default actions (move / resize /
+ * delete / nudge / …) consume them:
  *
  *  - `applyOps(ops, label)` routes a gesture's committed ops through eric's own
  *    undo instead of the kit's internal history. We checkpoint the garden store
@@ -123,20 +137,20 @@ const CAP_NONE = new Set<string>();
  *    NOT use `createGardenSceneAdapter` here: it's world-in and would
  *    double-convert.) The store's scene subscription recomposes `garden`
  *    automatically once the batch lands, so the projection + UI refresh for free.
- *  - `poseComposition` tells the kit eric's scene is LOCAL-pose (children store
- *    parent-relative coords), so its layout-drop / reparent frame math composes
- *    correctly. Without it the kit defaults to IDENTITY (absolute/world) and
- *    mis-frames nested drops.
  */
 function GardenHistoryBridge({ scene }: { scene: GardenScene }) {
   useDepSource('applyOps', () => (ops: Op[], label: string) => {
     useGardenStore.getState().checkpoint();
     scene.applyBatch(ops, label, defaultCommitAdapter(scene));
   });
-  useDepSource(
-    'poseComposition',
-    () => ({ compose: composeRectPose, decompose: decomposeRectPose }) as PoseComposition<unknown>,
-  );
+  useDepSource('canDropInto', () => gardenCanDropInto(scene));
+  useDepSource('layout', () => ({
+    getLayout: (id: string) =>
+      plantingLayoutFor(
+        () => useGardenStore.getState().garden,
+        id,
+      ) as LayoutStrategy<unknown> | null,
+  }));
   return null;
 }
 
@@ -443,8 +457,7 @@ function GardenCanvasInner() {
       ...wrapLayersWithVisibility(baseList, () => useUiStore.getState().renderLayerVisibility),
       ...debugLayers,
     ];
-    const map: Record<string, { layer: RenderLayer<unknown>; before?: string } | GridSlotConfig> =
-      {};
+    const map: Record<string, { layer: RenderLayer<unknown>; before?: string }> = {};
     // Overlays that belong UNDER the plant icons but ABOVE the container bodies
     // (cell-grid slot dots, spacing-conflict rings, spacing rings) — matching
     // the pre-scene-slot stack where these drew below `planting-icons`. Plant
@@ -454,17 +467,18 @@ function GardenCanvasInner() {
     // below the icons). Everything else (labels, measurements, walls, group/
     // clash highlights) defaults to the tail, above the icons.
     const BELOW_ICONS = new Set(['container-overlays', 'planting-conflicts', 'planting-spacing']);
-    const gridConfig: GridSlotConfig = {
-      spacing: gridCellSizeFt,
-      bounds: () => {
-        const g = useGardenStore.getState().garden;
-        return { x: 0, y: 0, width: g.widthFt, height: g.lengthFt };
-      },
-      style: {
-        line: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.18)' }, width: 1 },
-      },
+    map.grid = {
+      layer: createGridLayer({
+        spacing: gridCellSizeFt,
+        bounds: () => {
+          const g = useGardenStore.getState().garden;
+          return { x: 0, y: 0, width: g.widthFt, height: g.lengthFt };
+        },
+        style: {
+          line: { paint: { color: 'rgba(0,0,0,0.18)' }, width: 1 },
+        },
+      }),
     };
-    map.grid = gridConfig;
     list.forEach((l) => {
       map[l.id] = BELOW_ICONS.has(l.id) ? { layer: l, before: 'scene:plantings' } : { layer: l };
     });
@@ -564,17 +578,18 @@ function GardenCanvasInner() {
   // (position-only); the kit drives them with the scene's rect `GardenPose`,
   // which is a structural superset, so the cast is sound (behaviors only read
   // x/y + `node.data`).
+  const snap = useMemo(() => ({ sources: [structureZoneGridSnap(adapter)] }), [adapter]);
+
   const selectTool = useMemo(
     () => ({
       move: {
         behaviors: [
-          snapStructureZoneToGrid(adapter),
-          // snap → clamp → clash: clamp is the last word on position; clash
-          // needs the post-snap/clamp pose. Planting behaviors are kind-narrowed.
+          // clamp → clash: clamp is the last word on position; clash needs the
+          // post-snap/clamp pose. Planting behaviors are kind-narrowed.
           clampStructureZoneToGardenBounds(adapter),
           detectStructureClash(adapter),
           // Slot-bound guard: defers in-bounds planting drops to the kit's
-          // container layout (`layouts` → commitDrop); only snaps back a
+          // container layout (the `layout` dep → commitDrop); only snaps back a
           // release in free space.
           requirePlantingDrop(adapter),
         ] as unknown as MoveBehavior<unknown>[],
@@ -606,7 +621,10 @@ function GardenCanvasInner() {
       //     footprint-precise — the same id the kit default would resolve).
       //   - alt → cycle: first alt-click at a point selects the top; each
       //     subsequent alt-click at the same point advances one deeper, wrapping.
-      pickBest: (worldX: number, worldY: number, alt: boolean): string | null => {
+      pickBest: (
+        { x: worldX, y: worldY }: { x: number; y: number },
+        alt: boolean,
+      ): string | null => {
         const ids = adapter.hitAll(worldX, worldY).map((n) => n.id);
         if (ids.length === 0) return null;
         if (!alt) return ids[0];
@@ -630,21 +648,14 @@ function GardenCanvasInner() {
   // precise); the kit collapses parent/child overlap via `pickTopMostHit`.
   const geometry = useMemo(
     () => ({
-      pickEvery: (worldX: number, worldY: number): string[] =>
-        adapter.hitAll(worldX, worldY).map((n) => n.id),
+      pickEvery: (world: { x: number; y: number }): string[] =>
+        adapter.hitAll(world.x, world.y).map((n) => n.id),
       boundsOf: (id: string) => {
         const b = adapter.getBounds(id);
         return b ? { x: b.x, y: b.y, width: b.width, height: b.length } : null;
       },
     }),
     [adapter],
-  );
-
-  // Container layout strategies, keyed by container id — drives the kit move
-  // action's reflow-on-enter + commit-on-drop for plantings dropped into beds.
-  const layouts = useMemo(
-    () => (id: string) => plantingLayoutFor(() => useGardenStore.getState().garden, id),
-    [],
   );
 
   const viewMode = useUiStore((s) => s.viewMode);
@@ -668,21 +679,19 @@ function GardenCanvasInner() {
     }
   }, [viewMode, plottingTool, leftDragPan.id, selectAreaTool.id, insertTool.id, clickZoom.id]);
 
-  // Mode + capabilities reported to the dispatcher's eligibility filter (see
-  // CAP_* above). Reads live store state so it has no render-scoped deps.
-  const getActiveMode = useCallback(() => {
-    const ui = useUiStore.getState();
-    if (ui.plottingTool) return { id: 'insert', allowedCapabilities: CAP_INSERT };
-    switch (ui.viewMode) {
-      case 'pan':
-      case 'zoom':
-        return { id: ui.viewMode, allowedCapabilities: CAP_NONE };
-      case 'select-area':
-        return { id: 'select-area', allowedCapabilities: CAP_AREA };
-      default:
-        return { id: 'normal', allowedCapabilities: CAP_SELECT };
-    }
-  }, []);
+  // The active mode follows the UI store (see GARDEN_MODES).
+  const modes = useMemo(
+    () => createModeRegistry({ modes: GARDEN_MODES, initial: gardenModeId(useUiStore.getState()) }),
+    [],
+  );
+  useEffect(
+    () =>
+      useUiStore.subscribe((ui) => {
+        const id = gardenModeId(ui);
+        if (modes.current().id !== id) modes.setMode(id);
+      }),
+    [modes],
+  );
 
   // Capture the internal `ToolsApi` SceneCanvas synthesizes so we can drive the
   // active slot from `viewMode`. Child (SceneCanvas) effects run before this
@@ -822,14 +831,15 @@ function GardenCanvasInner() {
           view={toKitView(view)}
           onViewChange={handleViewChange}
           layers={sceneCanvasLayers}
+          features={GARDEN_FEATURES}
           defaultTools={['select']}
           selectTool={selectTool as never}
+          snap={snap}
           geometry={geometry}
-          layouts={layouts as never}
           tools={toolsPatch}
           ambient={ambient}
           actions={actions}
-          getActiveMode={getActiveMode}
+          modes={modes}
           // Wheel zoom is the kit's `viewport.zoom` action in plain-wheel mode
           // (bare wheel = zoom, anchored at cursor) with eric's px-per-foot
           // scale clamp; the kit default is Cmd-wheel + a 0.1–8 clamp. The clamp
@@ -843,7 +853,6 @@ function GardenCanvasInner() {
           }}
           onToolsCreated={handleToolsCreated}
           selection={selectionApi}
-          selectionMode="multi"
           enableGestureDispatcher={true}
           enableKeybindings={false}
         >

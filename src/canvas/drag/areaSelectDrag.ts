@@ -98,12 +98,12 @@ export function createAreaSelectDrag(): Drag<AreaSelectInput, AreaSelectPutative
       const dash = 3 * invScale;
       const path = rectPath(x, y, w, h);
       return [
-        { kind: 'path', path, fill: { fill: 'solid', color: 'rgba(91, 164, 207, 0.15)' } },
+        { kind: 'path', path, fill: { paint: { color: 'rgba(91, 164, 207, 0.15)' } } },
         {
           kind: 'path',
           path,
           stroke: {
-            paint: { fill: 'solid', color: '#5BA4CF' },
+            paint: { color: '#5BA4CF' },
             width: invScale,
             dash: [dash, dash],
           },

@@ -274,7 +274,7 @@ describe('serializeGarden / deserializeGarden — SerializedScene format (Phase 
     const g = createGarden({ name: 'New', widthFt: 30, lengthFt: 30 });
     const onDisk = JSON.parse(serializeGarden(g));
     expect(onDisk.scene).toBeDefined();
-    expect(onDisk.scene.version).toBe(1);
+    expect(onDisk.scene.version).toBe(3);
     expect(onDisk.structures).toBeUndefined();
     expect(onDisk.zones).toBeUndefined();
     expect(onDisk.plantings).toBeUndefined();
@@ -300,6 +300,27 @@ describe('serializeGarden / deserializeGarden — SerializedScene format (Phase 
     // Nested child composes back to its world coords (Phase 2 frame fix).
     expect(restored.structures.find((s) => s.id === 's2')).toMatchObject({ x: 14, y: 14 });
     expect(restored.structures.find((s) => s.id === 's1')).toMatchObject({ x: 1, y: 1 });
+  });
+
+  it('loads a version 1 scene save, whose nested poses eric already stored local, in place', () => {
+    const g = createGarden({ name: 'Old', widthFt: 30, lengthFt: 30 });
+    g.structures = [
+      struct({ id: 's1', x: 1, y: 1, width: 12, length: 12, container: true }),
+      struct({ id: 's2', x: 4, y: 5, width: 2, length: 2, parentId: 's1', container: true }),
+    ];
+    g.plantings = [plant({ id: 'p1', parentId: 's2', x: 0.5, y: 0.5 })];
+    const onDisk = JSON.parse(serializeGarden(g));
+    onDisk.scene.version = 1;
+    for (const n of onDisk.scene.nodes) {
+      const holds = onDisk.scene.nodes.some((c: { parent?: string }) => c.parent === n.id);
+      n.kind = holds ? 'container' : 'leaf';
+      delete n.clip;
+      if (holds && n.parent) n.clipFromPoseKey = 'eric:none';
+    }
+
+    const restored = deserializeGarden(JSON.stringify(onDisk));
+    expect(restored.structures.find((s) => s.id === 's2')).toMatchObject({ x: 4, y: 5 });
+    expect(restored.plantings.find((p) => p.id === 'p1')).toMatchObject({ x: 0.5, y: 0.5 });
   });
 });
 

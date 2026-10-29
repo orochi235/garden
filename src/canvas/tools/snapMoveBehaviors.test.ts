@@ -1,19 +1,9 @@
-import type { GestureContext, GroupTransform, SnapTarget } from '@weasel-js/core';
+import type { GestureContext, MoveEnd, SnapCollect, SnapSource, SnapTarget } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { createGardenSceneAdapter, type SceneNode, type ScenePose } from '../adapters/gardenScene';
 import { plantingLayoutFor } from '../adapters/plantingLayout';
-import { requirePlantingDrop, snapStructureZoneToGrid } from './snapMoveBehaviors';
-
-/** A translate `GroupTransform` from a primary origin to a target pose. */
-function translateTo(
-  origin: Map<string, ScenePose>,
-  primaryId: string,
-  target: { x: number; y: number },
-): GroupTransform {
-  const o = origin.get(primaryId)!;
-  return { kind: 'translate', dx: target.x - o.x, dy: target.y - o.y };
-}
+import { requirePlantingDrop, structureZoneGridSnap } from './snapMoveBehaviors';
 
 function makeCtx(
   draggedIds: string[],
@@ -32,61 +22,58 @@ function makeCtx(
     snap: opts?.snap ?? null,
     modifiers: { alt: opts?.alt ?? false, shift: false, meta: false, ctrl: false },
     pointer: { worldX: 0, worldY: 0, clientX: 0, clientY: 0 },
+    view: null,
     adapter: (opts?.adapter ?? {}) as never,
     scratch: {},
   };
 }
 
-describe('snapStructureZoneToGrid', () => {
+/** A move's end, released at (x, y). */
+function endAt(x: number, y: number): MoveEnd {
+  return { answered: false, translateOps: () => [], pointer: { x, y } };
+}
+
+/** How many snap candidates the source offers a move of `ids`. */
+function candidates(source: SnapSource, ids: string[]): number {
+  const q = {
+    gesture: 'move',
+    probes: [{ id: 'origin', role: 'origin', at: { x: 3.4, y: 5.7 } }],
+    delta0: { x: 0, y: 0 },
+    ids,
+    exclude: ids,
+    reachWorld: (px: number) => px,
+    reachPx: 8,
+  } as unknown as SnapCollect;
+  return [...source.collect(q)].length;
+}
+
+describe('structureZoneGridSnap', () => {
   beforeEach(() => {
     useGardenStore.getState().reset();
     useGardenStore.getState().loadGarden(blankGarden());
   });
 
-  it('quantizes a structure drag to the garden grid spacing', () => {
-    // blankGarden() default gridCellSizeFt is 1.
+  it('offers the garden grid for a structure move', () => {
     useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 2, length: 2 });
     const s = useGardenStore.getState().garden.structures[0];
-    const adapter = createGardenSceneAdapter();
-    const behavior = snapStructureZoneToGrid(adapter);
-
-    const origin = new Map<string, ScenePose>([[s.id, { x: 0, y: 0 }]]);
-    const ctx = makeCtx([s.id], origin);
-    // Propose a fractional pose; with spacing=1 it should snap to nearest int.
-    const result = behavior.onMove!(ctx, translateTo(origin, s.id, { x: 3.4, y: 5.7 }));
-    expect(result).toBeTruthy();
-    // origin (0,0) → snapped (3,6) becomes a uniform translate delta.
-    const transform = (result as { transform: GroupTransform }).transform;
-    expect(transform).toEqual({ kind: 'translate', dx: 3, dy: 6 });
+    expect(candidates(structureZoneGridSnap(createGardenSceneAdapter()), [s.id])).toBeGreaterThan(
+      0,
+    );
   });
 
-  it('does not snap when structure.snapToGrid is false', () => {
+  it('declines when structure.snapToGrid is false', () => {
     useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 2, length: 2 });
     const s0 = useGardenStore.getState().garden.structures[0];
     useGardenStore.getState().updateStructure(s0.id, { snapToGrid: false });
-    const adapter = createGardenSceneAdapter();
-    const behavior = snapStructureZoneToGrid(adapter);
-
-    const origin = new Map<string, ScenePose>([[s0.id, { x: 0, y: 0 }]]);
-    const ctx = makeCtx([s0.id], origin);
-    const result = behavior.onMove!(ctx, translateTo(origin, s0.id, { x: 3.4, y: 5.7 }));
-    // No snap → behavior returns undefined.
-    expect(result).toBeUndefined();
+    expect(candidates(structureZoneGridSnap(createGardenSceneAdapter()), [s0.id])).toBe(0);
   });
 
-  it('does not snap when alt is held (bypass key)', () => {
-    useGardenStore.getState().addStructure({ type: 'patio', x: 0, y: 0, width: 2, length: 2 });
-    const s = useGardenStore.getState().garden.structures[0];
-    const adapter = createGardenSceneAdapter();
-    const behavior = snapStructureZoneToGrid(adapter);
-
-    const origin = new Map<string, ScenePose>([[s.id, { x: 0, y: 0 }]]);
-    const ctx = makeCtx([s.id], origin, { alt: true });
-    const result = behavior.onMove!(ctx, translateTo(origin, s.id, { x: 3.4, y: 5.7 }));
-    // weasel's snapToGrid returns no transform when bypass key is held.
-    expect(
-      result === undefined || (result as { transform?: GroupTransform }).transform === undefined,
-    ).toBe(true);
+  it('declines for a planting move', () => {
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 });
+    const bed = useGardenStore.getState().garden.structures[0];
+    useGardenStore.getState().addPlanting({ cultivarId: 'tomato', parentId: bed.id, x: 1, y: 1 });
+    const p = useGardenStore.getState().garden.plantings[0];
+    expect(candidates(structureZoneGridSnap(createGardenSceneAdapter()), [p.id])).toBe(0);
   });
 });
 
@@ -108,8 +95,7 @@ describe('requirePlantingDrop (snap-back)', () => {
     const origin = new Map<string, ScenePose>([[p.id, { x: 1, y: 1 }]]);
     const ctx = makeCtx([p.id], origin, { adapter });
     // Cursor released well outside any container.
-    ctx.pointer = { worldX: 100, worldY: 100, clientX: 0, clientY: 0 };
-    expect(behavior.onEnd!(ctx)).toBeNull();
+    expect(behavior.onEnd!(ctx, endAt(100, 100))).toBeNull();
   });
 
   it('defers (returns undefined) when released over an accepting container', () => {
@@ -123,8 +109,7 @@ describe('requirePlantingDrop (snap-back)', () => {
     const origin = new Map<string, ScenePose>([[p.id, { x: 1, y: 1 }]]);
     const ctx = makeCtx([p.id], origin, { adapter });
     // Cursor inside the bed (0,0)–(4,4) → defer to the kit layout's commitDrop.
-    ctx.pointer = { worldX: 2, worldY: 2, clientX: 0, clientY: 0 };
-    expect(behavior.onEnd!(ctx)).toBeUndefined();
+    expect(behavior.onEnd!(ctx, endAt(2, 2))).toBeUndefined();
   });
 
   it('does nothing for non-planting drags (structures move freely)', () => {
@@ -135,7 +120,7 @@ describe('requirePlantingDrop (snap-back)', () => {
 
     const origin = new Map<string, ScenePose>([[s.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([s.id], origin);
-    const result = behavior.onEnd!(ctx);
+    const result = behavior.onEnd!(ctx, endAt(0, 0));
     expect(result).toBeUndefined();
   });
 
@@ -161,8 +146,7 @@ describe('requirePlantingDrop (snap-back)', () => {
 
     const origin = new Map<string, ScenePose>([[p.id, { x: 2, y: 2 }]]);
     const ctx = makeCtx([p.id], origin, { adapter });
-    ctx.pointer = { worldX: release.x, worldY: release.y, clientX: 0, clientY: 0 };
     // …so the guard snaps it back.
-    expect(behavior.onEnd!(ctx)).toBeNull();
+    expect(behavior.onEnd!(ctx, endAt(release.x, release.y))).toBeNull();
   });
 });

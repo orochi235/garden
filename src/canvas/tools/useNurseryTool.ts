@@ -1,4 +1,10 @@
-import { type Action, defineTool, type RenderLayer, type Tool } from '@weasel-js/core';
+import {
+  type Action,
+  defineTool,
+  type ImmediateParams,
+  type RenderLayer,
+  type Tool,
+} from '@weasel-js/core';
 import { useMemo } from 'react';
 import {
   clickFirstHandling,
@@ -61,7 +67,7 @@ export function createNurseryDragAction(gestures: readonly NurseryDragGesture[])
  * contract as the drag router: first gesture to handle it wins.
  *
  * An immediate invoker gets no `InvocationCtx`, so the click point arrives as
- * the dispatcher-injected `params.worldX` / `worldY` / `mods`.
+ * the dispatcher-injected `params.world` / `mods`.
  */
 export function createNurseryClickAction(gestures: readonly NurseryClickGesture[]): Action {
   return {
@@ -70,13 +76,11 @@ export function createNurseryClickAction(gestures: readonly NurseryClickGesture[
     invoker: {
       timing: 'immediate',
       run: (_deps, params) => {
-        const worldX = params?.worldX as number | undefined;
-        const worldY = params?.worldY as number | undefined;
-        if (worldX === undefined || worldY === undefined) return;
-        const mods = params?.mods as { shift?: boolean; alt?: boolean } | undefined;
+        const { world, mods } = (params ?? {}) as ImmediateParams;
+        if (!world) return;
         clickFirstHandling(gestures, {
-          worldX,
-          worldY,
+          worldX: world.x,
+          worldY: world.y,
           shift: mods?.shift === true,
           alt: mods?.alt === true,
         });
@@ -93,13 +97,12 @@ export function createNurseryClickAction(gestures: readonly NurseryClickGesture[
  * there is exactly one place where gesture priority is decided (the router's
  * gesture order) instead of an ordering that emerged from tool-slot walking.
  */
-export function useNurseryTool(overlay: RenderLayer<unknown>): Tool<null> {
+export function useNurseryTool(overlay: RenderLayer<unknown>): Tool {
   return useMemo(
     () =>
-      defineTool<null>({
+      defineTool({
         id: 'seed-nursery',
         cursor: 'default',
-        initScratch: () => null,
         overlay,
         bindings: [
           { spec: { kind: 'drag' }, actionId: NURSERY_DRAG_ACTION_ID },

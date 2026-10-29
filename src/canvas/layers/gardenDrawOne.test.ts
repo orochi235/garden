@@ -81,7 +81,8 @@ function collectFillColors(cmds: DrawCommand[]): string[] {
   const out: string[] = [];
   const walk = (list: DrawCommand[]) => {
     for (const c of list) {
-      if (c.kind === 'path' && c.fill && c.fill.fill === 'solid') out.push(c.fill.color);
+      const p = c.kind === 'path' ? c.fill?.paint : undefined;
+      if (p && (p.kind === undefined || p.kind === 'solid')) out.push(p.color);
       if (c.kind === 'group') walk(c.children);
     }
   };
@@ -105,9 +106,9 @@ function hasDashedStroke(cmds: DrawCommand[]): boolean {
 /**
  * True if any path command anywhere carries a pattern overlay.
  *
- * `paintFor` returns a real `{ fill: 'pattern' }` style at runtime, but in the
+ * `paintFor` returns a real `{ kind: 'texture' }` paint at runtime, but in the
  * test environment there's no canvas, so `createTilePattern` fails and the
- * helper degrades to its documented fallback `{ fill: 'solid', color:
+ * helper degrades to its documented fallback `{ color:
  * 'transparent' }` — exactly as the source layers do under test. We therefore
  * detect the overlay command by EITHER form. This mirrors how the source layer
  * tests treat pattern fills (the command is emitted; its paint is env-degraded).
@@ -117,8 +118,10 @@ function hasPatternFill(cmds: DrawCommand[]): boolean {
   const walk = (list: DrawCommand[]) => {
     for (const c of list) {
       if (c.kind === 'path' && c.fill) {
-        if (c.fill.fill === 'pattern') found = true;
-        if (c.fill.fill === 'solid' && c.fill.color === 'transparent') found = true;
+        const p = c.fill.paint;
+        if (p?.kind === 'texture') found = true;
+        if (p && (p.kind === undefined || p.kind === 'solid') && p.color === 'transparent')
+          found = true;
       }
       if (c.kind === 'group') walk(c.children);
     }

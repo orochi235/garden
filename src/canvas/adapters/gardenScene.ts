@@ -45,7 +45,7 @@ export interface SceneBounds {
  * would make hit-testing respect the `zIndex` that paint order already sorts by
  * — a real behavior change, not part of catching the dependency up.
  */
-type OptOut = 'findSnapTarget' | 'getZIndex' | 'compareZ';
+type OptOut = 'findSnapTarget' | 'getZIndex' | 'compareZ' | 'previewPoses' | 'poseTarget';
 
 export type GardenSceneAdapter = MoveAdapter<SceneNode, ScenePose> & {
   /** Layout strategy for a container id, or null for non-containers. */

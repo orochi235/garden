@@ -10,7 +10,7 @@ const baseUi: SeedlingLayerUi = {
   hiddenSeedlingIds: [],
 };
 
-const dims = { width: 800, height: 600 };
+const dims = { width: 800, height: 600, dpr: 1 };
 
 describe('createSeedlingLayers (world)', () => {
   it('returns 2 layers in canonical order', () => {

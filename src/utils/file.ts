@@ -5,8 +5,7 @@ import { emptyNurseryState } from '../model/nursery';
 import type { Garden, Structure, Zone } from '../model/types';
 import { getPlantableBounds, PLANTABLE_TYPES } from '../model/types';
 import { gardenToSerializedScene, sceneToGarden, splitBase } from '../scene/gardenConverters';
-import type { GardenBase, GardenSerializedScene } from '../scene/gardenScene';
-import { createGardenScene } from '../scene/gardenScene';
+import { createGardenScene, type GardenBase, upgradeGardenSave } from '../scene/gardenScene';
 
 /**
  * Project the collection to the on-disk form: builtin cultivars become
@@ -98,7 +97,7 @@ export function deserializeGarden(json: string): Garden {
     // so pull it out of the base and re-attach it to the composed garden.
     const { scene: serialized, nursery, ...base } = data;
     const scene = createGardenScene([]);
-    scene.loadState(serialized as GardenSerializedScene);
+    scene.loadState(upgradeGardenSave(serialized));
     return { ...sceneToGarden(scene, base as GardenBase), nursery };
   }
 

@@ -21,7 +21,7 @@ import { useSeedlingMoveGesture } from './useSeedlingMoveTool';
 
 type DrawCommand = {
   kind: string;
-  fill?: { fill: string; color: string };
+  fill?: { paint?: { color?: string } };
   stroke?: { paint: { color: string } };
   children?: DrawCommand[];
   alpha?: number;
@@ -31,7 +31,7 @@ type DrawCommand = {
 function collectFills(cmds: DrawCommand[]): string[] {
   const fills: string[] = [];
   for (const cmd of cmds) {
-    if (cmd.fill) fills.push(cmd.fill.color);
+    if (cmd.fill?.paint?.color) fills.push(cmd.fill.paint.color);
     if (cmd.children) fills.push(...collectFills(cmd.children));
   }
   return fills;
@@ -65,6 +65,7 @@ describe('useSeedlingMoveGesture gutter-affordance overlay', () => {
     const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
+      dpr: 1,
     });
     expect(cmds).toHaveLength(0);
   });
@@ -96,6 +97,7 @@ describe('useSeedlingMoveGesture gutter-affordance overlay', () => {
     const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
+      dpr: 1,
     });
     const fills = collectFills(cmds as DrawCommand[]);
     // Markers were drawn — at least one fill with the base marker color.
@@ -136,6 +138,7 @@ describe('useSeedlingMoveGesture gutter-affordance overlay', () => {
     const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
+      dpr: 1,
     });
     const fills = collectFills(cmds as DrawCommand[]);
     // Both base and hover colors were emitted (row marker hovered, others not).
@@ -166,6 +169,7 @@ describe('useSeedlingMoveGesture gutter-affordance overlay', () => {
     const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
+      dpr: 1,
     });
     const fills = collectFills(cmds as DrawCommand[]);
     // Group drags suppress the gutter overlay (single-seedling-only feature).
@@ -291,6 +295,7 @@ describe('useSeedlingMoveGesture gutter-affordance overlay', () => {
     const cmds = tool.overlay.draw(undefined as never, toKitView({ x: 0, y: 0, scale: 50 }), {
       width: 800,
       height: 600,
+      dpr: 1,
     });
     const fills = collectFills(cmds as DrawCommand[]);
     expect(fills.some((f) => f === '#d4a55a')).toBe(true);

@@ -163,7 +163,7 @@ describe('reconcileScene — same-layer reparent', () => {
   });
 });
 
-describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
+describe('reconcileScene — reparenting and container changes', () => {
   it('reparents a planting from a structure to a zone (stays on the plantings layer)', () => {
     const start = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
     start.structures = [struct({ id: 's1', x: 0, y: 0, container: true })];
@@ -182,7 +182,7 @@ describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
     expect(p.layer).toBe('plantings');
     expect(out.plantings[0]).toMatchObject({ parentId: 'z1', x: 2, y: 2 });
   });
-  it('promotes a leaf structure to a container when it gains its first planting', () => {
+  it('starts clipping a structure when it gains its first planting', () => {
     const start = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
     start.structures = [struct({ id: 's1', container: false })];
     start.plantings = [];
@@ -190,11 +190,11 @@ describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
     target.structures = [struct({ id: 's1', container: false })];
     target.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 1 })];
     const { scene, out } = reconcileTo(start, target);
-    expect(scene.get(asNodeId('s1'))!.kind).toBe('container');
+    expect(scene.get(asNodeId('s1'))!.clip).toBe('outline');
     expect(scene.get(asNodeId('p1'))).toBeTruthy();
     expect(out.plantings.map((p) => p.id)).toEqual(['p1']);
   });
-  it('demotes a container structure back to a leaf when its last planting is removed', () => {
+  it('stops clipping a structure when its last planting is removed', () => {
     const start = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
     start.structures = [struct({ id: 's1', container: false })];
     start.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 1 })];
@@ -202,15 +202,13 @@ describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
     target.structures = [struct({ id: 's1', container: false })];
     target.plantings = [];
     const { scene, out } = reconcileTo(start, target);
-    expect(scene.get(asNodeId('s1'))!.kind).toBe('leaf');
+    expect(scene.get(asNodeId('s1'))!.clip).toBeUndefined();
     expect(scene.get(asNodeId('p1'))).toBeUndefined();
     expect(out.plantings).toEqual([]);
   });
-  it('re-adds a planting that relocates out of a demoting container (rebuild + re-add path)', () => {
-    // s1 starts as a container (container:false but has child p1), s2 is an
-    // explicit container. In target, p1 moves to s2 — s1 demotes to leaf
-    // (rebuild root). The subtree remove drops p1, but the Adds pass re-adds it
-    // under s2.
+  it('moves a planting out of a structure that stops being a container', () => {
+    // s1 is a container only because it holds p1; s2 is an explicit container.
+    // In target, p1 moves to s2 and s1 stops clipping.
     const start = createGarden({ name: 'g', widthFt: 30, lengthFt: 30 });
     start.structures = [
       struct({ id: 's1', container: false, x: 0, y: 0 }),
@@ -224,7 +222,7 @@ describe('reconcileScene — rebuild roots (kind/layer changes)', () => {
     ];
     target.plantings = [plant({ id: 'p1', parentId: 's2', x: 2, y: 2 })];
     const { scene, out } = reconcileTo(start, target);
-    expect(scene.get(asNodeId('s1'))!.kind).toBe('leaf');
+    expect(scene.get(asNodeId('s1'))!.clip).toBeUndefined();
     expect(scene.get(asNodeId('p1'))!.parent).toBe('s2');
     expect(out.plantings[0]).toMatchObject({ parentId: 's2' });
   });

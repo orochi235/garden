@@ -191,7 +191,7 @@ function fillPreviewCellCommands(
         cmds.push({
           kind: 'path',
           path: circlePolygon(cx, cy, radius + padPx),
-          stroke: { paint: { fill: 'solid', color: SEEDLING_WARNING_COLOR }, width: strokePx },
+          stroke: { paint: { color: SEEDLING_WARNING_COLOR }, width: strokePx },
         });
       }
     }

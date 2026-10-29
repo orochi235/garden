@@ -41,8 +41,8 @@ export function createStructureClashLayer(
         clashChildren.push({
           kind: 'path',
           path,
-          fill: { fill: 'solid', color: 'rgba(224, 65, 58, 0.15)' },
-          stroke: { paint: { fill: 'solid', color: '#E0413A' }, width: lw },
+          fill: { paint: { color: 'rgba(224, 65, 58, 0.15)' } },
+          stroke: { paint: { color: '#E0413A' }, width: lw },
         });
       }
       if (clashChildren.length === 0) return [];

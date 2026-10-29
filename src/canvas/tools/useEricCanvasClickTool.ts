@@ -1,4 +1,4 @@
-import { type Action, defineTool, type Tool } from '@weasel-js/core';
+import { type Action, defineTool, type ImmediateParams, type Tool } from '@weasel-js/core';
 import { useMemo } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
@@ -81,10 +81,10 @@ export function createCanvasClickAction(adapter: GardenSceneAdapter): Action {
     invoker: {
       timing: 'immediate',
       run: (_deps, params) => {
-        const worldX = params?.worldX as number | undefined;
-        const worldY = params?.worldY as number | undefined;
+        const { world, mods } = (params ?? {}) as ImmediateParams;
         const scale = params?.viewScale as number | undefined;
-        if (worldX === undefined || worldY === undefined) return;
+        if (!world) return;
+        const { x: worldX, y: worldY } = world;
         // Belt-and-braces: `target: 'empty'` should already have filtered body
         // clicks, but the classifier and eric's domain hit-test can disagree at
         // a footprint edge, and a body click must never clear the selection.
@@ -93,7 +93,7 @@ export function createCanvasClickAction(adapter: GardenSceneAdapter): Action {
         const ui = useUiStore.getState();
         const sel = ui.selectedIds;
         const structures = useGardenStore.getState().garden.structures;
-        const shift = (params?.mods as { shift?: boolean } | undefined)?.shift === true;
+        const shift = mods?.shift === true;
 
         // Group-outline-edge click-to-promote: a partial group selection + a
         // click on a sibling's implicit outline promotes to the whole group.
@@ -128,12 +128,11 @@ export function createCanvasClickAction(adapter: GardenSceneAdapter): Action {
  * tolerance (6 screen px) can be converted to world units at dispatch time —
  * an immediate invoker gets no view of its own.
  */
-export function useEricCanvasClickTool(getViewScale: () => number): Tool<{ kind: 'idle' }> {
+export function useEricCanvasClickTool(getViewScale: () => number): Tool {
   return useMemo(
     () =>
-      defineTool<{ kind: 'idle' }>({
+      defineTool({
         id: 'eric-canvas-click',
-        initScratch: () => ({ kind: 'idle' }),
         bindings: [
           {
             spec: { kind: 'click', target: 'empty' },

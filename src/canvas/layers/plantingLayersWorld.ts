@@ -157,7 +157,7 @@ export function createPlantingLayers(
               children.push({
                 kind: 'path',
                 path: circlePolygon(item.x, item.y, r),
-                fill: { fill: 'solid', color },
+                fill: { paint: { color } },
               });
             } else if (item.type === 'highlight-slot') {
               const r = Math.max(px(view, 3), item.radiusFt / 2);
@@ -165,7 +165,7 @@ export function createPlantingLayers(
                 kind: 'path',
                 path: circlePolygon(item.x, item.y, r),
                 stroke: {
-                  paint: { fill: 'solid', color: 'rgba(127,176,105,0.8)' },
+                  paint: { color: 'rgba(127,176,105,0.8)' },
                   width: px(view, 2),
                 },
               });
@@ -177,7 +177,7 @@ export function createPlantingLayers(
               children.push({
                 kind: 'path',
                 path,
-                stroke: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.18)' }, width: px(view, 1) },
+                stroke: { paint: { color: 'rgba(0,0,0,0.18)' }, width: px(view, 1) },
               });
             }
           }
@@ -238,7 +238,7 @@ export function createPlantingLayers(
             children.push({
               kind: 'path',
               path: rectPath(c.x - cellSize / 2, c.y - cellSize / 2, cellSize, cellSize),
-              fill: { fill: 'solid', color: 'rgba(255, 215, 0, 0.35)' },
+              fill: { paint: { color: 'rgba(255, 215, 0, 0.35)' } },
             });
           }
           for (const k of footprintConflict) {
@@ -247,7 +247,7 @@ export function createPlantingLayers(
             children.push({
               kind: 'path',
               path: rectPath(c.x - cellSize / 2, c.y - cellSize / 2, cellSize, cellSize),
-              fill: { fill: 'solid', color: 'rgba(220, 50, 50, 0.5)' },
+              fill: { paint: { color: 'rgba(220, 50, 50, 0.5)' } },
             });
           }
         }
@@ -291,7 +291,7 @@ export function createPlantingLayers(
               kind: 'path',
               path,
               stroke: {
-                paint: { fill: 'solid', color: 'rgba(255, 255, 255, 0.3)' },
+                paint: { color: 'rgba(255, 255, 255, 0.3)' },
                 width: px(view, 1),
                 dash: [px(view, 4), px(view, 3)],
               },
@@ -337,14 +337,14 @@ export function createPlantingLayers(
               labelCommand(labelX, wy - px(view, 2), `${footprint.toFixed(1)}ft`, {
                 fontSize: fontPx,
                 align: 'left',
-                fill: { fill: 'solid', color: 'rgba(255, 255, 255, 0.7)' },
+                fill: { paint: { color: 'rgba(255, 255, 255, 0.7)' } },
               }),
             );
             children.push(
               labelCommand(labelX, wy + px(view, 8), `${spacing.toFixed(1)}ft`, {
                 fontSize: fontPx,
                 align: 'left',
-                fill: { fill: 'solid', color: 'rgba(255, 255, 200, 0.5)' },
+                fill: { paint: { color: 'rgba(255, 255, 200, 0.5)' } },
               }),
             );
           }
@@ -431,13 +431,13 @@ export function createPlantingLayers(
               label.rect.w + padX * 2,
               label.rect.h + padY * 2,
             ),
-            fill: { fill: 'solid', color: 'rgba(0, 0, 0, 0.6)' },
+            fill: { paint: { color: 'rgba(0, 0, 0, 0.6)' } },
           });
           children.push(
             labelCommand(label.rect.x + label.rect.w / 2, label.rect.y, label.text, {
               fontSize: fontPx,
               align: 'center',
-              fill: { fill: 'solid', color: '#ffffff' },
+              fill: { paint: { color: '#ffffff' } },
             }),
           );
           labelOccluders.push(label.rect);
@@ -470,7 +470,7 @@ export function createPlantingLayers(
               children.push({
                 kind: 'path',
                 path: circlePolygon(cx, cy, rInner),
-                stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
+                stroke: { paint: { color: strokeColor }, width: lw },
               });
             }
           } else {
@@ -480,7 +480,7 @@ export function createPlantingLayers(
               children.push({
                 kind: 'path',
                 path: rectPath(s.x + wallWidth, s.y + wallWidth, innerW, innerH),
-                stroke: { paint: { fill: 'solid', color: strokeColor }, width: lw },
+                stroke: { paint: { color: strokeColor }, width: lw },
               });
             }
           }

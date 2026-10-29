@@ -89,7 +89,7 @@ export function createSelectionOutlineLayer(
         children.push({
           kind: 'path',
           path: circlePolygon(wx, wy, radius + px(view, 2)),
-          stroke: { paint: { fill: 'solid', color: selColor }, width: lw, dash },
+          stroke: { paint: { color: selColor }, width: lw, dash },
         });
       }
 
@@ -120,7 +120,7 @@ export function createSelectionOutlineLayer(
           return {
             kind: 'path' as const,
             path,
-            stroke: { paint: { fill: 'solid' as const, color: selColor }, width: lw },
+            stroke: { paint: { color: selColor }, width: lw },
           };
         });
         children.push({ kind: 'group', alpha: 0.6, children: implicitChildren });
@@ -142,7 +142,7 @@ export function createSelectionOutlineLayer(
         children.push({
           kind: 'path',
           path,
-          stroke: { paint: { fill: 'solid', color: selColor }, width: lw, dash },
+          stroke: { paint: { color: selColor }, width: lw, dash },
         });
 
         // Flagged: text commands require registerFont() wired at app boot.
@@ -152,7 +152,7 @@ export function createSelectionOutlineLayer(
             labelCommand(obj.x + obj.width / 2, obj.y + obj.length + px(view, 8), obj.label, {
               fontSize: fontPx,
               align: 'center',
-              fill: { fill: 'solid', color: '#ffffff' },
+              fill: { paint: { color: '#ffffff' } },
             }),
           );
         }
@@ -209,7 +209,7 @@ export function createGroupOutlineLayer(
             maxY - minY + inset * 2,
           ),
           stroke: {
-            paint: { fill: 'solid', color: 'rgba(91, 164, 207, 0.55)' },
+            paint: { color: 'rgba(91, 164, 207, 0.55)' },
             width: px(view, 1),
             dash: [px(view, 3), px(view, 3)],
           },
@@ -266,8 +266,8 @@ export function createSelectionHandlesLayer(
           children.push({
             kind: 'path',
             path: rectPath(x, y, hs, hs),
-            fill: { fill: 'solid', color: '#FFFFFF' },
-            stroke: { paint: { fill: 'solid', color: '#5BA4CF' }, width: 2 },
+            fill: { paint: { color: '#FFFFFF' } },
+            stroke: { paint: { color: '#5BA4CF' }, width: 2 },
           });
         }
       }
@@ -317,8 +317,8 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
         return corners.map(([hx, hy]) => ({
           kind: 'path' as const,
           path: rectPath(hx - hs / 2, hy - hs / 2, hs, hs),
-          fill: { fill: 'solid' as const, color: fillColor },
-          stroke: { paint: { fill: 'solid' as const, color: strokeColor }, width: 1 },
+          fill: { paint: { color: fillColor } },
+          stroke: { paint: { color: strokeColor }, width: 1 },
         }));
       };
 
@@ -328,8 +328,8 @@ export function createAllHandlesLayer(getters: AllHandlesGetters): RenderLayer<u
         return {
           kind: 'path',
           path: rectPath(sx - hs / 2, sy - hs / 2, hs, hs),
-          fill: { fill: 'solid', color: fillColor },
-          stroke: { paint: { fill: 'solid', color: strokeColor }, width: 1 },
+          fill: { paint: { color: fillColor } },
+          stroke: { paint: { color: strokeColor }, width: 1 },
         };
       };
 

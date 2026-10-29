@@ -1,5 +1,10 @@
 import type { AddNodeSpec, Scene } from '@weasel-js/core';
-import { asNodeId, createScene } from '@weasel-js/core';
+import {
+  asNodeId,
+  createScene,
+  type PoseComposition,
+  RECT_POSE_COMPOSITION,
+} from '@weasel-js/core';
 import { trayWorldOrigin } from '../canvas/adapters/nurseryLayout';
 import { cellCenterInches } from '../canvas/nurseryHitTest';
 import type { NurseryState, Seedling, Tray } from '../model/nursery';
@@ -41,6 +46,7 @@ export function createNurseryScene(initial: readonly NurseryAddNodeSpec[]): Nurs
     systemLayers: NURSERY_LAYERS.map((id) => ({ id })),
     initial,
     historyLimit: NURSERY_HISTORY_LIMIT,
+    composition: RECT_POSE_COMPOSITION as PoseComposition<NurseryPose>,
   });
 }
 
@@ -57,10 +63,11 @@ export function nurseryToScene(ns: NurseryState): NurseryAddNodeSpec[] {
     const o = trayWorldOrigin(tray, ns);
     specs.push({
       id: asNodeId(tray.id),
-      kind: 'container',
+      kind: 'mark',
       layer: 'trays',
       pose: { x: o.x, y: o.y, width: tray.widthIn, height: tray.heightIn },
       parent: null,
+      clip: 'outline',
       data: { kind: 'tray', order, tray },
     });
   });
@@ -72,7 +79,7 @@ export function nurseryToScene(ns: NurseryState): NurseryAddNodeSpec[] {
     const c = cellCenterInches(tray, s.row as number, s.col as number);
     specs.push({
       id: asNodeId(s.id),
-      kind: 'leaf',
+      kind: 'mark',
       layer: 'seedlings',
       pose: { x: c.x, y: c.y, width: tray.cellPitchIn, height: tray.cellPitchIn },
       parent: asNodeId(s.trayId as string),

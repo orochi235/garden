@@ -51,11 +51,11 @@ describe('nurseryToScene + sceneToNursery round-trip', () => {
     expect(seedlingNodes).toHaveLength(3);
   });
 
-  it('emits a seedling as a leaf child of its tray with a parent-local cell pose', () => {
+  it('emits a seedling as a mark child of its tray with a parent-local cell pose', () => {
     const ns = fixture();
     const specs = nurseryToScene(ns);
     const seedlingSpec = specs.find((s) => s.data.kind === 'seedling')!;
-    expect(seedlingSpec.kind).toBe('leaf');
+    expect(seedlingSpec.kind).toBe('mark');
     expect(seedlingSpec.layer).toBe('seedlings');
     expect(String(seedlingSpec.parent)).toBe(ns.trays[0].id);
     expect(seedlingSpec.pose.x).toBeGreaterThan(0);

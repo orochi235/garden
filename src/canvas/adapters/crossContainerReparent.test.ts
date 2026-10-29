@@ -13,21 +13,11 @@
  * world, so the dest container is detected and the layout-drop commit reparents.
  */
 
-import {
-  composeRectPose,
-  decomposeRectPose,
-  type LayoutStrategy,
-  moveAction,
-  type PoseComposition,
-} from '@weasel-js/core';
+import { composeRectPose, type LayoutStrategy, moveAction } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { gardenCanDropInto } from '../../scene/gardenScene';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { plantingLayoutFor } from './plantingLayout';
-
-const LOCAL_PC: PoseComposition<unknown> = {
-  compose: composeRectPose as never,
-  decompose: decomposeRectPose as never,
-};
 
 interface Drag {
   start: { x: number; y: number };
@@ -47,7 +37,7 @@ function makeCtx(selectionIds: string[], drag?: Drag): unknown {
       selection: { get: () => selectionIds },
       scene,
       layout: { getLayout },
-      poseComposition: LOCAL_PC,
+      canDropInto: gardenCanDropInto(scene),
     },
     drag,
   };

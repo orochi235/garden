@@ -58,22 +58,24 @@ function zone(p: Partial<Zone> & Pick<Zone, 'id'>): Zone {
 }
 
 describe('gardenToScene', () => {
-  it('maps a container structure to a Scene container node on the structures layer', () => {
+  it('maps a container structure to a clipping mark on the structures layer', () => {
     const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
     g.structures = [struct({ id: 's1', length: 8, container: true })];
     const scene = createGardenScene(gardenToScene(g));
     const node = scene.get('s1' as never)!;
-    expect(node.kind).toBe('container');
+    expect(node.kind).toBe('mark');
+    expect(node.clip).toBe('outline');
     expect(node.layer).toBe('structures');
     expect(node.pose).toMatchObject({ x: 0, y: 0, width: 4, height: 8 });
     expect(node.parent).toBeNull();
   });
 
-  it('maps a non-container structure (fence) to a leaf', () => {
+  it('maps a non-container structure (fence) to a mark that clips nothing', () => {
     const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
     g.structures = [struct({ id: 'f1', type: 'fence', container: false })];
     const scene = createGardenScene(gardenToScene(g));
-    expect(scene.get('f1' as never)!.kind).toBe('leaf');
+    expect(scene.get('f1' as never)!.kind).toBe('mark');
+    expect(scene.get('f1' as never)!.clip).toBeUndefined();
   });
 
   it('nests a planting under its parent structure with a derived square pose', () => {
@@ -83,7 +85,7 @@ describe('gardenToScene', () => {
     g.plantings = [plant({ id: 'p1', parentId: 's1', x: 1, y: 2, cultivarId })];
     const scene = createGardenScene(gardenToScene(g));
     const p = scene.get('p1' as never)!;
-    expect(p.kind).toBe('leaf');
+    expect(p.kind).toBe('mark');
     // Plantings render in the dedicated top `plantings` layer (above container
     // bodies) while staying a scene child of their structure parent.
     expect(p.layer).toBe('plantings');
@@ -163,7 +165,7 @@ describe('sceneToGarden round-trip', () => {
     const g = createGarden({ name: 'g', widthFt: 1, lengthFt: 1 });
     const scene = createGardenScene([]);
     scene.add({
-      kind: 'leaf',
+      kind: 'mark',
       layer: 'structures',
       pose: { x: 0, y: 0, width: 1, height: 1 },
       data: { kind: 'planting', cultivarId: 'x', label: '', icon: null },
@@ -286,7 +288,7 @@ describe('gardenToSerializedScene', () => {
     g.plantings = [plant({ id: 'p1', parentId: 's1', x: 2, y: 2 })];
 
     const serialized = gardenToSerializedScene(g);
-    expect(serialized.version).toBe(1);
+    expect(serialized.version).toBe(3);
     expect(serialized.systemLayers.map((l) => l.id)).toEqual([
       'ground',
       'blueprint',

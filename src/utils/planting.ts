@@ -1,4 +1,4 @@
-import { roundToCell } from '@weasel-js/core';
+import { roundToCell } from '@weasel-js/guides';
 import { validCellsForContainer } from '../model/cellOccupancy';
 import { getGridCells, getSlots, type Layout, type ParentBounds } from '../model/layout';
 import type { Planting } from '../model/types';

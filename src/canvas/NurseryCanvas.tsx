@@ -321,8 +321,8 @@ export function NurseryCanvas() {
   // `SeedNode`, `getPose` → world `ScenePose`).
   const geometry = useMemo(
     () => ({
-      pickEvery: (worldX: number, worldY: number): string[] =>
-        adapter.hitAll(worldX, worldY).map((n) => n.id),
+      pickEvery: (world: { x: number; y: number }): string[] =>
+        adapter.hitAll(world.x, world.y).map((n) => n.id),
       boundsOf: (id: string) => {
         const node = adapter.getNode(id);
         if (!node) return null;
@@ -378,7 +378,7 @@ export function NurseryCanvas() {
           initialActiveTool="seed-nursery"
           actions={actions}
           onToolsCreated={handleToolsCreated}
-          selectionMode="none"
+          selectable={false}
           // Wheel zoom is the kit's `viewport.zoom` action in plain-wheel mode,
           // clamped to the nursery's px-per-inch range — this replaces eric's
           // own wheel-zoom tool. Wheel pan stays off so it can't compete.

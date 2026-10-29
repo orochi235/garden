@@ -29,6 +29,7 @@ function makeCtx(
     snap: null,
     modifiers: { alt: false, shift: false, meta: false, ctrl: false },
     pointer: { worldX: 0, worldY: 0, clientX: 0, clientY: 0 },
+    view: null,
     // Adapter is referenced via `useGardenStore` inside the behaviors —
     // this stub satisfies the type without participating in the test.
     adapter: {} as never,
@@ -187,7 +188,7 @@ describe('detectStructureClash', () => {
     useUiStore.getState().setDragClashIds(['x', 'y']);
     const origin = new Map<string, ScenePose>([[a.id, { x: 0, y: 0 }]]);
     const ctx = makeCtx([a.id], origin);
-    behavior.onEnd!(ctx);
+    behavior.onEnd!(ctx, { answered: false, translateOps: () => [], pointer: { x: 0, y: 0 } });
     expect(useUiStore.getState().dragClashIds).toEqual([]);
   });
 });

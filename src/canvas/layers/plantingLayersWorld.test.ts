@@ -3,7 +3,7 @@ import { createPlantingLayers } from './plantingLayersWorld';
 import type { GetUi } from './worldLayerData';
 
 const view = { x: 0, y: 0, scale: { x: 10, y: 10 } };
-const dims = { width: 100, height: 100 };
+const dims = { width: 100, height: 100, dpr: 1 };
 const baseUi: ReturnType<GetUi> = {
   selectedIds: [],
   labelMode: 'none',

@@ -118,7 +118,7 @@ export function createGardenCloneAction(
               insertAdapter.commitPaste?.(
                 snap,
                 { dx, dy },
-                { dropPoint: { worldX: dropX, worldY: dropY } },
+                { dropPoint: { x: dropX, y: dropY } },
               ) ?? [];
             if (created.length === 0) return;
             const newIds = created.map((o) => o.id);

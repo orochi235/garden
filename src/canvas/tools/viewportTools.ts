@@ -1,4 +1,4 @@
-import { type Action, defineTool, type Tool, zoomAt } from '@weasel-js/core';
+import { type Action, defineTool, type ImmediateParams, type Tool, zoomAt } from '@weasel-js/core';
 import { type RefObject, useEffect, useMemo } from 'react';
 import type { View } from '../layers/worldLayerData';
 
@@ -26,7 +26,7 @@ export const CLICK_ZOOM_ACTION_ID = 'eric.clickZoom';
  * so the zoom math moved here and `useEricClickZoomTool` is just the binding.
  *
  * An immediate invoker gets `(deps, params)` — no `InvocationCtx` — so the
- * click point arrives as the dispatcher-injected `params.worldX/worldY` and the
+ * click point arrives as the dispatcher-injected `params.world` and the
  * shift state as `params.mods`. The canvas-local anchor `zoomAt` wants is then
  * derived from the world point: `screen = (world - view) * scale`, which keeps
  * the world point under the cursor pinned across the zoom.
@@ -40,6 +40,8 @@ export function createClickZoomAction(opts: EricClickZoomOpts = {}): Action {
     label: 'Click to zoom',
     group: 'viewport',
     requires: ['view'],
+    cursor: (params) =>
+      (params as ImmediateParams | undefined)?.mods?.shift ? 'zoom-out' : 'zoom-in',
     invoker: {
       timing: 'immediate',
       run: (deps, params) => {
@@ -49,12 +51,11 @@ export function createClickZoomAction(opts: EricClickZoomOpts = {}): Action {
               set(v: { x: number; y: number; scale: { x: number; y: number } }): void;
             }
           | undefined;
-        const worldX = params?.worldX as number | undefined;
-        const worldY = params?.worldY as number | undefined;
-        if (!view || worldX === undefined || worldY === undefined) return;
+        const { world, mods } = (params ?? {}) as ImmediateParams;
+        if (!view || !world) return;
         const v = view.get();
-        const anchor = { x: (worldX - v.x) * v.scale.x, y: (worldY - v.y) * v.scale.y };
-        const shift = (params?.mods as { shift?: boolean } | undefined)?.shift === true;
+        const anchor = { x: (world.x - v.x) * v.scale.x, y: (world.y - v.y) * v.scale.y };
+        const shift = mods?.shift === true;
         view.set(zoomAt(v, anchor, shift ? 1 / factor : factor, { min, max }));
       },
     },
@@ -65,16 +66,15 @@ export function createClickZoomAction(opts: EricClickZoomOpts = {}): Action {
  * Click-to-zoom tool — the active tool while `viewMode === 'zoom'`. Plain
  * left-click zooms in around the click point; Shift+click zooms out.
  *
- * The cursor flips live with the shift state: the dispatcher re-resolves
- * `cursor` on every modifier change.
+ * The cursor flips with the shift state through the action's own `cursor`,
+ * which the hover pump asks with the modifiers held.
  */
-export function useEricClickZoomTool(): Tool<null> {
+export function useEricClickZoomTool(): Tool {
   return useMemo(
     () =>
-      defineTool<null>({
+      defineTool({
         id: 'eric-click-zoom',
-        cursor: (ctx) => (ctx.modifiers.shift ? 'zoom-out' : 'zoom-in'),
-        initScratch: () => null,
+        cursor: 'zoom-in',
         bindings: [{ spec: { kind: 'click' }, actionId: CLICK_ZOOM_ACTION_ID }],
       }),
     [],
@@ -89,13 +89,12 @@ export function useEricClickZoomTool(): Tool<null> {
  * `drag.screenDelta`, which stays stable as the view moves under the cursor —
  * the hand-rolled version recomputed from a captured start view, same result).
  */
-export function useEricLeftDragPanTool(): Tool<null> {
+export function useEricLeftDragPanTool(): Tool {
   return useMemo(
     () =>
-      defineTool<null>({
+      defineTool({
         id: 'eric-left-drag-pan',
         cursor: 'grab',
-        initScratch: () => null,
         bindings: [{ spec: { kind: 'drag' }, actionId: 'viewport.dragPan' }],
       }),
     [],

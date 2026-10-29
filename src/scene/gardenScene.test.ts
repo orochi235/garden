@@ -15,7 +15,7 @@ describe('createGardenScene', () => {
   it('seeds initial nodes without making them undoable', () => {
     const scene = createGardenScene([
       {
-        kind: 'container',
+        kind: 'mark',
         layer: 'structures',
         pose: { x: 0, y: 0, width: 4, height: 8 },
         data: {

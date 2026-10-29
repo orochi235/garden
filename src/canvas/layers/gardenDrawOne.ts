@@ -60,14 +60,14 @@ function drawZone(node: ZoneNode, pose: ScenePose, view: View, getUi: GetUi): Dr
     {
       kind: 'path',
       path: rectPath(x, y, z.width, z.length),
-      fill: { fill: 'solid', color: z.color },
+      fill: { paint: { color: z.color } },
     },
     // zone-bodies: dashed outline
     {
       kind: 'path',
       path: rectPath(x, y, z.width, z.length),
       stroke: {
-        paint: { fill: 'solid', color: '#4A7C59' },
+        paint: { color: '#4A7C59' },
         width: px(view, 1.5),
         dash: [dashSize, gapSize],
       },
@@ -95,7 +95,7 @@ function drawZone(node: ZoneNode, pose: ScenePose, view: View, getUi: GetUi): Dr
           kind: 'path',
           path: rectPath(x, y, z.width, z.length),
           stroke: {
-            paint: { fill: 'solid', color: '#FFD700' },
+            paint: { color: '#FFD700' },
             width: px(view, 2),
           },
         },
@@ -135,9 +135,9 @@ function drawStructure(
     out.push({
       kind: 'path',
       path: circlePolygon(cx, cy, r),
-      fill: { fill: 'solid', color: s.color },
+      fill: { paint: { color: s.color } },
       stroke: {
-        paint: { fill: 'solid', color: s.type === 'pot' ? '#8a3a18' : '#333333' },
+        paint: { color: s.type === 'pot' ? '#8a3a18' : '#333333' },
         width: lw,
       },
     });
@@ -162,8 +162,8 @@ function drawStructure(
     out.push({
       kind: 'path',
       path: rectPath(x, y, w, h),
-      fill: { fill: 'solid', color: s.color },
-      stroke: { paint: { fill: 'solid', color: '#333333' }, width: lw },
+      fill: { paint: { color: s.color } },
+      stroke: { paint: { color: '#333333' }, width: lw },
     });
   }
 
@@ -178,7 +178,7 @@ function drawStructure(
     out.push({
       kind: 'path',
       path: circlePolygon(cx, cy, innerR),
-      fill: { fill: 'solid', color: soilColor },
+      fill: { paint: { color: soilColor } },
     });
     if (s.fill === 'potting-mix') {
       const innerD = innerR * 2;
@@ -196,7 +196,7 @@ function drawStructure(
     out.push({
       kind: 'path',
       path: rectPath(x + wallWidth, y + wallWidth, w - wallWidth * 2, h - wallWidth * 2),
-      fill: { fill: 'solid', color: soilColor },
+      fill: { paint: { color: soilColor } },
     });
     if (s.fill === 'potting-mix') {
       const iw = w - wallWidth * 2;
@@ -215,19 +215,15 @@ function drawStructure(
     out.push({
       kind: 'path',
       path: ellipsePolygon(cx, cy, w / 2, h / 2),
-      fill: { fill: 'solid', color: s.color },
-      ...(s.surface
-        ? {}
-        : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
+      fill: { paint: { color: s.color } },
+      ...(s.surface ? {} : { stroke: { paint: { color: '#333333' }, width: lw } }),
     });
   } else {
     out.push({
       kind: 'path',
       path: rectPath(x, y, w, h),
-      fill: { fill: 'solid', color: s.color },
-      ...(s.surface
-        ? {}
-        : { stroke: { paint: { fill: 'solid' as const, color: '#333333' }, width: lw } }),
+      fill: { paint: { color: s.color } },
+      ...(s.surface ? {} : { stroke: { paint: { color: '#333333' }, width: lw } }),
     });
   }
 
@@ -259,7 +255,7 @@ function drawStructure(
         {
           kind: 'path',
           path,
-          stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
+          stroke: { paint: { color: '#FFD700' }, width: px(view, 2) },
         },
       ],
     });
@@ -362,7 +358,7 @@ function drawPlanting(
         {
           kind: 'path',
           path: circlePolygon(wx, wy, radius + px(view, 1)),
-          stroke: { paint: { fill: 'solid', color: '#FFD700' }, width: px(view, 2) },
+          stroke: { paint: { color: '#FFD700' }, width: px(view, 2) },
         },
       ],
     });

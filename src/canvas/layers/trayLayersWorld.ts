@@ -31,8 +31,8 @@ function trayBodyCommands(tray: Tray, view: View): DrawCommand[] {
     {
       kind: 'path',
       path,
-      fill: { fill: 'solid', color: '#3a3a3a' },
-      stroke: { paint: { fill: 'solid', color: '#1a1a1a' }, width: px(view, 1) },
+      fill: { paint: { color: '#3a3a3a' } },
+      stroke: { paint: { color: '#1a1a1a' }, width: px(view, 1) },
     },
   ];
 }
@@ -50,8 +50,8 @@ function trayWellsCommands(tray: Tray, view: View): DrawCommand[] {
       cmds.push({
         kind: 'path',
         path: circlePolygon(cx, cy, wellRadius),
-        fill: { fill: 'solid', color: 'rgba(0,0,0,0.22)' },
-        stroke: { paint: { fill: 'solid', color: 'rgba(0,0,0,0.45)' }, width: lw },
+        fill: { paint: { color: 'rgba(0,0,0,0.22)' } },
+        stroke: { paint: { color: 'rgba(0,0,0,0.45)' }, width: lw },
       });
     }
   }
@@ -70,7 +70,7 @@ function trayGridCommands(tray: Tray): DrawCommand[] {
       cmds.push({
         kind: 'path',
         path: circlePolygon(cx, cy, dotRadius),
-        fill: { fill: 'solid', color: 'rgba(91,164,207,0.5)' },
+        fill: { paint: { color: 'rgba(91,164,207,0.5)' } },
       });
     }
   }
@@ -117,7 +117,7 @@ function trayLabelCommands(tray: Tray, view: View): DrawCommand[] {
     labelCommand(tray.widthIn / 2, gapY, tray.label, {
       fontSize,
       align: 'center',
-      fill: { fill: 'solid', color: 'rgba(255,255,255,0.65)' },
+      fill: { paint: { color: 'rgba(255,255,255,0.65)' } },
     }),
   ];
 }

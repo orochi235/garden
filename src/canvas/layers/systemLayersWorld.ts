@@ -28,7 +28,7 @@ function createOriginLayer(meta: LayerDescriptor): RenderLayer<unknown> {
       const ox = (0 - view.x) * view.scale.x;
       const oy = (0 - view.y) * view.scale.x;
       const r = 4;
-      const stroke = { paint: { fill: 'solid' as const, color: 'rgba(0,0,0,0.3)' }, width: 1 };
+      const stroke = { paint: { color: 'rgba(0,0,0,0.3)' }, width: 1 };
       const horiz = new PathBuilder()
         .moveTo(ox - r, oy)
         .lineTo(ox + r, oy)

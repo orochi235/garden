@@ -57,7 +57,7 @@ function makeHitboxLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
       const g = getGarden();
       const items = mode === 'garden' ? bboxesGarden(g) : bboxesNursery(g);
       const lw = 1 / Math.max(0.0001, view.scale.x);
-      const stroke = { paint: { fill: 'solid' as const, color: '#ff0040' }, width: lw };
+      const stroke = { paint: { color: '#ff0040' }, width: lw };
       const children: DrawCommand[] = items.map((b) => ({
         kind: 'path',
         path: rectPath(b.x, b.y, b.w, b.h),
@@ -97,7 +97,7 @@ function makeBoundsLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unkno
           kind: 'path',
           path: rectPath(x, y, w, h),
           stroke: {
-            paint: { fill: 'solid', color: '#00ffff' },
+            paint: { color: '#00ffff' },
             width: lw,
             dash: [dashSize, dashSize],
           },
@@ -124,30 +124,30 @@ function makeAxesLayer(): RenderLayer<unknown> {
         {
           kind: 'path',
           path: xAxis,
-          stroke: { paint: { fill: 'solid', color: '#ff4040' }, width: lw },
+          stroke: { paint: { color: '#ff4040' }, width: lw },
         },
         {
           kind: 'path',
           path: yAxis,
-          stroke: { paint: { fill: 'solid', color: '#40ff40' }, width: lw },
+          stroke: { paint: { color: '#40ff40' }, width: lw },
         },
         {
           kind: 'path',
           path: dot,
-          fill: { fill: 'solid', color: '#ffffff' },
+          fill: { paint: { color: '#ffffff' } },
         },
         // Labels — flagged: text rendering requires registerFont() wired at app boot.
         labelCommand(100 - px(20), -px(4), '+x', {
           fontSize: px(12),
-          fill: { fill: 'solid', color: '#ffffff' },
+          fill: { paint: { color: '#ffffff' } },
         }),
         labelCommand(px(4), 100 - px(4), '+y', {
           fontSize: px(12),
-          fill: { fill: 'solid', color: '#ffffff' },
+          fill: { paint: { color: '#ffffff' } },
         }),
         labelCommand(px(6), -px(6), '(0,0)', {
           fontSize: px(12),
-          fill: { fill: 'solid', color: '#ffffff' },
+          fill: { paint: { color: '#ffffff' } },
         }),
       ];
       return [{ kind: 'group', transform: viewToMat3(view), children }];
@@ -176,7 +176,7 @@ function makeGridLayer(mode: Mode, getGarden: () => Garden): RenderLayer<unknown
         h = t.heightIn;
       }
       const lw = 1 / Math.max(0.0001, view.scale.x);
-      const stroke = { paint: { fill: 'solid' as const, color: 'rgba(255,255,0,0.3)' }, width: lw };
+      const stroke = { paint: { color: 'rgba(255,255,0,0.3)' }, width: lw };
       const children: DrawCommand[] = [];
       for (let x = 0; x <= w + 1e-6; x += step) {
         children.push({

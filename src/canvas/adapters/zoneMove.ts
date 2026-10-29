@@ -31,6 +31,7 @@ export function createZoneMoveAdapter(): ZoneMoveAdapter {
       return { x: z.x, y: z.y, widthFt: z.width, lengthFt: z.length };
     },
     getParent: () => null,
+    getChildren: () => [],
     setPose(id, pose) {
       useGardenStore.getState().updateZone(id, { x: pose.x, y: pose.y });
     },

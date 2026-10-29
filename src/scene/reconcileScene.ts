@@ -39,20 +39,18 @@ export function reconcileScene(scene: GardenScene, target: Garden): void {
   const targetIds = new Set(specs.map((s) => String(s.id)));
 
   scene.batch('reconcile', () => {
-    // 1. Rebuild roots: nodes present in both whose kind or layer differs. kit
-    //    has no setKind, and cross-layer move/setLayer can't satisfy the
-    //    subtree-layer assertion, so remove-subtree + re-add (the re-add happens
-    //    in the Adds pass below, since the node is now absent). A rebuild root's
-    //    descendants are never *retained in place* — but a container demoting to
-    //    leaf can have a descendant that relocates to a different parent in the
-    //    target; that descendant is dropped by the subtree remove here and then
-    //    RE-ADDED by the Adds pass (since it's a spec absent from survivors).
-    //    Correctness therefore depends on the Adds pass re-adding every spec'd
-    //    node absent after removals — do not add a "skip already-existing" guard
-    //    to the Adds pass without accounting for this.
+    // 1. Rebuild roots: nodes present in both whose layer differs. Cross-layer
+    //    move/setLayer can't satisfy the subtree-layer assertion, so
+    //    remove-subtree + re-add (the re-add happens in the Adds pass below,
+    //    since the node is now absent). A rebuild root's descendants can relocate
+    //    to a different parent in the target; such a descendant is dropped by the
+    //    subtree remove here and then RE-ADDED by the Adds pass. Correctness
+    //    therefore depends on the Adds pass re-adding every spec'd node absent
+    //    after removals — do not add a "skip already-existing" guard to the Adds
+    //    pass without accounting for this.
     for (const s of specs) {
       const node = scene.get(s.id!);
-      if (node && (node.kind !== s.kind || node.layer !== s.layer)) {
+      if (node && node.layer !== s.layer) {
         scene.remove(s.id!);
       }
     }
@@ -86,6 +84,9 @@ export function reconcileScene(scene: GardenScene, target: Garden): void {
       }
       if (!deepEqual(node.pose, s.pose)) scene.setPose(s.id!, s.pose);
       if (!deepEqual(node.data, s.data)) scene.update(s.id!, { data: s.data });
+      // A structure that gains its first child starts clipping it; one that
+      // loses its last stops.
+      if (node.clip !== s.clip) scene.setClip(s.id!, s.clip ?? null);
     }
   });
 }

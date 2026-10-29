@@ -3,11 +3,11 @@
  *
  * Wraps weasel's `patterns-builtin` factories with garden's palette defaults
  * and exposes `getPattern` (returns a TextureHandle) + `paintFor`
- * (returns a ready-to-use FillStyle). Cache keyed by id+params so each unique
+ * (returns a ready-to-use CommandFill). Cache keyed by id+params so each unique
  * tile is registered exactly once with the renderer.
  */
 
-import type { FillStyle } from '@weasel-js/core';
+import type { CommandFill } from '@weasel-js/core';
 import { chunks, crosshatch, dots, hatch } from '@weasel-js/core/patterns-builtin';
 import type { TextureHandle } from './util/weaselLocal';
 
@@ -78,9 +78,9 @@ export function paintFor<P extends PatternId>(
   id: P,
   params: Partial<PatternParamMap[P]> = {},
   opacity?: number,
-): FillStyle {
+): CommandFill {
   const handle = getPattern(id, params);
   return handle
-    ? { fill: 'pattern', pattern: handle, opacity }
-    : { fill: 'solid', color: 'transparent' };
+    ? { paint: { kind: 'texture', texture: handle, opacity } }
+    : { paint: { color: 'transparent' } };
 }

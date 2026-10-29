@@ -51,7 +51,7 @@ describe('createStructureLayers (world)', () => {
       () => [s],
       () => baseUi,
     ).find((l) => l.id === 'structure-labels')!;
-    const result = layer.draw({}, view, { width: 800, height: 600 });
+    const result = layer.draw({}, view, { width: 800, height: 600, dpr: 1 });
     expect(result).toEqual([]);
   });
 });

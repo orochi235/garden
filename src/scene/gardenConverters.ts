@@ -10,7 +10,7 @@ import type {
   GardenScene,
   GardenSerializedScene,
 } from './gardenScene';
-import { CLIP_NONE_KEY, clipNone, GARDEN_LAYERS } from './gardenScene';
+import { GARDEN_LAYERS } from './gardenScene';
 
 const DEFAULT_FOOTPRINT_FT = 0.5;
 
@@ -52,17 +52,13 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
     if (parent) emitStruct(parent);
     specs.push({
       id: asNodeId(s.id),
-      kind: isSceneContainer(s) ? 'container' : 'leaf',
+      kind: 'mark',
       layer: 'structures',
       pose: parent ? decomposeRectPose(structurePose(parent), structurePose(s)) : structurePose(s),
       parent: s.parentId ? asNodeId(s.parentId) : null,
-      // A NESTED container (e.g. a pot inside a patio) has a parent-LOCAL scene
-      // pose, but eric's scene-slot painter renders in WORLD space. The kit's
-      // default container clip is built from that local pose, so it would clip
-      // the world-space body out entirely. Disable the clip for nested
-      // containers — their contents stay clipped by the top-level ancestor.
-      // Top-level containers keep the kit default (their pose IS world).
-      ...(isSceneContainer(s) && parent ? { clipFromPose: clipNone } : {}),
+      // A top-level container clips what it holds; a nested one (a pot on a
+      // patio) leaves its contents to the top-level ancestor's clip.
+      ...(isSceneContainer(s) && !parent ? { clip: 'outline' as const } : {}),
       data: {
         kind: 'structure',
         type: s.type,
@@ -97,10 +93,11 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
     if (parent) emitZone(parent);
     specs.push({
       id: asNodeId(z.id),
-      kind: 'container',
+      kind: 'mark',
       layer: 'zones',
       pose: parent ? decomposeRectPose(zonePose(parent), zonePose(z)) : zonePose(z),
       parent: z.parentId ? asNodeId(z.parentId) : null,
+      ...(z.parentId ? {} : { clip: 'outline' as const }),
       data: {
         kind: 'zone',
         color: z.color,
@@ -131,7 +128,7 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
     }
     specs.push({
       id: asNodeId(p.id),
-      kind: 'leaf',
+      kind: 'mark',
       layer: 'plantings',
       pose: plantingPose(p),
       parent: asNodeId(p.parentId),
@@ -160,14 +157,10 @@ export function gardenToSerializedScene(garden: Garden): GardenSerializedScene {
       data: s.data,
     };
     if (s.parent != null) node.parent = s.parent;
-    // clipFromPose is a function (can't serialize) — emit its registry key so
-    // loadState resolves it back. Only `clipNone` (nested containers) is used.
-    if (s.kind === 'container' && s.clipFromPose === clipNone) {
-      node.clipFromPoseKey = CLIP_NONE_KEY;
-    }
+    if (s.clip !== undefined) node.clip = s.clip;
     return node;
   });
-  return { version: 1, systemLayers: GARDEN_LAYERS.map((id) => ({ id })), nodes };
+  return { version: 3, systemLayers: GARDEN_LAYERS.map((id) => ({ id })), nodes };
 }
 
 export function splitBase(garden: Garden): GardenBase {

@@ -142,7 +142,7 @@ export function createStructureLayers(
           const cmd: DrawCommand = labelCommand(e.x + e.w / 2, e.y + padY, e.label, {
             fontSize: fontPx,
             align: 'center',
-            fill: { fill: 'solid', color: '#ffffff' },
+            fill: { paint: { color: '#ffffff' } },
           });
           if (isHidden) {
             children.push({ kind: 'group', alpha: 0.4, children: [cmd] });

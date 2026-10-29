@@ -1,5 +1,5 @@
-import type { MoveBehavior } from '@weasel-js/core';
-import { snapToGrid as weaselSnapToGrid } from '@weasel-js/core/move';
+import type { MoveBehavior, SnapSource } from '@weasel-js/core';
+import { gridSnapSource } from '@weasel-js/guides';
 import { useGardenStore } from '../../store/gardenStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
 import { plantingLayoutFor } from '../adapters/plantingLayout';
@@ -7,9 +7,10 @@ import { plantingLayoutFor } from '../adapters/plantingLayout';
 /**
  * Mapping from Phase 5 deferral vocabulary → eric implementations:
  *
- * - `snapToGrid`        → `snapStructureZoneToGrid`  (wraps weasel's `snapToGrid`,
- *                          gated to structures/zones, honours per-structure
- *                          `snapToGrid: false`, alt bypasses).
+ * - `snapToGrid`        → `structureZoneGridSnap`  (a snap source wrapping
+ *                          weasel's `gridSnapSource`, gated to structure/zone
+ *                          moves, honours per-structure `snapToGrid: false`;
+ *                          the kit's suspend key, Ctrl, bypasses it).
  * - `snapToContainer`   → `trackPlantingSnap` (this file).
  *                          Eric does NOT use weasel's generic `snapToContainer`
  *                          because the in-flight visual is owned by the layout
@@ -27,38 +28,42 @@ import { plantingLayoutFor } from '../adapters/plantingLayout';
  *                          hard-clamped to bounds and never go OOB to need
  *                          this behavior.
  *
- * Order in `useMove`'s `behaviors` list:
- *   1. snapStructureZoneToGrid       (snap)
- *   2. clampStructureZoneToGardenBounds  (clamp — final hard guard)
- *   3. detectStructureClash          (warn)
- *   4. trackPlantingSnap             (mirror snap into ctx)
- *   5. requirePlantingDrop           (snap-back on free release)
+ * Order in `useMove`'s `behaviors` list (the grid snap runs before any
+ * behavior, in the kit's snap session):
+ *   1. clampStructureZoneToGardenBounds  (clamp — final hard guard)
+ *   2. detectStructureClash          (warn)
+ *   3. requirePlantingDrop           (snap-back on free release)
  *
- * snap → clamp: clamp is the last word on position, so it runs after snap.
- * snap → clash: clash needs the post-snap, post-clamp pose to flag overlaps
- * accurately. Planting behaviors are kind-narrowed and never interact with
+ * clash needs the post-snap, post-clamp pose to flag overlaps accurately. Planting behaviors are kind-narrowed and never interact with
  * structure/zone behaviors.
  */
 
 /**
  * Grid-snap structure/zone moves to the garden's gridCellSizeFt. Plantings
  * skip this — their pose comes from the container's layout strategy, which
- * has its own slot-based snapping. The Alt key bypasses snap. Per-structure
- * `snapToGrid: false` opts a structure out (free-move).
+ * has its own slot-based snapping. Per-structure `snapToGrid: false` opts a
+ * structure out (free-move).
  */
-export function snapStructureZoneToGrid(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
+export function structureZoneGridSnap(adapter: GardenSceneAdapter): SnapSource {
+  let grid: { spacing: number; source: SnapSource } | null = null;
   return {
-    onMove(ctx, proposed) {
-      const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
-      if (!obj || obj.kind === 'planting') return;
-      const shouldSnap = obj.kind === 'structure' ? obj.data.snapToGrid : true;
-      if (!shouldSnap) return;
+    id: 'garden-grid',
+    tier: 'fallback',
+    reachPx: Number.POSITIVE_INFINITY,
+    roles: ['origin', 'pointer'],
+    gestures: ['move'],
+    collect(q) {
+      const dragged = (q.ids ?? []).map((id) => adapter.getNode(id) as SceneNode | undefined);
+      const snaps =
+        dragged.length > 0 &&
+        dragged.every(
+          (n) => n && n.kind !== 'planting' && (n.kind !== 'structure' || n.data.snapToGrid),
+        );
+      if (!snaps) return [];
       // Re-read spacing each move; the garden grid cell size is editable.
-      const inner = weaselSnapToGrid<ScenePose>({
-        spacing: useGardenStore.getState().garden.gridCellSizeFt,
-        bypassKey: 'alt',
-      });
-      return inner.onMove?.(ctx, proposed);
+      const spacing = useGardenStore.getState().garden.gridCellSizeFt;
+      if (grid?.spacing !== spacing) grid = { spacing, source: gridSnapSource({ spacing }) };
+      return grid.source.collect(q);
     },
   };
 }
@@ -80,13 +85,13 @@ export function snapStructureZoneToGrid(adapter: GardenSceneAdapter): MoveBehavi
  */
 export function requirePlantingDrop(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
   return {
-    onEnd(ctx) {
+    onEnd(ctx, end) {
       const obj = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
       if (!obj || obj.kind !== 'planting') return; // non-planting → defer
       const garden = useGardenStore.getState().garden;
       const getGarden = () => garden;
       // The release point in WORLD coords (eric's container geometry is world).
-      const point = { x: ctx.pointer.worldX, y: ctx.pointer.worldY };
+      const point = end.pointer;
       // Released over any container whose layout would accept this drop?
       // (Same `contains` the kit's layout pass uses, so we agree with it.)
       const overAcceptingContainer = [...garden.structures, ...garden.zones].some((c) => {

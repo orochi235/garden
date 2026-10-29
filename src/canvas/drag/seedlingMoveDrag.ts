@@ -115,12 +115,12 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
         const bgColor = cultivar.iconBgColor ?? cultivar.color ?? '#4A7C59';
         const path = circlePolygon(cx, cy, radius);
         cellGlyphs.push(
-          { kind: 'path', path, fill: { fill: 'solid', color: bgColor } },
+          { kind: 'path', path, fill: { paint: { color: bgColor } } },
           {
             kind: 'path',
             path,
             stroke: {
-              paint: { fill: 'solid', color: cultivar.color ?? '#4A7C59' },
+              paint: { color: cultivar.color ?? '#4A7C59' },
               width: Math.max(invScale, radius * 0.06),
             },
           },
@@ -138,7 +138,7 @@ export function createSeedlingMoveDrag(): Drag<SeedlingMoveInput, SeedlingMovePu
             kind: 'path',
             path: circlePolygon(cx, cy, radius + 2.5 * invScale),
             stroke: {
-              paint: { fill: 'solid', color: 'rgba(220, 60, 60, 0.7)' },
+              paint: { color: 'rgba(220, 60, 60, 0.7)' },
               width: 2 * invScale,
             },
           });

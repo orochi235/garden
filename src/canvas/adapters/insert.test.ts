@@ -152,7 +152,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
       snap,
       { dx: 0, dy: 0 },
       {
-        dropPoint: { worldX: 7, worldY: 8 },
+        dropPoint: { x: 7, y: 8 },
       },
     ) as Array<{ parentId: string; x: number; y: number }>;
     expect(out).toHaveLength(1);
@@ -169,7 +169,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
       snap,
       { dx: 0, dy: 0 },
       {
-        dropPoint: { worldX: 999, worldY: 999 },
+        dropPoint: { x: 999, y: 999 },
       },
     );
     expect(out).toHaveLength(0);
@@ -198,7 +198,7 @@ describe('createInsertAdapter — commitPaste with dropPoint', () => {
       snap,
       { dx: 1, dy: 2 },
       {
-        dropPoint: { worldX: 999, worldY: 999 },
+        dropPoint: { x: 999, y: 999 },
       },
     ) as Array<{ x: number; y: number }>;
     expect(out[0].x).toBe(6);

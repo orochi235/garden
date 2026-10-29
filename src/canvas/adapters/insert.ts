@@ -3,6 +3,7 @@ import type { Planting, Structure, Zone } from '../../model/types';
 import { createPlanting, createStructure, createZone } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { createGardenSceneAdapter } from './gardenScene';
 
 type GardenObj = Structure | Zone | Planting;
 
@@ -17,6 +18,7 @@ export type GardenInsertAdapter = InsertAdapter<GardenObj> & {
 };
 
 export function createInsertAdapter(): GardenInsertAdapter {
+  const tree = createGardenSceneAdapter();
   const adapter: GardenInsertAdapter = {
     commitInsert(b) {
       const tool = useUiStore.getState().plottingTool;
@@ -60,7 +62,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
     commitPaste(
       clipboard: ClipboardSnapshot,
       offset,
-      ctx?: { dropPoint?: { worldX: number; worldY: number } },
+      ctx?: { dropPoint?: { x: number; y: number } },
     ) {
       const out: GardenObj[] = [];
       for (const raw of clipboard.items) {
@@ -93,7 +95,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
         } else {
           const p = item.data as Planting;
           if (ctx?.dropPoint) {
-            const { worldX, worldY } = ctx.dropPoint;
+            const { x: worldX, y: worldY } = ctx.dropPoint;
             const { garden } = useGardenStore.getState();
             const container =
               garden.structures.find(
@@ -159,6 +161,8 @@ export function createInsertAdapter(): GardenInsertAdapter {
         plantings: g.plantings.filter((x) => x.id !== id),
       });
     },
+    getParent: (id) => tree.getParent(id),
+    getChildren: (id) => tree.getChildren(id),
     getNode(id) {
       const { garden } = useGardenStore.getState();
       return (

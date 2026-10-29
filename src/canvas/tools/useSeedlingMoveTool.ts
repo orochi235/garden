@@ -132,8 +132,8 @@ function markerCommands(
       kind: 'group',
       transform,
       children: [
-        { kind: 'path', path, fill: { fill: 'solid', color: fillColor } },
-        { kind: 'path', path, stroke: { paint: { fill: 'solid', color: strokeColor }, width: 1 } },
+        { kind: 'path', path, fill: { paint: { color: fillColor } } },
+        { kind: 'path', path, stroke: { paint: { color: strokeColor }, width: 1 } },
       ],
     },
   ];

@@ -31,6 +31,11 @@ export function createStructureMoveAdapter(): StructureMoveAdapter {
       return { x: s.x, y: s.y, widthFt: s.width, lengthFt: s.length };
     },
     getParent: (id) => getStructure(id)?.parentId ?? null,
+    getChildren: (id) =>
+      useGardenStore
+        .getState()
+        .garden.structures.filter((s) => s.parentId === id)
+        .map((s) => s.id),
     setPose(id, pose) {
       useGardenStore.getState().updateStructure(id, { x: pose.x, y: pose.y });
     },

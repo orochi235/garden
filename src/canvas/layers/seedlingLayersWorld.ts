@@ -74,7 +74,7 @@ function warningRingCommand(cx: number, cy: number, radiusIn: number, view: View
   return {
     kind: 'path',
     path: circlePolygon(cx, cy, radiusIn + px(view, 2)),
-    stroke: { paint: { fill: 'solid', color: SEEDLING_WARNING_COLOR }, width: px(view, 1.5) },
+    stroke: { paint: { color: SEEDLING_WARNING_COLOR }, width: px(view, 1.5) },
   };
 }
 
@@ -83,7 +83,7 @@ function selectionRingCommand(cx: number, cy: number, radius: number, view: View
     kind: 'path',
     path: circlePolygon(cx, cy, radius + px(view, 3)),
     stroke: {
-      paint: { fill: 'solid', color: '#5BA4CF' },
+      paint: { color: '#5BA4CF' },
       width: px(view, 2),
       dash: [px(view, 5), px(view, 3)],
     },
@@ -152,7 +152,7 @@ function seedlingLabelCommandsForTray(
       labelCommand(cx, cy, label, {
         fontSize: fontPx,
         align: 'center',
-        fill: { fill: 'solid', color: '#ffffff' },
+        fill: { paint: { color: '#ffffff' } },
       }),
     );
   }

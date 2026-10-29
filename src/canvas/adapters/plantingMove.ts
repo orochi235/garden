@@ -15,7 +15,7 @@ export interface PlantingPose {
   y: number;
 }
 
-type OptOut = 'findSnapTarget' | 'getZIndex' | 'compareZ';
+type OptOut = 'findSnapTarget' | 'getZIndex' | 'compareZ' | 'previewPoses' | 'poseTarget';
 
 export type PlantingMoveAdapter = MoveAdapter<Planting, PlantingPose> & {
   insertNode(p: Planting): void;

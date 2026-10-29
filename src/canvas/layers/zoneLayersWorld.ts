@@ -41,7 +41,7 @@ export function createZoneLayers(getZones: () => Zone[], getUi: GetUi): RenderLa
             labelCommand(z.x + z.width / 2, z.y + z.length + px(view, 4), z.label!, {
               fontSize: fontPx,
               align: 'center',
-              fill: { fill: 'solid', color: '#ffffff' },
+              fill: { paint: { color: '#ffffff' } },
             }),
           );
         return [{ kind: 'group', transform: viewToMat3(view), children }];

@@ -145,7 +145,7 @@ export function plantDrawCommands(
     cmds.push({
       kind: 'path',
       path: circlePolygon(cx, cy, radius),
-      fill: { fill: 'solid', color: bgColor },
+      fill: { paint: { color: bgColor } },
     });
   }
 
@@ -169,7 +169,7 @@ export function plantDrawCommands(
     cmds.push({
       kind: 'path',
       path: circlePolygon(cx, cy, radius),
-      stroke: { paint: { fill: 'solid', color }, width: radius * 0.06 },
+      stroke: { paint: { color }, width: radius * 0.06 },
     });
   }
 

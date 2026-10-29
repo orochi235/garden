@@ -1,4 +1,4 @@
-import type { DrawCommand, FillStyle, TextStyle, View } from '@weasel-js/core';
+import type { DrawCommand, Fill, TextStyle, View } from '@weasel-js/core';
 import { polygonFromPoints, textCommand } from '@weasel-js/core';
 
 /**
@@ -103,7 +103,7 @@ export function labelCommand(
   x: number,
   y: number,
   text: string,
-  style: TextStyle & { fill?: FillStyle | null },
+  style: TextStyle & { fill?: Fill | null },
 ): DrawCommand {
   const { fill, ...typography } = style;
   return textCommand(x, y, text, typography, undefined, undefined, undefined, { fill });
