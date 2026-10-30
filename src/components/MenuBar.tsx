@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import styles from '../styles/MenuBar.module.css';
 import { enterNursery } from '../utils/enterNursery';
 import { downloadGarden, openGardenFile } from '../utils/file';
 import { CustomTrayBuilder } from './CustomTrayBuilder';
 import { CollectionEditor } from './collection/CollectionEditor';
+import styles from './MenuBar.module.css';
 import { ModeOnly } from './ModeOnly';
 import { TraySwitcher } from './TraySwitcher';
 

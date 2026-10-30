@@ -2,7 +2,7 @@ import type { JSX } from 'react';
 import { resetCurrentCanvasView } from '../actions/view/resetView';
 import type { ViewMode } from '../store/uiStore';
 import { useUiStore } from '../store/uiStore';
-import styles from '../styles/ViewToolbar.module.css';
+import styles from './ViewToolbar.module.css';
 
 const icons: Record<ViewMode, JSX.Element> = {
   select: (

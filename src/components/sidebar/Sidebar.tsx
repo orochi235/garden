@@ -1,6 +1,6 @@
-import styles from '../../styles/Sidebar.module.css';
 import { LayerPropertiesPanel } from './LayerPropertiesPanel';
 import { PropertiesPanel } from './PropertiesPanel';
+import styles from './Sidebar.module.css';
 
 export function Sidebar() {
   return (

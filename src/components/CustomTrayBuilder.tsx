@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CELL_PITCH_IN, type CellSize, createTray } from '../model/nursery';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import styles from '../styles/CustomTrayBuilder.module.css';
+import styles from './CustomTrayBuilder.module.css';
 import { Modal, modalStyles } from './modal/Modal';
 
 interface Props {

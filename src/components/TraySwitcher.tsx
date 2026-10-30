@@ -3,8 +3,8 @@ import { zoomToTray } from '../actions/view/resetView';
 import { instantiatePreset, TRAY_CATALOG } from '../model/trayCatalog';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import styles from '../styles/TraySwitcher.module.css';
 import { ScheduleView } from './schedule/ScheduleView';
+import styles from './TraySwitcher.module.css';
 
 interface Props {
   onOpenCustomBuilder: () => void;

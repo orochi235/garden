@@ -5,9 +5,9 @@ import type { FillType } from '../../model/types';
 import { FILL_COLORS, structureTypeLabel } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import f from '../../styles/PropertiesPanel.module.css';
 import { displayToFeet, feetToDisplay, unitLabel } from '../../utils/units';
 import { ScheduleView } from '../schedule/ScheduleView';
+import f from './PropertiesPanel.module.css';
 import { SelectionPanel } from './SelectionPanel';
 
 const FILL_TYPES: FillType[] = ['soil', 'sand', 'rocks', 'peat', 'potting-mix'];

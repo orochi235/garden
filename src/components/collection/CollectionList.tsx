@@ -2,7 +2,7 @@ import { useDropZone } from '@weasel-js/core';
 import { useMemo, useState } from 'react';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
-import styles from '../../styles/CollectionEditor.module.css';
+import styles from './CollectionEditor.module.css';
 
 interface Props {
   collection: Cultivar[];

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { LayerId } from '../../model/types';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/LayerPropertiesPanel.module.css';
+import styles from './LayerPropertiesPanel.module.css';
 import { ToggleSwitch } from './ToggleSwitch';
 
 interface LayerSectionProps {

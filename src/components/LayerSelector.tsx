@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayerId } from '../model/types';
 import { useUiStore } from '../store/uiStore';
-import styles from '../styles/LayerSelector.module.css';
+import styles from './LayerSelector.module.css';
 
 interface LayerDef {
   id: LayerId;

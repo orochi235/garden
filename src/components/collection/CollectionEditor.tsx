@@ -10,8 +10,8 @@ import {
 } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/CollectionEditor.module.css';
 import { ConfirmDialog, Modal, modalStyles } from '../modal/Modal';
+import styles from './CollectionEditor.module.css';
 import { CollectionList } from './CollectionList';
 import { CultivarDataGrid } from './CultivarDataGrid';
 import { CultivarIconView } from './CultivarIconView';

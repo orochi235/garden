@@ -1,7 +1,7 @@
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
-import styles from '../styles/StatusBar.module.css';
 import { formatMeasurement } from '../utils/units';
+import styles from './StatusBar.module.css';
 
 export function StatusBar() {
   const garden = useGardenStore((s) => s.garden);

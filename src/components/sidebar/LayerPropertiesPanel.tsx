@@ -1,10 +1,10 @@
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/LayerPropertiesPanel.module.css';
-import f from '../../styles/PropertiesPanel.module.css';
 import { AlmanacPanel } from './AlmanacPanel';
 import { DebugThemePanel } from './DebugThemePanel';
+import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
+import f from './PropertiesPanel.module.css';
 import { RenderLayersPanel } from './RenderLayersPanel';
 import { ThemeDebugPanel } from './ThemeDebugPanel';
 
@@ -158,7 +158,7 @@ export function LayerPropertiesPanel() {
                 className={`${f.actionButton} ${f.span12}`}
                 onClick={handleLoadBlueprint}
               >
-                Load Image...
+                Load Image…
               </button>
             </>
           )}

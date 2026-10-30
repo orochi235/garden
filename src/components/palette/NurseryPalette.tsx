@@ -11,7 +11,7 @@ import { getSpecies } from '../../model/species';
 import { instantiatePreset, TRAY_CATALOG } from '../../model/trayCatalog';
 import { useGardenStore } from '../../store/gardenStore';
 import { type AlmanacFilters, useUiStore } from '../../store/uiStore';
-import styles from '../../styles/ObjectPalette.module.css';
+import styles from './ObjectPalette.module.css';
 import { PlantingChildRow, PlantingLeafRow, PlantingParentRow } from './PaletteItem';
 import type { PaletteEntry } from './paletteData';
 import { usePlantingTree } from './usePlantingTree';
@@ -117,7 +117,7 @@ export function NurseryPalette({ onDragBegin }: Props) {
         <input
           className={styles.searchInput}
           type="text"
-          placeholder="Search seedables..."
+          placeholder="Search seedables…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

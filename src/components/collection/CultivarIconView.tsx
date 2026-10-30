@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
-import styles from '../../styles/CollectionEditor.module.css';
+import styles from './CollectionEditor.module.css';
 
 interface Props {
   visibleCultivars: Cultivar[];

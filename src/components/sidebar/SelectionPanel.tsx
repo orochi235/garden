@@ -1,8 +1,8 @@
 import { getCultivar } from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import f from '../../styles/PropertiesPanel.module.css';
-import s from '../../styles/SelectionPanel.module.css';
+import f from './PropertiesPanel.module.css';
+import s from './SelectionPanel.module.css';
 
 interface TreeItem {
   id: string;

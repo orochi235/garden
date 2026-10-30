@@ -1,8 +1,8 @@
 import { useGardenStore } from '../../store/gardenStore';
 import type { LabelMode } from '../../store/uiStore';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/LayerPropertiesPanel.module.css';
 import { deserializeGarden } from '../../utils/file';
+import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
 
 const LABEL_MODES: { value: LabelMode; label: string }[] = [

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/ObjectPalette.module.css';
+import styles from './ObjectPalette.module.css';
 import { PaletteItem, PlantingChildRow, PlantingLeafRow, PlantingParentRow } from './PaletteItem';
 import { buildPaletteItems, categories, type PaletteEntry } from './paletteData';
 import { usePlantingTree } from './usePlantingTree';
@@ -31,7 +31,7 @@ export function ObjectPalette({ onDragBegin }: Props) {
         <input
           className={styles.searchInput}
           type="text"
-          placeholder="Search objects..."
+          placeholder="Search objects…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

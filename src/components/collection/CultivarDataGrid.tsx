@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
 import { CATEGORY_LABELS_SINGULAR, type Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
-import styles from '../../styles/CollectionEditor.module.css';
+import styles from './CollectionEditor.module.css';
 
 interface Props {
   visibleCultivars: Cultivar[];

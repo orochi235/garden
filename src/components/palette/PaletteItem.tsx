@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/PaletteItem.module.css';
+import styles from './PaletteItem.module.css';
 import type { PaletteEntry } from './paletteData';
 import type { PlantingGroupNode } from './usePlantingTree';
 

@@ -1,7 +1,7 @@
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/LayerPropertiesPanel.module.css';
 import type { TimePeriod } from '../../utils/timeTheme';
 import { ALL_PERIODS, getTheme } from '../../utils/timeTheme';
+import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
 
 export function ThemeDebugPanel() {

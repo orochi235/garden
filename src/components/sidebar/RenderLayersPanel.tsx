@@ -1,6 +1,6 @@
 import { type RegistryMode, useRegisteredLayers } from '../../canvas/layers/renderLayerRegistry';
 import { useUiStore } from '../../store/uiStore';
-import styles from '../../styles/LayerPropertiesPanel.module.css';
+import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
 
 /**

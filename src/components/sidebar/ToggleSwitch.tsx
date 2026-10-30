@@ -1,4 +1,4 @@
-import styles from '../../styles/ToggleSwitch.module.css';
+import styles from './ToggleSwitch.module.css';
 
 interface Props {
   checked: boolean;
