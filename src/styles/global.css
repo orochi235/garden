@@ -32,6 +32,7 @@
   --status-height: 28px;
   --border-radius: 6px;
 
+  color-scheme: dark;
   font-family: system-ui, -apple-system, sans-serif;
   color: var(--color-text);
   background: var(--color-bg);

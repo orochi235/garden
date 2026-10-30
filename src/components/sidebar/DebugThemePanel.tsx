@@ -2,6 +2,7 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { LabelMode } from '../../store/uiStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/LayerPropertiesPanel.module.css';
+import { deserializeGarden } from '../../utils/file';
 import { LayerSection } from './LayerSection';
 
 const LABEL_MODES: { value: LabelMode; label: string }[] = [
@@ -23,14 +24,16 @@ export function DebugThemePanel() {
   const setCollection = useGardenStore((s) => s.setCollection);
 
   function handleResetGarden() {
+    if (!window.confirm('Replace the current garden with the default garden?')) return;
     localStorage.removeItem('garden-planner-autosave');
     fetch(`${import.meta.env.BASE_URL}default.garden`)
-      .then((r) => r.json())
-      .then((g) => loadGarden(g))
+      .then((r) => r.text())
+      .then((t) => loadGarden(deserializeGarden(t)))
       .catch(() => {});
   }
 
   function handleResetCollection() {
+    if (!window.confirm('Empty the collection?')) return;
     localStorage.removeItem('garden-planner-collection');
     setCollection([]);
   }
@@ -86,10 +89,10 @@ export function DebugThemePanel() {
         ))}
       </fieldset>
       <hr className={styles.themeDivider} />
-      <button className={styles.resetButton} onClick={handleResetGarden}>
+      <button type="button" className={styles.resetButton} onClick={handleResetGarden}>
         Reset to Default Garden
       </button>
-      <button className={styles.resetButton} onClick={handleResetCollection}>
+      <button type="button" className={styles.resetButton} onClick={handleResetCollection}>
         Reset Collection
       </button>
     </LayerSection>

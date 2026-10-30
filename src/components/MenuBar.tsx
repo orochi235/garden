@@ -88,7 +88,7 @@ export function MenuBar() {
           onClick={toggleNursery}
           aria-label="Nursery mode"
           aria-pressed={appMode === 'nursery'}
-          title="Nursery mode"
+          title={appMode === 'nursery' ? 'Back to the garden (Esc)' : 'Nursery mode'}
           className={`${styles.iconButton} ${appMode === 'nursery' ? styles.iconButtonActive : ''}`}
         >
           🌱
@@ -96,8 +96,8 @@ export function MenuBar() {
         <button
           type="button"
           onClick={() => setCollectionEditorOpen(true)}
-          aria-label="Cultivar collection"
-          title="Cultivar collection"
+          aria-label="Collection"
+          title="Collection"
           className={styles.iconButton}
         >
           📦
@@ -118,7 +118,7 @@ export function MenuBar() {
           title="Plant list"
           className={styles.iconButton}
         >
-          🔍
+          📋
         </button>
       </div>
       <div className={styles.spacer} />

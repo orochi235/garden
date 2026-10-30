@@ -349,7 +349,7 @@ export const useUiStore = create<UiStore>((set) => ({
   setGardenViewRequest: (req) => set({ gardenViewRequest: req }),
   setCanvasZoomPct: (pct) => set({ canvasZoomPct: pct }),
   setCanvasZoomRequest: (req) => set({ canvasZoomRequest: req }),
-  setAppMode: (mode) => set({ appMode: mode }),
+  setAppMode: (mode) => set((s) => (s.appMode === mode ? {} : { appMode: mode, selectedIds: [] })),
   setShowSeedlingWarnings: (show) => set({ showSeedlingWarnings: show }),
   setHighlightOpacity: (opacity) => set({ highlightOpacity: opacity }),
   setShowFootprintCircles: (show) => set({ showFootprintCircles: show }),

@@ -92,7 +92,7 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
           onClick={() => setScheduleOpen((v) => !v)}
           aria-expanded={scheduleOpen}
         >
-          Schedule
+          Tray schedule
         </button>
       )}
       {scheduleOpen && tray && (

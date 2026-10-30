@@ -9,6 +9,7 @@ export function StatusBar() {
   const zoomPct = useUiStore((s) => s.canvasZoomPct);
   const setCanvasZoomRequest = useUiStore((s) => s.setCanvasZoomRequest);
   const selectedIds = useUiStore((s) => s.selectedIds);
+  const appMode = useUiStore((s) => s.appMode);
   const selectionLabel =
     selectedIds.length === 0
       ? 'No selection'
@@ -18,7 +19,7 @@ export function StatusBar() {
 
   return (
     <div className={styles.statusBar}>
-      <span>Grid: {gridLabel}</span>
+      {appMode === 'garden' && <span>Grid: {gridLabel}</span>}
       <span className={styles.zoomControls}>
         <button
           type="button"
