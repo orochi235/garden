@@ -10,7 +10,7 @@ import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/App.module.css';
 import { enterNursery } from '../utils/enterNursery';
-import { autosave, deserializeGarden, loadPersistedCollection } from '../utils/file';
+import { autosave, deserializeGarden, loadPersistedCollection, welcomeSeen } from '../utils/file';
 import { ErrorBoundary } from './ErrorBoundary';
 import { LayerSelector } from './LayerSelector';
 import { MenuBar } from './MenuBar';
@@ -136,7 +136,8 @@ export function App() {
         setCollection(persisted);
       } else if (
         (useGardenStore.getState().garden.collection ?? []).length === 0 &&
-        INITIAL_PARAMS.toString() === ''
+        INITIAL_PARAMS.toString() === '' &&
+        !welcomeSeen()
       ) {
         setShowWelcome(true);
       }

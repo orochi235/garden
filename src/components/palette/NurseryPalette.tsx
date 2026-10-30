@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import { passesAlmanacFilters } from '../../model/almanacFilter';
-import type { Cultivar, CultivarCategory } from '../../model/cultivars';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
+  type Cultivar,
+  type CultivarCategory,
+} from '../../model/cultivars';
 import { resolveSeedStarting } from '../../model/floraSeedStarting';
 import { getSpecies } from '../../model/species';
 import { instantiatePreset, TRAY_CATALOG } from '../../model/trayCatalog';
@@ -10,28 +15,6 @@ import styles from '../../styles/ObjectPalette.module.css';
 import { PlantingChildRow, PlantingLeafRow, PlantingParentRow } from './PaletteItem';
 import type { PaletteEntry } from './paletteData';
 import { usePlantingTree } from './usePlantingTree';
-
-const CATEGORY_ORDER: CultivarCategory[] = [
-  'vegetables',
-  'greens',
-  'fruits',
-  'squash',
-  'root-vegetables',
-  'legumes',
-  'herbs',
-  'flowers',
-];
-
-const CATEGORY_LABELS: Record<CultivarCategory, string> = {
-  vegetables: 'Vegetables',
-  greens: 'Greens',
-  fruits: 'Fruits',
-  squash: 'Squash',
-  'root-vegetables': 'Root Vegetables',
-  legumes: 'Legumes',
-  herbs: 'Herbs',
-  flowers: 'Flowers',
-};
 
 interface Props {
   /** Drag handler for cultivar items. Task 15 will wire actual drop logic. */

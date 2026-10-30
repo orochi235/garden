@@ -15,6 +15,7 @@ import {
   DEFAULT_WALL_THICKNESS_FT,
   generateId,
   getPlantableBounds,
+  structureTypeLabel,
 } from '../model/types';
 import {
   gardenToScene,
@@ -209,6 +210,11 @@ function backfillGarden(garden: Garden): Garden {
     if (s.clipChildren === undefined) {
       s.clipChildren = true;
     }
+    // Older saves used the raw type id as the default label.
+    if (s.label === s.type) s.label = structureTypeLabel(s.type);
+  }
+  for (const z of garden.zones) {
+    if (z.label === 'zone') z.label = 'Zone';
   }
   // Migrate legacy `seedStarting` field (pre-Nursery-rename save format).
   const legacy = garden as unknown as { seedStarting?: NurseryState };

@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { getCultivar } from '../../model/cultivars';
 import type { Layout, LayoutType } from '../../model/layout';
 import type { FillType } from '../../model/types';
-import { FILL_COLORS } from '../../model/types';
+import { FILL_COLORS, structureTypeLabel } from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import f from '../../styles/PropertiesPanel.module.css';
-import { displayToFeet, feetToDisplay } from '../../utils/units';
+import { displayToFeet, feetToDisplay, unitLabel } from '../../utils/units';
 import { ScheduleView } from '../schedule/ScheduleView';
 import { SelectionPanel } from './SelectionPanel';
 
@@ -83,15 +83,17 @@ export function PropertiesPanel() {
           <input
             className={`${f.input} ${f.span12}`}
             type="text"
+            aria-label="Label"
             value={planting.label}
             onChange={(e) =>
               useGardenStore.getState().commitPlantingUpdate(selectedId, { label: e.target.value })
             }
           />
 
-          <span className={f.label}>Position</span>
+          <span className={f.label}>Position ({unitLabel(unit)})</span>
           <span className={`${f.miniLabel} ${f.span2}`}>X</span>
           <input
+            aria-label="X"
             className={`${f.input} ${f.span4}`}
             type="number"
             step="0.1"
@@ -104,6 +106,7 @@ export function PropertiesPanel() {
           />
           <span className={`${f.miniLabel} ${f.span2}`}>Y</span>
           <input
+            aria-label="Y"
             className={`${f.input} ${f.span4}`}
             type="number"
             step="0.1"
@@ -133,7 +136,7 @@ export function PropertiesPanel() {
             <>
               <span className={f.label}>Container</span>
               <span className={`${f.readOnly} ${f.span12}`}>
-                {parent.label || ('type' in parent ? parent.type : 'zone')}
+                {parent.label || ('type' in parent ? structureTypeLabel(parent.type) : 'Zone')}
               </span>
             </>
           )}
@@ -178,13 +181,15 @@ export function PropertiesPanel() {
         <input
           className={`${f.input} ${f.span12}`}
           type="text"
+          aria-label="Label"
           value={obj.label}
           onChange={(e) => updateObj({ label: e.target.value })}
         />
 
-        <span className={f.label}>Position</span>
+        <span className={f.label}>Position ({unitLabel(unit)})</span>
         <span className={`${f.miniLabel} ${f.span2}`}>X</span>
         <input
+          aria-label="X"
           className={`${f.input} ${f.span4}`}
           type="number"
           step="0.1"
@@ -193,6 +198,7 @@ export function PropertiesPanel() {
         />
         <span className={`${f.miniLabel} ${f.span2}`}>Y</span>
         <input
+          aria-label="Y"
           className={`${f.input} ${f.span4}`}
           type="number"
           step="0.1"
@@ -200,9 +206,10 @@ export function PropertiesPanel() {
           onChange={(e) => updateObj({ y: displayToFeet(parseFloat(e.target.value) || 0, unit) })}
         />
 
-        <span className={f.label}>Area</span>
+        <span className={f.label}>Size ({unitLabel(unit)})</span>
         <span className={`${f.miniLabel} ${f.span2}`}>W</span>
         <input
+          aria-label="Width"
           className={`${f.input} ${f.span4}`}
           type="number"
           step="0.1"
@@ -214,6 +221,7 @@ export function PropertiesPanel() {
         />
         <span className={`${f.miniLabel} ${f.span2}`}>H</span>
         <input
+          aria-label="Height"
           className={`${f.input} ${f.span4}`}
           type="number"
           step="0.1"
@@ -235,7 +243,9 @@ export function PropertiesPanel() {
         {structure && (
           <>
             <span className={f.label}>Type</span>
-            <span className={`${f.readOnly} ${f.span12}`}>{structure.type}</span>
+            <span className={`${f.readOnly} ${f.span12}`}>
+              {structureTypeLabel(structure.type)}
+            </span>
           </>
         )}
 

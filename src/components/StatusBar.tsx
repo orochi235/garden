@@ -20,11 +20,23 @@ export function StatusBar() {
     <div className={styles.statusBar}>
       <span>Grid: {gridLabel}</span>
       <span className={styles.zoomControls}>
-        <button className={styles.zoomButton} onClick={() => setCanvasZoomRequest('zoom-out')}>
+        <button
+          type="button"
+          className={styles.zoomButton}
+          onClick={() => setCanvasZoomRequest('zoom-out')}
+          aria-label="Zoom out"
+          title="Zoom out"
+        >
           −
         </button>
         <span className={styles.zoomLabel}>{zoomPct}%</span>
-        <button className={styles.zoomButton} onClick={() => setCanvasZoomRequest('zoom-in')}>
+        <button
+          type="button"
+          className={styles.zoomButton}
+          onClick={() => setCanvasZoomRequest('zoom-in')}
+          aria-label="Zoom in"
+          title="Zoom in"
+        >
           +
         </button>
         <button

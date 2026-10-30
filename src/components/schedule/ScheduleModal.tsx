@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
+import { Modal } from '../modal/Modal';
 import styles from './ScheduleModal.module.css';
 import { ScheduleView } from './ScheduleView';
 
@@ -10,35 +9,13 @@ export function ScheduleModal() {
   const setOpen = useUiStore((s) => s.setScheduleOpen);
   const garden = useGardenStore((s) => s.garden);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [setOpen]);
-
   const plants = [
     ...garden.plantings.map((p) => ({ id: p.id, cultivarId: p.cultivarId, label: p.label })),
     ...garden.nursery.seedlings.map((s) => ({ id: s.id, cultivarId: s.cultivarId })),
   ];
-  return createPortal(
-    <div className={styles.backdrop} onClick={() => setOpen(false)}>
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>Schedule</h2>
-          <button
-            type="button"
-            className={styles.close}
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-        <ScheduleView plants={plants} />
-      </div>
-    </div>,
-    document.body,
+  return (
+    <Modal title="Schedule" onClose={() => setOpen(false)} className={styles.dialog}>
+      <ScheduleView plants={plants} />
+    </Modal>
   );
 }

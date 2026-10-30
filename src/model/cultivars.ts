@@ -12,6 +12,41 @@ export type CultivarCategory =
   | 'root-vegetables'
   | 'legumes';
 
+export const CATEGORY_ORDER: CultivarCategory[] = [
+  'vegetables',
+  'greens',
+  'fruits',
+  'squash',
+  'root-vegetables',
+  'legumes',
+  'herbs',
+  'flowers',
+];
+
+/** Plural, for headings and filters. */
+export const CATEGORY_LABELS: Record<CultivarCategory, string> = {
+  vegetables: 'Vegetables',
+  greens: 'Greens',
+  fruits: 'Fruits',
+  squash: 'Squash',
+  'root-vegetables': 'Roots',
+  legumes: 'Legumes',
+  herbs: 'Herbs',
+  flowers: 'Flowers',
+};
+
+/** Singular, for one item's category cell. */
+export const CATEGORY_LABELS_SINGULAR: Record<CultivarCategory, string> = {
+  vegetables: 'Vegetable',
+  greens: 'Green',
+  fruits: 'Fruit',
+  squash: 'Squash',
+  'root-vegetables': 'Root',
+  legumes: 'Legume',
+  herbs: 'Herb',
+  flowers: 'Flower',
+};
+
 /** Raw cultivar entry as stored in JSON — only overrides are present. */
 interface CultivarRaw {
   id: string;

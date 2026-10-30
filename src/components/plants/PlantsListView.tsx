@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getCultivar } from '../../model/cultivars';
+import { CATEGORY_LABELS_SINGULAR, getCultivar } from '../../model/cultivars';
 import { defaultActionsForCultivar } from '../../model/defaultActions';
 import { buildSchedule, type Schedule } from '../../model/scheduler';
 import { useGardenStore } from '../../store/gardenStore';
@@ -17,6 +17,8 @@ interface ColumnDef {
   defaultVisible: boolean;
 }
 
+const fixed2 = (n: number | null | undefined) => (n == null ? '—' : n.toFixed(2));
+
 const COLUMNS: ColumnDef[] = [
   {
     id: 'icon',
@@ -26,7 +28,12 @@ const COLUMNS: ColumnDef[] = [
   },
   { id: 'name', label: 'Name', defaultVisible: true, render: (r) => r.name },
   { id: 'variety', label: 'Variety', defaultVisible: true, render: (r) => r.variety ?? '—' },
-  { id: 'category', label: 'Category', defaultVisible: true, render: (r) => r.category ?? '—' },
+  {
+    id: 'category',
+    label: 'Category',
+    defaultVisible: true,
+    render: (r) => (r.category ? CATEGORY_LABELS_SINGULAR[r.category] : '—'),
+  },
   { id: 'location', label: 'Location', defaultVisible: true, render: (r) => r.location },
   { id: 'stage', label: 'Stage', defaultVisible: true, render: (r) => r.stage },
   {
@@ -34,21 +41,21 @@ const COLUMNS: ColumnDef[] = [
     label: 'Spacing (ft)',
     defaultVisible: true,
     numeric: true,
-    render: (r) => r.spacingFt ?? '—',
+    render: (r) => fixed2(r.spacingFt),
   },
   {
     id: 'height',
     label: 'Height (ft)',
     defaultVisible: true,
     numeric: true,
-    render: (r) => r.heightFt ?? '—',
+    render: (r) => fixed2(r.heightFt),
   },
   {
     id: 'footprint',
     label: 'Footprint (ft)',
     defaultVisible: true,
     numeric: true,
-    render: (r) => r.footprintFt ?? '—',
+    render: (r) => fixed2(r.footprintFt),
   },
   {
     id: 'nextAction',
@@ -317,9 +324,15 @@ export function PlantsListView() {
           <thead>
             <tr>
               {visibleColumns.map((col) => (
-                <th key={col.id} onClick={() => onHeaderClick(col.id)}>
-                  {col.label}
-                  {sortColumn === col.id ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                <th key={col.id} className={col.numeric ? styles.numeric : undefined}>
+                  <button
+                    type="button"
+                    className={styles.sortButton}
+                    onClick={() => onHeaderClick(col.id)}
+                  >
+                    {col.label}
+                    {sortColumn === col.id ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </button>
                 </th>
               ))}
             </tr>

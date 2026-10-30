@@ -119,6 +119,20 @@ export function createGarden(opts: { name: string; widthFt: number; lengthFt: nu
   };
 }
 
+export const STRUCTURE_TYPE_LABELS: Record<string, string> = {
+  'raised-bed': 'Raised Bed',
+  pot: 'Pot',
+  'felt-planter': 'Felt Planter',
+  fence: 'Fence',
+  trellis: 'Trellis',
+  path: 'Path',
+  patio: 'Patio',
+};
+
+export function structureTypeLabel(type: string): string {
+  return STRUCTURE_TYPE_LABELS[type] ?? type;
+}
+
 const DEFAULT_STRUCTURE_COLORS: Record<string, string> = {
   'raised-bed': '#8B6914',
   pot: '#C75B39',
@@ -167,7 +181,7 @@ export function createStructure(opts: {
     length: opts.length,
     rotation: 0,
     color: DEFAULT_STRUCTURE_COLORS[opts.type] ?? '#8B6914',
-    label: opts.type,
+    label: structureTypeLabel(opts.type),
     zIndex: 0,
     parentId: null,
     groupId: opts.groupId ?? null,
@@ -201,7 +215,7 @@ export function createZone(opts: {
     width: opts.width,
     length: opts.length,
     color: opts.color ?? '#7FB06944',
-    label: 'zone',
+    label: 'Zone',
     zIndex: 0,
     parentId: null,
     soilType: null,

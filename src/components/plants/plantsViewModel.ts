@@ -1,6 +1,6 @@
 import { type CultivarCategory, getCultivar } from '../../model/cultivars';
 import type { ResolvedAction, Schedule } from '../../model/scheduler';
-import type { Garden } from '../../model/types';
+import { type Garden, structureTypeLabel } from '../../model/types';
 
 export interface PlantRow {
   id: string;
@@ -27,9 +27,9 @@ export interface PlantRow {
 function parentLabel(garden: Garden, parentId: string | null): string {
   if (!parentId) return '—';
   const struct = garden.structures.find((s) => s.id === parentId);
-  if (struct) return struct.label || struct.type;
+  if (struct) return struct.label || structureTypeLabel(struct.type);
   const zone = garden.zones.find((z) => z.id === parentId);
-  if (zone) return zone.label || 'zone';
+  if (zone) return zone.label || 'Zone';
   return '—';
 }
 

@@ -61,12 +61,14 @@ export function PaletteItem({ entry, onDragBegin }: Props) {
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={`${styles.item} ${isActive ? styles.active : ''}`}
       onPointerDown={(e) => {
         if (e.button === 0) onDragBegin(entry, e);
       }}
       onClick={handleClick}
+      aria-pressed={isActive}
     >
       {entry.category === 'plantings' ? (
         <>
@@ -75,11 +77,11 @@ export function PaletteItem({ entry, onDragBegin }: Props) {
         </>
       ) : (
         <>
-          <div className={styles.icon} style={{ backgroundColor: entry.color }} />
+          <span className={styles.icon} style={{ backgroundColor: entry.color }} />
           <span className={styles.label}>{entry.name}</span>
         </>
       )}
-    </div>
+    </button>
   );
 }
 

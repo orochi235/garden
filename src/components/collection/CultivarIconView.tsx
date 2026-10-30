@@ -204,16 +204,25 @@ function PacketTile({
   const tooltip = cultivar.variety ? `${speciesName} — ${cultivar.variety}` : speciesName;
   const handle = useDragHandle(() => getDragPayload(cultivar.id));
   return (
-    <div
+    <button
+      type="button"
       className={`${styles.packet} ${checked ? styles.tileChecked : ''}`}
       style={{ background: cultivar.iconBgColor ?? cultivar.color, ...handle.style }}
       onPointerDown={handle.onPointerDown}
       onClick={onToggle}
       onDoubleClick={onAdd}
-      title={tooltip}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onAdd();
+        }
+      }}
+      aria-pressed={checked}
+      aria-label={tooltip}
+      title={`${tooltip} (double-click to add)`}
     >
       <PacketCanvas cultivar={cultivar} />
-    </div>
+    </button>
   );
 }
 

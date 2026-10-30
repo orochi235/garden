@@ -67,7 +67,7 @@ export function SelectionPanel() {
 
     const parent: TreeItem = {
       id: z.id,
-      label: z.label || 'zone',
+      label: z.label || 'Zone',
       color: z.color,
     };
     nodes.push({ parent, children: children ?? [] });

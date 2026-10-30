@@ -3,6 +3,7 @@ import { CELL_PITCH_IN, type CellSize, createTray } from '../model/nursery';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
 import styles from '../styles/CustomTrayBuilder.module.css';
+import { Modal, modalStyles } from './modal/Modal';
 
 interface Props {
   onClose: () => void;
@@ -24,9 +25,26 @@ export function CustomTrayBuilder({ onClose }: Props) {
   }
 
   return (
-    <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h3>Custom Tray</h3>
+    <Modal
+      title="Custom Tray"
+      onClose={onClose}
+      className={styles.dialog}
+      actions={
+        <>
+          <button type="button" className={modalStyles.button} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={`${modalStyles.button} ${modalStyles.primary}`}
+            onClick={handleCreate}
+          >
+            Create
+          </button>
+        </>
+      }
+    >
+      <div className={styles.form}>
         <label className={styles.field}>
           Label
           <input value={label} onChange={(e) => setLabel(e.target.value)} />
@@ -65,11 +83,7 @@ export function CustomTrayBuilder({ onClose }: Props) {
           {rows} × {cols} = {rows * cols} cells, {(cols * CELL_PITCH_IN[cellSize]).toFixed(1)}" ×{' '}
           {(rows * CELL_PITCH_IN[cellSize]).toFixed(1)}"
         </div>
-        <div className={styles.actions}>
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={handleCreate}>Create</button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

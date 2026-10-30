@@ -255,6 +255,23 @@ export function openGardenFile(): Promise<Garden> {
 
 const AUTOSAVE_KEY = 'garden-planner-autosave';
 const COLLECTION_KEY = 'garden-planner-collection';
+const WELCOME_KEY = 'garden-planner-welcome-seen';
+
+export function welcomeSeen(): boolean {
+  try {
+    return localStorage.getItem(WELCOME_KEY) != null;
+  } catch {
+    return false;
+  }
+}
+
+export function markWelcomeSeen(): void {
+  try {
+    localStorage.setItem(WELCOME_KEY, '1');
+  } catch {
+    // ignore
+  }
+}
 
 export function persistCollection(collection: unknown): void {
   try {

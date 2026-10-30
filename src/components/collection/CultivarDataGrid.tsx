@@ -1,7 +1,7 @@
 import { type DragPayload, useDragHandle } from '@weasel-js/core';
 import { useEffect, useMemo, useRef } from 'react';
 import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
-import type { Cultivar, CultivarCategory } from '../../model/cultivars';
+import { CATEGORY_LABELS_SINGULAR, type Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
 import styles from '../../styles/CollectionEditor.module.css';
 
@@ -18,17 +18,6 @@ interface Props {
   onSortChange: (column: SortColumn) => void;
   getDragPayload: (id: string) => DragPayload;
 }
-
-const CATEGORY_LABELS: Record<CultivarCategory, string> = {
-  vegetables: 'Vegetable',
-  greens: 'Green',
-  fruits: 'Fruit',
-  squash: 'Squash',
-  'root-vegetables': 'Root',
-  legumes: 'Legume',
-  herbs: 'Herb',
-  flowers: 'Flower',
-};
 
 interface Group {
   speciesId: string;
@@ -77,10 +66,10 @@ export function CultivarDataGrid(props: Props) {
   function header(col: SortColumn, label: string) {
     const arrow = props.sortColumn === col ? (props.sortDir === 'asc' ? '▲' : '▼') : '';
     return (
-      <div className={styles.sortable} onClick={() => props.onSortChange(col)}>
+      <button type="button" className={styles.sortable} onClick={() => props.onSortChange(col)}>
         {label}
         {arrow && <span className={styles.sortArrow}>{arrow}</span>}
-      </div>
+      </button>
     );
   }
 
@@ -156,7 +145,7 @@ function SpeciesBlock(props: BlockProps) {
           <span className={styles.swatch} style={{ background: c.color }} />
         </div>
         <div>{label}</div>
-        <div>{CATEGORY_LABELS[c.category]}</div>
+        <div>{CATEGORY_LABELS_SINGULAR[c.category]}</div>
         <div style={{ fontStyle: 'italic', opacity: 0.8 }}>{taxonomic}</div>
       </CultivarRow>
     );
@@ -167,12 +156,23 @@ function SpeciesBlock(props: BlockProps) {
   const countLabel = checkedCount === total ? `${total}` : `${checkedCount}/${total}`;
   const taxonomic = getSpecies(props.group.children[0]?.speciesId ?? '')?.taxonomicName ?? '';
   const categories = new Set(props.group.children.map((c) => c.category));
-  const categoryLabel = categories.size === 1 ? CATEGORY_LABELS[[...categories][0]] : '';
+  const categoryLabel = categories.size === 1 ? CATEGORY_LABELS_SINGULAR[[...categories][0]] : '';
 
   return (
     <>
       <div className={styles.speciesRow} onClick={props.onSpeciesExpandToggle}>
-        <div className={styles.speciesChevron}>{props.expanded ? '▾' : '▸'}</div>
+        <button
+          type="button"
+          className={styles.speciesChevron}
+          aria-expanded={props.expanded}
+          aria-label={`${props.expanded ? 'Collapse' : 'Expand'} ${props.group.speciesName}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            props.onSpeciesExpandToggle();
+          }}
+        >
+          {props.expanded ? '▾' : '▸'}
+        </button>
         <div>
           <input
             ref={triRef}

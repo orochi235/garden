@@ -1,33 +1,24 @@
-.backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.dialog {
+  width: 360px;
 }
-.modal {
-  background: #fff;
-  color: #222;
-  padding: 20px;
-  border-radius: 8px;
-  min-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-.modal h3 {
-  margin: 0 0 12px;
+.form {
+  padding: 16px;
 }
 .field {
   display: flex;
   flex-direction: column;
   margin-bottom: 12px;
   gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 .field input,
 .field select {
   padding: 4px 8px;
-  font: inherit;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 4px;
 }
 .row {
   display: flex;
@@ -38,17 +29,8 @@
 }
 .preview {
   padding: 8px;
-  background: #f5f5f5;
+  background: var(--color-soil-dark);
   border-radius: 4px;
   font-size: 13px;
-  margin-bottom: 12px;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.actions button {
-  padding: 6px 16px;
-  cursor: pointer;
+  font-variant-numeric: tabular-nums;
 }

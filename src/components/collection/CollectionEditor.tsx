@@ -1,38 +1,22 @@
 import type { DragPayload } from '@weasel-js/core';
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useCollectionEditorState } from '../../hooks/useCollectionEditorState';
 import { findInUseRemovals } from '../../model/collection';
-import { type CultivarCategory, getAllCultivars } from '../../model/cultivars';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
+  type CultivarCategory,
+  getAllCultivars,
+} from '../../model/cultivars';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import styles from '../../styles/CollectionEditor.module.css';
+import { ConfirmDialog, Modal, modalStyles } from '../modal/Modal';
 import { CollectionList } from './CollectionList';
 import { CultivarDataGrid } from './CultivarDataGrid';
 import { CultivarIconView } from './CultivarIconView';
 
 type ViewMode = 'list' | 'icons';
-
-const CATEGORY_LABELS: Record<CultivarCategory, string> = {
-  vegetables: 'Vegetables',
-  greens: 'Greens',
-  fruits: 'Fruits',
-  squash: 'Squash',
-  'root-vegetables': 'Roots',
-  legumes: 'Legumes',
-  herbs: 'Herbs',
-  flowers: 'Flowers',
-};
-const CATEGORY_ORDER: CultivarCategory[] = [
-  'vegetables',
-  'greens',
-  'fruits',
-  'squash',
-  'root-vegetables',
-  'legumes',
-  'herbs',
-  'flowers',
-];
 
 export function CollectionEditor() {
   const garden = useGardenStore((s) => s.garden);
@@ -124,20 +108,6 @@ export function CollectionEditor() {
     }
   }, [pendingSaveAfterTransfer, state.checked.size]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the Escape handler re-binds when the modal-overlay flags change; attemptCancel is read as the latest closure and state.dirty gates its fallthrough behavior.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        if (warnRemovals) setWarnRemovals(null);
-        else if (confirmAddSelected) setConfirmAddSelected(false);
-        else if (confirmDiscard) setConfirmDiscard(false);
-        else attemptCancel();
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [warnRemovals, confirmDiscard, confirmAddSelected, state.dirty]);
-
   function getDragPayload(id: string): DragPayload {
     const ids = Array.from(new Set([id, ...state.checked]));
     if (!state.checked.has(id)) state.toggleChecked(id);
@@ -151,168 +121,162 @@ export function CollectionEditor() {
     state.setCategories(next);
   }
 
-  return createPortal(
-    <div className={styles.backdrop}>
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <span>Collection</span>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={attemptCancel}
-            aria-label="Close"
-            title="Close"
-          >
-            ×
-          </button>
-        </div>
-        <div className={styles.body}>
-          <div className={styles.left}>
-            <div className={styles.paneTitle}>
-              <span>Available</span>
-              <button
-                type="button"
-                className={styles.transferButton}
-                onClick={() => state.transferRight()}
-                disabled={state.checked.size === 0}
-                title="Add selected to collection"
-              >
-                Add {state.checked.size > 0 ? `(${state.checked.size})` : ''} ›
-              </button>
-            </div>
-            <div className={styles.search}>
-              <input
-                className={styles.searchInput}
-                type="text"
-                placeholder="Search…"
-                value={state.search}
-                onChange={(e) => state.setSearch(e.target.value)}
-              />
-            </div>
-            <div className={styles.chips}>
-              {CATEGORY_ORDER.map((cat) => (
-                <span
-                  key={cat}
-                  className={`${styles.chip} ${state.categories.has(cat) ? styles.chipActive : ''}`}
-                  onClick={() => toggleCategory(cat)}
-                >
-                  {CATEGORY_LABELS[cat]}{' '}
-                  <span className={styles.chipCount}>{categoryCounts[cat] ?? 0}</span>
-                </span>
-              ))}
-              <div className={styles.viewToggle}>
-                <button
-                  type="button"
-                  className={`${styles.viewToggleButton} ${viewMode === 'list' ? styles.viewToggleActive : ''}`}
-                  onClick={() => setViewMode('list')}
-                  title="List view"
-                >
-                  ☰
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.viewToggleButton} ${viewMode === 'icons' ? styles.viewToggleActive : ''}`}
-                  onClick={() => setViewMode('icons')}
-                  title="Icon view"
-                >
-                  ▦
-                </button>
-              </div>
-            </div>
-            {viewMode === 'icons' ? (
-              <div className={styles.gridWrap}>
-                <CultivarIconView
-                  visibleCultivars={visible}
-                  isChecked={(id) => state.checked.has(id)}
-                  onCultivarToggle={state.toggleChecked}
-                  onCultivarAdd={state.addOne}
-                  getDragPayload={getDragPayload}
-                />
-              </div>
-            ) : (
-              <CultivarDataGrid
-                visibleCultivars={visible}
-                expandedSpecies={state.expandedSpecies}
-                onSpeciesExpandToggle={state.toggleSpeciesExpand}
-                isChecked={(id) => state.checked.has(id)}
-                onCultivarToggle={state.toggleChecked}
-                speciesTriState={state.speciesSelectionState}
-                onSpeciesToggle={state.toggleSpeciesSelection}
-                sortColumn={state.sortColumn}
-                sortDir={state.sortDir}
-                onSortChange={state.setSort}
-                getDragPayload={getDragPayload}
-              />
-            )}
-          </div>
-          <div className={styles.right}>
-            <div className={styles.paneTitle}>
-              <span>In Collection ({state.pending.length})</span>
-            </div>
-            <CollectionList
-              collection={state.pending}
-              onRemove={state.removeOne}
-              onDropFromOther={state.addMany}
-            />
-          </div>
-        </div>
-        <div className={styles.footer}>
-          <button type="button" className={styles.button} onClick={attemptCancel}>
+  return (
+    <Modal
+      title="Collection"
+      onClose={attemptCancel}
+      className={styles.editorDialog}
+      actions={
+        <>
+          <button type="button" className={modalStyles.button} onClick={attemptCancel}>
             Cancel
           </button>
           <button
             type="button"
-            className={`${styles.button} ${styles.buttonPrimary}`}
+            className={`${modalStyles.button} ${modalStyles.primary}`}
             onClick={attemptSave}
             disabled={!state.dirty}
           >
             Save
           </button>
-        </div>
-      </div>
-
-      {confirmDiscard && (
-        <div className={styles.backdrop} style={{ zIndex: 1100 }}>
-          <div className={styles.confirmDialog}>
-            <p>Discard changes?</p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        </>
+      }
+    >
+      <div className={styles.body}>
+        <div className={styles.left}>
+          <div className={styles.paneTitle}>
+            <span>Available</span>
+            <button
+              type="button"
+              className={styles.transferButton}
+              onClick={() => state.transferRight()}
+              disabled={state.checked.size === 0}
+              title="Add selected to collection"
+            >
+              Add {state.checked.size > 0 ? `(${state.checked.size})` : ''} ›
+            </button>
+          </div>
+          <div className={styles.search}>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="Search…"
+              value={state.search}
+              onChange={(e) => state.setSearch(e.target.value)}
+            />
+          </div>
+          <div className={styles.chips}>
+            {CATEGORY_ORDER.map((cat) => (
               <button
                 type="button"
-                className={styles.button}
+                key={cat}
+                className={`${styles.chip} ${state.categories.has(cat) ? styles.chipActive : ''} ${categoryCounts[cat] ? '' : styles.chipEmpty}`}
+                aria-pressed={state.categories.has(cat)}
+                onClick={() => toggleCategory(cat)}
+              >
+                {CATEGORY_LABELS[cat]}{' '}
+                <span className={styles.chipCount}>{categoryCounts[cat] ?? 0}</span>
+              </button>
+            ))}
+            <div className={styles.viewToggle}>
+              <button
+                type="button"
+                className={`${styles.viewToggleButton} ${viewMode === 'list' ? styles.viewToggleActive : ''}`}
+                onClick={() => setViewMode('list')}
+                title="List view"
+              >
+                ☰
+              </button>
+              <button
+                type="button"
+                className={`${styles.viewToggleButton} ${viewMode === 'icons' ? styles.viewToggleActive : ''}`}
+                onClick={() => setViewMode('icons')}
+                title="Icon view"
+              >
+                ▦
+              </button>
+            </div>
+          </div>
+          {viewMode === 'icons' ? (
+            <div className={styles.gridWrap}>
+              <CultivarIconView
+                visibleCultivars={visible}
+                isChecked={(id) => state.checked.has(id)}
+                onCultivarToggle={state.toggleChecked}
+                onCultivarAdd={state.addOne}
+                getDragPayload={getDragPayload}
+              />
+            </div>
+          ) : (
+            <CultivarDataGrid
+              visibleCultivars={visible}
+              expandedSpecies={state.expandedSpecies}
+              onSpeciesExpandToggle={state.toggleSpeciesExpand}
+              isChecked={(id) => state.checked.has(id)}
+              onCultivarToggle={state.toggleChecked}
+              speciesTriState={state.speciesSelectionState}
+              onSpeciesToggle={state.toggleSpeciesSelection}
+              sortColumn={state.sortColumn}
+              sortDir={state.sortDir}
+              onSortChange={state.setSort}
+              getDragPayload={getDragPayload}
+            />
+          )}
+        </div>
+        <div className={styles.right}>
+          <div className={styles.paneTitle}>
+            <span>In Collection ({state.pending.length})</span>
+          </div>
+          <CollectionList
+            collection={state.pending}
+            onRemove={state.removeOne}
+            onDropFromOther={state.addMany}
+          />
+        </div>
+      </div>
+      {confirmDiscard && (
+        <ConfirmDialog
+          title="Discard changes?"
+          onClose={() => setConfirmDiscard(false)}
+          actions={
+            <>
+              <button
+                type="button"
+                className={modalStyles.button}
                 onClick={() => setConfirmDiscard(false)}
               >
                 Keep editing
               </button>
               <button
                 type="button"
-                className={`${styles.button} ${styles.buttonPrimary}`}
+                className={`${modalStyles.button} ${modalStyles.primary}`}
                 onClick={performCancel}
               >
                 Discard
               </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          Your changes to the collection haven't been saved.
+        </ConfirmDialog>
       )}
 
       {confirmAddSelected && (
-        <div className={styles.backdrop} style={{ zIndex: 1100 }}>
-          <div className={styles.confirmDialog}>
-            <p>
-              You have {state.checked.size} packet{state.checked.size === 1 ? '' : 's'} selected.
-              Add {state.checked.size === 1 ? 'it' : 'them'} to the collection before saving?
-            </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <ConfirmDialog
+          title="Add selected packets?"
+          onClose={() => setConfirmAddSelected(false)}
+          actions={
+            <>
               <button
                 type="button"
-                className={styles.button}
+                className={modalStyles.button}
                 onClick={() => setConfirmAddSelected(false)}
               >
                 Keep editing
               </button>
               <button
                 type="button"
-                className={styles.button}
+                className={modalStyles.button}
                 onClick={() => {
                   setConfirmAddSelected(false);
                   runSaveChecks();
@@ -322,7 +286,7 @@ export function CollectionEditor() {
               </button>
               <button
                 type="button"
-                className={`${styles.button} ${styles.buttonPrimary}`}
+                className={`${modalStyles.button} ${modalStyles.primary}`}
                 onClick={() => {
                   state.transferRight();
                   setConfirmAddSelected(false);
@@ -331,43 +295,51 @@ export function CollectionEditor() {
               >
                 Add and save
               </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          You have {state.checked.size} packet{state.checked.size === 1 ? '' : 's'} selected. Add{' '}
+          {state.checked.size === 1 ? 'it' : 'them'} to the collection before saving?
+        </ConfirmDialog>
       )}
 
       {warnRemovals && (
-        <div className={styles.backdrop} style={{ zIndex: 1100 }}>
-          <div className={styles.confirmDialog}>
-            <p>
-              {warnRemovals.length} cultivar{warnRemovals.length === 1 ? '' : 's'} in your garden
-              will no longer appear in palettes:
-            </p>
-            <ul>
-              {warnRemovals.map((id) => {
-                const c =
-                  garden.collection.find((cc) => cc.id === id) ??
-                  database.find((cc) => cc.id === id);
-                return <li key={id}>{c?.name ?? id}</li>;
-              })}
-            </ul>
-            <p>Existing plantings will remain.</p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" className={styles.button} onClick={() => setWarnRemovals(null)}>
+        <ConfirmDialog
+          title="Remove cultivars in use?"
+          onClose={() => setWarnRemovals(null)}
+          actions={
+            <>
+              <button
+                type="button"
+                className={modalStyles.button}
+                onClick={() => setWarnRemovals(null)}
+              >
                 Cancel
               </button>
               <button
                 type="button"
-                className={`${styles.button} ${styles.buttonPrimary}`}
+                className={`${modalStyles.button} ${modalStyles.primary}`}
                 onClick={performSave}
               >
                 Save anyway
               </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <p>
+            {warnRemovals.length} cultivar{warnRemovals.length === 1 ? '' : 's'} in your garden will
+            no longer appear in palettes:
+          </p>
+          <ul>
+            {warnRemovals.map((id) => {
+              const c =
+                garden.collection.find((cc) => cc.id === id) ?? database.find((cc) => cc.id === id);
+              return <li key={id}>{c?.name ?? id}</li>;
+            })}
+          </ul>
+          <p>Existing plantings will remain.</p>
+        </ConfirmDialog>
       )}
-    </div>,
-    document.body,
+    </Modal>
   );
 }

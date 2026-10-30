@@ -1,57 +1,11 @@
-.backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
+.editorDialog {
   width: 80vw;
   max-width: 1200px;
   height: 80vh;
   max-height: 800px;
-  background: var(--color-panel);
-  color: var(--color-text);
-  border-radius: 6px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-panel-border);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.closeButton {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  font: inherit;
-  font-size: 20px;
-  line-height: 1;
-  color: rgba(255, 255, 255, 0.55);
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    background 0.15s;
-}
-.closeButton:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
 }
 .body {
-  flex: 1;
+  height: 100%;
   display: flex;
   min-height: 0;
 }
@@ -116,9 +70,14 @@
   padding: 2px 8px;
   border-radius: 12px;
   border: 1px solid var(--color-panel-border);
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   user-select: none;
   font-size: 0.85em;
+}
+.chipEmpty {
+  opacity: 0.45;
 }
 .chipActive {
   background: var(--color-leaf);
@@ -160,6 +119,11 @@
   user-select: none;
 }
 .sortable {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 .sortable:hover {
@@ -183,6 +147,11 @@
   align-items: center;
 }
 .speciesChevron {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
   justify-content: center;
   opacity: 0.7;
 }
@@ -314,6 +283,8 @@
 .packet {
   width: 144px;
   height: 200px;
+  padding: 0;
+  color: inherit;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.04);
   border: 2px solid transparent;
@@ -357,39 +328,8 @@
   height: 64px;
 }
 
-.footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--color-panel-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.button {
-  padding: 6px 14px;
-  border-radius: 4px;
-  border: 1px solid var(--color-panel-border);
-  background: var(--color-input-bg);
-  color: inherit;
-  cursor: pointer;
-}
-.buttonPrimary {
-  background: var(--color-leaf);
-  border-color: transparent;
-  color: #fff;
-}
-.buttonPrimary:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 .emptyMessage {
   padding: 16px;
   opacity: 0.6;
   text-align: center;
-}
-.confirmDialog {
-  background: var(--color-panel);
-  padding: 16px 20px;
-  border-radius: 6px;
-  max-width: 480px;
 }
