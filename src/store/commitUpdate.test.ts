@@ -44,7 +44,7 @@ describe('commit vs live updates', () => {
     expect(useGardenStore.getState().garden.zones[0].label).toBe('Herb Garden');
 
     useGardenStore.getState().undo();
-    expect(useGardenStore.getState().garden.zones[0].label).toBe('Zone');
+    expect(useGardenStore.getState().garden.zones[0].label).toBe('Zone 1');
   });
 
   it('commitPlantingUpdate IS undoable', () => {

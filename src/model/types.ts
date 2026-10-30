@@ -162,8 +162,27 @@ export const DEFAULT_WALL_THICKNESS_FT: Record<string, number> = {
   'felt-planter': 0.04,
 };
 
+/** `base N`, one past the highest N that `base` or `base N` already has among `labels`. */
+export function numberedLabel(base: string, labels: Iterable<string>): string {
+  let max = 0;
+  for (const l of labels) {
+    if (l === base) max = Math.max(max, 1);
+    else if (l.startsWith(`${base} `)) {
+      const n = Number(l.slice(base.length + 1));
+      if (Number.isInteger(n) && n > 0) max = Math.max(max, n);
+    }
+  }
+  return `${base} ${max + 1}`;
+}
+
+/** Every structure and zone label in `garden`: what `numberedLabel` counts against. */
+export function objectLabels(garden: Pick<Garden, 'structures' | 'zones'>): string[] {
+  return [...garden.structures, ...garden.zones].map((o) => o.label);
+}
+
 export function createStructure(opts: {
   type: string;
+  label?: string;
   x: number;
   y: number;
   width: number;
@@ -181,7 +200,7 @@ export function createStructure(opts: {
     length: opts.length,
     rotation: 0,
     color: DEFAULT_STRUCTURE_COLORS[opts.type] ?? '#8B6914',
-    label: structureTypeLabel(opts.type),
+    label: opts.label ?? structureTypeLabel(opts.type),
     zIndex: 0,
     parentId: null,
     groupId: opts.groupId ?? null,
@@ -201,6 +220,7 @@ export function createStructure(opts: {
 }
 
 export function createZone(opts: {
+  label?: string;
   x: number;
   y: number;
   width: number;
@@ -215,7 +235,7 @@ export function createZone(opts: {
     width: opts.width,
     length: opts.length,
     color: opts.color ?? '#7FB06944',
-    label: 'Zone',
+    label: opts.label ?? 'Zone',
     zIndex: 0,
     parentId: null,
     soilType: null,

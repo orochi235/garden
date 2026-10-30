@@ -274,7 +274,6 @@ Found by driving the dev server headless plus a source audit; the clear-cut fixe
 
 ### Larger work
 
-- [ ] **Beds can't be told apart in the plant list.** Location shows the parent's label, and every bed defaults to "Raised Bed". Numbering default labels, or showing position, would fix it.
 - [ ] **Adding to the collection takes three steps:** select a packet, click "Add (1) ›", then Save. Packets now say "double-click to add" and are keyboard-reachable (2026-10-30), but the flow itself is unchanged.
 - [ ] **No spacing, font-size, or shadow tokens.** Colors and radii now go through `global.css`; sizes are still literals.
 - [ ] **Shared stylesheets.** Four collection components share `CollectionEditor.module.css` (335 lines), and five sidebar panels share `LayerPropertiesPanel.module.css`. Split each along what component owns which rules.

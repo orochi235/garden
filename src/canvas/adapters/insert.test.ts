@@ -89,6 +89,22 @@ describe('createInsertAdapter — snapshotSelection + commitPaste', () => {
     expect(made.y).toBe(8);
   });
 
+  it('numbers the labels of drawn and pasted beds', () => {
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 2, length: 2 });
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 3, y: 0, width: 2, length: 2 });
+    const ids = useGardenStore.getState().garden.structures.map((s) => s.id);
+    const a = createInsertAdapter();
+    const out = a.commitPaste!(a.snapshotSelection!(ids), { dx: 0, dy: 5 });
+    expect(useGardenStore.getState().garden.structures.map((s) => s.label)).toEqual([
+      'Raised Bed 1',
+      'Raised Bed 2',
+    ]);
+    expect(out.map((o) => (o as { label: string }).label)).toEqual([
+      'Raised Bed 3',
+      'Raised Bed 4',
+    ]);
+  });
+
   it('commitPaste materializes a zone with a new id and offset coords', () => {
     useGardenStore.getState().addZone({ x: 5, y: 6, width: 4, length: 4 });
     useGardenStore.getState().loadGarden(useGardenStore.getState().garden);

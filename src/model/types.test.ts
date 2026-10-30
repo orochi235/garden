@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { emptyNurseryState } from './nursery';
-import { createGarden, createPlanting, createStructure, createZone } from './types';
+import { createGarden, createPlanting, createStructure, createZone, numberedLabel } from './types';
 
 describe('factory functions', () => {
   it('createGarden returns valid defaults', () => {
@@ -101,4 +101,17 @@ describe('createGarden', () => {
 it('createStructure defaults layout for raised-bed to grid', () => {
   const s = createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
   expect(s.layout).toEqual({ type: 'cell-grid', cellSizeFt: 1 / 6 });
+});
+
+describe('numberedLabel', () => {
+  it('starts at 1 when the base is unused', () => {
+    expect(numberedLabel('Raised Bed', ['Pot', 'Zone 3'])).toBe('Raised Bed 1');
+  });
+  it('goes one past the highest number in use, counting the bare base as 1', () => {
+    expect(numberedLabel('Raised Bed', ['Raised Bed'])).toBe('Raised Bed 2');
+    expect(numberedLabel('Raised Bed', ['Raised Bed 1', 'Raised Bed 4'])).toBe('Raised Bed 5');
+  });
+  it('ignores labels that only share a prefix', () => {
+    expect(numberedLabel('Raised Bed', ['Raised Bed north', 'Raised Beds 9'])).toBe('Raised Bed 1');
+  });
 });

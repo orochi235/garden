@@ -1,6 +1,13 @@
 import type { ClipboardSnapshot, InsertAdapter, Op } from '@weasel-js/core';
 import type { Planting, Structure, Zone } from '../../model/types';
-import { createPlanting, createStructure, createZone } from '../../model/types';
+import {
+  createPlanting,
+  createStructure,
+  createZone,
+  numberedLabel,
+  objectLabels,
+  structureTypeLabel,
+} from '../../model/types';
 import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import { createGardenSceneAdapter } from './gardenScene';
@@ -26,6 +33,10 @@ export function createInsertAdapter(): GardenInsertAdapter {
       if (tool.category === 'structures') {
         return createStructure({
           type: tool.type,
+          label: numberedLabel(
+            structureTypeLabel(tool.type),
+            objectLabels(useGardenStore.getState().garden),
+          ),
           x: b.x,
           y: b.y,
           width: b.width,
@@ -34,6 +45,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
       }
       if (tool.category === 'zones') {
         return createZone({
+          label: numberedLabel('Zone', objectLabels(useGardenStore.getState().garden)),
           x: b.x,
           y: b.y,
           width: b.width,
@@ -65,6 +77,12 @@ export function createInsertAdapter(): GardenInsertAdapter {
       ctx?: { dropPoint?: { x: number; y: number } },
     ) {
       const out: GardenObj[] = [];
+      const labels = objectLabels(useGardenStore.getState().garden);
+      const label = (base: string) => {
+        const l = numberedLabel(base, labels);
+        labels.push(l);
+        return l;
+      };
       for (const raw of clipboard.items) {
         const item = raw as SnapshotItem;
         if (item.kind === 'structure') {
@@ -72,6 +90,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
           out.push(
             createStructure({
               type: s.type,
+              label: label(structureTypeLabel(s.type)),
               x: s.x + offset.dx,
               y: s.y + offset.dy,
               width: s.width,
@@ -84,6 +103,7 @@ export function createInsertAdapter(): GardenInsertAdapter {
           const z = item.data as Zone;
           out.push(
             createZone({
+              label: label('Zone'),
               x: z.x + offset.dx,
               y: z.y + offset.dy,
               width: z.width,

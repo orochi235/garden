@@ -15,6 +15,8 @@ import {
   DEFAULT_WALL_THICKNESS_FT,
   generateId,
   getPlantableBounds,
+  numberedLabel,
+  objectLabels,
   structureTypeLabel,
 } from '../model/types';
 import {
@@ -179,12 +181,23 @@ function defaultGarden(): Garden {
     createStructure({ type: 'path', x: 5, y: 0, width: 3, length: 20, groupId: pathGroupId }),
     createStructure({ type: 'path', x: 12, y: 0, width: 3, length: 20, groupId: pathGroupId }),
     createStructure({ type: 'path', x: 0, y: 8.5, width: 20, length: 3, groupId: pathGroupId }),
-    createStructure({ type: 'raised-bed', x: 1, y: 1, width: 4, length: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 8, y: 1, width: 4, length: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 15, y: 1, width: 4, length: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 1, y: 11.5, width: 4, length: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 8, y: 11.5, width: 4, length: 7.5 }),
-    createStructure({ type: 'raised-bed', x: 15, y: 11.5, width: 4, length: 7.5 }),
+    ...[
+      [1, 1],
+      [8, 1],
+      [15, 1],
+      [1, 11.5],
+      [8, 11.5],
+      [15, 11.5],
+    ].map(([x, y], i) =>
+      createStructure({
+        type: 'raised-bed',
+        label: `Raised Bed ${i + 1}`,
+        x,
+        y,
+        width: 4,
+        length: 7.5,
+      }),
+    ),
   ];
   return garden;
 }
@@ -192,6 +205,22 @@ function defaultGarden(): Garden {
 /** Empty garden for tests. */
 export function blankGarden(): Garden {
   return createGarden({ name: 'My Garden', widthFt: 20, lengthFt: 20 });
+}
+
+/** Older saves gave every bed of a type the same bare label; number them so they can be told apart. */
+function numberSharedDefaultLabels(garden: Garden): void {
+  const objs = [...garden.structures, ...garden.zones];
+  const bases = new Set(garden.structures.map((s) => structureTypeLabel(s.type)).concat('Zone'));
+  for (const base of bases) {
+    const bare = objs.filter((o) => o.label === base);
+    if (bare.length < 2) continue;
+    for (const o of bare) o.label = '';
+    for (const o of bare)
+      o.label = numberedLabel(
+        base,
+        objs.map((x) => x.label),
+      );
+  }
 }
 
 /**
@@ -216,6 +245,7 @@ function backfillGarden(garden: Garden): Garden {
   for (const z of garden.zones) {
     if (z.label === 'zone') z.label = 'Zone';
   }
+  numberSharedDefaultLabels(garden);
   // Migrate legacy `seedStarting` field (pre-Nursery-rename save format).
   const legacy = garden as unknown as { seedStarting?: NurseryState };
   if (legacy.seedStarting && !garden.nursery) {
@@ -610,8 +640,12 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     addStructure: (opts) => {
       if (isLocked('structures')) return;
-      const { structures } = get().garden;
-      const newStructure = createStructure(opts);
+      const { garden } = get();
+      const { structures } = garden;
+      const newStructure = createStructure({
+        ...opts,
+        label: numberedLabel(structureTypeLabel(opts.type), objectLabels(garden)),
+      });
       if (structuresCollide(newStructure, structures)) return;
       commitGarden({ structures: [...structures, newStructure] });
     },
@@ -648,8 +682,9 @@ export const useGardenStore = create<GardenStore>((set, get) => {
 
     addZone: (opts) => {
       if (isLocked('zones')) return;
-      const { zones } = get().garden;
-      commitGarden({ zones: [...zones, createZone(opts)] });
+      const { garden } = get();
+      const label = numberedLabel('Zone', objectLabels(garden));
+      commitGarden({ zones: [...garden.zones, createZone({ ...opts, label })] });
     },
 
     updateZone: (id, updates) => {

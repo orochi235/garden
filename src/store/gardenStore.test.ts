@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyNurseryState } from '../model/nursery';
-import type { Garden } from '../model/types';
+import { createStructure, type Garden } from '../model/types';
 import { blankGarden, useGardenStore } from './gardenStore';
 import { useUiStore } from './uiStore';
 
@@ -232,6 +232,30 @@ describe('gardenStore', () => {
     delete legacy.nursery;
     useGardenStore.getState().loadGarden(legacy as Garden);
     expect(useGardenStore.getState().garden.nursery).toEqual(emptyNurseryState());
+  });
+
+  it('loadGarden numbers beds that share the bare default label', () => {
+    const g = blankGarden();
+    g.structures = [
+      createStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 4 }),
+      createStructure({
+        type: 'raised-bed',
+        label: 'Raised Bed 2',
+        x: 5,
+        y: 0,
+        width: 4,
+        length: 4,
+      }),
+      createStructure({ type: 'raised-bed', x: 10, y: 0, width: 4, length: 4 }),
+      createStructure({ type: 'pot', x: 0, y: 5, width: 1, length: 1 }),
+    ];
+    useGardenStore.getState().loadGarden(g);
+    expect(useGardenStore.getState().garden.structures.map((s) => s.label)).toEqual([
+      'Raised Bed 3',
+      'Raised Bed 2',
+      'Raised Bed 4',
+      'Pot',
+    ]);
   });
 });
 
