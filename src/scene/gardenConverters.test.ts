@@ -32,7 +32,7 @@ function struct(p: Partial<Structure> & Pick<Structure, 'id'>): Structure {
     fill: null,
     layout: null,
     wallThicknessFt: 0.5,
-    clipChildren: false,
+    clipChildren: true,
     ...p,
   };
 }
@@ -68,6 +68,23 @@ describe('gardenToScene', () => {
     expect(node.layer).toBe('structures');
     expect(node.pose).toMatchObject({ x: 0, y: 0, width: 4, height: 8 });
     expect(node.parent).toBeNull();
+  });
+
+  it('leaves a container unclipped when its clipChildren is off', () => {
+    const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
+    g.structures = [struct({ id: 's1', container: true, clipChildren: false })];
+    const scene = createGardenScene(gardenToScene(g));
+    expect(scene.get('s1' as never)!.clip).toBeUndefined();
+  });
+
+  it('clips a container nested in another container', () => {
+    const g = createGarden({ name: 'g', widthFt: 10, lengthFt: 10 });
+    g.structures = [
+      struct({ id: 'patio', container: true, width: 10, length: 10 }),
+      struct({ id: 'pot', type: 'pot', parentId: 'patio', width: 2, length: 2 }),
+    ];
+    const scene = createGardenScene(gardenToScene(g));
+    expect(scene.get('pot' as never)!.clip).toBe('outline');
   });
 
   it('maps a non-container structure (fence) to a mark that clips nothing', () => {

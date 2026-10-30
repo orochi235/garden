@@ -449,10 +449,7 @@ export function createPlantingLayers(
     {
       ...meta['container-walls'],
       space: 'screen' as const,
-      // Inner-rim stroke marking the soil/wall boundary. Wall masking is
-      // gone: planting-icons now wraps each container's plants in a clip
-      // group keyed to the inner soil shape (see buildContainerClipPath),
-      // so icons can no longer bleed past the wall onto the ground.
+      // Inner-rim stroke marking the soil/wall boundary.
       draw(_data: unknown, view: View, _dims: Dims): DrawCommand[] {
         const structures = getStructures();
         const children: DrawCommand[] = [];

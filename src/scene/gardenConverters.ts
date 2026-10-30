@@ -56,9 +56,7 @@ export function gardenToScene(garden: Garden): GardenAddNodeSpec[] {
       layer: 'structures',
       pose: parent ? decomposeRectPose(structurePose(parent), structurePose(s)) : structurePose(s),
       parent: s.parentId ? asNodeId(s.parentId) : null,
-      // A top-level container clips what it holds; a nested one (a pot on a
-      // patio) leaves its contents to the top-level ancestor's clip.
-      ...(isSceneContainer(s) && !parent ? { clip: 'outline' as const } : {}),
+      ...(isSceneContainer(s) && s.clipChildren !== false ? { clip: 'outline' as const } : {}),
       data: {
         kind: 'structure',
         type: s.type,

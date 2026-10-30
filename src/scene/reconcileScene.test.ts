@@ -26,7 +26,7 @@ function struct(p: Partial<Structure> & Pick<Structure, 'id'>): Structure {
     fill: null,
     layout: null,
     wallThicknessFt: 0.5,
-    clipChildren: false,
+    clipChildren: true,
     ...p,
   };
 }
@@ -193,6 +193,14 @@ describe('reconcileScene — reparenting and container changes', () => {
     expect(scene.get(asNodeId('s1'))!.clip).toBe('outline');
     expect(scene.get(asNodeId('p1'))).toBeTruthy();
     expect(out.plantings.map((p) => p.id)).toEqual(['p1']);
+  });
+  it('stops clipping a container when its clipChildren is turned off', () => {
+    const start = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    start.structures = [struct({ id: 's1', container: true })];
+    const target = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
+    target.structures = [struct({ id: 's1', container: true, clipChildren: false })];
+    const { scene } = reconcileTo(start, target);
+    expect(scene.get(asNodeId('s1'))!.clip).toBeUndefined();
   });
   it('stops clipping a structure when its last planting is removed', () => {
     const start = createGarden({ name: 'g', widthFt: 20, lengthFt: 20 });
