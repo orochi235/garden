@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { getCultivar } from '../../../model/cultivars';
 import type { ResolvedAction } from '../../../model/scheduler';
+import { CloseButton } from '../../modal/Modal';
 import type { SchedulePlantInput } from '../ScheduleView';
 import { formatDate, formatWindow } from '../scheduleViewModel';
 import styles from './CellPopover.module.css';
@@ -31,9 +32,7 @@ export function CellPopover({ selection, plantsById, onClose }: CellPopoverProps
     <aside className={styles.panel} role="dialog" aria-label="Schedule details">
       <div className={styles.header}>
         <div className={styles.title}>{title}</div>
-        <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
-          ×
-        </button>
+        <CloseButton onClick={onClose} />
       </div>
       <div className={styles.body}>
         {actions.length === 0 ? (

@@ -277,4 +277,3 @@ Found by driving the dev server headless plus a source audit; the clear-cut fixe
 - [ ] **Adding to the collection takes three steps:** select a packet, click "Add (1) ›", then Save. Packets now say "double-click to add" and are keyboard-reachable (2026-10-30), but the flow itself is unchanged.
 - [ ] **No spacing, font-size, or shadow tokens.** Colors and radii now go through `global.css`; sizes are still literals.
 - [ ] **Shared stylesheets.** Four collection components share `CollectionEditor.module.css` (335 lines), and five sidebar panels share `LayerPropertiesPanel.module.css`. Split each along what component owns which rules.
-- [ ] **Popover close buttons** (the tray schedule popover, the calendar cell popover) still have their own styles; dialogs share one since the `Modal` shell landed.

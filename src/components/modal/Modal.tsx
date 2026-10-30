@@ -55,21 +55,28 @@ export function Modal({ title, onClose, className, headerExtra, actions, childre
             {title}
           </h2>
           {headerExtra}
-          <button
-            type="button"
-            className={styles.close}
-            onClick={onClose}
-            aria-label="Close"
-            title="Close"
-          >
-            ×
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className={styles.body}>{children}</div>
         {actions && <div className={styles.actions}>{actions}</div>}
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** The × that closes a dialog or popover; `className` positions it. */
+export function CloseButton({ onClick, className }: { onClick: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      className={`${styles.close} ${className ?? ''}`}
+      onClick={onClick}
+      aria-label="Close"
+      title="Close"
+    >
+      ×
+    </button>
   );
 }
 

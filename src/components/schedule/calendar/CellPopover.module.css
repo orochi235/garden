@@ -23,19 +23,6 @@
   font-size: 13px;
   color: var(--color-text);
 }
-.close {
-  background: transparent;
-  color: var(--color-text-muted);
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 0 4px;
-  line-height: 1;
-}
-.close:hover {
-  color: var(--color-text);
-}
-
 .body {
   padding: 8px 12px;
   overflow-y: auto;

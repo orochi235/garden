@@ -38,17 +38,6 @@
   top: 4px;
   float: right;
   margin-right: 4px;
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.scheduleClose:hover {
-  background: rgba(255, 255, 255, 0.08);
 }
 .menu {
   position: absolute;

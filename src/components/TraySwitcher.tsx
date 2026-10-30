@@ -3,6 +3,7 @@ import { zoomToTray } from '../actions/view/resetView';
 import { instantiatePreset, TRAY_CATALOG } from '../model/trayCatalog';
 import { useGardenStore } from '../store/gardenStore';
 import { useUiStore } from '../store/uiStore';
+import { CloseButton } from './modal/Modal';
 import { ScheduleView } from './schedule/ScheduleView';
 import styles from './TraySwitcher.module.css';
 
@@ -97,14 +98,7 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
       )}
       {scheduleOpen && tray && (
         <div className={styles.schedulePopover}>
-          <button
-            type="button"
-            className={styles.scheduleClose}
-            onClick={() => setScheduleOpen(false)}
-            aria-label="Close"
-          >
-            ×
-          </button>
+          <CloseButton className={styles.scheduleClose} onClick={() => setScheduleOpen(false)} />
           <ScheduleView plants={trayPlants} />
         </div>
       )}
