@@ -74,10 +74,10 @@ describe('PlantsListView', () => {
 
     // Insertion order initially: Zzz Bed, Aaa Bed (no sort applied yet — default sort is by name, ties)
     // After first click on Location: asc — Aaa Bed first.
-    await user.click(screen.getByRole('columnheader', { name: /location/i }));
+    await user.click(screen.getByRole('button', { name: /location/i }));
     expect(locations()).toEqual(['Aaa Bed', 'Zzz Bed']);
     // Second click: desc.
-    await user.click(screen.getByRole('columnheader', { name: /location/i }));
+    await user.click(screen.getByRole('button', { name: /location/i }));
     expect(locations()).toEqual(['Zzz Bed', 'Aaa Bed']);
   });
 
