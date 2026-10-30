@@ -25,12 +25,6 @@ registers the Inter atlas at boot in `main.tsx`). Follow-ups:
 ## Canvas redesign deferrals (Phase 4)
 
 - Gutter handling (drag-spread affordances along tray edges) deliberately omitted from `SeedNode`. A parallel sub-task owns the design decision; once resolved, add a `GutterNode` kind and re-introduce `hitTestDragSpreadAffordance` integration.
-- Gutter overlay reads scratch via a `useRef` mirror because the `RenderLayer` is created once per tool. If weasel ever supports per-render scratch access in `Tool.overlay.draw`, simplify by removing the ref.
-
-## Editing
-
-- Multi-select group-drag clamp/clash edge cases: weasel's `useMove` invokes `MoveBehavior.onMove` only on the primary id; secondaries share the primary's delta. Today the clamp computes the union AABB and shifts the primary, which transitively shifts secondaries (correct). The clash detector likewise uses the secondaries' AABBs (each derived from origin + primary delta). Two follow-ups:
-  - (2) `behavior.onMoveAll` hook in weasel — open. Cross-package design work; not implementable from eric alone. Tracked under `docs/canvas-kit/TODO.md` Tier 1.5 ("`MoveBehavior.onMoveAll(ctx)` hook"). The current shared-delta workaround is documented inline in `useEricSelectTool.ts` above `moveBehaviors`.
 
 ## Phase 5 audit punch list — remaining
 
