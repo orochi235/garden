@@ -7,7 +7,7 @@
   pointer-events: auto;
   display: flex;
   gap: 2px;
-  border-radius: 6px;
+  border-radius: var(--border-radius);
   background: rgba(20, 20, 40, 0.35);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);

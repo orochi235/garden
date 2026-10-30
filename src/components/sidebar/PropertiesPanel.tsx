@@ -143,8 +143,8 @@ export function PropertiesPanel() {
 
           <span className={f.label}></span>
           <button
-            className={`${f.input} ${f.span12}`}
-            style={{ cursor: 'pointer', textAlign: 'center', color: 'var(--color-terracotta)' }}
+            type="button"
+            className={`${f.actionButton} ${f.dangerButton} ${f.span12}`}
             onClick={() => {
               useGardenStore.getState().removePlanting(selectedId);
               useUiStore.getState().clearSelection();
@@ -356,8 +356,8 @@ export function PropertiesPanel() {
 
         <span className={f.label}></span>
         <button
-          className={`${f.input} ${f.span12}`}
-          style={{ cursor: 'pointer', textAlign: 'center', color: 'var(--color-terracotta)' }}
+          type="button"
+          className={`${f.actionButton} ${f.dangerButton} ${f.span12}`}
           onClick={() => {
             if (structure) useGardenStore.getState().removeStructure(selectedId);
             else useGardenStore.getState().removeZone(selectedId);

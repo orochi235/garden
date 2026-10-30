@@ -11,7 +11,7 @@
   flex-shrink: 0;
 }
 .toggle.on {
-  background: #4e9a3a;
+  background: var(--color-leaf);
 }
 .thumb {
   position: absolute;

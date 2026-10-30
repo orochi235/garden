@@ -50,7 +50,7 @@
   color: var(--color-text-muted);
 }
 .conflict {
-  color: #ff7a7a;
+  color: var(--color-danger-text);
   margin-left: 4px;
 }
 .section {
@@ -65,7 +65,7 @@
   margin-bottom: 2px;
 }
 .warning {
-  color: #ff7a7a;
+  color: var(--color-danger-text);
   font-size: 12px;
 }
 .empty {

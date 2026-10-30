@@ -22,7 +22,7 @@
 
 .detail {
   max-width: 40em;
-  color: #c99;
+  color: var(--color-danger-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   overflow-wrap: anywhere;

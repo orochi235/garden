@@ -143,8 +143,8 @@ export function LayerPropertiesPanel() {
               />
               <span className={f.label}></span>
               <button
-                className={`${f.input} ${f.span12}`}
-                style={{ cursor: 'pointer', textAlign: 'center' }}
+                type="button"
+                className={`${f.actionButton} ${f.span12}`}
                 onClick={() => setBlueprint(null)}
               >
                 Remove
@@ -154,8 +154,8 @@ export function LayerPropertiesPanel() {
             <>
               <span className={f.label}></span>
               <button
-                className={`${f.input} ${f.span12}`}
-                style={{ cursor: 'pointer', textAlign: 'center' }}
+                type="button"
+                className={`${f.actionButton} ${f.span12}`}
                 onClick={handleLoadBlueprint}
               >
                 Load Image...

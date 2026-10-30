@@ -61,9 +61,9 @@ export function AlmanacPanel() {
     <LayerSection title="Almanac" defaultOpen>
       <div className={f.grid}>
         <span className={f.label}>Cell size</span>
-        <div className={`${f.span12}`} style={{ display: 'flex', gap: 6 }}>
+        <div className={`${f.span12} ${f.checkRow}`}>
           {CELL_SIZES.map((s) => (
-            <label key={s.value} className={styles.surfaceToggle} style={{ gridColumn: 'unset' }}>
+            <label key={s.value} className={styles.surfaceToggle}>
               <input
                 type="checkbox"
                 checked={filters.cellSizes.includes(s.value)}
@@ -75,9 +75,9 @@ export function AlmanacPanel() {
         </div>
 
         <span className={f.label}>Season</span>
-        <div className={`${f.span12}`} style={{ display: 'flex', gap: 10 }}>
+        <div className={`${f.span12} ${f.checkRow}`}>
           {SEASONS.map((s) => (
-            <label key={s.value} className={styles.surfaceToggle} style={{ gridColumn: 'unset' }}>
+            <label key={s.value} className={styles.surfaceToggle}>
               <input
                 type="checkbox"
                 checked={filters.seasons.includes(s.value)}
@@ -115,8 +115,8 @@ export function AlmanacPanel() {
 
         <span className={f.label}></span>
         <button
-          className={`${f.input} ${f.span12}`}
-          style={{ cursor: 'pointer', textAlign: 'center' }}
+          type="button"
+          className={`${f.actionButton} ${f.span12}`}
           onClick={runLocate}
           disabled={locStatus.kind === 'loading'}
         >
@@ -126,7 +126,7 @@ export function AlmanacPanel() {
         {locStatus.kind === 'ready' && (
           <>
             <span className={f.label}></span>
-            <span className={f.span12} style={{ fontSize: 12, opacity: 0.75 }}>
+            <span className={`${f.span12} ${f.note}`}>
               {`${locStatus.result.lat.toFixed(1)}, ${locStatus.result.lon.toFixed(1)} → zone ${locStatus.result.zone}, last frost ${locStatus.result.lastFrost || '?'}`}
             </span>
           </>
@@ -135,7 +135,7 @@ export function AlmanacPanel() {
         {locStatus.kind === 'error' && (
           <>
             <span className={f.label}></span>
-            <span className={f.span12} style={{ fontSize: 12, color: '#c44' }}>
+            <span className={`${f.span12} ${f.note} ${f.error}`}>
               {locStatus.message}{' '}
               <button type="button" className={styles.inlineLink} onClick={runLocate}>
                 try again
@@ -145,11 +145,7 @@ export function AlmanacPanel() {
         )}
 
         <span className={f.label}></span>
-        <button
-          className={`${f.input} ${f.span12}`}
-          style={{ cursor: 'pointer', textAlign: 'center' }}
-          onClick={reset}
-        >
+        <button type="button" className={`${f.actionButton} ${f.span12}`} onClick={reset}>
           Reset filters
         </button>
       </div>

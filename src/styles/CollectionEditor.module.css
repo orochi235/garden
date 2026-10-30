@@ -312,7 +312,7 @@
   cursor: grabbing;
 }
 .tileChecked {
-  border-color: #b6ff3c;
+  border-color: var(--color-leaf-light);
 }
 .tileChecked::after {
   box-shadow:

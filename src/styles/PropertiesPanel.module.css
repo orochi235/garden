@@ -117,3 +117,38 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+.actionButton {
+  padding: 4px 6px;
+  border: 1px solid var(--color-panel-border);
+  border-radius: 4px;
+  background: var(--color-input-bg);
+  font-size: 12px;
+  color: var(--color-text);
+  text-align: center;
+  cursor: pointer;
+}
+.actionButton:hover {
+  border-color: var(--color-text-muted);
+}
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.dangerButton {
+  color: var(--color-danger-text);
+}
+.dangerButton:hover {
+  border-color: var(--color-danger);
+}
+.checkRow {
+  display: flex;
+  gap: 8px;
+}
+.note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.error {
+  color: var(--color-danger-text);
+}

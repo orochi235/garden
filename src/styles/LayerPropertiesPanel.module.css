@@ -126,7 +126,7 @@
   grid-column: span 12;
 }
 .surfaceToggle input {
-  accent-color: goldenrod;
+  accent-color: var(--color-leaf);
 }
 .surfaceSwatch {
   flex-shrink: 0;
