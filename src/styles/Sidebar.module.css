@@ -10,3 +10,7 @@
   background: var(--color-panel-border);
   margin: 4px 0;
 }
+/* Panels keep their natural height; the sidebar scrolls instead. */
+.sidebar > * {
+  flex-shrink: 0;
+}

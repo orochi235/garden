@@ -85,6 +85,7 @@ export function ObjectPalette({ onDragBegin }: Props) {
                           node={node}
                           expanded={isExpanded}
                           onToggle={() => toggle(node.speciesId)}
+                          onDragBegin={onDragBegin}
                         />
                         {isExpanded &&
                           node.children.map((child) => (

@@ -62,16 +62,21 @@ export function MenuBar() {
     downloadGarden(garden);
   }
   function handleNew() {
-    const current = garden.collection ?? [];
-    if (current.length > 0) {
-      const keep = window.confirm(
-        `Keep your current collection (${current.length} cultivars) in the new garden?`,
-      );
-      reset();
-      if (keep) useGardenStore.getState().setCollection(current);
-    } else {
-      reset();
+    if (
+      !window.confirm(
+        'Start a new garden? The current garden is replaced and this cannot be undone.',
+      )
+    ) {
+      return;
     }
+    const current = garden.collection ?? [];
+    const keep =
+      current.length > 0 &&
+      window.confirm(
+        `Keep your current collection (${current.length} cultivars)? OK = keep it, Cancel = start with an empty collection.`,
+      );
+    reset();
+    if (keep) useGardenStore.getState().setCollection(current);
   }
 
   return (

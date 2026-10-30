@@ -90,11 +90,13 @@ export function App() {
     }
   }, [appMode]);
 
-  // Esc exits nursery mode (when no modal is currently catching it).
+  // Esc exits nursery mode unless something closer consumed it: popovers and
+  // the armed cultivar listen on `document` (which fires first) and call
+  // preventDefault.
   useEffect(() => {
     if (appMode !== 'nursery') return;
     function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
       if (scheduleOpen || plantsModalOpen || collectionEditorOpen) return;
       setAppMode('garden');
     }

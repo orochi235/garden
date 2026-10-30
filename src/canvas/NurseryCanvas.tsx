@@ -52,15 +52,17 @@ export function NurseryCanvas() {
   useEffect(() => {
     if (!armedCultivarId) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setArmedCultivarId(null);
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      setArmedCultivarId(null);
     }
     function onContext() {
       setArmedCultivarId(null);
     }
-    window.addEventListener('keydown', onKey);
+    document.addEventListener('keydown', onKey);
     window.addEventListener('contextmenu', onContext);
     return () => {
-      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onKey);
       window.removeEventListener('contextmenu', onContext);
     };
   }, [armedCultivarId, setArmedCultivarId]);
@@ -406,7 +408,10 @@ export function NurseryCanvas() {
               onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') commitRename(renaming.trayId, renaming.value);
-                if (e.key === 'Escape') setRenaming(null);
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setRenaming(null);
+                }
               }}
               onBlur={() => commitRename(renaming.trayId, renaming.value)}
               style={{

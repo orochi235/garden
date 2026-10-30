@@ -20,7 +20,8 @@ export interface PlantingGroupNode {
   color: string;
   /** Cultivar ID to use for the parent row icon. */
   defaultCultivarId: string;
-  /** Default palette entry, used when dragging from the parent row. */
+  /** Palette entry dragged from the parent row: the plain species cultivar if
+   *  collected (then left out of `children`), else the first child. */
   defaultEntry: PaletteEntry;
   children: PlantingChildNode[];
 }
@@ -45,7 +46,8 @@ export function buildPlantingTree(entries: PaletteEntry[]): PlantingTreeNode[] {
       const sorted = [...items].sort((a, b) =>
         (a.varietyLabel ?? '').localeCompare(b.varietyLabel ?? ''),
       );
-      const defaultEntry = items.find((e) => e.varietyLabel === speciesName) ?? items[0];
+      const plain = items.find((e) => e.varietyLabel === speciesName);
+      const defaultEntry = plain ?? sorted[0];
       nodes.push({
         kind: 'group',
         speciesId,
@@ -53,7 +55,7 @@ export function buildPlantingTree(entries: PaletteEntry[]): PlantingTreeNode[] {
         color: defaultEntry.color,
         defaultCultivarId: defaultEntry.id,
         defaultEntry,
-        children: sorted.filter((e) => e !== defaultEntry).map((e) => ({ entry: e })),
+        children: sorted.filter((e) => e !== plain).map((e) => ({ entry: e })),
       });
     }
   }

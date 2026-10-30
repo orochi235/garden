@@ -39,7 +39,9 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      setOpen(false);
     }
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKey);
@@ -53,7 +55,9 @@ export function TraySwitcher({ onOpenCustomBuilder }: Props) {
   useEffect(() => {
     if (!scheduleOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setScheduleOpen(false);
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      setScheduleOpen(false);
     }
     document.addEventListener('keydown', onKey);
     const timer = window.setTimeout(() => setScheduleOpen(false), 10_000);

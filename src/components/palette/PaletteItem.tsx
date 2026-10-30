@@ -135,7 +135,12 @@ export function PlantingLeafRow({ entry, onDragBegin }: LeafRowProps) {
       <div className={styles.rowIconCol}>
         <SmallPlantIcon cultivarId={entry.id} color={entry.color} />
       </div>
-      <span className={styles.rowLabel}>{entry.speciesName ?? entry.name}</span>
+      <span className={styles.rowLabel}>
+        {entry.speciesName ?? entry.name}
+        {entry.varietyLabel && entry.varietyLabel !== entry.speciesName && (
+          <span className={styles.rowVariety}> {entry.varietyLabel}</span>
+        )}
+      </span>
     </div>
   );
 }
@@ -147,7 +152,7 @@ interface ParentRowProps {
   onDragBegin?: (entry: PaletteEntry, e: React.PointerEvent) => void;
 }
 
-export function PlantingParentRow({ node, expanded: _, onToggle, onDragBegin }: ParentRowProps) {
+export function PlantingParentRow({ node, expanded, onToggle, onDragBegin }: ParentRowProps) {
   return (
     <div
       className={`${styles.row} ${styles.rowParent}`}
@@ -170,6 +175,9 @@ export function PlantingParentRow({ node, expanded: _, onToggle, onDragBegin }: 
         <SmallPlantIcon cultivarId={node.defaultCultivarId} color={node.color} />
       </div>
       <span className={`${styles.rowLabel} ${styles.rowLabelBold}`}>{node.speciesName}</span>
+      <span className={styles.rowCaret} aria-hidden="true">
+        {expanded ? '▾' : '▸'}
+      </span>
     </div>
   );
 }

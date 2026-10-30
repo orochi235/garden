@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: '/garden/',
   server: {
+    host: '::',
     port: 53305,
   },
   plugins: [

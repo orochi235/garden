@@ -49,6 +49,17 @@ describe('buildPlantingTree', () => {
     }
   });
 
+  it('keeps every cultivar as a child when no plain species cultivar exists', () => {
+    const entries = [
+      makeEntry('lemon-basil', 'basil', 'Basil', 'Lemon'),
+      makeEntry('genovese', 'basil', 'Basil', 'Genovese'),
+    ];
+    const tree = buildPlantingTree(entries);
+    if (tree[0].kind !== 'group') throw new Error('expected group');
+    expect(tree[0].children.map((c) => c.entry.id)).toEqual(['genovese', 'lemon-basil']);
+    expect(tree[0].defaultEntry.id).toBe('genovese');
+  });
+
   it('sorts groups alphabetically by species name', () => {
     const entries = [
       makeEntry('tomato', 'tomato', 'Tomato', 'Tomato'),

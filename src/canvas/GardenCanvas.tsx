@@ -759,14 +759,7 @@ function GardenCanvasInner() {
   // handing `drawOne` a kit `Node<GardenNodeData,…>` + the scene's geometry-only
   // `GardenPose`. `createGardenDrawOne` is written against eric's own `SceneNode`
   // (full domain entity in `.data`) + a WORLD `ScenePose`, so we bridge by id:
-  // `adapter.getNode(id)` rebuilds the full entity, and we compose the kit pose
-  // to world.
-  //
-  // The kit pose is parent-LOCAL for plantings (world for structures/zones) and
-  // carries the live PREVIEW pose during a drag (via `usePreviewGhostLayer`).
-  // Composing it to world makes drag ghosts render at the dragged location;
-  // for committed render the composition is pixel-identical to the store world
-  // pose because the store's `garden` is derived from this same scene.
+  // `adapter.getNode(id)` rebuilds the full entity.
   const sceneCanvasLayers = useMemo(() => {
     const ericDrawOne = createGardenDrawOne(getUi);
     const drawOne = (
@@ -776,26 +769,10 @@ function GardenCanvasInner() {
     ): ReturnType<typeof ericDrawOne> => {
       const node = adapter.getNode(kitNode.id);
       if (!node) return [];
-      let world: ScenePose;
-      if (kitPose == null) {
-        world = adapter.getPose(node.id);
-      } else {
-        // The kit pose is parent-LOCAL for ANY node that is a scene child of a
-        // container — plantings in a bed/zone, but also structures nested in a
-        // container (e.g. pots on a patio). Compose the parent's world origin so
-        // the body renders at its real location; top-level nodes have no parent
-        // and their kit pose is already world. The store holds recomposed world
-        // coords, so a single parent lookup suffices even for deeper nesting.
-        const parentId = (node.data as { parentId?: string | null }).parentId ?? null;
-        if (parentId) {
-          const g = useGardenStore.getState().garden;
-          const parent =
-            g.structures.find((s) => s.id === parentId) ?? g.zones.find((z) => z.id === parentId);
-          world = { x: kitPose.x + (parent?.x ?? 0), y: kitPose.y + (parent?.y ?? 0) };
-        } else {
-          world = { x: kitPose.x, y: kitPose.y };
-        }
-      }
+      // The kit composes parent frames before calling drawOne, so kitPose is
+      // already world (including the live preview pose during a drag).
+      const world: ScenePose =
+        kitPose == null ? adapter.getPose(node.id) : { x: kitPose.x, y: kitPose.y };
       return ericDrawOne(node, world, kitView);
     };
     return {
