@@ -139,7 +139,7 @@ export function CalendarView({ schedule, plantsById }: CalendarViewProps) {
         <span className={styles.encoding}>
           <label
             htmlFor="calendar-color-encoding"
-            style={{ fontSize: 12, marginRight: 4, color: 'var(--theme-text-muted, #888)' }}
+            style={{ fontSize: 12, marginRight: 4, color: 'var(--color-text-muted)' }}
           >
             Color:
           </label>

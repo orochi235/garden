@@ -23,14 +23,14 @@
   padding: 4px 8px;
   cursor: pointer;
   background: rgba(255, 255, 255, 0.06);
-  color: var(--theme-text, #eee);
-  border: 1px solid var(--theme-divider, #333);
+  color: var(--color-text);
+  border: 1px solid var(--color-panel-border);
   font-size: 12px;
 }
 .scopeBtnActive {
-  background: var(--theme-text, #eee);
-  color: var(--theme-panel-bg, #1f2123);
-  border-color: var(--theme-text, #eee);
+  background: var(--color-text);
+  color: var(--color-panel);
+  border-color: var(--color-text);
 }
 .nav {
   display: inline-flex;
@@ -41,8 +41,8 @@
   padding: 2px 8px;
   cursor: pointer;
   background: transparent;
-  color: var(--theme-text, #eee);
-  border: 1px solid var(--theme-divider, #333);
+  color: var(--color-text);
+  border: 1px solid var(--color-panel-border);
   font-size: 12px;
   font-family: inherit;
 }
@@ -58,15 +58,15 @@
   text-align: center;
   font-weight: 600;
   font-size: 13px;
-  color: var(--theme-text, #eee);
+  color: var(--color-text);
 }
 .encoding {
   margin-left: auto;
 }
 .encodingSelect {
-  background: var(--theme-panel-bg, #1f2123);
-  color: var(--theme-text, #eee);
-  border: 1px solid var(--theme-divider, #333);
+  background: var(--color-panel);
+  color: var(--color-text);
+  border: 1px solid var(--color-panel-border);
   padding: 3px 6px;
   font-size: 12px;
   font-family: inherit;
@@ -80,7 +80,7 @@
 }
 
 .empty {
-  color: var(--theme-text-muted, #888);
+  color: var(--color-text-muted);
   font-style: italic;
   padding: 24px 8px;
   text-align: center;

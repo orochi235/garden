@@ -22,9 +22,9 @@
   top: 100%;
   left: 0;
   margin-top: 4px;
-  background: var(--theme-panel-bg, #1f2123);
-  color: var(--theme-text, #eee);
-  border: 1px solid var(--theme-divider, #333);
+  background: var(--color-panel);
+  color: var(--color-text);
+  border: 1px solid var(--color-panel-border);
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   min-width: 360px;

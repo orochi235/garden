@@ -24,6 +24,7 @@
   --color-text: #d4c4a8;
   --color-text-muted: #8a7d6b;
   --color-input-bg: #3a2e22;
+  --color-panel-hover: #342818;
 
   /* Sizing */
   --panel-width: 240px;
@@ -50,6 +51,13 @@ textarea,
 select,
 [contenteditable] {
   user-select: text;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 body {

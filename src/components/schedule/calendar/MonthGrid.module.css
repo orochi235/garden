@@ -6,7 +6,7 @@
 .title {
   font-weight: 600;
   font-size: 13px;
-  color: var(--theme-text, #eee);
+  color: var(--color-text);
   margin: 8px 4px 2px;
   text-align: center;
 }
@@ -15,14 +15,14 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
-  background: var(--theme-divider, #333);
+  background: var(--color-panel-border);
   padding: 1px;
   border-radius: 4px;
   width: 100%;
 }
 .weekdayHeader {
-  background: var(--theme-panel-bg, #1f2123);
-  color: var(--theme-text-muted, #888);
+  background: var(--color-panel);
+  color: var(--color-text-muted);
   font-size: 10px;
   text-transform: uppercase;
   text-align: center;
@@ -30,7 +30,7 @@
 }
 
 .cell {
-  background: var(--theme-panel-bg, #1f2123);
+  background: var(--color-panel);
   padding: 3px 3px 6px;
   min-height: 78px;
   min-width: 0;
@@ -39,14 +39,14 @@
   cursor: pointer;
 }
 .cell:hover {
-  background: var(--theme-panel-hover, #25282b);
+  background: var(--color-panel-hover);
 }
 .cellPad {
   opacity: 0.35;
   cursor: default;
 }
 .cellPad:hover {
-  background: var(--theme-panel-bg, #1f2123);
+  background: var(--color-panel);
 }
 .cellToday {
   box-shadow: inset 0 0 0 2px #5ba4cf;
@@ -73,7 +73,7 @@
 
 .dayNum {
   font-size: 10px;
-  color: var(--theme-text-muted, #888);
+  color: var(--color-text-muted);
   margin-bottom: 3px;
   font-variant-numeric: tabular-nums;
 }
@@ -116,25 +116,25 @@
   left: 3px;
   right: 3px;
   font-size: 9px;
-  color: var(--theme-text-muted, #888);
-  background: var(--theme-divider, #333);
+  color: var(--color-text-muted);
+  background: var(--color-panel-border);
   padding: 1px 4px;
   border-radius: 2px;
   text-align: center;
 }
 .moreLink {
   font-size: 10px;
-  color: var(--theme-text-muted, #888);
+  color: var(--color-text-muted);
   cursor: pointer;
   text-decoration: underline;
 }
 
 .emptyMonth {
-  background: var(--theme-panel-bg, #1f2123);
-  color: var(--theme-text-muted, #888);
+  background: var(--color-panel);
+  color: var(--color-text-muted);
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 4px;
   cursor: pointer;
-  border: 1px dashed var(--theme-divider, #333);
+  border: 1px dashed var(--color-panel-border);
 }
