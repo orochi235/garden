@@ -111,6 +111,9 @@ const GARDEN_MODES: ModeDefinition[] = [
  *  outline, move (with alt-drag clone), and resize. */
 const GARDEN_FEATURES = ['pick', 'move', 'resize'] as const;
 
+// eric-canvas-click owns empty-canvas clicks, so drop the select tool's own.
+const GARDEN_BINDING_OVERRIDES = { 'select.clearOnClick': null } as const;
+
 function gardenModeId(ui: ReturnType<typeof useUiStore.getState>): string {
   if (ui.plottingTool) return 'insert';
   if (ui.viewMode === 'pan' || ui.viewMode === 'zoom' || ui.viewMode === 'select-area') {
@@ -832,6 +835,7 @@ function GardenCanvasInner() {
           selection={selectionApi}
           enableGestureDispatcher={true}
           enableKeybindings={false}
+          bindingOverrides={GARDEN_BINDING_OVERRIDES}
         >
           <GardenHistoryBridge scene={scene} />
           <GardenAreaSelectDep adapter={adapter} selection={selectionApi} />

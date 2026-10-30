@@ -8,6 +8,7 @@ import type { ActionContext } from './types';
 export function useKeyboardActionDispatch(ctx: ActionContext) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.defaultPrevented) return;
       const activePath = getActiveScopePath();
       const action = resolveAction(e, activePath, allActions, ctx);
       if (!action) return;

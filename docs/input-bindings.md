@@ -21,7 +21,7 @@ All keyboard shortcuts, mouse interactions, and modifier key combinations.
 | Backtick (\`) | Cycle view mode | `src/actions/view/cycleViewMode.ts` |
 | Arrow Up | Previous visible layer | `src/actions/layers/cycleLayer.ts` |
 | Arrow Down | Next visible layer | `src/actions/layers/cycleLayer.ts` |
-| Escape | Cancel plot/move, clear overlay | `src/canvas/CanvasStack.tsx` |
+| Escape | Drop the armed plotting tool, else clear the selection | `src/actions/editing/escape.ts` |
 
 ## Mouse Interactions
 

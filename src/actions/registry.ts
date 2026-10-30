@@ -2,6 +2,7 @@ import { copyAction } from './editing/copy';
 import { cutAction } from './editing/cut';
 import { cycleSelectionNextAction, cycleSelectionPrevAction } from './editing/cycleSelection';
 import { deleteAction } from './editing/delete';
+import { escapeAction } from './editing/escape';
 import { pasteAction } from './editing/paste';
 import { redoAction } from './editing/redo';
 import { selectAllAction } from './editing/selectAll';
@@ -21,6 +22,7 @@ export const allActions: ActionDescriptor[] = [
   cutAction,
   pasteAction,
   selectAllAction,
+  escapeAction,
   cycleSelectionNextAction,
   cycleSelectionPrevAction,
   cycleViewModeAction,
