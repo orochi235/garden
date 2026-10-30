@@ -270,7 +270,7 @@ Running list of intended application behaviors.
   reduces to the single tray's dimensions.
 - Garden file format is unchanged. The first tray contributes zero gutter,
   so existing single-tray gardens render identically.
-- Clicking a tray in the FloatingTraySwitcher or the TraySwitcher menu now
+- Clicking a tray in the TraySwitcher menu now
   both selects it as `currentTrayId` AND zooms+pans the canvas to fit that
   tray (`zoomToTray`). The pan offset is computed against the centered union
   bounds so the tray ends up centered in the viewport.

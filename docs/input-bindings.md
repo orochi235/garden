@@ -22,7 +22,6 @@ All keyboard shortcuts, mouse interactions, and modifier key combinations.
 | Arrow Up | Previous visible layer | `src/actions/layers/cycleLayer.ts` |
 | Arrow Down | Next visible layer | `src/actions/layers/cycleLayer.ts` |
 | Escape | Cancel plot/move, clear overlay | `src/canvas/CanvasStack.tsx` |
-| Cmd+Shift+F | Toggle FPS meter | `src/components/FpsMeter.tsx` |
 
 ## Mouse Interactions
 

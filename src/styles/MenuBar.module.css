@@ -23,7 +23,7 @@
   color: var(--theme-menu-title);
   transition: color var(--theme-transition, 0.3s ease);
   letter-spacing: -0.02em;
-  /* Reserve the left palette panel width so the next sibling (ModeSwitcher)
+  /* Reserve the left palette panel width so the next sibling
      starts at the canvas's left edge, regardless of left-panel resize. */
   width: calc(var(--left-panel-width, 240px) - 16px);
   flex-shrink: 0;
