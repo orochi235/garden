@@ -6,6 +6,7 @@ import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
 import f from './PropertiesPanel.module.css';
 import { RenderLayersPanel } from './RenderLayersPanel';
+import shared from './sidebarControls.module.css';
 import { ThemeDebugPanel } from './ThemeDebugPanel';
 
 const GROUND_COLORS = [
@@ -168,7 +169,7 @@ export function LayerPropertiesPanel() {
 
       <LayerSection title="Structures" layerId="structures">
         <div className={f.grid}>
-          <label className={styles.surfaceToggle}>
+          <label className={shared.surfaceToggle}>
             <input
               type="checkbox"
               checked={renderLayerVisibility['structure-surfaces'] ?? false}
@@ -193,7 +194,7 @@ export function LayerPropertiesPanel() {
             </svg>
             <span>Show surface hatching</span>
           </label>
-          <label className={styles.surfaceToggle}>
+          <label className={shared.surfaceToggle}>
             <input
               type="checkbox"
               checked={renderLayerVisibility['structure-plantable-area'] ?? false}
@@ -214,7 +215,7 @@ export function LayerPropertiesPanel() {
 
       <LayerSection title="Plantings" layerId="plantings">
         <div className={f.grid}>
-          <label className={styles.surfaceToggle}>
+          <label className={shared.surfaceToggle}>
             <input
               type="checkbox"
               checked={renderLayerVisibility['planting-footprint-circles'] ?? true}
@@ -224,7 +225,7 @@ export function LayerPropertiesPanel() {
             />
             <span>Show footprint circles</span>
           </label>
-          <label className={styles.surfaceToggle}>
+          <label className={shared.surfaceToggle}>
             <input
               type="checkbox"
               checked={renderLayerVisibility['planting-spacing'] ?? true}
@@ -232,7 +233,7 @@ export function LayerPropertiesPanel() {
             />
             <span>Show spacing borders</span>
           </label>
-          <label className={styles.surfaceToggle}>
+          <label className={shared.surfaceToggle}>
             <input
               type="checkbox"
               checked={renderLayerVisibility['planting-measurements'] ?? false}

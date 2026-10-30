@@ -1,7 +1,7 @@
 import { type RegistryMode, useRegisteredLayers } from '../../canvas/layers/renderLayerRegistry';
 import { useUiStore } from '../../store/uiStore';
-import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
+import shared from './sidebarControls.module.css';
 
 /**
  * Lists every render layer the canvas is currently drawing, in draw order.
@@ -26,7 +26,7 @@ export function RenderLayersPanel() {
   return (
     <LayerSection title="Render Layers" defaultOpen={false}>
       {layers.length === 0 && (
-        <div className={styles.radioLegend} style={{ opacity: 0.6 }}>
+        <div className={shared.radioLegend} style={{ opacity: 0.6 }}>
           (no layers registered yet)
         </div>
       )}
@@ -37,7 +37,7 @@ export function RenderLayersPanel() {
         return (
           <label
             key={layer.id}
-            className={styles.surfaceToggle}
+            className={shared.surfaceToggle}
             style={isAlwaysOn ? { opacity: 0.5 } : undefined}
             title={isAlwaysOn ? 'Always on (cannot be hidden)' : undefined}
           >

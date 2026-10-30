@@ -1,0 +1,25 @@
+.themeDivider {
+  border: none;
+  border-top: 1px solid var(--color-panel-border);
+  margin: 4px 8px;
+}
+
+.surfaceToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  grid-column: span 12;
+}
+
+.surfaceToggle input {
+  accent-color: var(--color-leaf);
+}
+
+.radioLegend {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: 0 0 4px;
+}

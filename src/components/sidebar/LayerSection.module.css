@@ -1,0 +1,43 @@
+.section {
+  border-bottom: 1px solid var(--color-panel-border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--color-soil-dark);
+  border: none;
+  padding: 6px 14px 6px 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.header:hover {
+  background: #241a0e;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 10px;
+  transform: rotate(180deg);
+}
+
+.arrowOpen {
+  transform: rotate(90deg);
+}
+
+.title {
+  flex: 1;
+}
+
+.body {
+  padding: 8px 8px 8px 8px;
+}

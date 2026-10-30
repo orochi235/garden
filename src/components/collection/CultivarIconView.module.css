@@ -1,0 +1,60 @@
+.iconView {
+  padding: 4px 8px 12px;
+}
+
+.iconTiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 14px 0 14px 10px;
+}
+
+.packet {
+  width: 144px;
+  height: 200px;
+  padding: 0;
+  color: inherit;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid transparent;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.packet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: none;
+  transition: box-shadow 0.15s;
+}
+
+.packet:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.packet:active {
+  cursor: grabbing;
+}
+
+.tileChecked {
+  border-color: var(--color-leaf-light);
+}
+
+.tileChecked::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(182, 255, 60, 0.6),
+    inset 0 0 16px 2px rgba(182, 255, 60, 0.6);
+}
+
+.packetCanvas {
+  width: 144px;
+  height: 200px;
+}

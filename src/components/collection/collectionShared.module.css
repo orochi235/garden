@@ -1,0 +1,17 @@
+.gridWrap {
+  flex: 1;
+  overflow: auto;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.emptyMessage {
+  padding: 16px;
+  opacity: 0.6;
+  text-align: center;
+}

@@ -2,7 +2,8 @@ import { useDropZone } from '@weasel-js/core';
 import { useMemo, useState } from 'react';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
-import styles from './CollectionEditor.module.css';
+import styles from './CollectionList.module.css';
+import shared from './collectionShared.module.css';
 
 interface Props {
   collection: Cultivar[];
@@ -44,13 +45,13 @@ export function CollectionList({ collection, onRemove, onDropFromOther }: Props)
       ref={dropRef}
       className={`${styles.collectionList} ${dropActive ? styles.dropTarget : ''}`}
     >
-      {collection.length === 0 && <div className={styles.emptyMessage}>Empty</div>}
+      {collection.length === 0 && <div className={shared.emptyMessage}>Empty</div>}
       {groups.map((g) => (
         <div key={g.speciesId} className={styles.collectionGroup}>
           <div className={styles.collectionGroupTitle}>{g.speciesName}</div>
           {g.children.map((c) => (
             <div key={c.id} className={styles.collectionPill}>
-              <span className={styles.swatch} style={{ background: c.color }} />
+              <span className={shared.swatch} style={{ background: c.color }} />
               <span className={styles.collectionPillName}>{c.variety ?? c.name}</span>
               <button
                 type="button"

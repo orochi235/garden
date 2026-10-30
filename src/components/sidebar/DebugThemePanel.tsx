@@ -2,8 +2,9 @@ import { useGardenStore } from '../../store/gardenStore';
 import type { LabelMode } from '../../store/uiStore';
 import { useUiStore } from '../../store/uiStore';
 import { deserializeGarden } from '../../utils/file';
-import styles from './LayerPropertiesPanel.module.css';
+import styles from './DebugThemePanel.module.css';
 import { LayerSection } from './LayerSection';
+import shared from './sidebarControls.module.css';
 
 const LABEL_MODES: { value: LabelMode; label: string }[] = [
   { value: 'all', label: 'All layers' },
@@ -40,7 +41,7 @@ export function DebugThemePanel() {
 
   return (
     <LayerSection title="Debug" defaultOpen>
-      <label className={styles.surfaceToggle}>
+      <label className={shared.surfaceToggle}>
         <input
           type="checkbox"
           checked={debugOverlappingLabels}
@@ -48,7 +49,7 @@ export function DebugThemePanel() {
         />
         <span>Show overlapping labels</span>
       </label>
-      <hr className={styles.themeDivider} />
+      <hr className={shared.themeDivider} />
       <label className={styles.sliderLabel}>
         <span>Label font size: {labelFontSize}px</span>
         <input
@@ -73,9 +74,9 @@ export function DebugThemePanel() {
           className={styles.slider}
         />
       </label>
-      <hr className={styles.themeDivider} />
+      <hr className={shared.themeDivider} />
       <fieldset className={styles.radioGroup}>
-        <legend className={styles.radioLegend}>Show labels</legend>
+        <legend className={shared.radioLegend}>Show labels</legend>
         {LABEL_MODES.map((m) => (
           <label key={m.value} className={styles.radioLabel}>
             <input
@@ -88,7 +89,7 @@ export function DebugThemePanel() {
           </label>
         ))}
       </fieldset>
-      <hr className={styles.themeDivider} />
+      <hr className={shared.themeDivider} />
       <button type="button" className={styles.resetButton} onClick={handleResetGarden}>
         Reset to Default Garden
       </button>

@@ -3,9 +3,10 @@ import { useFrostZoneByLocation } from '../../hooks/useFrostZoneByLocation';
 import type { CellSize } from '../../model/nursery';
 import type { Season } from '../../model/species';
 import { useUiStore } from '../../store/uiStore';
-import styles from './LayerPropertiesPanel.module.css';
+import styles from './AlmanacPanel.module.css';
 import { LayerSection } from './LayerSection';
 import f from './PropertiesPanel.module.css';
+import shared from './sidebarControls.module.css';
 
 const CELL_SIZES: { value: CellSize; label: string }[] = [
   { value: 'small', label: 'S' },
@@ -63,7 +64,7 @@ export function AlmanacPanel() {
         <span className={f.label}>Cell size</span>
         <div className={`${f.span12} ${f.checkRow}`}>
           {CELL_SIZES.map((s) => (
-            <label key={s.value} className={styles.surfaceToggle}>
+            <label key={s.value} className={shared.surfaceToggle}>
               <input
                 type="checkbox"
                 checked={filters.cellSizes.includes(s.value)}
@@ -77,7 +78,7 @@ export function AlmanacPanel() {
         <span className={f.label}>Season</span>
         <div className={`${f.span12} ${f.checkRow}`}>
           {SEASONS.map((s) => (
-            <label key={s.value} className={styles.surfaceToggle}>
+            <label key={s.value} className={shared.surfaceToggle}>
               <input
                 type="checkbox"
                 checked={filters.seasons.includes(s.value)}

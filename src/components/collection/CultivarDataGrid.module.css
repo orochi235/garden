@@ -1,0 +1,97 @@
+.grid {
+  display: grid;
+  grid-template-columns: 24px 24px 24px 24px minmax(140px, 1.4fr) 110px minmax(
+      140px,
+      1.2fr
+    );
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.gridHeader {
+  display: contents;
+}
+
+.gridHeader > div {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-panel);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-panel-border);
+  font-weight: 600;
+  opacity: 0.85;
+  user-select: none;
+}
+
+.sortable {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sortable:hover {
+  opacity: 1;
+}
+
+.sortArrow {
+  margin-left: 4px;
+  opacity: 0.7;
+  font-size: 0.8em;
+}
+
+.speciesRow {
+  display: contents;
+  cursor: pointer;
+}
+
+.speciesRow > div {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 4px;
+  border-bottom: 1px solid var(--color-panel-border);
+  display: flex;
+  align-items: center;
+}
+
+.speciesChevron {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.speciesName {
+  gap: 8px;
+  padding-left: 4px;
+  font-weight: 500;
+}
+
+.speciesCount {
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+
+.cultivarRow {
+  display: contents;
+  cursor: grab;
+}
+
+.cultivarRow > div {
+  padding: 3px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cultivarRow.dragging > div {
+  opacity: 0.4;
+}

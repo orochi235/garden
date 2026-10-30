@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { onIconLoad, renderIcon } from '../../canvas/plantRenderers';
 import type { Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
-import styles from './CollectionEditor.module.css';
+import styles from './CultivarIconView.module.css';
+import shared from './collectionShared.module.css';
 
 interface Props {
   visibleCultivars: Cultivar[];
@@ -238,7 +239,7 @@ export function CultivarIconView(props: Props) {
   }, [props.visibleCultivars]);
 
   if (sorted.length === 0) {
-    return <div className={styles.emptyMessage}>No cultivars match</div>;
+    return <div className={shared.emptyMessage}>No cultivars match</div>;
   }
 
   return (

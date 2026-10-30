@@ -15,6 +15,7 @@ import styles from './CollectionEditor.module.css';
 import { CollectionList } from './CollectionList';
 import { CultivarDataGrid } from './CultivarDataGrid';
 import { CultivarIconView } from './CultivarIconView';
+import shared from './collectionShared.module.css';
 
 type ViewMode = 'list' | 'icons';
 
@@ -198,7 +199,7 @@ export function CollectionEditor() {
             </div>
           </div>
           {viewMode === 'icons' ? (
-            <div className={styles.gridWrap}>
+            <div className={shared.gridWrap}>
               <CultivarIconView
                 visibleCultivars={visible}
                 isChecked={(id) => state.checked.has(id)}

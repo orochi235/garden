@@ -1,8 +1,9 @@
 import { useUiStore } from '../../store/uiStore';
 import type { TimePeriod } from '../../utils/timeTheme';
 import { ALL_PERIODS, getTheme } from '../../utils/timeTheme';
-import styles from './LayerPropertiesPanel.module.css';
 import { LayerSection } from './LayerSection';
+import shared from './sidebarControls.module.css';
+import styles from './ThemeDebugPanel.module.css';
 
 export function ThemeDebugPanel() {
   const themeOverride = useUiStore((s) => s.themeOverride);
@@ -54,7 +55,7 @@ export function ThemeDebugPanel() {
           <span className={styles.themeSwatchLabel}>Fast</span>
         </button>
       </div>
-      <hr className={styles.themeDivider} />
+      <hr className={shared.themeDivider} />
       <div className={styles.themeGrid}>
         {ALL_PERIODS.map((period: TimePeriod) => (
           <button

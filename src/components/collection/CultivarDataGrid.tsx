@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { SortColumn, SortDir, TriState } from '../../hooks/useCollectionEditorState';
 import { CATEGORY_LABELS_SINGULAR, type Cultivar } from '../../model/cultivars';
 import { getSpecies } from '../../model/species';
-import styles from './CollectionEditor.module.css';
+import styles from './CultivarDataGrid.module.css';
+import shared from './collectionShared.module.css';
 
 interface Props {
   visibleCultivars: Cultivar[];
@@ -74,7 +75,7 @@ export function CultivarDataGrid(props: Props) {
   }
 
   return (
-    <div className={styles.gridWrap}>
+    <div className={shared.gridWrap}>
       <div className={styles.grid}>
         <div className={styles.gridHeader}>
           <div />
@@ -86,7 +87,7 @@ export function CultivarDataGrid(props: Props) {
           {header('taxonomic', 'Taxonomic')}
         </div>
         {groups.length === 0 && (
-          <div className={styles.emptyMessage} style={{ gridColumn: '1 / -1' }}>
+          <div className={shared.emptyMessage} style={{ gridColumn: '1 / -1' }}>
             No cultivars match
           </div>
         )}
@@ -142,7 +143,7 @@ function SpeciesBlock(props: BlockProps) {
         </div>
         <div />
         <div>
-          <span className={styles.swatch} style={{ background: c.color }} />
+          <span className={shared.swatch} style={{ background: c.color }} />
         </div>
         <div>{label}</div>
         <div>{CATEGORY_LABELS_SINGULAR[c.category]}</div>
@@ -205,7 +206,7 @@ function SpeciesBlock(props: BlockProps) {
               />
             </div>
             <div>
-              <span className={styles.swatch} style={{ background: c.color }} />
+              <span className={shared.swatch} style={{ background: c.color }} />
             </div>
             <div>{c.variety ?? c.name}</div>
             <div />
