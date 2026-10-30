@@ -262,42 +262,21 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 ## UI consistency & usability review (2026-10-29)
 
-Found by driving the dev server headless at 1440×900 and 1024×700, plus a source audit of `src/components` and the CSS. "Observed" means seen in the live app; "read" means confirmed in source.
+Found by driving the dev server headless plus a source audit; the clear-cut fixes landed 2026-10-30. What's left needs a design call or is a larger piece of work.
 
-### Bugs
+### Needs a decision
 
-- [ ] **Plant icons draw offset by their bed's origin** (observed + read). A planting dropped into the bed at (1,1) draws its icon and footprint circle 1 ft right and 1 ft down from its spacing square. One dropped into the bed at (8,1) draws 8 ft away, outside the bed's clip, so it doesn't show at all. Cause: since `@weasel-js/core` 1.5.0 the render walk hands `drawOne` a world pose (`buildSceneTree.js:60-70`), but `GardenCanvas.tsx:784-797` still adds the parent's x/y on top. Fix: use `kitPose` as-is in that branch and correct the comment at :764-767. Structures nested in a container go through the same branch (inferred).
-- [ ] **A species' first cultivar can't be placed in the garden** (observed + read). When a species has several cultivars in the collection, the palette's parent row stands for `items[0]` (`usePlantingTree.ts:48`), which is left out of the child rows. But `ObjectPalette.tsx:84-88` gives `PlantingParentRow` no `onDragBegin`, so dragging it does nothing. With Basil Lemon and Basil Genovese collected, only Genovese can be planted, and nothing on screen says the "Basil" row means Lemon.
-- [ ] **Properties panel content is covered by the next section** (observed). Sections in the right sidebar are flex children that shrink, so the sidebar never scrolls (`Sidebar.module.css` `.sidebar` is a flex column with `overflow-y: auto`, and the panels have no `flex-shrink: 0`). The panel's own content overflows underneath Ground. At 1440×900 the Delete button is half-hidden. At 1024×700, "Clip plantings to container", Layout, and Delete all sit under the ground swatches. On the left at 1024×700 the Plantings list shrinks to zero height.
-- [ ] **Escape doesn't clear the garden selection** (observed). Every press logs `weasel dispatcher: binding resolved actionId "clearSelection" which has no registered action`. The 1.14 select tool binds Escape to that action, and eric never registers one.
-- [ ] **"New" can't be canceled and can't be undone** (observed). Its only prompt is "Keep your current collection (8 cultivars) in the new garden?", and Cancel answers "no, don't keep it": the garden is still replaced, and the collection goes with it. Cmd+Z doesn't bring either back.
-- [ ] **Escape always leaves nursery mode** (read, `App.tsx:93-103`). The guard checks only the three modals, so pressing Escape to close the nursery Schedule popover or the tray dropdown, or to disarm a cultivar (behavior.md:130), also drops you back into the garden.
-- [ ] **The welcome dialog keeps coming back** (observed). It appears on every load while the collection is empty and offers no way to stop it. On a first visit with no autosave it appeared again once after Cancel (inferred: StrictMode runs the seeding effect at `App.tsx:123-141` twice, so this part is probably dev-only).
-- [ ] **Collection category counts contradict the data** (observed). The chips read Greens 0 and Squash 0, but Lettuce, Kale, and Chard are listed and there are four Squash cultivars. Beets are filed under Vegetables rather than Roots. Zero-count chips look the same as chips that are toggled off.
+- [ ] **Capitalization style.** Labels mix Title Case ("Render Layers", "In Collection", "Select Area", "Your Trays", "Edit Collection…") and sentence case ("Fit view", "Plant list", "New from preset", "Tray schedule"). Pick one.
+- [ ] **What to call the plants.** The UI says seedables, cultivars, plants, plantings, and varieties in different places ("Search seedables…" in the nursery, "Cultivar ID" in the plant list).
+- [ ] **One segmented-control style.** The collection view toggle (green), Schedule's Flat / By date / By plant (light gray), and its List / Calendar tabs (underlined) each look different. A shared component needs a chosen look.
+- [ ] **Debug controls in the user sidebar.** The Debug section and the menu's "dev" dropdown show in every build. Both resets now ask first (2026-10-30); whether to hide them outside `import.meta.env.DEV` is open.
+- [ ] **The Schedule's default target date is two months out** (`defaultTargetDate` in `scheduleViewModel.ts`), which lands in late December this time of year. A frost-date-based default would need the Almanac's last-frost setting.
+- [ ] **Dates are formatted two ways:** `2026-12-29` in the plant list, "Dec 29" in the Schedule.
 
-### Usability
+### Larger work
 
-- [ ] **"Schedule" names two different things in nursery mode.** The 📅 button opens the garden-wide Schedule modal; the text "Schedule" button next to the tray picker opens a nursery popover ("No plants to schedule.").
-- [ ] **The nursery mode button doesn't look active.** Its active background, `rgba(0,0,0,0.1)`, can't be seen on the black nursery header. Nothing else in the header says which mode you're in or how to get back to the garden.
-- [ ] **Palette rows don't say which cultivar they are.** A single-cultivar species shows only the species name ("Beans" for Pole beans). Group rows have no expand caret or expanded state.
-- [ ] **The Properties panel shows internal names:** "raised-bed" for both Label and Type, where the palette says "Raised Bed". The plant list's Location column shows "raised-bed" for every bed, so beds can't be told apart. The W/H row is labeled "Area", and none of the fields show units.
-- [ ] **Adding to the collection takes three steps with no hints:** select a card, click "Add (1) ›", then Save. Double-clicking a card adds it immediately, but nothing tells you that. Cards and chips are `div`s that can't be reached by keyboard.
-- [ ] **The status bar keeps showing the garden selection in nursery mode** ("1 object selected", and "Grid: 1 ft").
-- [ ] **The Schedule's target transplant date defaults to Dec 29.** Its date input is light-themed inside a dark modal.
-- [ ] **Number columns in the plant list are left-aligned with uneven decimals** (Spacing 0.5, Height 2 / 7, Footprint 0.75 / 0.5). Dates are formatted two ways: `2026-12-29` in the list, "Dec 29" in the Schedule.
-- [ ] **Debug controls ship in the user sidebar.** The Debug section includes "Reset to Default Garden" and "Reset Collection", and neither asks for confirmation (inferred from the markup; not clicked).
-
-### Consistency (source audit)
-
-- [ ] **Theme variables that are never defined.** `--theme-text`, `-divider`, `-panel-bg`, `-text-muted`, `-input-bg`, `-accent`, and `-panel-hover` are used more than 100 times in total, but only `--theme-menu-*`, `--theme-list-hover`, and `--theme-transition` are ever set (`App.tsx:254-257`). Every modal, the plant list, and the calendar therefore render in a gray fallback palette (`#1f2123`, `#eee`, `#333`) instead of the warm tokens in `global.css`. One variable has two different fallbacks (`#888` and `#aaa`).
-- [ ] **Many buttons render in Arial** (observed). Buttons and inputs that don't set `font: inherit` use the browser default font: the canvas toolbar, the zoom −/+/⊙ buttons, the layer switches, the Delete and debug buttons, and the welcome and collection-dialog buttons. The rest of the UI uses `system-ui`.
-- [ ] **Five modal implementations.** They differ in backdrop opacity (0.4 or 0.8), whether clicking the backdrop or pressing Escape closes them, title element (`span`, `h2`, `h3`, `strong`), and z-index (200 to 2000). `CustomTrayBuilder` is white on a dark app. None has `role="dialog"`. `ScheduleModal` and `PlantsModal` have near-identical CSS files.
-- [ ] **Five segmented-control and tab styles** (the collection view toggle is green, Schedule's Flat / By date / By plant is light gray, its List / Calendar tabs are underlined, and so on). **Five close-button styles.** The sidebar's action buttons reuse the input class and add inline styles.
-- [ ] **Five different greens are used for "on", and six different reds for errors and delete.** Hard-coded colors repeat existing tokens (`#5ba4cf` is `--color-sky`; the ground swatches duplicate `--color-leaf-light` and others). There are no spacing, font-size, or shadow tokens, and `--border-radius` is used 3 times while a literal `6px` appears 14.
-- [ ] **One category set has three label maps:** "Root Vegetables" (Nursery), "Roots" (Collection), and "Root" (data grid). The plant list shows the categories in lowercase ("herbs").
-- [ ] **The same feature goes by different names.** "Plant list" (button) opens a modal titled "List", and its icon is a magnifier. "Cultivar collection" opens "Collection". The sidebar has "Edit Collection…" and the welcome dialog has "Open Collection Editor". The plants themselves are called seedables, cultivars, plants, plantings, and varieties in different places.
-- [ ] **Capitalization is mixed.** Title Case: "Render Layers", "In Collection", "Select Area", "Your Trays". Sentence case: "Fit view", "Plant list", "New from preset". The ellipsis is written both as "…" and "...".
-- [ ] **Clickable elements with no role or keyboard handling:** `CultivarDataGrid.tsx:80,174`, `PlantsListView.tsx:320`, `PaletteItem.tsx:64`, and `CultivarIconView.tsx:207`. The zoom −/+ buttons (`StatusBar.tsx:23,27`) have no accessible name, and none of the sidebar form inputs has a label.
-- [ ] **Six components are never rendered:** `ModeSwitcher`, `SeedWarningsToggle`, `FloatingTraySwitcher`, `CollapsibleSection`, `LayerPanel`, and `FpsMeter`. Delete them or wire them up.
-- [ ] **CSS placement is split.** 23 modules sit in `src/styles/`, and 8 sit beside their components; the 8 colocated ones are exactly those using the undefined `--theme-*` variables. Components also borrow other components' stylesheets: `WelcomeModal` uses `CollectionEditor`'s, and five panels use `LayerPropertiesPanel`'s. `CollectionEditor.module.css` is 395 lines.
-- [ ] **The Vite dev server isn't set to bind `::`** (`vite.config.ts` has no `server.host`), so `127.0.0.1` can refuse connections.
+- [ ] **Beds can't be told apart in the plant list.** Location shows the parent's label, and every bed defaults to "Raised Bed". Numbering default labels, or showing position, would fix it.
+- [ ] **Adding to the collection takes three steps:** select a packet, click "Add (1) ›", then Save. Packets now say "double-click to add" and are keyboard-reachable (2026-10-30), but the flow itself is unchanged.
+- [ ] **No spacing, font-size, or shadow tokens.** Colors and radii now go through `global.css`; sizes are still literals.
+- [ ] **Shared stylesheets.** Four collection components share `CollectionEditor.module.css` (335 lines), and five sidebar panels share `LayerPropertiesPanel.module.css`. Split each along what component owns which rules.
+- [ ] **Popover close buttons** (the tray schedule popover, the calendar cell popover) still have their own styles; dialogs share one since the `Modal` shell landed.
