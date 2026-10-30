@@ -1,6 +1,6 @@
 import type { GestureContext, GroupTransform } from '@weasel-js/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createStructure } from '../../model/types';
+import { createStructure, createZone } from '../../model/types';
 import { blankGarden, useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { SceneNode } from '../adapters/gardenScene';
@@ -176,6 +176,41 @@ describe('detectStructureClash', () => {
     // Drag dx = +7: a goes to (7,0); b goes to (12,0) — overlaps c at (12,0).
     behavior.onMove!(ctx, translateTo(origin, a.id, { x: 7, y: 0 }));
     expect(useUiStore.getState().dragClashIds).toEqual([c.id]);
+  });
+
+  it('flags a clash when the grabbed item is a zone dragged with a structure', () => {
+    const z = createZone({ x: 0, y: 0, width: 2, length: 2 });
+    const a = createStructure({ type: 'patio', x: 5, y: 0, width: 2, length: 2 });
+    const c = createStructure({ type: 'patio', x: 12, y: 0, width: 2, length: 2 });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [z], structures: [a, c] } }));
+    const behavior = detectStructureClash(createGardenSceneAdapter());
+    const origin = new Map<string, ScenePose>([
+      [z.id, { x: 0, y: 0 }],
+      [a.id, { x: 5, y: 0 }],
+    ]);
+    behavior.onMove!(makeCtx([z.id, a.id], origin), { kind: 'translate', dx: 7, dy: 0 });
+    expect(useUiStore.getState().dragClashIds).toEqual([c.id]);
+  });
+
+  it('clamps a structure dragged along with a zone grabbed first', () => {
+    const z = createZone({ x: 0, y: 0, width: 2, length: 2 });
+    const a = createStructure({ type: 'patio', x: 15, y: 0, width: 3, length: 3 });
+    useGardenStore.setState((s) => ({ garden: { ...s.garden, zones: [z], structures: [a] } }));
+    const behavior = clampStructureZoneToGardenBounds(createGardenSceneAdapter());
+    const origin = new Map<string, ScenePose>([
+      [z.id, { x: 0, y: 0 }],
+      [a.id, { x: 15, y: 0 }],
+    ]);
+    const result = behavior.onMove!(makeCtx([z.id, a.id], origin), {
+      kind: 'translate',
+      dx: 5,
+      dy: 0,
+    });
+    expect((result as { transform: GroupTransform }).transform).toEqual({
+      kind: 'translate',
+      dx: 2,
+      dy: 0,
+    });
   });
 
   it('clears on end', () => {

@@ -21,13 +21,9 @@ import type { GesturePoint, NurseryDragGesture, NurseryDragHandle } from './nurs
  * Publish a seedling-move ghost putative into the framework's shared
  * `dragPreview` slot. Mirrors the legacy `setSeedMovePreview` writes.
  *
- * This is the façade pattern: the Tool owns the gesture (scratch is mutated
- * imperatively in the kit Tool callbacks) and publishes putatives to the
- * shared slot directly. The framework's `dragPreviewLayer` then renders via
- * `seedlingMoveDrag.renderPreview`. We don't use a `useEffect` mirror because
- * scratch state isn't React-reactive — the kit Tool exposes no overlay
- * snapshot we could subscribe to. Direct writes from the handler are the
- * pragmatic equivalent.
+ * The gesture mutates its scratch imperatively and publishes putatives here;
+ * the framework's `dragPreviewLayer` renders them via
+ * `seedlingMoveDrag.renderPreview`.
  */
 function setMoveGhost(p: SeedlingMovePutative | null): void {
   const ui = useUiStore.getState();

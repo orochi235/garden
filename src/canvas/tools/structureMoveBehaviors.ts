@@ -3,104 +3,69 @@ import { useGardenStore } from '../../store/gardenStore';
 import { useUiStore } from '../../store/uiStore';
 import type { GardenSceneAdapter, SceneNode, ScenePose } from '../adapters/gardenScene';
 
+type Rect = { x: number; y: number; width: number; height: number };
+
 /**
- * Compute the union AABB (in world coordinates) of every dragged id, applying
- * an x/y delta against each id's *origin* pose. The primary id's pose comes
- * from `proposedPrimary` (already shaped by upstream behaviors like
- * `snapStructureZoneToGrid`); secondaries inherit the same delta from origin.
- *
- * Plantings and unknown ids contribute nothing — clamp/clash logic only
- * applies to structures and zones.
+ * Each dragged structure (and zone, with `includeZones`) as a world rect after
+ * translating its origin by `(dx, dy)`. Plantings follow their container's
+ * layout, so they never contribute.
  */
-function unionDraggedAABB(
+function draggedRects(
   adapter: GardenSceneAdapter,
   draggedIds: string[],
   origin: Map<string, ScenePose>,
-  proposedPrimary: ScenePose,
-): { x: number; y: number; width: number; height: number } | null {
-  const primaryId = draggedIds[0];
-  const primaryOrigin = origin.get(primaryId);
-  if (!primaryOrigin) return null;
-  const dx = proposedPrimary.x - primaryOrigin.x;
-  const dy = proposedPrimary.y - primaryOrigin.y;
-
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
+  dx: number,
+  dy: number,
+  includeZones: boolean,
+): Rect[] {
+  const rects: Rect[] = [];
   for (const id of draggedIds) {
     const node = adapter.getNode(id) as SceneNode | undefined;
     if (!node) continue;
-    if (node.kind !== 'structure' && node.kind !== 'zone') continue;
+    if (node.kind !== 'structure' && !(includeZones && node.kind === 'zone')) continue;
     const o = origin.get(id);
     if (!o) continue;
-    const w = node.data.width;
-    const h = node.data.length;
-    const x = o.x + dx;
-    const y = o.y + dy;
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x + w > maxX) maxX = x + w;
-    if (y + h > maxY) maxY = y + h;
+    rects.push({ x: o.x + dx, y: o.y + dy, width: node.data.width, height: node.data.length });
   }
-
-  if (!Number.isFinite(minX)) return null;
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  return rects;
 }
 
 /**
- * Hard-clamp the dragging set's union AABB to garden bounds
- * `[0, widthFt] × [0, lengthFt]`. The kit's `MoveBehavior.onMove` only runs
- * on the primary id, so we clamp the *delta* applied to the primary; the kit
- * applies the same translation to secondaries (group-drag), so the same
- * clamp transitively keeps secondaries in bounds.
+ * Hard-clamp the union of every dragged structure and zone to garden bounds
+ * `[0, widthFt] × [0, lengthFt]` by adjusting the group's shared translation.
  *
- * Plantings are exempt: their pose is decided by container layout strategies
- * and structure dimensions, not free-space drag.
- *
- * If the AABB is larger than the garden in either axis, we clamp to keep at
- * least the top-left corner inside (overflow is permitted in that degenerate
- * case rather than locking the drag entirely).
+ * If the union is larger than the garden in either axis, its top-left corner
+ * stays inside and the rest overflows, rather than locking the drag.
  */
 export function clampStructureZoneToGardenBounds(
   adapter: GardenSceneAdapter,
 ): MoveBehavior<ScenePose> {
   return {
     onMove(ctx, proposed) {
-      const node = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
-      if (!node) return;
-      if (node.kind !== 'structure' && node.kind !== 'zone') return;
-      // Behaviors now receive a uniform `GroupTransform`; reconstruct the
-      // primary's proposed pose from its origin so the AABB math is unchanged.
       if (proposed.kind !== 'translate') return;
-      const primaryOrigin = ctx.origin.get(ctx.draggedIds[0]);
-      if (!primaryOrigin) return;
-      const proposedPrimary: ScenePose = {
-        x: primaryOrigin.x + proposed.dx,
-        y: primaryOrigin.y + proposed.dy,
-      };
-
+      const rects = draggedRects(
+        adapter,
+        ctx.draggedIds,
+        ctx.origin,
+        proposed.dx,
+        proposed.dy,
+        true,
+      );
+      if (rects.length === 0) return;
+      const minX = Math.min(...rects.map((r) => r.x));
+      const minY = Math.min(...rects.map((r) => r.y));
+      const maxX = Math.max(...rects.map((r) => r.x + r.width));
+      const maxY = Math.max(...rects.map((r) => r.y + r.height));
       const garden = useGardenStore.getState().garden;
-      const aabb = unionDraggedAABB(adapter, ctx.draggedIds, ctx.origin, proposedPrimary);
-      if (!aabb) return;
 
-      let shiftX = 0;
-      let shiftY = 0;
-      if (aabb.x < 0) shiftX = -aabb.x;
-      else if (aabb.x + aabb.width > garden.widthFt) {
-        shiftX = garden.widthFt - (aabb.x + aabb.width);
-        // If the AABB is wider than the garden, prefer left-edge alignment.
-        if (aabb.x + shiftX < 0) shiftX = -aabb.x;
-      }
-      if (aabb.y < 0) shiftY = -aabb.y;
-      else if (aabb.y + aabb.height > garden.lengthFt) {
-        shiftY = garden.lengthFt - (aabb.y + aabb.height);
-        if (aabb.y + shiftY < 0) shiftY = -aabb.y;
-      }
-
+      const shift = (min: number, max: number, limit: number) => {
+        if (min < 0) return -min;
+        if (max > limit) return Math.max(limit - max, -min);
+        return 0;
+      };
+      const shiftX = shift(minX, maxX, garden.widthFt);
+      const shiftY = shift(minY, maxY, garden.lengthFt);
       if (shiftX === 0 && shiftY === 0) return;
-      // Shift the whole-group delta so every dragged id stays in bounds.
       return {
         transform: { kind: 'translate', dx: proposed.dx + shiftX, dy: proposed.dy + shiftY },
       };
@@ -109,10 +74,7 @@ export function clampStructureZoneToGardenBounds(
 }
 
 /** AABB intersection in world coordinates. Touching edges do not count. */
-function aabbIntersect(
-  a: { x: number; y: number; width: number; height: number },
-  b: { x: number; y: number; width: number; height: number },
-): boolean {
+function aabbIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
@@ -123,62 +85,37 @@ function aabbIntersect(
  *
  * Zones are intentionally excluded — gardens can layer zones over structures
  * and over each other freely.
- *
- * Computed against the proposed pose for the primary id (post-clamp,
- * post-snap), with secondaries sharing the same delta.
  */
 export function detectStructureClash(adapter: GardenSceneAdapter): MoveBehavior<ScenePose> {
+  const publish = (clashes: string[]) => {
+    const cur = useUiStore.getState().dragClashIds;
+    const same = cur.length === clashes.length && cur.every((id, i) => id === clashes[i]);
+    if (!same) useUiStore.getState().setDragClashIds(clashes);
+  };
   return {
     onMove(ctx, proposed) {
-      const primary = adapter.getNode(ctx.draggedIds[0]) as SceneNode | undefined;
-      if (!primary || primary.kind !== 'structure') {
-        // Non-structure primary drags don't generate structure clashes.
-        if (useUiStore.getState().dragClashIds.length > 0) {
-          useUiStore.getState().setDragClashIds([]);
-        }
-        return;
-      }
-
       if (proposed.kind !== 'translate') return;
-      const garden = useGardenStore.getState().garden;
+      const rects = draggedRects(
+        adapter,
+        ctx.draggedIds,
+        ctx.origin,
+        proposed.dx,
+        proposed.dy,
+        false,
+      );
       const draggedSet = new Set(ctx.draggedIds);
-      const dx = proposed.dx;
-      const dy = proposed.dy;
-
-      const draggedRects: { x: number; y: number; width: number; height: number }[] = [];
-      for (const id of ctx.draggedIds) {
-        const node = adapter.getNode(id) as SceneNode | undefined;
-        if (!node || node.kind !== 'structure') continue;
-        const o = ctx.origin.get(id);
-        if (!o) continue;
-        draggedRects.push({
-          x: o.x + dx,
-          y: o.y + dy,
-          width: node.data.width,
-          height: node.data.length,
-        });
-      }
-
       const clashes: string[] = [];
-      for (const s of garden.structures) {
-        if (draggedSet.has(s.id)) continue;
-        const sRect = { x: s.x, y: s.y, width: s.width, height: s.length };
-        for (const dRect of draggedRects) {
-          if (aabbIntersect(dRect, sRect)) {
-            clashes.push(s.id);
-            break;
-          }
+      if (rects.length > 0) {
+        for (const s of useGardenStore.getState().garden.structures) {
+          if (draggedSet.has(s.id)) continue;
+          const sRect = { x: s.x, y: s.y, width: s.width, height: s.length };
+          if (rects.some((r) => aabbIntersect(r, sRect))) clashes.push(s.id);
         }
       }
-
-      const cur = useUiStore.getState().dragClashIds;
-      const same = cur.length === clashes.length && cur.every((id, i) => id === clashes[i]);
-      if (!same) useUiStore.getState().setDragClashIds(clashes);
+      publish(clashes);
     },
     onEnd() {
-      if (useUiStore.getState().dragClashIds.length > 0) {
-        useUiStore.getState().setDragClashIds([]);
-      }
+      publish([]);
     },
   };
 }
