@@ -32,6 +32,11 @@ Surfaced during the post-migration audit (commits `0ec1cdc`…`02140b0` closed t
 
 - **Freehand/polygon draw tool for `viewMode === 'draw'` without a plotting tool selected.** Currently aliases to select. Design a draw tool that emits a free-form zone or annotation.
 
+## Canvas bugs
+
+- **The `garden-mixed` fixture stores plantings in world coordinates** (`tests/visual/fixtures/garden-mixed.garden`), but plantings are parent-relative, so zone-2's and struct-1's plants land outside their parents, off the garden. Found 2026-10-31 driving it headless. Fixing the coordinates changes the visual baselines, so regenerate them in the same change; check `tests/e2e/interactions.spec.ts` for anything aimed at those plants.
+- **A planting's dashed spacing border ignores its parent's clip.** The plant icon is clipped away when it sits outside its bed, but its spacing border still draws (seen with the fixture above: a lone dashed square below the garden).
+
 ## Almanac
 
 - **PHZM disclaimer for any rendered map.** Per the OSU/USDA terms-of-use bundled with the PHZM 2023 raster, derived maps must either keep both USDA-ARS and OSU logos or carry a "not the official USDA Plant Hardiness Zone Map" disclaimer with logos removed. Today we only consume the data as point lookups (no map rendering), so no disclaimer surface exists. If we ever render a heatmap, choropleth, or zone-by-region overlay derived from this grid, add the disclaimer/logo surface at that point.
