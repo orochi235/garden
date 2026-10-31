@@ -10,6 +10,8 @@ export default defineConfig({
   server: {
     host: '::',
     port: 53305,
+    // .claude/worktrees/weasel symlinks the whole weasel repo; its churn would reload the page.
+    watch: { ignored: ['**/.claude/**'] },
   },
   plugins: [
     react(),
