@@ -117,3 +117,57 @@ describe('bug C — cross-container planting reparent', () => {
     expect(scene.get(p.id as never)?.parent).not.toBe(bedB.id);
   });
 });
+
+describe('a bed or zone dropped onto a bed', () => {
+  beforeEach(() => {
+    useGardenStore.getState().reset();
+    useGardenStore.getState().loadGarden(blankGarden());
+  });
+
+  function dropOnto(id: string, from: { x: number; y: number }, to: { x: number; y: number }) {
+    const invoker = moveAction.invoker;
+    if (!invoker || invoker.timing !== 'ongoing') throw new Error('expected ongoing invoker');
+    const handle = invoker.start(makeCtx([id]) as never);
+    const drag: Drag = {
+      start: from,
+      current: to,
+      delta: { x: to.x - from.x, y: to.y - from.y },
+    };
+    handle.onMove?.(makeCtx([id], drag) as never);
+    handle.onEnd?.(makeCtx([id], drag) as never, 'commit');
+  }
+
+  it('moves a bed without nesting it or losing its size', () => {
+    useGardenStore.getState().addStructure({ type: 'raised-bed', x: 0, y: 0, width: 4, length: 8 });
+    useGardenStore
+      .getState()
+      .addStructure({ type: 'raised-bed', x: 20, y: 0, width: 4, length: 8 });
+    const [bedA, bedB] = useGardenStore.getState().garden.structures;
+
+    dropOnto(bedA.id, { x: 2, y: 4 }, { x: 22, y: 4 });
+
+    const moved = useGardenStore.getState().garden.structures.find((s) => s.id === bedA.id)!;
+    expect(moved.parentId).toBeNull();
+    expect(moved).toMatchObject({ x: 20, y: 0, width: 4, length: 8 });
+    expect(
+      useGardenStore
+        .getState()
+        .getScene()
+        .get(bedA.id as never)?.parent,
+    ).not.toBe(bedB.id);
+  });
+
+  it('moves a zone without nesting it', () => {
+    useGardenStore
+      .getState()
+      .addStructure({ type: 'raised-bed', x: 20, y: 0, width: 4, length: 8 });
+    useGardenStore.getState().addZone({ x: 0, y: 0, width: 4, length: 4 });
+    const zone = useGardenStore.getState().garden.zones[0];
+
+    dropOnto(zone.id, { x: 2, y: 2 }, { x: 22, y: 2 });
+
+    const moved = useGardenStore.getState().garden.zones.find((z) => z.id === zone.id)!;
+    expect(moved.parentId).toBeNull();
+    expect(moved).toMatchObject({ x: 20, y: 0, width: 4, length: 4 });
+  });
+});

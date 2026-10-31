@@ -99,15 +99,21 @@ export function upgradeGardenSave(
   return { ...saved, version: 3, nodes };
 }
 
-/** Which garden nodes take children by drop or insert: every zone, and a
- *  structure that is a container or already holds something (a patio with pots). */
+/** Which garden nodes take children by drop or insert. Plantings go into every
+ *  zone and any structure that is a container or already holds something. A
+ *  structure goes only onto a non-container that already holds something (a
+ *  patio with pots), and a zone goes into nothing. */
 export function gardenCanDropInto(scene: GardenScene): CanDropIntoDep {
-  return (parentId) => {
+  return (parentId, ids) => {
     const node = scene.get(asNodeId(parentId));
     if (!node) return false;
-    if (node.data.kind === 'zone') return true;
+    const kinds = new Set(ids.map((id) => scene.get(asNodeId(id))?.data.kind));
+    if (kinds.has('zone')) return false;
+    if (node.data.kind === 'zone') return !kinds.has('structure');
     if (node.data.kind !== 'structure') return false;
-    return node.data.container || scene.childrenOf(node.id).length > 0;
+    const holds = scene.childrenOf(node.id).length > 0;
+    if (kinds.has('structure')) return !node.data.container && holds;
+    return node.data.container || holds;
   };
 }
 
