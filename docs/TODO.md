@@ -4,7 +4,7 @@ Backlog of work that's been considered but not scheduled. Add new items at the b
 
 ## canvas-kit / weasel
 
-Backlog for the kit lives at [`docs/canvas-kit/TODO.md`](canvas-kit/TODO.md) so it travels with the kit when it splits out into the `@orochi235/weasel` repo. Add kit-specific items there, not here.
+The canvas kit is now weasel (`@weasel-js/*`, its own repo). File kit work in weasel's `docs/TODO.md`; this list holds only what eric itself must do, including adopting a weasel feature once it ships.
 
 ## Text rendering (MSDF unification)
 
